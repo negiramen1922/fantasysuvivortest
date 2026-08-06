@@ -152,6 +152,18 @@ canvas{display:block;width:100%;height:100%;touch-action:none}
 .ubuy:disabled{opacity:.3;cursor:default}
 #vbtns{display:flex;gap:10px;justify-content:center;flex-wrap:wrap}
 #vbtns .btn{margin-top:22px}
+#stagesel{margin-top:20px}
+.stlabel{font-size:11px;color:var(--ash);letter-spacing:.14em;margin-bottom:8px}
+.strow{display:flex;gap:10px;justify-content:center;flex-wrap:wrap}
+.stbtn{display:flex;flex-direction:column;align-items:center;gap:2px;min-width:120px;
+  padding:9px 14px;cursor:pointer;background:transparent;color:var(--ash);
+  border:2px solid var(--line);font-family:inherit}
+.stbtn b{font-size:15px;color:#fff}
+.stbtn span{font-size:10px;color:var(--ash)}
+.stbtn:hover:not(:disabled):not(.sel){border-color:var(--ash)}
+.stbtn.sel{border-color:var(--gold);box-shadow:0 0 14px rgba(255,204,77,.25)}
+.stbtn.lock{opacity:.5;cursor:default}
+.stbtn.lock b{color:var(--ash)}
 .btn.sub2{border-color:var(--line);color:var(--ash)}
 .btn.sub2:hover,.btn.sub2:focus-visible{background:var(--line);color:#fff}
 
@@ -418,6 +430,7 @@ canvas{display:block;width:100%;height:100%;touch-action:none}
       </div>
       <div id="res"></div>
       <div id="vpurse"></div>
+      <div id="stagesel"></div>
       <div id="vbtns">
         <button class="btn" id="startbtn">冒険に出る</button>
         <button class="btn sub2" id="shopbtn">永続強化</button>
@@ -655,7 +668,10 @@ var BOSS={
   goblinking:{ nm:'ゴブリンキング',     res:0.94, key:'goblin', hp:85000,  r:46, spd:58, dmg:44, xp:1830, pts:24000,
                ai:'summon', acd:3.2, sum:'rider', nsum:4 },
   fenrir:    { nm:'フェンリル',         res:0.96, key:'wolf',   hp:160000, r:50, spd:104, dmg:52, xp:2160, pts:60000,
-               ai:'howl', acd:7.0, sum:'wolf', nsum:4, last:1 }
+               ai:'howl', acd:7.0, sum:'wolf', nsum:4, last:1 },
+  // ステージ2（森）用ボス。オーガの見た目でスラム攻撃を行う大型。
+  ancientogre:{ nm:'エンシェントオーガ', res:0.95, key:'ogre',   hp:95000,  r:52, spd:40,  dmg:50, xp:2000, pts:52000,
+               ai:'slam', acd:3.4, wind:0.7, nbul:20, bspd:240, bdmg:20 }
 };
 var BOSS_AT=[[240,'bigslime'],[480,'greatboar'],[720,'champion'],
              [900,'slimeking'],[1080,'goblinking'],[1200,'fenrir']];
@@ -676,6 +692,37 @@ var WAVE=[
   { t:1040, mix:[['wolf',0.18],['orc',0.36],['rider',0.52],['harpy',0.64],['ogre',0.82],['turtle',1.00]] },
   { t:1120, mix:[['orc',0.22],['rider',0.40],['harpy',0.52],['ogre',0.78],['turtle',1.00]] }
 ];
+
+// ステージ2（森）の出現構成。スライムを廃し、速い敵と重い敵を前倒しで出す。
+var WAVE2=[
+  { t:0,    mix:[['goblin',0.55],['bat',1.00]] },
+  { t:40,   mix:[['goblin',0.42],['bat',0.74],['wolf',1.00]] },
+  { t:110,  mix:[['goblin',0.28],['bat',0.52],['wolf',0.80],['boar',1.00]] },
+  { t:210,  mix:[['bat',0.24],['wolf',0.50],['boar',0.70],['archer',1.00]] },
+  { t:300,  mix:[['wolf',0.30],['boar',0.52],['archer',0.70],['harpy',1.00]] },
+  { t:410,  mix:[['wolf',0.24],['boar',0.42],['archer',0.58],['harpy',0.76],['orc',1.00]] },
+  { t:510,  mix:[['boar',0.24],['archer',0.42],['harpy',0.58],['orc',0.76],['rider',1.00]] },
+  { t:620,  mix:[['archer',0.20],['harpy',0.38],['orc',0.56],['rider',0.74],['wolf',0.88],['turtle',1.00]] },
+  { t:720,  mix:[['harpy',0.20],['orc',0.38],['rider',0.54],['turtle',0.72],['ogre',1.00]] },
+  { t:840,  mix:[['orc',0.22],['rider',0.40],['harpy',0.54],['turtle',0.74],['ogre',1.00]] },
+  { t:960,  mix:[['rider',0.24],['harpy',0.42],['orc',0.58],['turtle',0.78],['ogre',1.00]] },
+  { t:1080, mix:[['harpy',0.26],['rider',0.46],['orc',0.60],['turtle',0.80],['ogre',1.00]] }
+];
+// ステージ2のボス（HPは hpMul 倍で出す）。締めは森の主フェンリル。
+var BOSS_AT2=[[240,'greatboar'],[480,'champion'],[720,'slimeking'],
+              [900,'goblinking'],[1080,'ancientogre'],[1200,'fenrir']];
+
+// ステージ定義。req をクリア済みで次ステージが解放される。
+var STAGES={
+  1:{ nm:'草原',   sub:'20:00・フェンリル', wave:WAVE,  bossAt:BOSS_AT,  hpMul:1.0, req:0,
+      ground:{ bg:'#150f2c', grid:'rgba(80,62,140,.28)', dot:'rgba(120,96,200,.14)' } },
+  2:{ nm:'森',     sub:'20:00・速く重い', wave:WAVE2, bossAt:BOSS_AT2, hpMul:1.6, req:1,
+      ground:{ bg:'#0e1f14', grid:'rgba(70,120,74,.26)',  dot:'rgba(120,180,120,.15)' } }
+};
+var ALLSTG=1;   // 開発中は全ステージ解放。製品化時は 0 に戻す
+var curStage=1, bossHpMul=1, curGround=STAGES[1].ground;
+var STGCLEAR={};
+
 var PTS_ELITE=450, PTS_REACT=30, PTS_SEC=25, PTS_LV=200, PTS_CLEAR=50000;
 
 /* ============ 状態 ============ */
@@ -1161,12 +1208,13 @@ var SHK=1;   // 画面揺れの強さ 0 / 0.5 / 1 / 1.5
       if(o.unl) for(var u in CHARS) if(o.unl[u]) UNL[u]=1;
       if(ALLCHR) for(var u2 in CHARS) UNL[u2]=1;
       if(o.ach) for(var av in ACH) if(typeof o.ach[av]==='number') ACH[av]=o.ach[av];
+      if(o.stg) for(var sg in STAGES) if(o.stg[sg]) STGCLEAR[sg]=1;
       if(o.ch&&CHARS[o.ch]&&UNL[o.ch]) SELCH=o.ch;
     }
   }catch(e){}
 })();
 function saveGame(){
-  try{ localStorage.setItem('bsv_save',JSON.stringify({m:META,w:WALLET,wx:WX,sel:SEL,best:best,shk:SHK,unl:UNL,ach:ACH,ch:SELCH})); }catch(e){}
+  try{ localStorage.setItem('bsv_save',JSON.stringify({m:META,w:WALLET,wx:WX,sel:SEL,best:best,shk:SHK,unl:UNL,ach:ACH,ch:SELCH,stg:STGCLEAR})); }catch(e){}
 }
 function M(id){ return META[id]||0; }
 
@@ -1180,6 +1228,9 @@ function xpNeed(lv){
 }
 function reset(){
   var c=CH();
+  // 選択中ステージのデータを反映（湧き表・ボス表・地面・ボスHP倍率）
+  var stg=STAGES[curStage]||STAGES[1];
+  WAVE=stg.wave; BOSS_AT=stg.bossAt; curGround=stg.ground; bossHpMul=stg.hpMul||1;
   var hp=Math.round(100*(1+0.10*M('health'))*c.hp);
   var w0={}, wa0={}; w0[c.w]=1; wa0[c.w]={};
   P={ x:0,y:0, r:12, hp:hp, max:hp, spd:190*c.spd, face:0,
@@ -2249,9 +2300,10 @@ function spawnBoss(key){
   var B=BOSS[key], t=ETYPE[B.key];
   var scale=1+time/60*0.63, dscale=1+time/60*0.22;
   var a=Math.random()*6.283, dist=Math.hypot(W,H)/2+90;
+  var bhp=B.hp*bossHpMul;
   var e={ k:B.key, bkey:key, boss:1, last:B.last||0,
     nm:B.nm, x:P.x+Math.cos(a)*dist, y:P.y+Math.sin(a)*dist,
-    hp:B.hp, mhp:B.hp, spd:B.spd, r:B.r,
+    hp:bhp, mhp:bhp, spd:B.spd, r:B.r,
     col:t.col, dark:t.dark, xp:B.xp, dmg:B.dmg*dscale, shape:t.shape,
     pts:B.pts, ai:B.ai||'', acd:B.acd||0, at:1.2, st:'', stT:0,
     vx:0, vy:0, res:B.res||0.9, flat:0, split:B.split||null,
@@ -3024,7 +3076,7 @@ function stepFx(dt){
 /* ============ 描画 ============ */
 function render(){
   ctx.setTransform(DPR,0,0,DPR,0,0);
-  ctx.fillStyle='#150f2c'; ctx.fillRect(0,0,W,H);
+  ctx.fillStyle=curGround.bg; ctx.fillRect(0,0,W,H);
   if(state==='title'){ return; }
 
   var sh=(state==='paused'||state==='chest'||state==='test')?0:shake*SHK;
@@ -3100,13 +3152,13 @@ function drawStick(){
 }
 function drawGround(cx,cy){
   var g=96;
-  ctx.strokeStyle='rgba(80,62,140,.28)'; ctx.lineWidth=1;
+  ctx.strokeStyle=curGround.grid; ctx.lineWidth=1;
   ctx.beginPath();
   var x0=Math.floor(cx/g)*g, y0=Math.floor(cy/g)*g;
   for(var x=x0;x<cx+W+g;x+=g){ ctx.moveTo(x,cy); ctx.lineTo(x,cy+H); }
   for(var y=y0;y<cy+H+g;y+=g){ ctx.moveTo(cx,y); ctx.lineTo(cx+W,y); }
   ctx.stroke();
-  ctx.fillStyle='rgba(120,96,200,.14)';
+  ctx.fillStyle=curGround.dot;
   for(var i=0;i<40;i++){
     var px=x0+((i*563)%(W+g*2)), py=y0+((i*911)%(H+g*2));
     ctx.fillRect(px,py,3,3);
@@ -3672,7 +3724,38 @@ document.getElementById('chest').addEventListener('pointerdown',function(e){
 });
 document.getElementById('shopbtn').onclick=function(){ audio(); renderShop(); shopEl.classList.add('on'); };
 document.getElementById('shopclose').onclick=function(){ shopEl.classList.remove('on'); syncTitle(); };
+function stageUnlocked(n){
+  var s=STAGES[n]; if(!s) return false;
+  return !!(ALLSTG || s.req===0 || STGCLEAR[s.req]);
+}
+var STGNUM=['①','②','③','④','⑤'];
+function renderStages(){
+  var el=document.getElementById('stagesel'); if(!el) return;
+  // 解放済みステージ数を数え、1つしか無ければセレクタ自体を隠す
+  var avail=0; for(var k in STAGES) if(stageUnlocked(+k)) avail++;
+  if(avail<=1){ el.innerHTML=''; if(!stageUnlocked(curStage)) curStage=1; return; }
+  if(!stageUnlocked(curStage)) curStage=1;
+  var h='<div class="stlabel">ステージ</div><div class="strow">';
+  var ns=Object.keys(STAGES).map(Number).sort(function(a,b){return a-b;});
+  for(var i=0;i<ns.length;i++){
+    var n=ns[i], s=STAGES[n], un=stageUnlocked(n), sel=(curStage===n), cl=STGCLEAR[n];
+    var head=un?((STGNUM[n-1]||n)+' '+s.nm):('🔒 '+s.nm);
+    var note=un?(s.sub+(cl?'・クリア済':'')):'前ステージのクリアで解放';
+    h+='<button class="stbtn'+(sel?' sel':'')+(un?'':' lock')+'" data-stg="'+n+'"'+(un?'':' disabled')+'>'+
+       '<b>'+head+'</b><span>'+note+'</span></button>';
+  }
+  h+='</div>';
+  el.innerHTML=h;
+  el.onclick=function(ev){
+    var b=ev.target.closest?ev.target.closest('.stbtn'):null;
+    if(!b) return;
+    var n=+b.getAttribute('data-stg');
+    if(!stageUnlocked(n)) return;
+    curStage=n; renderStages();
+  };
+}
 function syncTitle(){
+  renderStages();
   document.getElementById('vpurse').innerHTML=
     '<span style="color:#fff">'+CH().glyph+' '+CH().nm+'</span>　'+purseHtml()+
     (best?'<br><span style="color:#6b5f9c">ベストスコア '+fmt(best)+'</span>':'');
@@ -4076,7 +4159,7 @@ function finish(won){
   ACH.lv=Math.max(ACH.lv,P.lv);
   ACH.kills+=kills; ACH.reacts+=reacts;
   ACH.time=Math.max(ACH.time,Math.floor(time));
-  if(won) ACH.clear=1;
+  if(won){ ACH.clear=1; STGCLEAR[curStage]=1; }
   var newCh=unlockCheck();
   WALLET.silver+=silver; WALLET.gold+=gold;
   var wtxt=[];
