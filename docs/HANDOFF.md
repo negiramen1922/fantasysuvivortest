@@ -5,6 +5,17 @@
 
 ---
 
+## 変更履歴（新しい順）
+
+- **双剣(twin) 削除 / 冒険者(advent) 削除 / チェンソー(chainsaw) 一時退避**
+  - `twin` は `WEAPONS` と全補助テーブル（WCAT/WKIND/WAX/AWK/AWT/WTRAIT）、発動ディスパッチ、`doTwin` を完全削除
+  - `advent` は初期武器が `twin` だったため削除。**無料スタートキャラを `knight` に昇格**（`cost:0 / cond:null`）。
+    既定選択 `SELCH` と `CH()` フォールバックも `knight` に変更
+  - `chainsaw` は `WEAPONS` 定義のみコメントアウトで退避。`doChain2`・ディスパッチ・各テーブルは残置。
+    **復帰は `index.html` の `WEAPONS` 内チェンソー2行のコメントを外すだけ**
+
+---
+
 ## 1. 現状
 
 | | |

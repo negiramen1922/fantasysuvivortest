@@ -559,8 +559,6 @@ function noise(dur,vol){
 
 /* ============ データ定義 ============ */
 var WEAPONS={
-  twin:{ nm:'双剣', glyph:'\u2694\uFE0F', tag:'剣技', max:10,
-    tx:'左右の刃で二方向を同時に薙ぐ。一撃は軽いが広く届く。' },
   slash:{ nm:'大剣', glyph:'\u2694', tag:'剣技', max:10,
     tx:'前方を薙ぎ払う。レベルで刃の届く角度と速さが伸びる。' },
   scythe:{ nm:'鎌', glyph:'\u{1F5E1}', tag:'剣技', max:10,
@@ -585,8 +583,9 @@ var WEAPONS={
     tx:'地面を隆起させて突き上げる。敵を大きく弾き飛ばす。' },
   rock:{ nm:'ロックボール', glyph:'\u26AB', tag:'土', max:10,
     tx:'巨大な岩を転がす。盤面に残り続け、進路の敵をなぎ倒す。' },
-  chainsaw:{ nm:'チェンソー', glyph:'\u{1FA9A}', tag:'剣技', max:10,
-    tx:'前方を削り続ける。一撃は軽いが刃は止まらない。' },
+  // [一時退避] チェンソー：挙動が不安定なため一旦プールから除外。復帰時は下2行のコメントを外す。
+  // chainsaw:{ nm:'チェンソー', glyph:'\u{1FA9A}', tag:'剣技', max:10,
+  //   tx:'前方を削り続ける。一撃は軽いが刃は止まらない。' },
   musket:{ nm:'マスケット', glyph:'\u{1F52B}', tag:'射撃', max:10,
     tx:'散弾を撒き散らす。近いほど多くの玉が突き刺さる。' },
   blizzard:{ nm:'アイスブリザード', glyph:'\u{1F32A}', tag:'氷', max:10,
@@ -691,17 +690,6 @@ var lasers;
 /* ============ 武器熟練度・特性 ============ */
 var WTH=[4000,30000,100000];   // 特性1/2/3の到達値
 var WTRAIT={
-  twin:[
-    [{id:'w1a',nm:'鋭牙',tx:'ダメージ +22%',ef:{dmg:.22}},
-     {id:'w1b',nm:'長刃',tx:'range・角度 +18%',ef:{area:.18}},
-     {id:'w1c',nm:'速刃',tx:'振りの間隔 −15%',ef:{cd:-.15}}],
-    [{id:'w2a',nm:'双撃',tx:'ダメージ +30%',ef:{dmg:.30}},
-     {id:'w2b',nm:'広刃',tx:'range・角度 +32%',ef:{area:.32}},
-     {id:'w2c',nm:'連斬',tx:'振りの間隔 −22%',ef:{cd:-.22}}],
-    [{id:'w3a',nm:'烈牙',tx:'ダメージ +45%',ef:{dmg:.45}},
-     {id:'w3b',nm:'刃増し',tx:'刃 +1 組',ef:{count:1}},
-     {id:'w3c',nm:'疾風連斬',tx:'振りの間隔 −30%',ef:{cd:-.30}}]
-  ],
   slash:[
     [{id:'s1a',nm:'鋭刃',tx:'ダメージ +20%',ef:{dmg:.20}},
      {id:'s1b',nm:'広刃',tx:'range・角度 +18%',ef:{area:.18}},
@@ -950,7 +938,7 @@ function TR(wid,key){
 }
 function TF(wid,key){ return TR(wid,key)>0; }
 // 武器の系統。同系統は波及が厚くなる
-var WCAT={ twin:'剣技', slash:'剣技', scythe:'剣技', chakram:'剣技', bow:'射撃', dynamite:'射撃',
+var WCAT={ slash:'剣技', scythe:'剣技', chakram:'剣技', bow:'射撃', dynamite:'射撃',
            fire:'炎', flame:'炎', ice:'氷', thunder:'雷', chain:'雷',
            quake:'土', rock:'土', voidh:'闇', dhand:'闇', holy:'光', aura:'光',
            bell:'音', chainsaw:'剣技', musket:'射撃', blizzard:'氷', laser:'光' };
@@ -980,13 +968,12 @@ var AXT={ dmg:'ダメージ +45%', area:'範囲 +18%', rate:'間隔 −15%', cou
           pierce:'貫通 +2', slow:'鈍足の持続 +1.0秒', chain:'連鎖 +2', split:'拡散 +2',
           burst:'同じ方向へ続けて撃つ回数 +1' };
 // 物理は会心で殲滅、魔法は元素反応で連鎖させる
-var WKIND={ twin:'phys', slash:'phys', scythe:'phys', chakram:'phys', bow:'phys', dynamite:'phys',
+var WKIND={ slash:'phys', scythe:'phys', chakram:'phys', bow:'phys', dynamite:'phys',
             quake:'phys', rock:'phys', bell:'phys', chainsaw:'phys', musket:'phys',
             blizzard:'mag', laser:'mag',
             fire:'mag', flame:'mag', ice:'mag', thunder:'mag', chain:'mag',
             holy:'mag', aura:'mag', voidh:'mag', dhand:'mag' };
 var WAX={
-  twin:    { dmg:4, area:4, count:3, rate:3 },
   slash:   { dmg:5, area:4, rate:3 },
   scythe:  { dmg:4, area:4, count:3, rate:3 },
   chakram: { dmg:4, area:4, count:3, rate:3 },
@@ -1011,13 +998,13 @@ var WAX={
 };
 // Lv10 到達で覚醒。数値ではなく挙動が変わる。
 var AWK={ chainsaw:'暴走鋸', musket:'貫通弾', blizzard:'絶対氷結', laser:'追尾光線',
-  twin:'双牙乱舞', slash:'飛翔斬撃', scythe:'死神の鎌', chakram:'二重円', bow:'貫き矢',
+  slash:'飛翔斬撃', scythe:'死神の鎌', chakram:'二重円', bow:'貫き矢',
   dynamite:'連鎖爆破', bell:'共鳴', quake:'地割れ', rock:'巨岩',
   fire:'爆炎弾', flame:'業火輪', ice:'氷結槍', thunder:'落雷嵐',
   chain:'無限連鎖', holy:'聖裁', aura:'審判の剣', voidh:'特異点', dhand:'深淵の手' };
 var AWT={ chainsaw:'前方だけでなく全方位を削るようになる', musket:'弾が敵を貫通する',
   blizzard:'吹雪の中の敵をときどき凍結させる', laser:'光線が回転しながら残り続ける',
-  twin:'左右の刃が全周を薙ぐようになる', slash:'斬撃が飛ぶようになる', scythe:'戻りの威力減衰がなくなる',
+  slash:'斬撃が飛ぶようになる', scythe:'戻りの威力減衰がなくなる',
   chakram:'軌道が内外2重になり、内側は逆回転', bow:'貫通するたび威力が上がる（最大3倍）',
   dynamite:'爆発が巻き込んだ敵を起点にもう一度爆発', bell:'最大半径で反射し収縮しながら戻る',
   quake:'隆起点に亀裂が残り、通る敵に継続ダメージ', rock:'敵に当たるたび大きくなる',
@@ -1082,18 +1069,12 @@ function axLeft(w,k){ return (WAX[w][k]||0)-AX(w,k); }
 /* ============ キャラクター ============ */
 // 解放は実績を満たすか、金貨で買うかのどちらでもよい
 var CHARS={
-  advent:{ nm:'冒険者', glyph:'\u2694\uFE0F', w:'twin',
-    tx:'二刀を振るう万能型。経験を糧にどこまでも伸びる。',
-    st:'補正なし',
-    grow:{k:'xp', v:0.01, tx:'毎レベル 経験値取得 +1%'},
-    hp:1.00, spd:1.00, pw:1.00, area:1.00, ele:0, elp:0, crit:0, regen:0,
-    cost:0,   cond:null,     val:0,     condTx:'最初から使える' },
   knight:{ nm:'騎士',   glyph:'\u{1F6E1}', w:'slash',
     tx:'大剣を担ぐ重装。硬く、重い一撃を叩き込む。',
     st:'最大HP +30%／攻撃力 +15%／移動速度 −8%',
     grow:null,
     hp:1.30, spd:0.92, pw:1.15, area:1.00, ele:0, elp:0, crit:0, regen:0,
-    cost:40,  cond:'lv',     val:30,    condTx:'Lv30 に到達する' },
+    cost:0,   cond:null,     val:0,     condTx:'最初から使える' },
   hunter:{ nm:'狩人',   glyph:'\u{1F3F9}', w:'bow',
     tx:'矢を速射する。素早く動き、急所を貫く。',
     st:'移動速度 +18%／会心率 +10%／最大HP −20%',
@@ -1120,10 +1101,10 @@ var CHARS={
     cost:100, cond:'clear',  val:1,     condTx:'ステージ1をクリアする' }
 };
 var ALLCHR=1;   // 開発中は全キャラ解放。製品化時は 0 に戻す
-var UNL={}, SELCH='advent';
-(function(){ for(var k in CHARS) UNL[k]=ALLCHR?1:(k==='advent'?1:0); })();
+var UNL={}, SELCH='knight';
+(function(){ for(var k in CHARS) UNL[k]=ALLCHR?1:(k==='knight'?1:0); })();
 var ACH={lv:0, kills:0, reacts:0, clear:0, time:0};
-function CH(){ return CHARS[SELCH]||CHARS.advent; }
+function CH(){ return CHARS[SELCH]||CHARS.knight; }
 // キャラの毎レベル成長
 function achOK(id){
   var c=CHARS[id];
@@ -1360,7 +1341,6 @@ function ready(id,cd,dt){
   return false;
 }
 function runWeapons(dt){
-  if(P.w.twin    &&ready('twin',    0.72*RATE('twin'),dt))     doTwin();
   if(P.w.chainsaw&&ready('chainsaw',0.20*RATE('chainsaw'),dt)) doChain2();
   if(P.w.musket  &&ready('musket',  1.50*RATE('musket'),dt)){  doMusket(); queueVolley('musket',0.13); }
   if(P.w.blizzard&&ready('blizzard',0.50*RATE('blizzard'),dt)) doBlizzard();
@@ -1535,35 +1515,6 @@ function drawBliz(f){
   ctx.globalAlpha=1; ctx.restore();
 }
 
-// 双剣：左右2方向に別々の刃を振る。同じ敵は二重に斬らない。
-function doTwin(){
-  SRC='twin';
-  var ar=AREA('twin'), pairs=1+CNT('twin');
-  var arc=AW('twin')?6.3:Math.min(2.4,1.30*ar), r2=92*ar;
-  var dmg=14*DMG('twin')*pw('twin');
-  var hit=[], n=0;
-  for(var b=0;b<pairs*2;b++){
-    var side=(b%2)?1:-1, off=Math.floor(b/2)*0.42;
-    var ang=P.face+side*(0.55+off);
-    for(var i=enemies.length-1;i>=0;i--){
-      var e=enemies[i];
-      if(e.dead||hit.indexOf(e)>=0) continue;
-      var dx=e.x-P.x, dy=e.y-P.y, d=Math.hypot(dx,dy);
-      if(d>r2+e.r) continue;
-      if(arc<6.2){
-        var a2=Math.atan2(dy,dx)-ang;
-        a2=Math.atan2(Math.sin(a2),Math.cos(a2));
-        if(Math.abs(a2)>arc/2) continue;
-      }
-      hurt(e,dmg,dx/(d||1),dy/(d||1),null);
-      hit.push(e); n++;
-    }
-    fx.push({k:'slash',x:P.x,y:P.y,a:ang,arc:arc,rad:r2,t:0,life:.16,col:'#ffe9c6'});
-  }
-  sfx(600,.05,'square',.045,.7);
-  if(n){ shake=Math.min(9,shake+1.4); hitStop=Math.max(hitStop,.02); }
-  wgain('twin',n); SRC=null;
-}
 function doSlash(){
   SRC='slash';
   var ar=AREA('slash');
