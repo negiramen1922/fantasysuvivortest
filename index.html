@@ -627,7 +627,12 @@ var PASSIVES={
   crit:{ nm:'会心', glyph:'🎯', tag:'物理', max:5, tx:'会心率 +5%（物理武器に強く作用）' },
   critd:{ nm:'剛撃', glyph:'💥', tag:'物理', max:5, tx:'会心ダメージ +20%' },
   affinity:{ nm:'元素親和', glyph:'◈', tag:'元素', max:5, tx:'元素の付与率 +10%' },
-  mastery:{ nm:'元素熟知', glyph:'✧', tag:'元素', max:5, tx:'元素反応のダメージ +25%' }
+  mastery:{ nm:'元素熟知', glyph:'✧', tag:'元素', max:5, tx:'元素反応のダメージ +25%' },
+  bulwark:{ nm:'鉄壁', glyph:'🛡', tag:'能力', max:5, tx:'受けるダメージ −8%' },
+  heal:{ nm:'治癒', glyph:'💗', tag:'能力', max:5, tx:'毎秒 HP +0.5' },
+  exp:{ nm:'経験', glyph:'📖', tag:'能力', max:5, tx:'経験値の取得 +8%' },
+  reach:{ nm:'拡張', glyph:'🌀', tag:'能力', max:5, tx:'武器の範囲 +6%' },
+  greed:{ nm:'強欲', glyph:'💰', tag:'能力', max:5, tx:'銀貨の落ちやすさ +20%' }
 };
 var ELEM={
   fire:{ nm:'炎', col:'#ff7a2f' },
@@ -1139,7 +1144,7 @@ function lbOK(w,k){
 }
 // 各軸の効き。ダメージと範囲は乗算、頻度はクールダウンの短縮。
 function DMG(w){ return Math.pow(1.45,AX(w,'dmg'))*(1+TR(w,'dmg'))*(1+0.08*LB(w,'dmg')); }
-function AREA(w){ return Math.pow(1.18,AX(w,'area'))*(1+TR(w,'area'))*(1+0.04*LB(w,'area'))*CH().area; }
+function AREA(w){ return Math.pow(1.18,AX(w,'area'))*(1+TR(w,'area'))*(1+0.04*LB(w,'area'))*CH().area*(1+0.06*(P.p.reach||0)); }
 function RATE(w){ return Math.max(0.20,Math.pow(0.85,AX(w,'rate'))*(1+TR(w,'cd'))*(1-0.015*LB(w,'rate'))); }
 function CNT(w){ return AX(w,'count')+TR(w,'count')+LB(w,'count'); }
 function BST(w){ return AX(w,'burst'); }
@@ -1359,7 +1364,7 @@ function update(dt){
   }
 
   movePlayer(dt);
-  var rg=0.15*(META.recovery||0)+CH().regen;
+  var rg=0.15*(META.recovery||0)+CH().regen+0.5*(P.p.heal||0);
   if(rg&&P.hp<P.max) P.hp=Math.min(P.max,P.hp+rg*dt);
   aim();
   runWeapons(dt);
@@ -2456,7 +2461,7 @@ function moveEnemies(dt){
       if(e.elT>0){ e.elT-=dt; if(e.elT<=0) e.el=0; }
       if(e.rcd>0) e.rcd-=dt;
       if(d<e.r+P.r&&P.hurt<=0&&!P.god){
-        P.hp-=e.dmg*(1-0.04*M('armor')); P.hurt=0.55; shake=Math.min(16,shake+5);
+        P.hp-=e.dmg*(1-0.04*M('armor'))*(1-0.08*(P.p.bulwark||0)); P.hurt=0.55; shake=Math.min(16,shake+5);
         sfx(140,.16,'square',.09,.5);
         if(P.hp<=0){ P.hp=0; die(); return; }
       }
@@ -2566,7 +2571,7 @@ function moveEnemies(dt){
 
     // --- プレイヤーへの接触 ---
     if(d<e.r+P.r&&P.hurt<=0&&!P.god){
-      P.hp-=e.dmg*(1-0.04*M('armor')); P.hurt=0.55; shake=Math.min(16,shake+5);
+      P.hp-=e.dmg*(1-0.04*M('armor'))*(1-0.08*(P.p.bulwark||0)); P.hurt=0.55; shake=Math.min(16,shake+5);
       sfx(140,.16,'square',.09,.5);
       if(P.hp<=0){ P.hp=0; die(); return; }
     }
@@ -2586,7 +2591,7 @@ function moveEnemies(dt){
   }
 }
 function moveEbul(dt){
-  var arm=1-0.04*M('armor');
+  var arm=(1-0.04*M('armor'))*(1-0.08*(P.p.bulwark||0));
   for(var i=ebul.length-1;i>=0;i--){
     var b=ebul[i];
     b.x+=b.vx*dt; b.y+=b.vy*dt; b.life-=dt; b.t+=dt;
@@ -2656,7 +2661,7 @@ function kill(e){
     if(e.elite){
       chests.push({x:e.x,y:e.y,t:0});
       flash=Math.max(flash,.45); shake=Math.min(20,shake+9); hitStop=Math.max(hitStop,.09);
-    }else if(Math.random()<(ETYPE[e.k].sv||0)*(1+0.15*M('luck'))){
+    }else if(Math.random()<(ETYPE[e.k].sv||0)*(1+0.15*M('luck')+0.20*(P.p.greed||0))){
       coins.push({x:e.x,y:e.y,vx:(Math.random()-.5)*90,vy:(Math.random()-.5)*90,pull:0,sp:0});
     }
   }
@@ -2674,7 +2679,7 @@ function spiderBoom(e){
   shake=Math.min(18,shake+7); sfx(70,.3,'sawtooth',.09,.4); noise(.25,.1);
   var dd=Math.hypot(P.x-e.x,P.y-e.y);
   if(dd<R+P.r&&P.hurt<=0&&!P.god){
-    P.hp-=(e.boomDmg||e.dmg*2)*(1-0.04*M('armor')); P.hurt=0.55;
+    P.hp-=(e.boomDmg||e.dmg*2)*(1-0.04*M('armor'))*(1-0.08*(P.p.bulwark||0)); P.hurt=0.55;
     if(P.hp<=0){ P.hp=0; die(); }
   }
 }
@@ -3094,7 +3099,7 @@ function closeChest(){
 }
 
 function gainXp(v){
-  P.xp+=v*(1+GROW('xp'));   // 冒険者：経験値取得の成長
+  P.xp+=v*(1+GROW('xp'))*(1+0.08*(P.p.exp||0));   // 経験値取得（キャラ成長＋パッシブ）
   sfx(1180,.03,'sine',.028);
   var got=0;
   while(P.xp>=P.need){
