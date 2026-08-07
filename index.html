@@ -425,7 +425,7 @@ canvas{display:block;width:100%;height:100%;touch-action:none}
       <button class="pkb" id="rrbtn">🔄 引き直す <b id="rrn">5</b></button>
       <button class="pkb" id="skbtn">⏭ 見送る <b id="skn">5</b></button>
     </div>
-    <div class="hint"><span class="deskonly">クリック、または <span class="key">1</span> <span class="key">2</span> <span class="key">3</span> で選択　／　<span class="key">R</span> 引き直し　<span class="key">S</span> 見送り</span><span class="mobonly">タップして選択</span></div>
+    <div class="hint"><span class="deskonly">クリック、または <span class="key">1</span> <span class="key">2</span> <span class="key">3</span> で選択　／　<span class="key">R</span> 引き直し　<span class="key">Space</span> 見送り</span><span class="mobonly">タップして選択</span></div>
   </div>
 
   <div id="veil">
@@ -549,7 +549,7 @@ addEventListener('keydown',function(e){
   if(k==='t') toggleTest();
   if(state==='chest'&&(k===' '||k==='enter')) chestSkip();
   if(state==='levelup'&&k==='r') rerollPick();
-  if(state==='levelup'&&k==='s') skipPick();
+  if(state==='levelup'&&k===' ') skipPick();
 });
 addEventListener('keyup',function(e){ keys[e.key.toLowerCase()]=0; });
 cv.addEventListener('pointerdown',function(e){
@@ -731,17 +731,17 @@ var BOSS_AT=[[300,'greatboar'],[600,'slimeking'],[900,'goblinking'],[1200,'fenri
 
 // ステージ1の出現構成
 var WAVE=[
-  { t:0,    mix:[['slime',1.00]] },
-  { t:40,   mix:[['slime',0.72],['goblin',1.00]] },
-  { t:120,  mix:[['slime',0.50],['goblin',0.82],['bat',1.00]] },
-  { t:240,  mix:[['slime',0.34],['goblin',0.64],['bat',0.86],['archer',1.00]] },
-  { t:320,  mix:[['slime',0.22],['goblin',0.50],['bat',0.72],['archer',0.88],['boar',1.00]] },
-  { t:440,  mix:[['slime',0.12],['goblin',0.38],['bat',0.58],['archer',0.74],['boar',0.86],['wolf',1.00]] },
-  { t:520,  mix:[['goblin',0.26],['bat',0.44],['archer',0.60],['boar',0.72],['wolf',0.88],['orc',1.00]] },
-  { t:640,  mix:[['goblin',0.18],['bat',0.34],['archer',0.50],['boar',0.62],['wolf',0.78],['orc',0.90],['rider',1.00]] },
-  { t:720, mix:[['bat',0.16],['archer',0.32],['boar',0.44],['wolf',0.60],['orc',0.74],['rider',0.88],['harpy',1.00]] },
-  { t:840, mix:[['archer',0.16],['boar',0.28],['wolf',0.44],['orc',0.60],['rider',0.74],['harpy',0.86],['ogre',1.00]] },
-  { t:920, mix:[['archer',0.12],['boar',0.22],['wolf',0.36],['orc',0.50],['rider',0.64],['harpy',0.76],['ogre',0.90],['turtle',1.00]] },
+  { t:0, mix:[['slime',1.00]] },
+  { t:40, mix:[['slime',0.72],['goblin',1.00]] },
+  { t:120, mix:[['slime',0.50],['goblin',0.82],['bat',1.00]] },
+  { t:240, mix:[['slime',0.40],['goblin',0.74],['bat',1.00]] },
+  { t:320, mix:[['slime',0.26],['goblin',0.60],['bat',0.86],['boar',1.00]] },
+  { t:440, mix:[['slime',0.14],['goblin',0.45],['bat',0.69],['boar',0.83],['wolf',1.00]] },
+  { t:520, mix:[['goblin',0.31],['bat',0.52],['boar',0.67],['wolf',0.86],['orc',1.00]] },
+  { t:640, mix:[['goblin',0.21],['bat',0.40],['boar',0.55],['wolf',0.74],['orc',0.88],['rider',1.00]] },
+  { t:720, mix:[['bat',0.19],['boar',0.33],['wolf',0.52],['orc',0.69],['rider',0.86],['harpy',1.00]] },
+  { t:840, mix:[['boar',0.14],['wolf',0.33],['orc',0.52],['rider',0.69],['harpy',0.83],['ogre',1.00]] },
+  { t:920, mix:[['boar',0.11],['wolf',0.27],['orc',0.43],['rider',0.59],['harpy',0.73],['ogre',0.89],['turtle',1.00]] },
   { t:1040, mix:[['wolf',0.18],['orc',0.36],['rider',0.52],['harpy',0.64],['ogre',0.82],['turtle',1.00]] },
   { t:1120, mix:[['orc',0.22],['rider',0.40],['harpy',0.52],['ogre',0.78],['turtle',1.00]] }
 ];
@@ -1366,13 +1366,15 @@ function perfTick(dt){
 }
 var last=0;
 function frame(t){
-  var dt=Math.min(0.05,(t-last)/1000)||0; last=t;
-  if(state==='playing') update(dt);
-  else if(state==='levelup') stepFx(dt);
-  else if(state==='chest'){ stepFx(dt); chestAnim(dt); }
-  render();
-  perfTick(dt);
-  requestAnimationFrame(frame);
+  try{
+    var dt=Math.min(0.05,(t-last)/1000)||0; last=t;
+    if(state==='playing') update(dt);
+    else if(state==='levelup') stepFx(dt);
+    else if(state==='chest'){ stepFx(dt); chestAnim(dt); }
+    render();
+    perfTick(dt);
+  }catch(err){ if(window.console&&console.error) console.error('frame error:',err); }
+  requestAnimationFrame(frame);   // 例外時も必ず次フレームを予約（追従が止まらない）
 }
 requestAnimationFrame(frame);
 
