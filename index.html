@@ -2875,9 +2875,9 @@ function placeRelics(){
     for(var i=0;i<pick.length;i++){
       var placed=0;
       for(var tries=0;tries<300;tries++){
-        var a=Math.random()*6.283, d=450+Math.random()*550;
+        var a=Math.random()*6.283, d=800+Math.random()*800;   // 原点から800〜1600px（遠め）
         var x=Math.cos(a)*d, y=Math.sin(a)*d, ok=1;
-        for(var j=0;j<out.length;j++) if(Math.hypot(x-out[j].x,y-out[j].y)<300){ ok=0; break; }
+        for(var j=0;j<out.length;j++) if(Math.hypot(x-out[j].x,y-out[j].y)<400){ ok=0; break; }
         if(ok){ out.push({x:x,y:y,id:pick[i],t:Math.random()*6.28}); placed=1; break; }
       }
       if(!placed){ failed=1; break; }
@@ -3327,6 +3327,7 @@ function render(){
 
   if(flash>0){ ctx.fillStyle='rgba(255,255,255,'+Math.min(.75,flash*.7)+')'; ctx.fillRect(0,0,W,H); }
   if(P&&P.hurt>0.3){ ctx.fillStyle='rgba(255,40,80,'+(P.hurt-0.3)*0.5+')'; ctx.fillRect(0,0,W,H); }
+  drawRelicMarkers();
   if(stick&&state==='playing') drawStick();
 }
 function drawStick(){
@@ -3985,6 +3986,39 @@ function drawRelic(rl){
   ctx.font='22px sans-serif'; ctx.textAlign='center'; ctx.textBaseline='middle';
   ctx.fillStyle='#eafcff'; ctx.fillText(PASSIVES[rl.id].glyph,0,-9);
   ctx.restore();
+}
+// 画面外の床の装備を、画面端に「方向矢印＋パッシブアイコン」で示す（画面座標）
+function drawRelicMarkers(){
+  if(!relics||!relics.length||!P) return;
+  if(state==='title'||state==='dead') return;
+  var mgn=26, cxp=W/2, cyp=H/2, hw=W/2-mgn, hh=H/2-mgn;
+  ctx.save();
+  ctx.textAlign='center'; ctx.textBaseline='middle';
+  for(var i=0;i<relics.length;i++){
+    var rl=relics[i];
+    var sx=rl.x-P.x+W/2, sy=rl.y-P.y+H/2;
+    // 画面内に本体が見えているならマーカー不要
+    if(sx>mgn&&sx<W-mgn&&sy>mgn&&sy<H-mgn) continue;
+    // 中心から装備方向へレイを飛ばし、画面矩形の端に置く
+    var ang=Math.atan2(rl.y-P.y,rl.x-P.x), ux=Math.cos(ang), uy=Math.sin(ang);
+    var tx=ux!==0?hw/Math.abs(ux):1e9, ty=uy!==0?hh/Math.abs(uy):1e9, tt=Math.min(tx,ty);
+    var mx=cxp+ux*tt, my=cyp+uy*tt;
+    mx=Math.max(mgn,Math.min(W-mgn,mx));
+    my=Math.max(72,Math.min(H-mgn,my));    // 上部はHUD（タイマー等）を避ける
+    // アイコン台
+    ctx.globalAlpha=0.92;
+    ctx.fillStyle='rgba(16,28,42,.9)'; ctx.strokeStyle='#7fe6ff'; ctx.lineWidth=2;
+    ctx.beginPath(); ctx.arc(mx,my,15,0,6.3); ctx.fill(); ctx.stroke();
+    // 方向矢印（装備の向き）
+    ctx.save(); ctx.translate(mx,my); ctx.rotate(ang);
+    ctx.fillStyle='#7fe6ff';
+    ctx.beginPath(); ctx.moveTo(24,0); ctx.lineTo(16,-6); ctx.lineTo(16,6); ctx.closePath(); ctx.fill();
+    ctx.restore();
+    // パッシブのアイコン
+    ctx.globalAlpha=1; ctx.fillStyle='#eafcff'; ctx.font='15px sans-serif';
+    ctx.fillText(PASSIVES[rl.id].glyph, mx, my+1);
+  }
+  ctx.globalAlpha=1; ctx.restore();
 }
 function drawGem(g){
   ctx.save(); ctx.translate(g.x,g.y);
