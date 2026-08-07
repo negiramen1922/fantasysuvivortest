@@ -7,6 +7,12 @@
 
 ## 変更履歴（新しい順）
 
+- **ステージ1の敵・ボスの立ち絵を刷新（仮）**
+  - `drawEnemy` の旧シェイプ分岐（bat/goblin系/boar/wolf/rider/harpy/turtle/blob）を `drawS1Shape()` に集約・描き直し
+  - ボスは boar/slime/goblin/wolf の見た目を大型化して流用（グレーターボア/スライム王/ゴブ王/フェンリル）
+  - `shoot`（アーチャー/ドライアド）の狙い予告リングを汎用化して drawEnemy 側へ
+  - あくまで「仮」。個別モンスターの描き直しは `drawS1Shape` / `drawForestShape` の該当分岐を差し替えるだけ
+
 - **ステージ2（森）を専用モンスターに刷新／ステージ1ボスを4体化**
   - 森は**ステージ1の敵を一切使わず**、新規10種＋ボス4種に差替。全て手続き描画（`drawForestShape`＋`FOREST2` 判定を `drawEnemy` に追加）
   - 新モンスター: spirit / bird(ドードー風) / myconid / bee(飛行) / panther / dryad(遠距離) / mantis / spider(自爆) / beetle(装甲) / gnat(群れ)
