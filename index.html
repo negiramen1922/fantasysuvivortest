@@ -117,9 +117,19 @@ canvas{display:block;width:100%;height:100%;touch-action:none}
 #pstat b{color:#fff;font-weight:normal}
 #pstat .el{color:var(--gold)}
 
-#shop,#mast{position:absolute;inset:0;display:none;align-items:center;justify-content:center;
+#shop,#mast,#ban{position:absolute;inset:0;display:none;align-items:center;justify-content:center;
   background:rgba(6,4,16,.95);padding:14px;z-index:5}
-#shop.on,#mast.on{display:flex}
+#shop.on,#mast.on,#ban.on{display:flex}
+#banlist{flex:1;min-height:0;overflow-y:auto;-webkit-overflow-scrolling:touch;
+  display:flex;flex-wrap:wrap;gap:8px;align-content:flex-start;padding:4px 0}
+.banw{display:flex;flex-direction:column;align-items:center;gap:2px;width:88px;padding:8px 4px;
+  cursor:pointer;background:transparent;color:var(--ash);border:2px solid var(--line);font-family:inherit}
+.banw .g{font-size:20px}
+.banw .n{font-size:11px;color:#cfc9e8}
+.banw .x{font-size:10px;color:#ff6b6b;font-weight:bold}
+.banw:hover:not(.on){border-color:var(--ash)}
+.banw.on{border-color:#ff5a5a;background:rgba(120,30,30,.3)}
+.banw.on .n{color:#ff9d9d}
 #mastlist{flex:1;min-height:0;overflow-y:auto;-webkit-overflow-scrolling:touch;
   display:flex;flex-direction:column;gap:6px;padding:8px 0;
   border-top:1px solid var(--line);border-bottom:1px solid var(--line)}
@@ -436,6 +446,7 @@ canvas{display:block;width:100%;height:100%;touch-action:none}
         <button class="btn sub2" id="shopbtn">永続強化</button>
         <button class="btn sub2" id="mastbtn">武器熟練</button>
         <button class="btn sub2" id="chrbtn">キャラクター</button>
+        <button class="btn sub2" id="banbtn">排他</button>
       </div>
     </div>
   </div>
@@ -493,6 +504,17 @@ canvas{display:block;width:100%;height:100%;touch-action:none}
       </div>
       <div id="mastlist"></div>
       <button class="btn sub2" id="mastclose" style="margin-top:0">閉じる</button>
+    </div>
+  </div>
+
+  <div id="ban">
+    <div class="shopbox">
+      <div class="shophead">
+        <div class="title">排他（武器BAN）</div>
+        <div id="bannote" style="font-size:12px;color:var(--ash)"></div>
+      </div>
+      <div id="banlist"></div>
+      <button class="btn sub2" id="banclose" style="margin-top:0">閉じる</button>
     </div>
   </div>
 </div>
@@ -629,9 +651,11 @@ var PASSIVES={
   affinity:{ nm:'元素親和', glyph:'◈', tag:'元素', max:5, tx:'元素の付与率 +10%' },
   mastery:{ nm:'元素熟知', glyph:'✧', tag:'元素', max:5, tx:'元素反応のダメージ +25%' },
   bulwark:{ nm:'防護', glyph:'🛡', tag:'能力', max:5, tx:'受けるダメージ −3%' },
+  heal:{ nm:'治癒', glyph:'💗', tag:'能力', max:5, tx:'毎秒 HP +0.5' },
   exp:{ nm:'経験', glyph:'📖', tag:'能力', max:5, tx:'経験値の取得 +8%' },
   reach:{ nm:'拡大', glyph:'🌀', tag:'能力', max:5, tx:'武器の範囲 +5%' },
-  greed:{ nm:'宝探し', glyph:'💰', tag:'能力', max:5, tx:'銀貨の落ちやすさ +10%' }
+  greed:{ nm:'宝探し', glyph:'💰', tag:'能力', max:5, tx:'銀貨の落ちやすさ +10%' },
+  fortune:{ nm:'幸運', glyph:'🍀', tag:'能力', max:5, tx:'宝箱の当たり枠が増えやすい' }
 };
 var ELEM={
   fire:{ nm:'炎', col:'#ff7a2f' },
@@ -748,6 +772,7 @@ var STAGES={
 var ALLSTG=1;   // 開発中は全ステージ解放。製品化時は 0 に戻す
 var curStage=1, bossHpMul=1, curGround=STAGES[1].ground;
 var STGCLEAR={};
+var BAN={};   // 排他でBANした武器 id→1
 
 var PTS_ELITE=450, PTS_REACT=30, PTS_SEC=25, PTS_LV=200, PTS_CLEAR=50000;
 
@@ -1224,7 +1249,8 @@ var UPG=[
   { id:'critd',    nm:'剛撃',     g:'💥', per:12,   unit:'%', tx:'会心ダメージが上がる' },
   { id:'affinity', nm:'元素親和', g:'◈', per:4,    unit:'%', tx:'属性の付与率が上がる' },
   { id:'mastery',  nm:'元素熟知', g:'✧', per:10,   unit:'%', tx:'元素反応のダメージが上がる' },
-  { id:'luck',     nm:'幸運',     g:'🍀', per:15,   unit:'%', tx:'銀貨の落ちやすさが上がる' },
+  { id:'luck',     nm:'宝探し',   g:'💰', per:15,   unit:'%', tx:'銀貨の落ちやすさが上がる' },
+  { id:'ban',      nm:'排他',     g:'🚫', per:1,    unit:'枠', tx:'ラン開始前に武器を1つBANできる（ラン中の新規提示に出ない）', max:5 },
   { id:'reroll',   nm:'リロール', g:'🔄', per:1,    unit:'回', tx:'レベルアップの引き直し回数が増える', max:8 },
   { id:'skipn',    nm:'スキップ', g:'⏭', per:1,    unit:'回', tx:'レベルアップの見送り回数が増える', max:5 }
 ];
@@ -1250,12 +1276,13 @@ var SHK=1;   // 画面揺れの強さ 0 / 0.5 / 1 / 1.5
       if(ALLCHR) for(var u2 in CHARS) UNL[u2]=1;
       if(o.ach) for(var av in ACH) if(typeof o.ach[av]==='number') ACH[av]=o.ach[av];
       if(o.stg) for(var sg in STAGES) if(o.stg[sg]) STGCLEAR[sg]=1;
+      if(o.ban) for(var bi=0;bi<o.ban.length;bi++) if(WEAPONS[o.ban[bi]]) BAN[o.ban[bi]]=1;
       if(o.ch&&CHARS[o.ch]&&UNL[o.ch]) SELCH=o.ch;
     }
   }catch(e){}
 })();
 function saveGame(){
-  try{ localStorage.setItem('bsv_save',JSON.stringify({m:META,w:WALLET,wx:WX,sel:SEL,best:best,shk:SHK,unl:UNL,ach:ACH,ch:SELCH,stg:STGCLEAR})); }catch(e){}
+  try{ localStorage.setItem('bsv_save',JSON.stringify({m:META,w:WALLET,wx:WX,sel:SEL,best:best,shk:SHK,unl:UNL,ach:ACH,ch:SELCH,stg:STGCLEAR,ban:Object.keys(BAN).filter(function(k){return BAN[k];})})); }catch(e){}
 }
 function M(id){ return META[id]||0; }
 
@@ -1363,7 +1390,7 @@ function update(dt){
   }
 
   movePlayer(dt);
-  var rg=0.15*(META.recovery||0)+CH().regen;
+  var rg=0.15*(META.recovery||0)+CH().regen+0.5*(P.p.heal||0);
   if(rg&&P.hp<P.max) P.hp=Math.min(P.max,P.hp+rg*dt);
   aim();
   runWeapons(dt);
@@ -2926,8 +2953,9 @@ var chMarks=[], chCells=[], chMarkEls=[], chEl=null, chRing=null, chReady=0, chD
 
 function openChest(ch){
   var isB=!!ch.boss, r=Math.random();
-  var n = isB ? (r<0.30?3:(r<0.75?2:1))
-              : (r<0.05?3:(r<0.20?2:1));
+  var lk=0.05*(P.p.fortune||0);                 // 幸運：当たり枠が増えやすい
+  var n = isB ? (r<0.30+lk?3:(r<0.75+lk?2:1))
+              : (r<0.05+lk?3:(r<0.20+lk?2:1));
   var pool=chestPool();
   n=Math.min(n,pool.length);
   var hit=isB||Math.random()<0.50;
@@ -3168,6 +3196,7 @@ function rollChoices(){
     var lv=P.w[id]||0;
     if(lv===0){
       // 未所持：新規取得のカード
+      if(BAN[id]) continue;                     // 排他でBANされた武器は出さない
       if(slots>=6) continue;
       pool.push({id:id,kind:'new',nm:W_.nm,glyph:W_.glyph,tag:W_.tag,tx:W_.tx,lvtx:'NEW'});
       continue;
@@ -4372,6 +4401,39 @@ function takeTrait(w,id){
 }
 document.getElementById('mastbtn').onclick=function(){ audio(); renderMast(); mastEl.classList.add('on'); };
 document.getElementById('mastclose').onclick=function(){ mastEl.classList.remove('on'); syncTitle(); };
+
+/* ============ 排他（武器BAN）============ */
+var banEl=document.getElementById('ban');
+function banUsed(){ var n=0; for(var k in BAN) if(BAN[k]) n++; return n; }
+function renderBan(){
+  var cap=M('ban'), used=banUsed();
+  document.getElementById('bannote').innerHTML = cap
+    ? ('BAN枠 <b>'+used+' / '+cap+'</b>　BANした武器はラン中の新規取得に出ません')
+    : '<span style="color:var(--gold)">永続強化「排他」の Lv を上げると BAN 枠が増えます</span>';
+  var L=document.getElementById('banlist'); L.innerHTML='';
+  Object.keys(WEAPONS).forEach(function(id){
+    var w=WEAPONS[id], on=!!BAN[id];
+    var d=document.createElement('button');
+    d.className='banw'+(on?' on':'');
+    d.setAttribute('data-w',id);
+    d.innerHTML='<span class="g">'+w.glyph+'</span><span class="n">'+w.nm+'</span>'+(on?'<span class="x">BAN中</span>':'');
+    L.appendChild(d);
+  });
+  Array.prototype.forEach.call(L.querySelectorAll('.banw'),function(b){
+    b.onclick=function(){ toggleBan(b.getAttribute('data-w')); };
+  });
+}
+function toggleBan(id){
+  if(BAN[id]){ delete BAN[id]; }
+  else{
+    if(banUsed()>=M('ban')){ sfx(200,.1,'square',.05,.5); return; }   // 枠が足りない
+    BAN[id]=1;
+  }
+  sfx(620,.06,'square',.045,1.1);
+  saveGame(); renderBan();
+}
+document.getElementById('banbtn').onclick=function(){ audio(); renderBan(); banEl.classList.add('on'); };
+document.getElementById('banclose').onclick=function(){ banEl.classList.remove('on'); syncTitle(); };
 
 /* ============ テストモード ============ */
 var testEl=null;
