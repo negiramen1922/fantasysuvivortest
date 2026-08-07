@@ -7,6 +7,13 @@
 
 ## 変更履歴（新しい順）
 
+- **新武器ガトリングガン（gatling）追加**
+  - ピーキー設計：弾倉(基礎40)を高速連射(0.05s×RATE)→撃ち切りで長リロード(4.5s×RATE)。超高DPS/低稼働率
+  - `runWeapons` で毎フレーム `doGatling(dt)` を駆動（`ready()` は使わず状態を global `gat={t,mag,rl,rlmax}` で管理。reset で初期化）
+  - 弾は `kind:'bullet'` のトレーサー。WKIND=phys（会心12%）。軸: dmg5/rate4/count3/pierce3。覚醒「掃射」=装弾数60・リロード短縮
+  - リロード中はプレイヤー周囲に進捗リング＋"RELOAD"表示（render の drawPlayer 直後）
+  - WEAPONS/WCAT/WKIND/WAX/AWK/AWT/WTRAIT すべてに登録済み
+
 - **ステージ1の敵・ボスの立ち絵を刷新（仮）**
   - `drawEnemy` の旧シェイプ分岐（bat/goblin系/boar/wolf/rider/harpy/turtle/blob）を `drawS1Shape()` に集約・描き直し
   - ボスは boar/slime/goblin/wolf の見た目を大型化して流用（グレーターボア/スライム王/ゴブ王/フェンリル）

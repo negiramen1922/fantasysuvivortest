@@ -615,6 +615,8 @@ var WEAPONS={
     tx:'光の槍を放つ。敵に当たると細かく拡散して広がる。' },
   aura:{ nm:'ホーリージャッジ', glyph:'\u271D', tag:'光', max:10,
     tx:'十字の剣が敵の元へ落ちる。着弾で光を付与し、しばらく残って周囲を裁く。' },
+  gatling:{ nm:'ガトリングガン', glyph:'\u{1F387}', tag:'射撃', max:10,
+    tx:'弾倉を一気に高速連射する。DPSは全武器随一だが、撃ち切ると長いリロードに入る。' },
 };
 var PASSIVES={
   power:{ nm:'力', glyph:'💪', tag:'能力', max:5, tx:'与ダメージ +12%' },
@@ -913,6 +915,17 @@ var WTRAIT={
      {id:'g3b',nm:'貫通弾芯',tx:'貫通 +2',ef:{pierce:2}},
      {id:'g3c',nm:'乱射',tx:'発射の間隔 −32%',ef:{cd:-.32}}]
   ],
+  gatling:[
+    [{id:'gat1a',nm:'徹甲弾',tx:'ダメージ +22%',ef:{dmg:.22}},
+     {id:'gat1b',nm:'冷却',tx:'連射/リロード −15%',ef:{cd:-.15}},
+     {id:'gat1c',nm:'貫通弾',tx:'貫通 +1',ef:{pierce:1}}],
+    [{id:'gat2a',nm:'重徹甲弾',tx:'ダメージ +30%',ef:{dmg:.30}},
+     {id:'gat2b',nm:'強制冷却',tx:'連射/リロード −22%',ef:{cd:-.22}},
+     {id:'gat2c',nm:'連装',tx:'弾の数 +1',ef:{count:1}}],
+    [{id:'gat3a',nm:'炸裂弾',tx:'ダメージ +45%',ef:{dmg:.45}},
+     {id:'gat3b',nm:'液冷装置',tx:'連射/リロード −30%',ef:{cd:-.30}},
+     {id:'gat3c',nm:'増設バレル',tx:'弾の数 +1・貫通 +1',ef:{count:1,pierce:1}}]
+  ],
   blizzard:[
     [{id:'x1a',nm:'冷気',tx:'ダメージ +22%',ef:{dmg:.22}},
      {id:'x1b',nm:'拡散',tx:'吹雪の範囲 +22%',ef:{area:.22}},
@@ -1010,7 +1023,7 @@ function TF(wid,key){ return TR(wid,key)>0; }
 var WCAT={ slash:'剣技', scythe:'剣技', chakram:'剣技', bow:'射撃', dynamite:'射撃',
            fire:'炎', flame:'炎', ice:'氷', thunder:'雷', chain:'雷',
            quake:'土', rock:'土', voidh:'闇', dhand:'闇', holy:'光', aura:'光',
-           bell:'音', chainsaw:'剣技', musket:'射撃', blizzard:'氷', laser:'光' };
+           bell:'音', chainsaw:'剣技', musket:'射撃', blizzard:'氷', laser:'光', gatling:'射撃' };
 var SPILL_SAME=0.10, SPILL_OTHER=0.05;
 // 一度でも使った武器＝解放済みとみなす
 function wOpened(id){ return ((WX[id]||0)+(wxRun[id]||0))>0; }
@@ -1041,7 +1054,7 @@ var WKIND={ slash:'phys', scythe:'phys', chakram:'phys', bow:'phys', dynamite:'p
             quake:'phys', rock:'phys', bell:'phys', chainsaw:'phys', musket:'phys',
             blizzard:'mag', laser:'mag',
             fire:'mag', flame:'mag', ice:'mag', thunder:'mag', chain:'mag',
-            holy:'mag', aura:'mag', voidh:'mag', dhand:'mag' };
+            holy:'mag', aura:'mag', voidh:'mag', dhand:'mag', gatling:'phys' };
 var WAX={
   slash:   { dmg:5, area:4, rate:3 },
   scythe:  { dmg:4, area:4, count:3, rate:3 },
@@ -1063,14 +1076,16 @@ var WAX={
   chainsaw:{ dmg:4, area:3, rate:3 },
   musket:  { dmg:4, rate:3, burst:5 },
   blizzard:{ dmg:4, area:3, rate:3, slow:3 },
-  laser:   { dmg:3, count:4, rate:3, area:3 }
+  laser:   { dmg:3, count:4, rate:3, area:3 },
+  gatling: { dmg:5, rate:4, count:3, pierce:3 }
 };
 // Lv10 到達で覚醒。数値ではなく挙動が変わる。
 var AWK={ chainsaw:'暴走鋸', musket:'貫通弾', blizzard:'絶対氷結', laser:'追尾光線',
   slash:'飛翔斬撃', scythe:'死神の鎌', chakram:'二重円', bow:'貫き矢',
   dynamite:'連鎖爆破', bell:'共鳴', quake:'地割れ', rock:'巨岩',
   fire:'爆炎弾', flame:'業火輪', ice:'氷結槍', thunder:'落雷嵐',
-  chain:'無限連鎖', holy:'聖裁', aura:'審判の剣', voidh:'特異点', dhand:'深淵の手' };
+  chain:'無限連鎖', holy:'聖裁', aura:'審判の剣', voidh:'特異点', dhand:'深淵の手',
+  gatling:'掃射' };
 var AWT={ chainsaw:'前方だけでなく全方位を削るようになる', musket:'弾が敵を貫通する',
   blizzard:'吹雪の中の敵をときどき凍結させる', laser:'光線が回転しながら残り続ける',
   slash:'斬撃が飛ぶようになる', scythe:'戻りの威力減衰がなくなる',
@@ -1081,7 +1096,8 @@ var AWT={ chainsaw:'前方だけでなく全方位を削るようになる', mus
   ice:'貫いた位置に氷柱が立ち、触れた敵を鈍足', thunder:'落雷地点から追加の落雷が1度連鎖',
   chain:'減衰が止まり、跳ぶ距離が倍に', holy:'拡散した破片がさらに1度拡散',
   aura:'剣が消えるとき光の柱が立ち周囲を一掃', voidh:'消滅時に大爆発',
-  dhand:'突いた敵の被ダメージが20%上がる' };
+  dhand:'突いた敵の被ダメージが20%上がる',
+  gatling:'リロードが大幅に短くなり、装弾数が増える' };
 function AW(id){ return (P.aw&&P.aw[id])?1:0; }
 function addWLv(id,ax){
   P.w[id]=(P.w[id]||0)+1;
@@ -1262,6 +1278,7 @@ function reset(){
   enemies=[]; gems=[]; shots=[]; fx=[]; dmgs=[]; parts=[]; bolts=[]; chests=[]; coins=[]; chaks=[]; scys=[]; bombs=[]; rocks=[]; holes=[]; ebul=[]; quakes=[]; dhits=[]; vacs=[]; vacT=40; bells=[]; swords=[]; zones=[]; volley=[];
   boss=null; bossN=0; lasers=[];
   time=0; kills=0; spawnT=0; eliteT=55; swarmT=20; shake=0; hitStop=0; flash=0; chain=0; chainT=0;
+  gat.t=0; gat.mag=-1; gat.rl=0;
   whirlA=0; marks=[1140]; reacts=0; rdep=0; rtok=8; pending=0;
   score=0; silver=0; gold=0; magFx=0; chakSpin=0; wxRun={}; lastCd={}; coolMax={};
   slotSig='';
@@ -1414,7 +1431,40 @@ function ready(id,cd,dt){
   if(cool[id]<=0){ cool[id]=Math.max(0.12,cd*cdr()); coolMax[id]=cool[id]; return true; }
   return false;
 }
+// ガトリングガン：弾倉を高速連射し、撃ち切ると長いリロード。ピーキーな超高DPS。
+var gat={t:0,mag:-1,rl:0,rlmax:1};
+function GATMAG(){ return AW('gatling')?60:40; }        // 覚醒で装弾数UP
+function doGatling(dt){
+  if(gat.mag<0) gat.mag=GATMAG();
+  if(gat.rl>0){ gat.rl-=dt; return; }                    // リロード中は撃てない
+  gat.t-=dt;
+  if(gat.t>0) return;
+  var r=RATE('gatling');
+  gat.t=Math.max(0.03,0.05*r);                           // 連射間隔（rate軸で短縮）
+  var e=nearest(P.x,P.y,780);
+  var a=e?Math.atan2(e.y-P.y,e.x-P.x):P.face;
+  P.face=a;
+  SRC='gatling';
+  var cnt=1+CNT('gatling'), dmg=8*DMG('gatling')*pw('gatling');
+  for(var i=0;i<cnt;i++){
+    var an=a+(Math.random()-.5)*0.10+(cnt>1?(i-(cnt-1)/2)*0.05:0);
+    shots.push({x:P.x+Math.cos(a)*14,y:P.y+Math.sin(a)*14,
+      vx:Math.cos(an)*920,vy:Math.sin(an)*920,r:4,
+      src:'gatling',kind:'bullet',ang:an,dmg:dmg,
+      pierce:1+PRC('gatling'),life:0.55,col:'#ffe27a',col2:'#a5701f',el:null,hit:[]});
+  }
+  wgain('gatling',cnt); SRC=null;
+  gat.mag--;
+  shake=Math.min(9,shake+0.5);
+  if((gat.mag&3)===0) sfx(240,.03,'square',.028,0.7);
+  if(gat.mag<=0){                                         // 撃ち切り → 長リロード
+    gat.rl=gat.rlmax=Math.max(2.0,(AW('gatling')?2.8:4.5)*r);
+    gat.mag=GATMAG();
+    sfx(90,.22,'sawtooth',.06,.4); noise(.12,.06);
+  }
+}
 function runWeapons(dt){
+  if(P.w.gatling) doGatling(dt);
   if(P.w.chainsaw&&ready('chainsaw',0.20*RATE('chainsaw'),dt)) doChain2();
   if(P.w.musket  &&ready('musket',  1.50*RATE('musket'),dt)){  doMusket(); queueVolley('musket',0.13); }
   if(P.w.blizzard&&ready('blizzard',0.50*RATE('blizzard'),dt)) doBlizzard();
@@ -3187,6 +3237,18 @@ function render(){
   for(i=0;i<enemies.length;i++) if(!enemies[i].dead) drawEnemy(enemies[i]);
   for(i=0;i<rocks.length;i++) drawRock(rocks[i]);
   drawPlayer();
+  // ガトリング：リロード中はプレイヤー周囲に進捗リングを表示
+  if(P.w&&P.w.gatling&&gat.rl>0){
+    var grk=1-gat.rl/(gat.rlmax||1);
+    ctx.save(); ctx.translate(P.x,P.y);
+    ctx.strokeStyle='rgba(255,70,70,.35)'; ctx.lineWidth=3;
+    ctx.beginPath(); ctx.arc(0,0,P.r+11,0,6.3); ctx.stroke();
+    ctx.strokeStyle='#ffd24d'; ctx.lineWidth=3; ctx.lineCap='round';
+    ctx.beginPath(); ctx.arc(0,0,P.r+11,-Math.PI/2,-Math.PI/2+6.283*grk); ctx.stroke();
+    ctx.fillStyle='#ffd24d'; ctx.font='10px sans-serif'; ctx.textAlign='center';
+    ctx.fillText('RELOAD',0,-P.r-18);
+    ctx.restore();
+  }
 
   // ---- 前景：実体のあるものだけを敵より上に描く ----
   for(i=0;i<shots.length;i++) drawShot(shots[i]);
@@ -3789,6 +3851,13 @@ function drawShot(s){
   if(s.kind==='pellet'){
     ctx.fillStyle=s.col; ctx.beginPath(); ctx.arc(0,0,s.r,0,6.3); ctx.fill();
     ctx.fillStyle=s.col2; ctx.beginPath(); ctx.arc(0,0,s.r*0.5,0,6.3); ctx.fill();
+  }else if(s.kind==='bullet'){
+    ctx.rotate(s.ang);
+    ctx.strokeStyle=s.col2; ctx.lineWidth=3; ctx.lineCap='round';
+    ctx.beginPath(); ctx.moveTo(-11,0); ctx.lineTo(3,0); ctx.stroke();
+    ctx.strokeStyle=s.col; ctx.lineWidth=2;
+    ctx.beginPath(); ctx.moveTo(-7,0); ctx.lineTo(5,0); ctx.stroke();
+    ctx.fillStyle='#fff'; ctx.beginPath(); ctx.arc(5,0,2,0,6.3); ctx.fill();
   }else if(s.kind==='wave'){
     ctx.rotate(s.ang);
     ctx.globalAlpha=.85;
