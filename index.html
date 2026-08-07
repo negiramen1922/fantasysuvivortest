@@ -364,6 +364,16 @@ canvas{display:block;width:100%;height:100%;touch-action:none}
   #pstat{font-size:12px;line-height:1.75}
   .btn{font-size:17px;padding:13px 34px}
 }
+/* リザルトの与ダメージ内訳 */
+.dmgtitle{margin:12px 0 6px;font-size:13px;color:var(--gold);letter-spacing:.08em}
+.dmglist{display:flex;flex-direction:column;gap:4px;max-width:440px;margin:0 auto;text-align:left}
+.dmgrow{display:flex;align-items:center;gap:6px;font-size:12px}
+.dmgrow .dg{width:20px;text-align:center;flex:none}
+.dmgrow .dn{width:96px;flex:none;color:#e9e2ff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.dmgrow .dbar{flex:1;height:10px;background:#140f28;border:1px solid var(--line);overflow:hidden}
+.dmgrow .dfill{display:block;height:100%;background:linear-gradient(90deg,#3a7bff,var(--arc))}
+.dmgrow .dpct{width:34px;flex:none;text-align:right;color:#9a8fc4}
+.dmgrow .dval{width:64px;flex:none;text-align:right;color:#fff}
 </style>
 </head>
 <body>
@@ -1036,6 +1046,7 @@ var TMAP={};
   var o=WTRAIT[w][t][i]; TMAP[o.id]=o; } })();
 
 var WX={}, SEL={}, wxRun={}, lastCd={};
+var WDMG={};   // このランの武器別 与ダメージ集計
 function wtier(id){ var x=WX[id]||0,n=0; for(var i=0;i<WTH.length;i++) if(x>=WTH[i]) n++; return n; }
 function picksLeft(id){ return Math.max(0,wtier(id)-((SEL[id]||[]).length)); }
 function anyPicks(){ for(var w in WTRAIT) if(picksLeft(w)) return 1; return 0; }
@@ -1310,7 +1321,7 @@ function reset(){
   time=0; kills=0; spawnT=0; eliteT=55; swarmT=3; shake=0; hitStop=0; flash=0; chain=0; chainT=0;
   gat.t=0; gat.mag=-1; gat.rl=0;
   whirlA=0; marks=[1140]; reacts=0; rdep=0; rtok=8; pending=0;
-  score=0; silver=0; gold=0; magFx=0; chakSpin=0; wxRun={}; lastCd={}; coolMax={};
+  score=0; silver=0; gold=0; magFx=0; chakSpin=0; wxRun={}; lastCd={}; coolMax={}; WDMG={};
   slotSig='';
   cool={};
   syncHud();
@@ -2640,6 +2651,7 @@ function hurt(e,dmg,nx,ny,el){
   if(e.vuln>0) d*=1.2;                     // 深淵の手：被ダメージ上昇
   if(e.flat) d=Math.max(d*0.25,d-e.flat);   // 甲羅：軽い攻撃ほど通らない
   e.hp-=d; e.ht=0.12; e.kb=Math.max(e.kb,crit?4:2.2); e.kbx=nx||0; e.kby=ny||0;
+  if(SRC) WDMG[SRC]=(WDMG[SRC]||0)+d; else WDMG._react=(WDMG._react||0)+d;   // 与ダメージ集計
   if(dmgs.length>110) dmgs.shift();
   dmgs.push({x:e.x,y:e.y-e.r-4,v:-52,t:0,life:.65,txt:Math.round(d),crit:crit});
   if(el) applyElem(e,el,d);
@@ -4697,6 +4709,31 @@ function banner(txt){
   bnEl.classList.remove('go'); void bnEl.offsetWidth; bnEl.classList.add('go');
 }
 function die(){ finish(false); }
+// リザルト：武器別の与ダメージ内訳（多い順・バー＋割合＋実数）
+function damageBreakdownHtml(){
+  var arr=[], tot=0, k;
+  for(k in WDMG){ if(WDMG[k]>0){ arr.push([k,WDMG[k]]); tot+=WDMG[k]; } }
+  if(!tot) return '';
+  arr.sort(function(a,b){ return b[1]-a[1]; });
+  var mx=arr[0][1]||1;
+  var rows='';
+  for(var i=0;i<arr.length;i++){
+    var id=arr[i][0], dm=arr[i][1], pct=Math.round(dm/tot*100);
+    var barw=Math.max(3,Math.round(dm/mx*100));   // バーは1位基準（見やすさ）、%は全体比
+    var nm,gl;
+    if(id==='_react'){ nm='元素反応'; gl='✦'; }
+    else if(WEAPONS[id]){ nm=WEAPONS[id].nm; gl=WEAPONS[id].glyph; }
+    else { nm=id; gl='•'; }
+    rows+='<div class="dmgrow">'+
+      '<span class="dg">'+gl+'</span>'+
+      '<span class="dn">'+nm+'</span>'+
+      '<span class="dbar"><span class="dfill" style="width:'+barw+'%"></span></span>'+
+      '<span class="dpct">'+pct+'%</span>'+
+      '<span class="dval">'+fmt(dm)+'</span>'+
+    '</div>';
+  }
+  return '<div class="dmgtitle">与ダメージ内訳</div><div class="dmglist">'+rows+'</div>';
+}
 function finish(won){
   if(state==='dead') return;
   state='dead';
@@ -4753,7 +4790,8 @@ function finish(won){
     '熟練度 <b>'+(wtxt.join('　')||'—')+'</b><br>'+
     (anyPicks()?'<span style="color:var(--gold)">★ 武器熟練で特性を選べます</span><br>':'')+
     '構成 <b>'+(names.join(' / ')||'—')+'</b>'+
-    (newCh.length?'<br><span style="color:var(--gold)">★ '+newCh.join('・')+' が解放されました</span>':'');
+    (newCh.length?'<br><span style="color:var(--gold)">★ '+newCh.join('・')+' が解放されました</span>':'')+
+    damageBreakdownHtml();
   document.getElementById('startbtn').textContent='もう一度';
   syncTitle();
   document.getElementById('veil').classList.remove('hide');
