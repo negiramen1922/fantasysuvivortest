@@ -7,6 +7,15 @@
 
 ## 変更履歴（新しい順）
 
+- **BGM追加（ケルト風・手続き生成5曲）／音量3系統／ホームボタン整列**
+  - ホームの2×2ボタンを `#homemenu` を **grid(2列)** 化して全ボタン同サイズに統一（上下でサイズ差があった）
+  - 音量を3系統に分離：`VOLM`全体 / `VOLS`効果音 / `VOLB`BGM（`bsv_save` に `volm/vols/volb`、旧 `vol` は VOLS へ移行）。設定 `#settings` にスライダー3本（`#volm/#vols/#volb`）。sfx/noise は `*VOLM*VOLS`
+  - **BGMエンジン**（WebAudioのみ・ファイル/依存なし）: `SCALES`(ion/dor/mix/aeo) + `ntf(root,scale,deg)` で度数→周波数。`bgmGain`(=`VOLM*VOLB`, `syncBgmGain()`で即時反映) 経由で `bgmNote`/`bgmPerc`。`TRACKS` 5曲を32段(4小節×8分)の `mel`+和音`chords`+パッド+（ボスは）パーカスで手続き再生。`scheduleStep`＋先読みスケジューラ `musicTick`(setInterval 60ms, 0.35s先まで)、`playBGM(name)` で曲切替
+  - 5曲: home(Mixolydian/76・町風の落ち着き) / s1(Ionian/114・草原で少し元気) / s1b(Aeolian/134・ボス, パーカス) / s2(Dorian/92・森でしっとり) / s2b(Dorian/126・ボス, 緊張)
+  - 曲切替の配線: `showView('home')`→home / `startRun`→`s`+stage / `spawnBoss`→`s`+stage+`b` / ボス撃破(非last)→通常へ戻す / `finish`→停止(null)
+  - ブラウザ制約対策: 初回の `pointerdown`/`keydown` で `unlockAudio()`（`audio()`で resume＋`musicTick`）
+  - `docs/check.py` の許可組込みに `setInterval/clearInterval` を追加
+
 - **UI刷新：ホーム／ステージ選択／リザルトの3ビュー化＋設定・お知らせ**
   - `#veil` を `#homeview`/`#stageview`/`#resultview` に分割、`showView(v)` で切替。init/finish/startで切替
   - ホーム: 大きな「出撃」＋ 永続強化/武器熟練/キャラクター/排他。右上に **⚙設定** と **✉お知らせ**（ホームのみ）

@@ -126,7 +126,8 @@ canvas{display:block;width:100%;height:100%;touch-action:none}
   background:transparent;color:var(--ash);border:2px solid var(--line);position:relative}
 .hicon:hover,.hicon:focus-visible{border-color:var(--arc);color:var(--arc);outline:none}
 .btn.big{font-size:30px;padding:18px 76px;letter-spacing:10px;margin-top:20px}
-#homemenu{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-top:20px}
+#homemenu{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin:20px auto 0;width:100%;max-width:400px}
+#homemenu .btn{margin-top:0;width:100%;padding:13px 0;font-size:16px;letter-spacing:3px}
 #stagechar{display:flex;align-items:center;gap:10px;justify-content:center;margin-bottom:6px;color:#fff;font-size:18px}
 #stagechar .chg{font-size:28px}
 #stagechar .chw{font-size:12px;color:var(--ash)}
@@ -138,7 +139,7 @@ canvas{display:block;width:100%;height:100%;touch-action:none}
 .setrow{display:flex;align-items:center;gap:12px;justify-content:space-between;padding:12px 4px;border-bottom:1px solid var(--line)}
 .setrow>span:first-child{color:#e9e2ff;flex:none}
 .setval{color:var(--arc);width:52px;text-align:right;flex:none}
-#volrange{flex:1;accent-color:#56e0ff}
+#volm,#vols,#volb{flex:1;accent-color:#56e0ff}
 #setbody,#newslist{width:100%;max-width:440px;margin:0 auto;text-align:left}
 #newslist{flex:1;min-height:0;overflow-y:auto}
 .newsitem{padding:11px 4px;border-bottom:1px solid var(--line)}
@@ -503,7 +504,9 @@ canvas{display:block;width:100%;height:100%;touch-action:none}
     <div class="shopbox">
       <div class="shophead"><div class="title">設定</div></div>
       <div id="setbody">
-        <div class="setrow"><span>効果音の音量</span><input type="range" id="volrange" min="0" max="100" step="5"><span id="volval" class="setval">70%</span></div>
+        <div class="setrow"><span>全体の音量</span><input type="range" id="volm" min="0" max="100" step="5"><span id="volmval" class="setval">80%</span></div>
+        <div class="setrow"><span>効果音の音量</span><input type="range" id="vols" min="0" max="100" step="5"><span id="volsval" class="setval">80%</span></div>
+        <div class="setrow"><span>BGM の音量</span><input type="range" id="volb" min="0" max="100" step="5"><span id="volbval" class="setval">55%</span></div>
         <div class="setrow"><span>FPS 表示</span><button class="tg" id="setperf">OFF</button></div>
         <div class="setrow"><span>画面の揺れ</span><span id="setshake">
           <button class="tg" data-s2="0">なし</button><button class="tg" data-s2="0.5">弱</button><button class="tg" data-s2="1">標準</button><button class="tg" data-s2="1.5">強</button>
@@ -642,14 +645,14 @@ function pt(e){ var r=cv.getBoundingClientRect(); return {x:e.clientX-r.left,y:e
 
 /* ============ 音 ============ */
 var AC=null;
-function audio(){ if(!AC){ try{ AC=new (window.AudioContext||window.webkitAudioContext)(); }catch(err){ AC=null; } } return AC; }
+function audio(){ if(!AC){ try{ AC=new (window.AudioContext||window.webkitAudioContext)(); }catch(err){ AC=null; } } if(AC&&AC.state==='suspended'){ try{AC.resume();}catch(e){} } return AC; }
 function sfx(freq,dur,type,vol,slide){
   var a=audio(); if(!a) return;
   var o=a.createOscillator(), g=a.createGain();
   o.type=type||'square'; o.frequency.setValueAtTime(freq,a.currentTime);
   if(slide) o.frequency.exponentialRampToValueAtTime(Math.max(30,freq*slide),a.currentTime+dur);
   g.gain.setValueAtTime(0.0001,a.currentTime);
-  g.gain.exponentialRampToValueAtTime(Math.max(0.00001,(vol||0.08)*VOL),a.currentTime+0.008);
+  g.gain.exponentialRampToValueAtTime(Math.max(0.00001,(vol||0.08)*VOLM*VOLS),a.currentTime+0.008);
   g.gain.exponentialRampToValueAtTime(0.0001,a.currentTime+dur);
   o.connect(g); g.connect(a.destination); o.start(); o.stop(a.currentTime+dur+0.02);
 }
@@ -658,9 +661,98 @@ function noise(dur,vol){
   var n=a.sampleRate*dur, b=a.createBuffer(1,n,a.sampleRate), d=b.getChannelData(0);
   for(var i=0;i<n;i++) d[i]=(Math.random()*2-1)*(1-i/n);
   var s=a.createBufferSource(); s.buffer=b;
-  var g=a.createGain(); g.gain.value=(vol||0.12)*VOL;
+  var g=a.createGain(); g.gain.value=(vol||0.12)*VOLM*VOLS;
   s.connect(g); g.connect(a.destination); s.start();
 }
+
+/* ============ BGM（ケルト風・手続き生成）============ */
+var SCALES={
+  ion:[0,2,4,5,7,9,11],  // Ionian(長調)
+  dor:[0,2,3,5,7,9,10],  // Dorian(ケルトの定番)
+  mix:[0,2,4,5,7,9,10],  // Mixolydian(明るいが素朴)
+  aeo:[0,2,3,5,7,8,10]   // Aeolian(短調)
+};
+function ntf(root,scale,deg){
+  var s=SCALES[scale],n=s.length;
+  var oct=Math.floor(deg/n), idx=((deg%n)+n)%n;
+  return root*Math.pow(2,(s[idx]+12*oct)/12);
+}
+var bgmGain=null;
+function syncBgmGain(){ if(bgmGain){ try{ bgmGain.gain.value=VOLM*VOLB; }catch(e){} } }
+function bgmNote(freq,t,dur,type,vol){
+  var a=AC; if(!a||!bgmGain) return;
+  var o=a.createOscillator(), g=a.createGain();
+  o.type=type||'triangle'; o.frequency.setValueAtTime(freq,t);
+  g.gain.setValueAtTime(0.0001,t);
+  g.gain.exponentialRampToValueAtTime(Math.max(0.00001,vol),t+0.03);
+  g.gain.exponentialRampToValueAtTime(0.0001,t+dur);
+  o.connect(g); g.connect(bgmGain); o.start(t); o.stop(t+dur+0.03);
+}
+function bgmPerc(t,dur,vol,lp){
+  var a=AC; if(!a||!bgmGain) return;
+  var n=Math.max(1,Math.floor(a.sampleRate*dur)), b=a.createBuffer(1,n,a.sampleRate), d=b.getChannelData(0);
+  for(var i=0;i<n;i++) d[i]=(Math.random()*2-1)*(1-i/n);
+  var s=a.createBufferSource(); s.buffer=b;
+  var g=a.createGain(); g.gain.value=vol;
+  if(lp){ var f=a.createBiquadFilter(); f.type='lowpass'; f.frequency.value=lp; s.connect(f); f.connect(g); }
+  else s.connect(g);
+  g.connect(bgmGain); s.start(t);
+}
+// mel/bass: 32段(=4小節×8分)。null=休符。chords=小節ごとの和音ルート度。
+var TRACKS={
+  home:{ root:196,scale:'mix',bpm:76,chords:[0,3,4,3],mtype:'triangle',mvol:0.16,btype:'sine',bvol:0.14,pad:0.05,
+    mel:[0,null,2,4,null,2,0,null, 4,null,2,null,0,null,-1,null, 2,null,4,5,null,4,2,null, 4,null,2,0,null,null,null,null] },
+  s1:{ root:220,scale:'ion',bpm:114,chords:[0,4,5,4],mtype:'triangle',mvol:0.17,btype:'sine',bvol:0.15,pad:0.045,
+    mel:[0,2,4,null,4,5,4,2, 4,null,7,null,5,4,2,null, 0,2,4,null,7,5,4,null, 5,4,2,4,0,null,null,null] },
+  s1b:{ root:220,scale:'aeo',bpm:134,chords:[0,5,3,4],mtype:'sawtooth',mvol:0.13,btype:'square',bvol:0.13,pad:0.05,perc:1,
+    mel:[0,null,3,null,4,3,0,null, 5,null,4,null,3,null,0,null, 3,4,5,null,4,3,null,0, 0,null,4,3,0,null,-1,null] },
+  s2:{ root:174.61,scale:'dor',bpm:92,chords:[0,3,6,3],mtype:'triangle',mvol:0.15,btype:'sine',bvol:0.14,pad:0.05,
+    mel:[0,null,3,null,5,3,2,null, 3,null,2,0,null,-2,null,null, 5,null,3,null,2,3,5,null, 3,2,0,null,2,null,null,null] },
+  s2b:{ root:174.61,scale:'dor',bpm:126,chords:[0,6,5,3],mtype:'sawtooth',mvol:0.13,btype:'square',bvol:0.13,pad:0.05,perc:1,
+    mel:[0,3,null,2,3,null,5,null, 3,null,5,7,null,5,3,null, 2,3,5,null,7,5,3,2, 3,null,2,0,null,null,null,null] }
+};
+var musName=null, musDef=null, musStep=0, musNextT=0, musTimer=null;
+function scheduleStep(t,step,def){
+  var bar=Math.floor(step/8), spb=60/def.bpm/2;
+  var md=def.mel[step];
+  if(md!==null&&md!==undefined) bgmNote(ntf(def.root,def.scale,md+7),t,spb*1.6,def.mtype,def.mvol);
+  // ベース: 1・3拍(=step%4==0)。ボスは全拍。
+  if(step%4===0||(def.perc&&step%2===0)) bgmNote(ntf(def.root,def.scale,def.chords[bar]-7),t,spb*1.7,def.btype,def.bvol);
+  // パッド和音: 小節頭に3和音を長めに
+  if(step%8===0){
+    var r=def.chords[bar];
+    bgmNote(ntf(def.root,def.scale,r),t,spb*8,'sine',def.pad);
+    bgmNote(ntf(def.root,def.scale,r+2),t,spb*8,'sine',def.pad);
+    bgmNote(ntf(def.root,def.scale,r+4),t,spb*8,'sine',def.pad);
+  }
+  if(def.perc){
+    if(step%4===0) bgmPerc(t,0.12,0.10,1600);       // キック
+    if(step%2===1) bgmPerc(t,0.05,0.05,7000);       // ハット
+  }
+}
+function musicTick(){
+  var a=audio(); if(!a) return;
+  if(!bgmGain){ bgmGain=a.createGain(); bgmGain.gain.value=VOLM*VOLB; bgmGain.connect(a.destination); }
+  if(!musName||!musDef) return;
+  var spb=60/musDef.bpm/2;
+  if(!musNextT) musNextT=a.currentTime+0.06;
+  while(musNextT < a.currentTime+0.35){
+    scheduleStep(musNextT, musStep%musDef.mel.length, musDef);
+    musNextT+=spb; musStep++;
+  }
+}
+function playBGM(name){
+  if(name===musName){ syncBgmGain(); return; }
+  musName=name;
+  musDef=name?TRACKS[name]:null;
+  musStep=0; musNextT=0;
+  syncBgmGain();
+  if(!musTimer){ musTimer=setInterval(musicTick,60); }
+}
+// 最初のユーザー操作でオーディオを解錠（ブラウザ制約）
+function unlockAudio(){ audio(); musicTick(); }
+window.addEventListener('pointerdown',unlockAudio);
+window.addEventListener('keydown',unlockAudio);
 
 /* ============ データ定義 ============ */
 var WEAPONS={
@@ -1332,7 +1424,9 @@ function umax(id){ for(var i=0;i<UPG.length;i++) if(UPG[i].id===id) return UPG[i
 
 var META={}, WALLET={silver:0,gold:0}, best=0;
 var SHK=1;   // 画面揺れの強さ 0 / 0.5 / 1 / 1.5
-var VOL=0.7; // 効果音の音量 0〜1
+var VOLM=0.8; // 全体音量 0〜1
+var VOLS=0.8; // 効果音音量
+var VOLB=0.55; // BGM音量
 (function loadSave(){
   for(var i=0;i<UPG.length;i++) META[UPG[i].id]=0;
   try{
@@ -1344,7 +1438,10 @@ var VOL=0.7; // 効果音の音量 0〜1
       if(o.sel) for(var k3 in WTRAIT){ if(o.sel[k3] instanceof Array) SEL[k3]=o.sel[k3].filter(function(x){ return TMAP[x]; }); }
       best=o.best|0;
       if(typeof o.shk==='number') SHK=o.shk;
-      if(typeof o.vol==='number') VOL=Math.max(0,Math.min(1,o.vol));
+      if(typeof o.vol==='number') VOLS=Math.max(0,Math.min(1,o.vol));
+      if(typeof o.volm==='number') VOLM=Math.max(0,Math.min(1,o.volm));
+      if(typeof o.vols==='number') VOLS=Math.max(0,Math.min(1,o.vols));
+      if(typeof o.volb==='number') VOLB=Math.max(0,Math.min(1,o.volb));
       if(o.unl) for(var u in CHARS) if(o.unl[u]) UNL[u]=1;
       if(ALLCHR) for(var u2 in CHARS) UNL[u2]=1;
       if(o.ach) for(var av in ACH) if(typeof o.ach[av]==='number') ACH[av]=o.ach[av];
@@ -1355,7 +1452,7 @@ var VOL=0.7; // 効果音の音量 0〜1
   }catch(e){}
 })();
 function saveGame(){
-  try{ localStorage.setItem('bsv_save',JSON.stringify({m:META,w:WALLET,wx:WX,sel:SEL,best:best,shk:SHK,vol:VOL,unl:UNL,ach:ACH,ch:SELCH,stg:STGCLEAR,ban:Object.keys(BAN).filter(function(k){return BAN[k];})})); }catch(e){}
+  try{ localStorage.setItem('bsv_save',JSON.stringify({m:META,w:WALLET,wx:WX,sel:SEL,best:best,shk:SHK,volm:VOLM,vols:VOLS,volb:VOLB,unl:UNL,ach:ACH,ch:SELCH,stg:STGCLEAR,ban:Object.keys(BAN).filter(function(k){return BAN[k];})})); }catch(e){}
 }
 function M(id){ return META[id]||0; }
 
@@ -2498,6 +2595,7 @@ function spawnBoss(key){
     ph:0, elite:0, dead:0, uid:(++UID) };
   enemies.push(e);
   boss=e;
+  playBGM('s'+curStage+'b');
   // ボス登場と同時に円形に取り巻きを湧かせる
   var ring=12+Math.floor(time/240), rk=rollType();
   for(var i=0;i<ring;i++){
@@ -2751,6 +2849,7 @@ function kill(e){
     sfx(1046,.5,'triangle',.09);
     setTimeout(function(){ sfx(1568,.5,'triangle',.085); },170);
     if(boss===e) boss=null;
+    if(!e.last) playBGM('s'+curStage);
     if(e.last){ setTimeout(function(){ finish(true); },700); }
   }else{
     // 中スライムはさらに小スライムへ
@@ -4773,6 +4872,7 @@ function damageBreakdownHtml(){
 function finish(won){
   if(state==='dead') return;
   state='dead';
+  playBGM(null);
   pauseEl.classList.remove('on');
   document.getElementById('pick').classList.remove('on');
   document.getElementById('chest').classList.remove('on');
@@ -4837,7 +4937,7 @@ function showView(v){
   document.getElementById('homeview').style.display  = v==='home' ?'flex':'none';
   document.getElementById('stageview').style.display = v==='stage'?'flex':'none';
   document.getElementById('resultview').style.display= v==='result'?'flex':'none';
-  if(v==='home') syncTitle();
+  if(v==='home'){ syncTitle(); playBGM('home'); }
   else if(v==='stage') renderStageSelect();
 }
 function startRun(n){
@@ -4849,6 +4949,7 @@ function startRun(n){
   });
   document.getElementById('res').innerHTML='';
   reset(); state='playing'; last=performance.now();
+  playBGM('s'+curStage);
 }
 function renderStageSelect(){
   document.getElementById('stagechar').innerHTML=
@@ -4879,8 +4980,12 @@ document.getElementById('homebtn').onclick=function(){ showView('home'); };
 /* ============ 設定（ホーム右上の歯車）============ */
 var setEl=document.getElementById('settings');
 function renderSettings(){
-  document.getElementById('volrange').value=Math.round(VOL*100);
-  document.getElementById('volval').textContent=Math.round(VOL*100)+'%';
+  document.getElementById('volm').value=Math.round(VOLM*100);
+  document.getElementById('volmval').textContent=Math.round(VOLM*100)+'%';
+  document.getElementById('vols').value=Math.round(VOLS*100);
+  document.getElementById('volsval').textContent=Math.round(VOLS*100)+'%';
+  document.getElementById('volb').value=Math.round(VOLB*100);
+  document.getElementById('volbval').textContent=Math.round(VOLB*100)+'%';
   var pb=document.getElementById('setperf'); pb.textContent=PERF?'ON':'OFF'; pb.classList.toggle('on',!!PERF);
   Array.prototype.forEach.call(document.querySelectorAll('#setshake button'),function(b){
     b.classList.toggle('on',parseFloat(b.getAttribute('data-s2'))===SHK);
@@ -4888,8 +4993,12 @@ function renderSettings(){
 }
 document.getElementById('setbtn').onclick=function(){ audio(); renderSettings(); setEl.classList.add('on'); };
 document.getElementById('setclose').onclick=function(){ setEl.classList.remove('on'); };
-document.getElementById('volrange').oninput=function(){ VOL=(+this.value)/100; document.getElementById('volval').textContent=this.value+'%'; };
-document.getElementById('volrange').onchange=function(){ VOL=(+this.value)/100; saveGame(); sfx(880,.08,'triangle',.06); };
+document.getElementById('volm').oninput=function(){ VOLM=(+this.value)/100; document.getElementById('volmval').textContent=this.value+'%'; syncBgmGain(); };
+document.getElementById('volm').onchange=function(){ VOLM=(+this.value)/100; saveGame(); sfx(880,.08,'triangle',.06); };
+document.getElementById('vols').oninput=function(){ VOLS=(+this.value)/100; document.getElementById('volsval').textContent=this.value+'%'; };
+document.getElementById('vols').onchange=function(){ VOLS=(+this.value)/100; saveGame(); sfx(880,.08,'triangle',.06); };
+document.getElementById('volb').oninput=function(){ VOLB=(+this.value)/100; document.getElementById('volbval').textContent=this.value+'%'; syncBgmGain(); };
+document.getElementById('volb').onchange=function(){ VOLB=(+this.value)/100; saveGame(); };
 document.getElementById('setperf').onclick=function(){ PERF=PERF?0:1; document.getElementById('perf').classList.toggle('on',!!PERF); fpsA=[];fpsI=0;perfT=0; syncPerfBtn(); renderSettings(); };
 Array.prototype.forEach.call(document.querySelectorAll('#setshake button'),function(b){
   b.onclick=function(){ SHK=parseFloat(b.getAttribute('data-s2')); saveGame(); syncShakeBtns(); renderSettings(); };

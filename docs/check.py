@@ -21,7 +21,7 @@ print('OK: 構文チェック通過')
 defined = set(re.findall(r'\bfunction (\w+)\(', js))
 called = set(re.findall(r'(?<![\w.\'"])([a-zA-Z_]\w*)\s*\(', js))
 skip = {'if','for','while','switch','catch','function','return','typeof','JSON','Math',
- 'Object','Array','String','Number','parseInt','parseFloat','setTimeout','clearTimeout',
+ 'Object','Array','String','Number','parseInt','parseFloat','setTimeout','clearTimeout','setInterval','clearInterval',
  'addEventListener','requestAnimationFrame','console','var','new','onHit','cv','ctx',
  'document','window','localStorage','performance','isNaN','Boolean','in'}
 undef = sorted(c for c in called if c not in defined and c not in skip and c[0].islower())
