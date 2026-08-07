@@ -117,9 +117,35 @@ canvas{display:block;width:100%;height:100%;touch-action:none}
 #pstat b{color:#fff;font-weight:normal}
 #pstat .el{color:var(--gold)}
 
-#shop,#mast,#ban{position:absolute;inset:0;display:none;align-items:center;justify-content:center;
-  background:rgba(6,4,16,.95);padding:14px;z-index:5}
-#shop.on,#mast.on,#ban.on{display:flex}
+#shop,#mast,#ban,#settings,#news{position:absolute;inset:0;display:none;align-items:center;justify-content:center;
+  background:rgba(6,4,16,.95);padding:14px;z-index:6}
+#shop.on,#mast.on,#ban.on,#settings.on,#news.on{display:flex}
+.vview{display:none;flex-direction:column;align-items:center;width:100%;max-width:540px}
+#homehead{position:absolute;top:16px;right:16px;display:flex;gap:10px;z-index:2}
+.hicon{width:46px;height:46px;font-size:20px;cursor:pointer;pointer-events:auto;
+  background:transparent;color:var(--ash);border:2px solid var(--line);position:relative}
+.hicon:hover,.hicon:focus-visible{border-color:var(--arc);color:var(--arc);outline:none}
+.btn.big{font-size:30px;padding:18px 76px;letter-spacing:10px;margin-top:20px}
+#homemenu{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-top:20px}
+#stagechar{display:flex;align-items:center;gap:10px;justify-content:center;margin-bottom:6px;color:#fff;font-size:18px}
+#stagechar .chg{font-size:28px}
+#stagechar .chw{font-size:12px;color:var(--ash)}
+#stageview #stagesel{margin-top:14px}
+#resbtns{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-top:16px;flex:none}
+#resultview{max-height:calc(100vh - 24px)}
+#resultview .title{flex:none}
+#resultview #res{flex:1 1 auto;min-height:0;overflow-y:auto;-webkit-overflow-scrolling:touch;width:100%}
+.setrow{display:flex;align-items:center;gap:12px;justify-content:space-between;padding:12px 4px;border-bottom:1px solid var(--line)}
+.setrow>span:first-child{color:#e9e2ff;flex:none}
+.setval{color:var(--arc);width:52px;text-align:right;flex:none}
+#volrange{flex:1;accent-color:#56e0ff}
+#setbody,#newslist{width:100%;max-width:440px;margin:0 auto;text-align:left}
+#newslist{flex:1;min-height:0;overflow-y:auto}
+.newsitem{padding:11px 4px;border-bottom:1px solid var(--line)}
+.newsitem .nt{color:var(--gold);font-size:14px}
+.newsitem .nd{color:#6b5f9c;font-size:11px;margin-left:8px}
+.newsitem .nb{color:#cfc9e8;font-size:12px;line-height:1.6;margin-top:4px}
+.hicon .badge{position:absolute;top:-6px;right:-6px}
 #banlist{flex:1;min-height:0;overflow-y:auto;-webkit-overflow-scrolling:touch;
   display:flex;flex-wrap:wrap;gap:8px;align-content:flex-start;padding:4px 0}
 .banw{display:flex;flex-direction:column;align-items:center;gap:2px;width:88px;padding:8px 4px;
@@ -439,25 +465,59 @@ canvas{display:block;width:100%;height:100%;touch-action:none}
   </div>
 
   <div id="veil">
-    <div>
-      <div class="title" id="vtitle">勇者サバイバー</div>
-      <div class="sub" id="vsub">
-        <span class="deskonly"><span class="key">WASD</span> / <span class="key">←↑↓→</span> で移動。<span class="key">P</span> で一時停止。</span><span class="mobonly">画面を押した場所にスティックが出ます。</span><br>
-        攻撃は自動。魔法には <span style="color:#ff7a2f">炎</span> <span style="color:#c98cff">雷</span>
-        <span style="color:#7fd8ff">氷</span> <span style="color:#ffe98a">聖</span> の属性がある。<br>
-        別々の属性を続けて当てると<span style="color:var(--gold)">元素反応</span>が起きる。<br>
-        武器を Lv10 まで育てると <span style="color:var(--gold)">覚醒</span> して挙動が変わる。<br>ボスを越え、20:00 の <span style="color:#ff7b95">フェンリル</span> を討て。
+    <!-- ホーム -->
+    <div id="homeview" class="vview">
+      <div id="homehead">
+        <button id="newsbtn" class="hicon" aria-label="お知らせ">✉</button>
+        <button id="setbtn" class="hicon" aria-label="設定">⚙</button>
       </div>
-      <div id="res"></div>
+      <div class="title" id="hometitle">勇者サバイバー</div>
       <div id="vpurse"></div>
-      <div id="stagesel"></div>
-      <div id="vbtns">
-        <button class="btn" id="startbtn">冒険に出る</button>
+      <button class="btn big" id="startbtn">出撃</button>
+      <div id="homemenu">
         <button class="btn sub2" id="shopbtn">永続強化</button>
         <button class="btn sub2" id="mastbtn">武器熟練</button>
         <button class="btn sub2" id="chrbtn">キャラクター</button>
         <button class="btn sub2" id="banbtn">排他</button>
       </div>
+    </div>
+    <!-- ステージ選択 -->
+    <div id="stageview" class="vview">
+      <div id="stagechar"></div>
+      <div class="title" style="font-size:24px;letter-spacing:4px">ステージ選択</div>
+      <div id="stagesel"></div>
+      <button class="btn sub2" id="stageback">← 戻る</button>
+    </div>
+    <!-- リザルト -->
+    <div id="resultview" class="vview">
+      <div class="title" id="vtitle">討伐完了</div>
+      <div id="res"></div>
+      <div id="resbtns">
+        <button class="btn" id="againbtn">もう一度</button>
+        <button class="btn sub2" id="homebtn">ホームへ</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="settings">
+    <div class="shopbox">
+      <div class="shophead"><div class="title">設定</div></div>
+      <div id="setbody">
+        <div class="setrow"><span>効果音の音量</span><input type="range" id="volrange" min="0" max="100" step="5"><span id="volval" class="setval">70%</span></div>
+        <div class="setrow"><span>FPS 表示</span><button class="tg" id="setperf">OFF</button></div>
+        <div class="setrow"><span>画面の揺れ</span><span id="setshake">
+          <button class="tg" data-s2="0">なし</button><button class="tg" data-s2="0.5">弱</button><button class="tg" data-s2="1">標準</button><button class="tg" data-s2="1.5">強</button>
+        </span></div>
+      </div>
+      <button class="btn sub2" id="setclose" style="margin-top:0">閉じる</button>
+    </div>
+  </div>
+
+  <div id="news">
+    <div class="shopbox">
+      <div class="shophead"><div class="title">お知らせ</div></div>
+      <div id="newslist"></div>
+      <button class="btn sub2" id="newsclose" style="margin-top:0">閉じる</button>
     </div>
   </div>
 
@@ -589,7 +649,7 @@ function sfx(freq,dur,type,vol,slide){
   o.type=type||'square'; o.frequency.setValueAtTime(freq,a.currentTime);
   if(slide) o.frequency.exponentialRampToValueAtTime(Math.max(30,freq*slide),a.currentTime+dur);
   g.gain.setValueAtTime(0.0001,a.currentTime);
-  g.gain.exponentialRampToValueAtTime(vol||0.08,a.currentTime+0.008);
+  g.gain.exponentialRampToValueAtTime(Math.max(0.00001,(vol||0.08)*VOL),a.currentTime+0.008);
   g.gain.exponentialRampToValueAtTime(0.0001,a.currentTime+dur);
   o.connect(g); g.connect(a.destination); o.start(); o.stop(a.currentTime+dur+0.02);
 }
@@ -598,7 +658,7 @@ function noise(dur,vol){
   var n=a.sampleRate*dur, b=a.createBuffer(1,n,a.sampleRate), d=b.getChannelData(0);
   for(var i=0;i<n;i++) d[i]=(Math.random()*2-1)*(1-i/n);
   var s=a.createBufferSource(); s.buffer=b;
-  var g=a.createGain(); g.gain.value=vol||0.12;
+  var g=a.createGain(); g.gain.value=(vol||0.12)*VOL;
   s.connect(g); g.connect(a.destination); s.start();
 }
 
@@ -1272,6 +1332,7 @@ function umax(id){ for(var i=0;i<UPG.length;i++) if(UPG[i].id===id) return UPG[i
 
 var META={}, WALLET={silver:0,gold:0}, best=0;
 var SHK=1;   // 画面揺れの強さ 0 / 0.5 / 1 / 1.5
+var VOL=0.7; // 効果音の音量 0〜1
 (function loadSave(){
   for(var i=0;i<UPG.length;i++) META[UPG[i].id]=0;
   try{
@@ -1283,6 +1344,7 @@ var SHK=1;   // 画面揺れの強さ 0 / 0.5 / 1 / 1.5
       if(o.sel) for(var k3 in WTRAIT){ if(o.sel[k3] instanceof Array) SEL[k3]=o.sel[k3].filter(function(x){ return TMAP[x]; }); }
       best=o.best|0;
       if(typeof o.shk==='number') SHK=o.shk;
+      if(typeof o.vol==='number') VOL=Math.max(0,Math.min(1,o.vol));
       if(o.unl) for(var u in CHARS) if(o.unl[u]) UNL[u]=1;
       if(ALLCHR) for(var u2 in CHARS) UNL[u2]=1;
       if(o.ach) for(var av in ACH) if(typeof o.ach[av]==='number') ACH[av]=o.ach[av];
@@ -1293,7 +1355,7 @@ var SHK=1;   // 画面揺れの強さ 0 / 0.5 / 1 / 1.5
   }catch(e){}
 })();
 function saveGame(){
-  try{ localStorage.setItem('bsv_save',JSON.stringify({m:META,w:WALLET,wx:WX,sel:SEL,best:best,shk:SHK,unl:UNL,ach:ACH,ch:SELCH,stg:STGCLEAR,ban:Object.keys(BAN).filter(function(k){return BAN[k];})})); }catch(e){}
+  try{ localStorage.setItem('bsv_save',JSON.stringify({m:META,w:WALLET,wx:WX,sel:SEL,best:best,shk:SHK,vol:VOL,unl:UNL,ach:ACH,ch:SELCH,stg:STGCLEAR,ban:Object.keys(BAN).filter(function(k){return BAN[k];})})); }catch(e){}
 }
 function M(id){ return META[id]||0; }
 
@@ -4269,33 +4331,7 @@ function stageUnlocked(n){
   return !!(ALLSTG || s.req===0 || STGCLEAR[s.req]);
 }
 var STGNUM=['①','②','③','④','⑤'];
-function renderStages(){
-  var el=document.getElementById('stagesel'); if(!el) return;
-  // 解放済みステージ数を数え、1つしか無ければセレクタ自体を隠す
-  var avail=0; for(var k in STAGES) if(stageUnlocked(+k)) avail++;
-  if(avail<=1){ el.innerHTML=''; if(!stageUnlocked(curStage)) curStage=1; return; }
-  if(!stageUnlocked(curStage)) curStage=1;
-  var h='<div class="stlabel">ステージ</div><div class="strow">';
-  var ns=Object.keys(STAGES).map(Number).sort(function(a,b){return a-b;});
-  for(var i=0;i<ns.length;i++){
-    var n=ns[i], s=STAGES[n], un=stageUnlocked(n), sel=(curStage===n), cl=STGCLEAR[n];
-    var head=un?((STGNUM[n-1]||n)+' '+s.nm):('🔒 '+s.nm);
-    var note=un?(s.sub+(cl?'・クリア済':'')):'前ステージのクリアで解放';
-    h+='<button class="stbtn'+(sel?' sel':'')+(un?'':' lock')+'" data-stg="'+n+'"'+(un?'':' disabled')+'>'+
-       '<b>'+head+'</b><span>'+note+'</span></button>';
-  }
-  h+='</div>';
-  el.innerHTML=h;
-  el.onclick=function(ev){
-    var b=ev.target.closest?ev.target.closest('.stbtn'):null;
-    if(!b) return;
-    var n=+b.getAttribute('data-stg');
-    if(!stageUnlocked(n)) return;
-    curStage=n; renderStages();
-  };
-}
 function syncTitle(){
-  renderStages();
   document.getElementById('vpurse').innerHTML=
     '<span style="color:#fff">'+CH().glyph+' '+CH().nm+'</span>　'+purseHtml()+
     (best?'<br><span style="color:#6b5f9c">ベストスコア '+fmt(best)+'</span>':'');
@@ -4776,7 +4812,6 @@ function finish(won){
   var names=[]; for(var id in P.w) names.push(WEAPONS[id].nm+' '+P.w[id]+(AW(id)?'★':''));
   document.getElementById('vtitle').textContent=won?'討伐完了':(time>=RUN?'敗北':'力尽きた');
   document.getElementById('vtitle').style.color=won?'#56e0ff':'#ffcc4d';
-  document.getElementById('vsub').innerHTML='';
   document.getElementById('res').innerHTML=
     '<div style="font-size:30px;color:#fff;letter-spacing:2px;margin:6px 0 2px">'+fmt(score)+'</div>'+
     '<div style="font-size:12px;color:#6b5f9c;margin-bottom:10px">'+
@@ -4792,28 +4827,97 @@ function finish(won){
     '構成 <b>'+(names.join(' / ')||'—')+'</b>'+
     (newCh.length?'<br><span style="color:var(--gold)">★ '+newCh.join('・')+' が解放されました</span>':'')+
     damageBreakdownHtml();
-  document.getElementById('startbtn').textContent='もう一度';
-  syncTitle();
+  showView('result');
   document.getElementById('veil').classList.remove('hide');
 }
-document.getElementById('startbtn').onclick=function(){
+/* ============ ホーム / ステージ選択 / 結果 の画面切替 ============ */
+var homeView='home';
+function showView(v){
+  homeView=v;
+  document.getElementById('homeview').style.display  = v==='home' ?'flex':'none';
+  document.getElementById('stageview').style.display = v==='stage'?'flex':'none';
+  document.getElementById('resultview').style.display= v==='result'?'flex':'none';
+  if(v==='home') syncTitle();
+  else if(v==='stage') renderStageSelect();
+}
+function startRun(n){
   audio();
+  if(n!=null) curStage=n;
   document.getElementById('veil').classList.add('hide');
-  document.getElementById('paused').classList.remove('on');
-  document.getElementById('shop').classList.remove('on');
-  document.getElementById('mast').classList.remove('on');
-  document.getElementById('bosswrap').classList.remove('on');
-  document.getElementById('chest').classList.remove('on');
-  document.getElementById('test').classList.remove('on');
-  document.getElementById('chr').classList.remove('on');
+  ['paused','shop','mast','ban','settings','news','bosswrap','chest','test','chr'].forEach(function(id){
+    var e=document.getElementById(id); if(e) e.classList.remove('on');
+  });
   document.getElementById('res').innerHTML='';
   reset(); state='playing'; last=performance.now();
-};
+}
+function renderStageSelect(){
+  document.getElementById('stagechar').innerHTML=
+    '<span class="chg">'+CH().glyph+'</span>'+
+    '<span class="chn">'+CH().nm+'</span>'+
+    '<span class="chw">初期武器：'+WEAPONS[CH().w].nm+'</span>';
+  var el=document.getElementById('stagesel'); el.innerHTML='';
+  var ns=Object.keys(STAGES).map(Number).sort(function(a,b){return a-b;}), h='';
+  for(var i=0;i<ns.length;i++){
+    var n=ns[i], st=STAGES[n], un=stageUnlocked(n), cl=STGCLEAR[n];
+    var head=un?((STGNUM[n-1]||n)+' '+st.nm):('🔒 '+st.nm);
+    var note=un?(st.sub+(cl?'・クリア済':'')+'　▶ 出撃'):'前ステージのクリアで解放';
+    h+='<button class="stbtn'+(un?'':' lock')+'" data-stg="'+n+'"'+(un?'':' disabled')+'>'+
+       '<b>'+head+'</b><span>'+note+'</span></button>';
+  }
+  el.innerHTML=h;
+  el.onclick=function(ev){
+    var b=ev.target.closest?ev.target.closest('.stbtn'):null; if(!b) return;
+    var n=+b.getAttribute('data-stg'); if(!stageUnlocked(n)) return;
+    startRun(n);
+  };
+}
+document.getElementById('startbtn').onclick=function(){ audio(); showView('stage'); };
+document.getElementById('stageback').onclick=function(){ showView('home'); };
+document.getElementById('againbtn').onclick=function(){ startRun(curStage); };
+document.getElementById('homebtn').onclick=function(){ showView('home'); };
+
+/* ============ 設定（ホーム右上の歯車）============ */
+var setEl=document.getElementById('settings');
+function renderSettings(){
+  document.getElementById('volrange').value=Math.round(VOL*100);
+  document.getElementById('volval').textContent=Math.round(VOL*100)+'%';
+  var pb=document.getElementById('setperf'); pb.textContent=PERF?'ON':'OFF'; pb.classList.toggle('on',!!PERF);
+  Array.prototype.forEach.call(document.querySelectorAll('#setshake button'),function(b){
+    b.classList.toggle('on',parseFloat(b.getAttribute('data-s2'))===SHK);
+  });
+}
+document.getElementById('setbtn').onclick=function(){ audio(); renderSettings(); setEl.classList.add('on'); };
+document.getElementById('setclose').onclick=function(){ setEl.classList.remove('on'); };
+document.getElementById('volrange').oninput=function(){ VOL=(+this.value)/100; document.getElementById('volval').textContent=this.value+'%'; };
+document.getElementById('volrange').onchange=function(){ VOL=(+this.value)/100; saveGame(); sfx(880,.08,'triangle',.06); };
+document.getElementById('setperf').onclick=function(){ PERF=PERF?0:1; document.getElementById('perf').classList.toggle('on',!!PERF); fpsA=[];fpsI=0;perfT=0; syncPerfBtn(); renderSettings(); };
+Array.prototype.forEach.call(document.querySelectorAll('#setshake button'),function(b){
+  b.onclick=function(){ SHK=parseFloat(b.getAttribute('data-s2')); saveGame(); syncShakeBtns(); renderSettings(); };
+});
+
+/* ============ お知らせ（ホーム右上のメール）============ */
+var NEWS=[
+  {t:'ホーム画面リニューアル', d:'UPDATE', b:'出撃 → ステージ選択の流れに変更。右上に設定（音量 / FPS / 画面揺れ）とお知らせを追加しました。'},
+  {t:'リザルトに与ダメージ内訳', d:'UPDATE', b:'武器ごとの与ダメージを多い順にバーで表示するようになりました。'},
+  {t:'遊び方', d:'HELP', b:'WASD / 矢印で移動、攻撃は自動。別々の属性を続けて当てると元素反応。武器は Lv10 で覚醒。床の装備を拾うとパッシブが強化されます。'}
+];
+var newsEl=document.getElementById('news');
+function renderNews(){
+  var L=document.getElementById('newslist'); L.innerHTML='';
+  for(var i=0;i<NEWS.length;i++){
+    var n=NEWS[i], d=document.createElement('div'); d.className='newsitem';
+    d.innerHTML='<div><span class="nt">'+n.t+'</span><span class="nd">'+n.d+'</span></div><div class="nb">'+n.b+'</div>';
+    L.appendChild(d);
+  }
+}
+document.getElementById('newsbtn').onclick=function(){ audio(); renderNews(); newsEl.classList.add('on'); };
+document.getElementById('newsclose').onclick=function(){ newsEl.classList.remove('on'); };
 
 VOLLEY={bow:doBow,fire:doFire,ice:doIce,holy:doHoly,rock:doRock,musket:doMusket};
 resize();
 reset();
 syncTitle();
+showView('home');
 })();
 </script>
 </body>
