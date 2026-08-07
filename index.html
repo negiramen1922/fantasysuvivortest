@@ -720,18 +720,16 @@ var WAVE=[
 
 // ステージ2（森）の出現構成。スライムを廃し、速い敵と重い敵を前倒しで出す。
 var WAVE2=[
-  { t:0,    mix:[['spirit',0.55],['bee',1.00]] },
-  { t:40,   mix:[['spirit',0.40],['bee',0.72],['bird',1.00]] },
-  { t:110,  mix:[['bee',0.28],['bird',0.60],['myconid',1.00]] },
-  { t:210,  mix:[['bird',0.30],['myconid',0.56],['panther',1.00]] },
-  { t:300,  mix:[['myconid',0.28],['panther',0.56],['dryad',1.00]] },
-  { t:410,  mix:[['panther',0.30],['dryad',0.54],['spider',1.00]] },
-  { t:510,  mix:[['dryad',0.26],['spider',0.52],['mantis',1.00]] },
-  { t:620,  mix:[['panther',0.22],['spider',0.44],['mantis',0.72],['beetle',1.00]] },
-  { t:720,  mix:[['spider',0.22],['mantis',0.46],['dryad',0.66],['beetle',1.00]] },
-  { t:840,  mix:[['mantis',0.24],['panther',0.44],['spider',0.64],['beetle',1.00]] },
-  { t:960,  mix:[['mantis',0.24],['dryad',0.44],['spider',0.64],['beetle',1.00]] },
-  { t:1080, mix:[['panther',0.22],['mantis',0.44],['spider',0.66],['beetle',1.00]] }
+  { t:0,    mix:[['spirit',1.00]] },                                                             // 0:00 スピリット
+  { t:60,   mix:[['spirit',0.55],['bird',1.00]] },                                               // 1:00 トード
+  { t:180,  mix:[['spirit',0.30],['bird',0.65],['bee',1.00]] },                                  // 3:00 ビー
+  { t:330,  mix:[['spirit',0.15],['bird',0.40],['bee',0.70],['myconid',1.00]] },                 // 5:30 マイコニド(ボスあと)
+  { t:480,  mix:[['bird',0.18],['bee',0.42],['myconid',0.70],['panther',1.00]] },                // 8:00 パンサー
+  { t:630,  mix:[['bee',0.15],['myconid',0.37],['panther',0.67],['dryad',1.00]] },               // 10:30 ドライアド(ボスあと)
+  { t:720,  mix:[['myconid',0.15],['panther',0.40],['dryad',0.68],['spider',1.00]] },            // 12:00 スパイダー
+  { t:780,  mix:[['panther',0.18],['dryad',0.40],['spider',0.70],['mantis',1.00]] },             // 13:00 マンティス
+  { t:900,  mix:[['panther',0.15],['dryad',0.33],['spider',0.58],['mantis',0.80],['beetle',1.00]] }, // 15:00 ビートル
+  { t:1080, mix:[['panther',0.12],['dryad',0.25],['spider',0.50],['mantis',0.75],['beetle',1.00]] }  // 18:00 終盤混成
 ];
 // ステージ2のボス（HPは hpMul 倍で出す）。締めは森の主フェンリル。
 var BOSS_AT2=[[300,'kervi'],[600,'gmoth'],[900,'arachnid'],[1200,'eldertreant']];
@@ -740,7 +738,7 @@ var BOSS_AT2=[[300,'kervi'],[600,'gmoth'],[900,'arachnid'],[1200,'eldertreant']]
 var STAGES={
   1:{ nm:'草原',   sub:'20:00・フェンリル', wave:WAVE,  bossAt:BOSS_AT,  hpMul:1.0, req:0,
       ground:{ bg:'#150f2c', grid:'rgba(80,62,140,.28)', dot:'rgba(120,96,200,.14)' } },
-  2:{ nm:'森',     sub:'20:00・速く重い', wave:WAVE2, bossAt:BOSS_AT2, hpMul:1.0, req:1, swarm:1,
+  2:{ nm:'森',     sub:'20:00・速く重い', wave:WAVE2, bossAt:BOSS_AT2, hpMul:1.0, req:1, swarm:1, swarmStart:360,
       ground:{ bg:'#0e1f14', grid:'rgba(70,120,74,.26)',  dot:'rgba(120,180,120,.15)' } }
 };
 var ALLSTG=1;   // 開発中は全ステージ解放。製品化時は 0 に戻す
@@ -1277,7 +1275,7 @@ function reset(){
       rr:5+M('reroll'), sk:5+M('skipn') };
   enemies=[]; gems=[]; shots=[]; fx=[]; dmgs=[]; parts=[]; bolts=[]; chests=[]; coins=[]; chaks=[]; scys=[]; bombs=[]; rocks=[]; holes=[]; ebul=[]; quakes=[]; dhits=[]; vacs=[]; vacT=40; bells=[]; swords=[]; zones=[]; volley=[];
   boss=null; bossN=0; lasers=[];
-  time=0; kills=0; spawnT=0; eliteT=55; swarmT=20; shake=0; hitStop=0; flash=0; chain=0; chainT=0;
+  time=0; kills=0; spawnT=0; eliteT=55; swarmT=3; shake=0; hitStop=0; flash=0; chain=0; chainT=0;
   gat.t=0; gat.mag=-1; gat.rl=0;
   whirlA=0; marks=[1140]; reacts=0; rdep=0; rtok=8; pending=0;
   score=0; silver=0; gold=0; magFx=0; chakSpin=0; wxRun={}; lastCd={}; coolMax={};
@@ -2678,6 +2676,7 @@ var swarmT=0;
 function swarmTick(dt){
   var stg=STAGES[curStage];
   if(!stg||!stg.swarm||boss) return;
+  if(time<(stg.swarmStart||0)) return;              // スウォームの開始時刻（森は6:00）
   swarmT-=dt;
   if(swarmT<=0){
     swarmT=16+Math.random()*8;
