@@ -4277,6 +4277,7 @@ function renderMast(){
      :'使うと熟練度が溜まる。解放済みの他武器にも波及（同系統20% / 他10%）';
   mlistEl.innerHTML='';
   Object.keys(WTRAIT).forEach(function(w){
+    if(!WEAPONS[w]) return;                 // 退避中の武器（chainsaw等）は熟練一覧に出さない
     var x=WX[w]||0, tier=wtier(w), sel=SEL[w]||[], left=picksLeft(w), open=x>0;
     var nx=tier<3?WTH[tier]:0, pv=tier>0?WTH[tier-1]:0;
     var pct=nx?Math.max(0,Math.min(100,(x-pv)/(nx-pv)*100)):100;
@@ -4630,7 +4631,7 @@ function finish(won){
   for(var wk in wxRun){
     if(wxRun[wk]<1) continue;
     WX[wk]=(WX[wk]||0)+wxRun[wk];
-    wtxt.push(WEAPONS[wk].nm+' +'+fmt(wxRun[wk]));
+    if(WEAPONS[wk]) wtxt.push(WEAPONS[wk].nm+' +'+fmt(wxRun[wk]));
   }
   saveGame();
   var names=[]; for(var id in P.w) names.push(WEAPONS[id].nm+' '+P.w[id]+(AW(id)?'★':''));
