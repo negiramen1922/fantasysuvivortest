@@ -7,6 +7,16 @@
 
 ## 変更履歴（新しい順）
 
+- **ステージ2（森）を専用モンスターに刷新／ステージ1ボスを4体化**
+  - 森は**ステージ1の敵を一切使わず**、新規10種＋ボス4種に差替。全て手続き描画（`drawForestShape`＋`FOREST2` 判定を `drawEnemy` に追加）
+  - 新モンスター: spirit / bird(ドードー風) / myconid / bee(飛行) / panther / dryad(遠距離) / mantis / spider(自爆) / beetle(装甲) / gnat(群れ)
+  - 新ボス: kervi(神鹿・charge) / gmoth(蛾・slam弾幕) / arachnid(蜘蛛女王・summon) / eldertreant(古樹・slam・last)。ETYPE に見た目専用 deer/moth/arachne/wtreant を追加
+  - **自爆クモ**: `boom` フラグ。接近で導火(`st='fuse'`)→ `kill()` 内 `spiderBoom()` で範囲ダメージ。makeEnemy が boom/boomR/boomDmg を継承
+  - **スウォーム**: `swarmTick`/`spawnSwarm`。`ai:'dash'` は追尾せず直進し画面外で消滅（moveEnemies に dash 分岐）。`STAGES[n].swarm=1` で有効
+  - **予告表示**: charge は赤いライン、slam は警告リングを溜め中に描画（drawEnemy）
+  - **ステージ1ボスを6→4体**（5:00 ボア / 10:00 スライム王 / 15:00 ゴブ王 / 20:00 フェンリル）。ステージ2 `hpMul` は 1.0 に戻し、森ボスHPは定義で直接指定
+  - 未了: ステージ1の**雑魚・ボスの立ち絵刷新**（見た目調整）は次段階
+
 - **ステージ2（森）実装**
   - `STAGES` を導入（`index.html` の `WAVE` 定義直後）。各ステージが `wave / bossAt / hpMul / req / ground` を持つ
   - ステージ1（草原）は既存の `WAVE` / `BOSS_AT` を流用。ステージ2（森）は `WAVE2` / `BOSS_AT2` と緑系の地面テーマ

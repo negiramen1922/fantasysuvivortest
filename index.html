@@ -653,7 +653,25 @@ var ETYPE={
   turtle:  { nm:'ロックタートル',     res:0.55, hp:270, spd:56,  r:18, col:'#7d9080', dark:'#31423a', xp:6, dmg:18, shape:'turtle', pts:62,  sv:0.15, flat:3 },
   // スライムキングの分裂で出る中／小
   slimeM:  { nm:'中スライム',         res:0.10, hp:150, spd:56,  r:20, col:'#6ee08a', dark:'#245c35', xp:4, dmg:14, shape:'blob',   pts:34,  sv:0.10 },
-  slimeS:  { nm:'小スライム',         res:0.00, hp:48,  spd:70,  r:12, col:'#9ff0b2', dark:'#2f6b42', xp:2, dmg:9,  shape:'blob',   pts:12,  sv:0.05 }
+  slimeS:  { nm:'小スライム',         res:0.00, hp:48,  spd:70,  r:12, col:'#9ff0b2', dark:'#2f6b42', xp:2, dmg:9,  shape:'blob',   pts:12,  sv:0.05 },
+  // ===== ステージ2（森）モンスター =====
+  spirit:  { nm:'スピリット',         res:0.00, hp:20,  spd:88,  r:10, col:'#eaffe0', dark:'#7bbf5a', xp:1, dmg:6,  shape:'spirit',  pts:8,   sv:0.035 },
+  bird:    { nm:'フォレストトード',   res:0.05, hp:55,  spd:66,  r:14, col:'#b98a5e', dark:'#4c3320', xp:2, dmg:10, shape:'bird',    pts:14,  sv:0.06 },
+  myconid: { nm:'マイコニド',         res:0.08, hp:46,  spd:42,  r:13, col:'#c85a4a', dark:'#5a241c', xp:2, dmg:9,  shape:'myconid', pts:12,  sv:0.05 },
+  bee:     { nm:'キラービー',         res:0.00, hp:24,  spd:140, r:9,  col:'#e8c24a', dark:'#5a4410', xp:1, dmg:7,  shape:'bee',     pts:10,  sv:0.035, ai:'fly' },
+  panther: { nm:'ブラックパンサー',   res:0.15, hp:95,  spd:155, r:13, col:'#3b3550', dark:'#161320', xp:3, dmg:14, shape:'panther', pts:28,  sv:0.08 },
+  dryad:   { nm:'ドライアド',         res:0.12, hp:70,  spd:58,  r:13, col:'#7fae5c', dark:'#35521f', xp:3, dmg:10, shape:'dryad',   pts:28,  sv:0.10,
+             ai:'shoot', range:340, acd:2.6, bspd:210, bdmg:12 },
+  mantis:  { nm:'グレーターマンティス', res:0.40, hp:150, spd:120, r:15, col:'#6fbf4a', dark:'#2c5a1c', xp:4, dmg:26, shape:'mantis', pts:46,  sv:0.13 },
+  spider:  { nm:'ブラストスパイダー', res:0.10, hp:60,  spd:100, r:12, col:'#8a3a3a', dark:'#3a1414', xp:3, dmg:12, shape:'spider',  pts:30,  sv:0.09,
+             boom:1, boomR:96, boomDmg:30 },
+  beetle:  { nm:'グレータービートル', res:0.65, hp:260, spd:40,  r:20, col:'#5a4632', dark:'#241a10', xp:6, dmg:20, shape:'beetle',  pts:64,  sv:0.15, flat:4 },
+  gnat:    { nm:'スウォームナット',   res:0.00, hp:12,  spd:200, r:7,  col:'#8a7a52', dark:'#3a3020', xp:1, dmg:6,  shape:'gnat',    pts:4,   sv:0.02,  ai:'dash' },
+  // ボス専用の見た目（ウェーブには出ない）
+  deer:    { nm:'神鹿',   res:0.9, hp:100, spd:60, r:20, col:'#c8b48a', dark:'#5a4a2c', xp:1, dmg:10, shape:'deer',   pts:10, sv:0 },
+  moth:    { nm:'蛾',     res:0.9, hp:100, spd:44, r:20, col:'#8a6ab0', dark:'#3a2a50', xp:1, dmg:10, shape:'moth',   pts:10, sv:0 },
+  arachne: { nm:'蜘蛛女王', res:0.9, hp:100, spd:58, r:20, col:'#7a3a7a', dark:'#2a1030', xp:1, dmg:10, shape:'spider', pts:10, sv:0 },
+  wtreant: { nm:'古樹',   res:0.9, hp:100, spd:34, r:20, col:'#6e5636', dark:'#332512', xp:1, dmg:10, shape:'treant', pts:10, sv:0 }
 };
 
 // ステージ1のボス。5分ごとに1体、30分のフェンリルがラストボス。
@@ -669,12 +687,17 @@ var BOSS={
                ai:'summon', acd:3.2, sum:'rider', nsum:4 },
   fenrir:    { nm:'フェンリル',         res:0.96, key:'wolf',   hp:160000, r:50, spd:104, dmg:52, xp:2160, pts:60000,
                ai:'howl', acd:7.0, sum:'wolf', nsum:4, last:1 },
-  // ステージ2（森）用ボス。オーガの見た目でスラム攻撃を行う大型。
-  ancientogre:{ nm:'エンシェントオーガ', res:0.95, key:'ogre',   hp:95000,  r:52, spd:40,  dmg:50, xp:2000, pts:52000,
-               ai:'slam', acd:3.4, wind:0.7, nbul:20, bspd:240, bdmg:20 }
+  // ===== ステージ2（森）ボス =====
+  kervi:      { nm:'神鹿ケルビ',       res:0.92, key:'deer',    hp:30000,  r:46, spd:60, dmg:40, xp:1200, pts:16000,
+               ai:'charge', range:560, acd:2.6, chspd:580, wind:0.9, chdur:1.0 },
+  gmoth:      { nm:'ジャイアントモス', res:0.93, key:'moth',    hp:75000,  r:50, spd:44, dmg:42, xp:1600, pts:24000,
+               ai:'slam', acd:3.0, wind:0.65, nbul:26, bspd:205, bdmg:16 },
+  arachnid:   { nm:'アラクネイド',     res:0.94, key:'arachne', hp:140000, r:50, spd:58, dmg:44, xp:1900, pts:40000,
+               ai:'summon', acd:3.2, sum:'spider', nsum:3 },
+  eldertreant:{ nm:'エルダートレント', res:0.96, key:'wtreant', hp:260000, r:56, spd:34, dmg:50, xp:2400, pts:60000,
+               ai:'slam', acd:3.4, wind:0.7, nbul:20, bspd:230, bdmg:20, last:1 }
 };
-var BOSS_AT=[[240,'bigslime'],[480,'greatboar'],[720,'champion'],
-             [900,'slimeking'],[1080,'goblinking'],[1200,'fenrir']];
+var BOSS_AT=[[300,'greatboar'],[600,'slimeking'],[900,'goblinking'],[1200,'fenrir']];
 
 // ステージ1の出現構成
 var WAVE=[
@@ -695,28 +718,27 @@ var WAVE=[
 
 // ステージ2（森）の出現構成。スライムを廃し、速い敵と重い敵を前倒しで出す。
 var WAVE2=[
-  { t:0,    mix:[['goblin',0.55],['bat',1.00]] },
-  { t:40,   mix:[['goblin',0.42],['bat',0.74],['wolf',1.00]] },
-  { t:110,  mix:[['goblin',0.28],['bat',0.52],['wolf',0.80],['boar',1.00]] },
-  { t:210,  mix:[['bat',0.24],['wolf',0.50],['boar',0.70],['archer',1.00]] },
-  { t:300,  mix:[['wolf',0.30],['boar',0.52],['archer',0.70],['harpy',1.00]] },
-  { t:410,  mix:[['wolf',0.24],['boar',0.42],['archer',0.58],['harpy',0.76],['orc',1.00]] },
-  { t:510,  mix:[['boar',0.24],['archer',0.42],['harpy',0.58],['orc',0.76],['rider',1.00]] },
-  { t:620,  mix:[['archer',0.20],['harpy',0.38],['orc',0.56],['rider',0.74],['wolf',0.88],['turtle',1.00]] },
-  { t:720,  mix:[['harpy',0.20],['orc',0.38],['rider',0.54],['turtle',0.72],['ogre',1.00]] },
-  { t:840,  mix:[['orc',0.22],['rider',0.40],['harpy',0.54],['turtle',0.74],['ogre',1.00]] },
-  { t:960,  mix:[['rider',0.24],['harpy',0.42],['orc',0.58],['turtle',0.78],['ogre',1.00]] },
-  { t:1080, mix:[['harpy',0.26],['rider',0.46],['orc',0.60],['turtle',0.80],['ogre',1.00]] }
+  { t:0,    mix:[['spirit',0.55],['bee',1.00]] },
+  { t:40,   mix:[['spirit',0.40],['bee',0.72],['bird',1.00]] },
+  { t:110,  mix:[['bee',0.28],['bird',0.60],['myconid',1.00]] },
+  { t:210,  mix:[['bird',0.30],['myconid',0.56],['panther',1.00]] },
+  { t:300,  mix:[['myconid',0.28],['panther',0.56],['dryad',1.00]] },
+  { t:410,  mix:[['panther',0.30],['dryad',0.54],['spider',1.00]] },
+  { t:510,  mix:[['dryad',0.26],['spider',0.52],['mantis',1.00]] },
+  { t:620,  mix:[['panther',0.22],['spider',0.44],['mantis',0.72],['beetle',1.00]] },
+  { t:720,  mix:[['spider',0.22],['mantis',0.46],['dryad',0.66],['beetle',1.00]] },
+  { t:840,  mix:[['mantis',0.24],['panther',0.44],['spider',0.64],['beetle',1.00]] },
+  { t:960,  mix:[['mantis',0.24],['dryad',0.44],['spider',0.64],['beetle',1.00]] },
+  { t:1080, mix:[['panther',0.22],['mantis',0.44],['spider',0.66],['beetle',1.00]] }
 ];
 // ステージ2のボス（HPは hpMul 倍で出す）。締めは森の主フェンリル。
-var BOSS_AT2=[[240,'greatboar'],[480,'champion'],[720,'slimeking'],
-              [900,'goblinking'],[1080,'ancientogre'],[1200,'fenrir']];
+var BOSS_AT2=[[300,'kervi'],[600,'gmoth'],[900,'arachnid'],[1200,'eldertreant']];
 
 // ステージ定義。req をクリア済みで次ステージが解放される。
 var STAGES={
   1:{ nm:'草原',   sub:'20:00・フェンリル', wave:WAVE,  bossAt:BOSS_AT,  hpMul:1.0, req:0,
       ground:{ bg:'#150f2c', grid:'rgba(80,62,140,.28)', dot:'rgba(120,96,200,.14)' } },
-  2:{ nm:'森',     sub:'20:00・速く重い', wave:WAVE2, bossAt:BOSS_AT2, hpMul:1.6, req:1,
+  2:{ nm:'森',     sub:'20:00・速く重い', wave:WAVE2, bossAt:BOSS_AT2, hpMul:1.0, req:1, swarm:1,
       ground:{ bg:'#0e1f14', grid:'rgba(70,120,74,.26)',  dot:'rgba(120,180,120,.15)' } }
 };
 var ALLSTG=1;   // 開発中は全ステージ解放。製品化時は 0 に戻す
@@ -1239,7 +1261,7 @@ function reset(){
       rr:5+M('reroll'), sk:5+M('skipn') };
   enemies=[]; gems=[]; shots=[]; fx=[]; dmgs=[]; parts=[]; bolts=[]; chests=[]; coins=[]; chaks=[]; scys=[]; bombs=[]; rocks=[]; holes=[]; ebul=[]; quakes=[]; dhits=[]; vacs=[]; vacT=40; bells=[]; swords=[]; zones=[]; volley=[];
   boss=null; bossN=0; lasers=[];
-  time=0; kills=0; spawnT=0; eliteT=55; shake=0; hitStop=0; flash=0; chain=0; chainT=0;
+  time=0; kills=0; spawnT=0; eliteT=55; swarmT=20; shake=0; hitStop=0; flash=0; chain=0; chainT=0;
   whirlA=0; marks=[1140]; reacts=0; rdep=0; rtok=8; pending=0;
   score=0; silver=0; gold=0; magFx=0; chakSpin=0; wxRun={}; lastCd={}; coolMax={};
   slotSig='';
@@ -1347,6 +1369,7 @@ function update(dt){
   sweepDead();
   if(magFx>0) magFx-=dt;
   spawn(dt);
+  swarmTick(dt);
   checkBoss();
   moveEbul(dt);
   stepFx(dt);
@@ -2340,6 +2363,7 @@ function makeEnemy(k){
     vx:0, vy:0, res:t.res||0, flat:(t.flat||0)*scale,
     range:t.range||0, chspd:t.chspd||0, wind:t.wind||0, chdur:t.chdur||0,
     bspd:t.bspd||0, bdmg:(t.bdmg||0)*dscale,
+    boom:t.boom||0, boomR:t.boomR||0, boomDmg:(t.boomDmg||0)*dscale, life:0,
     kb:0, kbx:0, kby:0, ht:0, slow:0, el:0, elT:0, rcd:0, frz:0, dotD:0, dotT:0, dotN:0, vuln:0,
     ph:Math.random()*6.28, elite:0, boss:0, dead:0, uid:(++UID) };
   enemies.push(e); return e;
@@ -2382,6 +2406,16 @@ function moveEnemies(dt){
         if(P.hp<=0){ P.hp=0; die(); return; }
       }
       continue;
+    }
+
+    // 自爆クモ：プレイヤーに近づくと導火 → 起爆（倒しても kill() 側で爆発）
+    if(e.boom){
+      if(e.st==='fuse'){
+        e.stT-=dt; moved=1;
+        if(e.stT<=0){ kill(e); continue; }
+      }else if(d<e.r+P.r+30){
+        e.st='fuse'; e.stT=0.35; sfx(480,.1,'square',.05,1.2);
+      }
     }
 
     if(e.ai&&e.st!=='') { /* 行動中 */ }
@@ -2453,6 +2487,12 @@ function moveEnemies(dt){
         shake=Math.min(16,shake+5);
         sfx(180,.5,'sawtooth',.09,.4); noise(.4,.09);
       }
+    }
+    else if(e.ai==='dash'){
+      // スウォーム：出現時に決めた方向へ直進。追尾せず画面外で消滅。
+      e.x+=e.vx*dt; e.y+=e.vy*dt; moved=1;
+      if(e.life>0){ e.life-=dt; if(e.life<=0){ e.dead=1; continue; } }
+      if(d>1500){ e.dead=1; continue; }
     }
 
     // --- 移動 ---
@@ -2565,9 +2605,49 @@ function kill(e){
       coins.push({x:e.x,y:e.y,vx:(Math.random()-.5)*90,vy:(Math.random()-.5)*90,pull:0,sp:0});
     }
   }
+  if(e.boom&&!e.bshown){ e.bshown=1; spiderBoom(e); }
   chain++; chainT=1.4;
   var step=Math.min(chain,20);
   sfx(196*Math.pow(2,step/12),.055,'square',.045);
+}
+// 自爆クモの爆発：範囲内ならプレイヤーへダメージ
+function spiderBoom(e){
+  var R=e.boomR||96;
+  fx.push({k:'ring',x:e.x,y:e.y,r:0,to:R,t:0,life:.3,col:'#ff8a2f'});
+  for(var i=0;i<14;i++) parts.push({x:e.x,y:e.y,vx:(Math.random()-.5)*380,
+    vy:(Math.random()-.5)*380,t:0,life:.5,col:'#ffb14d',s:3});
+  shake=Math.min(18,shake+7); sfx(70,.3,'sawtooth',.09,.4); noise(.25,.1);
+  var dd=Math.hypot(P.x-e.x,P.y-e.y);
+  if(dd<R+P.r&&P.hurt<=0&&!P.god){
+    P.hp-=(e.boomDmg||e.dmg*2)*(1-0.04*M('armor')); P.hurt=0.55;
+    if(P.hp<=0){ P.hp=0; die(); }
+  }
+}
+// スウォーム：画面外の一辺から20〜30体が出現し、出現時のプレイヤー位置へ突進して通り抜ける
+var swarmT=0;
+function swarmTick(dt){
+  var stg=STAGES[curStage];
+  if(!stg||!stg.swarm||boss) return;
+  swarmT-=dt;
+  if(swarmT<=0){
+    swarmT=16+Math.random()*8;
+    if(enemies.length<cap()*0.9) spawnSwarm();
+  }
+}
+function spawnSwarm(){
+  var n=20+Math.floor(Math.random()*11);
+  var a=Math.random()*6.283;
+  var cx=P.x+Math.cos(a)*760, cy=P.y+Math.sin(a)*760;
+  var dx=P.x-cx, dy=P.y-cy, dd=Math.hypot(dx,dy)||1;
+  var vx=dx/dd, vy=dy/dd, px=-vy, py=vx;
+  for(var i=0;i<n;i++){
+    var e=makeEnemy('gnat');
+    var side=(Math.random()-0.5)*260, along=Math.random()*220;
+    e.x=cx+px*side-vx*along; e.y=cy+py*side-vy*along;
+    var sp=e.spd*(0.9+Math.random()*0.2);
+    e.vx=vx*sp; e.vy=vy*sp; e.life=9;
+  }
+  sfx(700,.2,'triangle',.03,2.2);
 }
 
 /* ============ 弾・宝石 ============ */
@@ -3175,6 +3255,173 @@ function drawPlayer(){
   ctx.beginPath(); ctx.moveTo(6,0); ctx.lineTo(24,0); ctx.stroke();
   ctx.restore();
 }
+// ステージ2（森）の手続き描画。ctx は敵中心へ translate 済み。col/dark は被弾・凍結を反映済み。
+var FOREST2={spirit:1,bird:1,myconid:1,bee:1,panther:1,dryad:1,mantis:1,spider:1,beetle:1,gnat:1,deer:1,moth:1,treant:1};
+function drawForestShape(s,R,col,dark,t){
+  if(s==='spirit'){
+    ctx.save();
+    ctx.globalAlpha=.35; ctx.fillStyle='#b8ff9e'; ctx.beginPath(); ctx.arc(0,0,R,0,6.3); ctx.fill();
+    ctx.globalAlpha=1; ctx.fillStyle=col; ctx.beginPath(); ctx.arc(0,0,R*0.7,0,6.3); ctx.fill();
+    ctx.strokeStyle='#9be86a'; ctx.lineWidth=R*0.16; ctx.beginPath(); ctx.arc(0,0,R*0.7,0,6.3); ctx.stroke();
+    ctx.fillStyle='#cfeeb8'; ctx.beginPath(); ctx.arc(-R*0.22,-R*0.22,R*0.16,0,6.3); ctx.fill();
+    ctx.restore();
+  }else if(s==='bird'){
+    ctx.fillStyle=col; ctx.beginPath(); ctx.ellipse(-R*0.1,R*0.2,R*0.72,R*0.85,0,0,6.3); ctx.fill(); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(R*0.5,R*0.1); ctx.lineTo(R*1.1,-R*0.2); ctx.lineTo(R*0.9,R*0.4); ctx.closePath(); ctx.fill(); ctx.stroke();
+    ctx.beginPath(); ctx.arc(-R*0.5,-R*0.55,R*0.42,0,6.3); ctx.fill(); ctx.stroke();
+    ctx.strokeStyle=dark; ctx.lineWidth=R*0.08;
+    ctx.beginPath(); ctx.moveTo(-R*0.5,-R*0.95); ctx.lineTo(-R*0.65,-R*1.25);
+    ctx.moveTo(-R*0.4,-R*0.95); ctx.lineTo(-R*0.3,-R*1.2); ctx.stroke(); ctx.lineWidth=2;
+    ctx.fillStyle='#e6b24a'; ctx.beginPath();
+    ctx.moveTo(-R*0.85,-R*0.55); ctx.lineTo(-R*1.45,-R*0.35); ctx.lineTo(-R*0.8,-R*0.2); ctx.closePath(); ctx.fill(); ctx.stroke();
+    ctx.fillStyle='#2a1f0c'; ctx.beginPath(); ctx.arc(-R*0.55,-R*0.6,R*0.09,0,6.3); ctx.fill();
+    ctx.strokeStyle='#e6b24a'; ctx.lineWidth=R*0.1;
+    ctx.beginPath(); ctx.moveTo(-R*0.2,R*1.0); ctx.lineTo(-R*0.2,R*1.35);
+    ctx.moveTo(R*0.15,R*1.0); ctx.lineTo(R*0.15,R*1.35); ctx.stroke(); ctx.lineWidth=2;
+  }else if(s==='myconid'){
+    ctx.fillStyle='#efe6cf'; ctx.strokeStyle=dark;
+    ctx.beginPath(); ctx.moveTo(-R*0.35,R*0.95); ctx.lineTo(-R*0.25,-R*0.1); ctx.lineTo(R*0.25,-R*0.1); ctx.lineTo(R*0.35,R*0.95); ctx.closePath(); ctx.fill(); ctx.stroke();
+    ctx.strokeStyle='#efe6cf'; ctx.lineWidth=R*0.2; ctx.lineCap='round';
+    ctx.beginPath(); ctx.moveTo(-R*0.3,R*0.15); ctx.lineTo(-R*0.7,R*0.5);
+    ctx.moveTo(R*0.3,R*0.15); ctx.lineTo(R*0.7,R*0.5); ctx.stroke(); ctx.lineWidth=2; ctx.strokeStyle=dark;
+    ctx.fillStyle=col; ctx.beginPath(); ctx.moveTo(-R*0.95,-R*0.05); ctx.quadraticCurveTo(0,-R*1.2,R*0.95,-R*0.05); ctx.closePath(); ctx.fill(); ctx.stroke();
+    ctx.fillStyle='#fff2e0';
+    ctx.beginPath(); ctx.arc(-R*0.35,-R*0.35,R*0.14,0,6.3); ctx.fill();
+    ctx.beginPath(); ctx.arc(R*0.3,-R*0.25,R*0.12,0,6.3); ctx.fill();
+    ctx.beginPath(); ctx.arc(-R*0.02,-R*0.6,R*0.1,0,6.3); ctx.fill();
+    ctx.fillStyle='#2a1f0c'; ctx.beginPath(); ctx.arc(-R*0.16,R*0.2,R*0.08,0,6.3); ctx.fill();
+    ctx.beginPath(); ctx.arc(R*0.16,R*0.2,R*0.08,0,6.3); ctx.fill();
+  }else if(s==='bee'){
+    var bf=Math.sin(t*22)*0.4;
+    ctx.globalAlpha=.55; ctx.fillStyle='#eaf2ff';
+    ctx.beginPath(); ctx.ellipse(-R*0.55,-R*0.55-R*bf*0.3,R*0.85,R*0.42,-0.6,0,6.3); ctx.fill();
+    ctx.beginPath(); ctx.ellipse(R*0.55,-R*0.55-R*bf*0.3,R*0.85,R*0.42,0.6,0,6.3); ctx.fill();
+    ctx.globalAlpha=1;
+    ctx.fillStyle=col; ctx.beginPath(); ctx.ellipse(0,R*0.25,R*0.58,R*0.9,0,0,6.3); ctx.fill(); ctx.stroke();
+    ctx.fillStyle=dark; ctx.fillRect(-R*0.52,R*0.02,R*1.04,R*0.17); ctx.fillRect(-R*0.44,R*0.44,R*0.88,R*0.17);
+    ctx.beginPath(); ctx.moveTo(-R*0.12,R*1.1); ctx.lineTo(R*0.12,R*1.1); ctx.lineTo(0,R*1.55); ctx.closePath(); ctx.fill();
+    ctx.fillStyle=col; ctx.beginPath(); ctx.arc(0,-R*0.58,R*0.36,0,6.3); ctx.fill(); ctx.stroke();
+    ctx.fillStyle='#2a1f0c'; ctx.beginPath(); ctx.arc(-R*0.14,-R*0.62,R*0.1,0,6.3); ctx.fill();
+    ctx.beginPath(); ctx.arc(R*0.14,-R*0.62,R*0.1,0,6.3); ctx.fill();
+  }else if(s==='panther'){
+    ctx.strokeStyle=col; ctx.lineWidth=R*0.24; ctx.lineCap='round';
+    ctx.beginPath(); ctx.moveTo(R*0.75,R*0.35); ctx.quadraticCurveTo(R*1.35,R*0.0,R*1.15,-R*0.55); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(-R*0.45,R*0.55); ctx.lineTo(-R*0.45,R*0.95);
+    ctx.moveTo(R*0.35,R*0.55); ctx.lineTo(R*0.35,R*0.95); ctx.stroke();
+    ctx.lineWidth=2; ctx.strokeStyle=dark;
+    ctx.fillStyle=col; ctx.beginPath(); ctx.ellipse(0,R*0.15,R*1.0,R*0.52,0,0,6.3); ctx.fill(); ctx.stroke();
+    ctx.beginPath(); ctx.arc(-R*0.85,-R*0.15,R*0.42,0,6.3); ctx.fill(); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(-R*1.05,-R*0.5); ctx.lineTo(-R*1.2,-R*0.9); ctx.lineTo(-R*0.8,-R*0.55); ctx.closePath(); ctx.fill();
+    ctx.beginPath(); ctx.moveTo(-R*0.7,-R*0.5); ctx.lineTo(-R*0.6,-R*0.95); ctx.lineTo(-R*0.45,-R*0.5); ctx.closePath(); ctx.fill();
+    ctx.fillStyle='#8fe0ff'; ctx.beginPath(); ctx.arc(-R*0.98,-R*0.18,R*0.1,0,6.3); ctx.fill();
+  }else if(s==='dryad'){
+    ctx.fillStyle='#bfff8a'; ctx.globalAlpha=.5; ctx.beginPath(); ctx.arc(R*0.8,-R*0.5,R*0.35,0,6.3); ctx.fill(); ctx.globalAlpha=1;
+    ctx.fillStyle='#eaffcf'; ctx.beginPath(); ctx.arc(R*0.8,-R*0.5,R*0.18,0,6.3); ctx.fill();
+    ctx.strokeStyle='#8a6b3a'; ctx.lineWidth=R*0.1; ctx.beginPath(); ctx.moveTo(R*0.8,-R*0.35); ctx.lineTo(R*0.55,R*0.7); ctx.stroke(); ctx.lineWidth=2;
+    ctx.fillStyle=dark; ctx.strokeStyle='#24401a';
+    ctx.beginPath(); ctx.moveTo(-R*0.4,R*0.9); ctx.lineTo(-R*0.25,-R*0.25); ctx.lineTo(R*0.25,-R*0.25); ctx.lineTo(R*0.4,R*0.9); ctx.closePath(); ctx.fill(); ctx.stroke();
+    ctx.fillStyle=col; ctx.beginPath(); ctx.arc(0,-R*0.5,R*0.4,0,6.3); ctx.fill(); ctx.stroke();
+    ctx.fillStyle='#6fae4a';
+    ctx.beginPath(); ctx.ellipse(-R*0.32,-R*0.82,R*0.32,R*0.18,-0.6,0,6.3); ctx.fill();
+    ctx.beginPath(); ctx.ellipse(R*0.32,-R*0.82,R*0.32,R*0.18,0.6,0,6.3); ctx.fill();
+    ctx.beginPath(); ctx.ellipse(0,-R*0.98,R*0.22,R*0.32,0,0,6.3); ctx.fill();
+    ctx.fillStyle='#ffe14d'; ctx.beginPath(); ctx.arc(-R*0.13,-R*0.5,R*0.07,0,6.3); ctx.fill();
+    ctx.beginPath(); ctx.arc(R*0.13,-R*0.5,R*0.07,0,6.3); ctx.fill();
+  }else if(s==='mantis'){
+    ctx.fillStyle=col; ctx.beginPath(); ctx.ellipse(R*0.2,R*0.5,R*0.4,R*0.75,-0.4,0,6.3); ctx.fill(); ctx.stroke();
+    ctx.beginPath(); ctx.ellipse(-R*0.1,-R*0.05,R*0.34,R*0.5,-0.2,0,6.3); ctx.fill(); ctx.stroke();
+    ctx.strokeStyle=col; ctx.lineWidth=R*0.16; ctx.lineCap='round';
+    ctx.beginPath(); ctx.moveTo(-R*0.3,-R*0.05); ctx.lineTo(-R*0.85,-R*0.35); ctx.lineTo(-R*0.55,-R*0.85); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(-R*0.1,-R*0.1); ctx.lineTo(-R*0.55,-R*0.55); ctx.lineTo(-R*0.15,-R*0.95); ctx.stroke();
+    ctx.lineWidth=2; ctx.strokeStyle=dark;
+    ctx.fillStyle=col; ctx.beginPath(); ctx.moveTo(-R*0.35,-R*0.55); ctx.lineTo(-R*0.05,-R*0.4); ctx.lineTo(-R*0.4,-R*0.95); ctx.closePath(); ctx.fill(); ctx.stroke();
+    ctx.fillStyle='#ff5a4d'; ctx.beginPath(); ctx.arc(-R*0.4,-R*0.78,R*0.12,0,6.3); ctx.fill();
+  }else if(s==='spider'){
+    ctx.strokeStyle=dark; ctx.lineWidth=R*0.09; ctx.lineCap='round';
+    for(var si=0;si<4;si++){ var sy=-R*0.3+si*R*0.28;
+      ctx.beginPath(); ctx.moveTo(-R*0.4,sy); ctx.lineTo(-R*1.05,sy-R*0.15); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(R*0.4,sy); ctx.lineTo(R*1.05,sy-R*0.15); ctx.stroke(); }
+    ctx.lineWidth=2;
+    ctx.fillStyle=col; ctx.beginPath(); ctx.arc(0,R*0.15,R*0.7,0,6.3); ctx.fill(); ctx.stroke();
+    var sg=ctx.createRadialGradient(0,R*0.15,1,0,R*0.15,R*0.55); sg.addColorStop(0,'#ffef8a'); sg.addColorStop(.6,'#ff7a2f'); sg.addColorStop(1,'rgba(255,80,20,0)');
+    ctx.fillStyle=sg; ctx.beginPath(); ctx.arc(0,R*0.15,R*0.55,0,6.3); ctx.fill();
+    ctx.fillStyle=dark; ctx.beginPath(); ctx.arc(0,-R*0.5,R*0.32,0,6.3); ctx.fill();
+    ctx.fillStyle='#ff5a4d'; ctx.beginPath(); ctx.arc(-R*0.12,-R*0.55,R*0.07,0,6.3); ctx.fill();
+    ctx.beginPath(); ctx.arc(R*0.12,-R*0.55,R*0.07,0,6.3); ctx.fill();
+  }else if(s==='beetle'){
+    ctx.strokeStyle=dark; ctx.lineWidth=R*0.11; ctx.lineCap='round';
+    for(var bi=0;bi<3;bi++){ var by2=-R*0.2+bi*R*0.35;
+      ctx.beginPath(); ctx.moveTo(-R*0.55,by2); ctx.lineTo(-R*1.0,by2+R*0.2); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(R*0.55,by2); ctx.lineTo(R*1.0,by2+R*0.2); ctx.stroke(); }
+    ctx.lineWidth=2;
+    ctx.fillStyle=col; ctx.beginPath(); ctx.ellipse(0,R*0.2,R*0.8,R*0.95,0,0,6.3); ctx.fill(); ctx.stroke();
+    ctx.strokeStyle=dark; ctx.beginPath(); ctx.moveTo(0,-R*0.55); ctx.lineTo(0,R*1.1); ctx.stroke();
+    ctx.globalAlpha=.25; ctx.fillStyle='#ffffff'; ctx.beginPath(); ctx.ellipse(-R*0.35,-R*0.1,R*0.18,R*0.5,0.2,0,6.3); ctx.fill(); ctx.globalAlpha=1;
+    ctx.fillStyle=dark; ctx.beginPath(); ctx.arc(0,-R*0.62,R*0.34,0,6.3); ctx.fill();
+    ctx.strokeStyle=col; ctx.lineWidth=R*0.16; ctx.lineCap='round';
+    ctx.beginPath(); ctx.moveTo(0,-R*0.7); ctx.lineTo(0,-R*1.25);
+    ctx.moveTo(0,-R*1.05); ctx.lineTo(-R*0.28,-R*1.4);
+    ctx.moveTo(0,-R*1.05); ctx.lineTo(R*0.28,-R*1.4); ctx.stroke(); ctx.lineWidth=2;
+    ctx.fillStyle='#ffd24d'; ctx.beginPath(); ctx.arc(-R*0.14,-R*0.62,R*0.07,0,6.3); ctx.fill();
+    ctx.beginPath(); ctx.arc(R*0.14,-R*0.62,R*0.07,0,6.3); ctx.fill();
+  }else if(s==='gnat'){
+    var gf=Math.sin(t*30)*0.5;
+    ctx.globalAlpha=.5; ctx.fillStyle='#e8e2c0';
+    ctx.beginPath(); ctx.ellipse(-R*0.5,-R*0.2-R*gf*0.3,R*0.6,R*0.32,-0.5,0,6.3); ctx.fill();
+    ctx.beginPath(); ctx.ellipse(R*0.5,-R*0.2-R*gf*0.3,R*0.6,R*0.32,0.5,0,6.3); ctx.fill();
+    ctx.globalAlpha=1;
+    ctx.fillStyle=col; ctx.beginPath(); ctx.ellipse(0,R*0.1,R*0.5,R*0.7,0,0,6.3); ctx.fill(); ctx.stroke();
+    ctx.fillStyle='#2a1f0c'; ctx.beginPath(); ctx.arc(0,-R*0.3,R*0.12,0,6.3); ctx.fill();
+  }else if(s==='deer'){
+    ctx.strokeStyle='#f0e6c0'; ctx.lineWidth=R*0.1; ctx.lineCap='round';
+    for(var sd=-1;sd<=1;sd+=2){
+      ctx.beginPath();
+      ctx.moveTo(sd*R*0.22,-R*0.5); ctx.lineTo(sd*R*0.55,-R*1.25);
+      ctx.moveTo(sd*R*0.4,-R*0.95); ctx.lineTo(sd*R*0.95,-R*1.05);
+      ctx.moveTo(sd*R*0.5,-R*1.12); ctx.lineTo(sd*R*0.85,-R*1.45);
+      ctx.moveTo(sd*R*0.3,-R*0.72); ctx.lineTo(sd*R*0.75,-R*0.75);
+      ctx.stroke();
+    }
+    ctx.lineWidth=2; ctx.strokeStyle=dark;
+    ctx.fillStyle=col; ctx.beginPath(); ctx.ellipse(0,R*0.55,R*0.7,R*0.5,0,0,6.3); ctx.fill(); ctx.stroke();
+    ctx.beginPath(); ctx.ellipse(0,-R*0.15,R*0.5,R*0.62,0,0,6.3); ctx.fill(); ctx.stroke();
+    ctx.fillStyle='#ffe98a'; ctx.beginPath(); ctx.arc(0,-R*0.5,R*0.12,0,6.3); ctx.fill();
+    ctx.fillStyle=dark; ctx.beginPath(); ctx.ellipse(0,R*0.28,R*0.16,R*0.12,0,0,6.3); ctx.fill();
+    ctx.fillStyle='#fff'; ctx.beginPath(); ctx.arc(-R*0.22,-R*0.2,R*0.09,0,6.3); ctx.fill();
+    ctx.beginPath(); ctx.arc(R*0.22,-R*0.2,R*0.09,0,6.3); ctx.fill();
+  }else if(s==='moth'){
+    var mf=Math.sin(t*6)*0.12;
+    ctx.fillStyle=col; ctx.globalAlpha=.9;
+    ctx.beginPath(); ctx.ellipse(-R*0.7,R*0.35,R*0.7,R*0.55,-0.5+mf,0,6.3); ctx.fill(); ctx.stroke();
+    ctx.beginPath(); ctx.ellipse(R*0.7,R*0.35,R*0.7,R*0.55,0.5-mf,0,6.3); ctx.fill(); ctx.stroke();
+    ctx.beginPath(); ctx.ellipse(-R*0.8,-R*0.35,R*0.85,R*0.55,-0.4+mf,0,6.3); ctx.fill(); ctx.stroke();
+    ctx.beginPath(); ctx.ellipse(R*0.8,-R*0.35,R*0.85,R*0.55,0.4-mf,0,6.3); ctx.fill(); ctx.stroke();
+    ctx.globalAlpha=1;
+    ctx.fillStyle='#2a1030';
+    ctx.beginPath(); ctx.arc(-R*0.95,-R*0.35,R*0.2,0,6.3); ctx.fill();
+    ctx.beginPath(); ctx.arc(R*0.95,-R*0.35,R*0.2,0,6.3); ctx.fill();
+    ctx.fillStyle='#ff9de0';
+    ctx.beginPath(); ctx.arc(-R*0.95,-R*0.35,R*0.09,0,6.3); ctx.fill();
+    ctx.beginPath(); ctx.arc(R*0.95,-R*0.35,R*0.09,0,6.3); ctx.fill();
+    ctx.fillStyle=dark; ctx.beginPath(); ctx.ellipse(0,0,R*0.32,R*0.8,0,0,6.3); ctx.fill();
+    ctx.strokeStyle=dark; ctx.lineWidth=R*0.06;
+    ctx.beginPath(); ctx.moveTo(-R*0.1,-R*0.7); ctx.quadraticCurveTo(-R*0.5,-R*1.1,-R*0.7,-R*1.0);
+    ctx.moveTo(R*0.1,-R*0.7); ctx.quadraticCurveTo(R*0.5,-R*1.1,R*0.7,-R*1.0); ctx.stroke(); ctx.lineWidth=2;
+  }else if(s==='treant'){
+    ctx.fillStyle='#4e7a3a'; ctx.strokeStyle='#2c491f';
+    ctx.beginPath(); ctx.arc(0,-R*0.55,R*0.9,0,6.3); ctx.fill(); ctx.stroke();
+    ctx.beginPath(); ctx.arc(-R*0.65,-R*0.2,R*0.52,0,6.3); ctx.fill(); ctx.stroke();
+    ctx.beginPath(); ctx.arc(R*0.65,-R*0.2,R*0.52,0,6.3); ctx.fill(); ctx.stroke();
+    ctx.fillStyle=col; ctx.strokeStyle=dark;
+    ctx.beginPath(); ctx.moveTo(-R*0.5,R*0.98); ctx.lineTo(-R*0.34,-R*0.15); ctx.lineTo(R*0.34,-R*0.15); ctx.lineTo(R*0.5,R*0.98); ctx.closePath(); ctx.fill(); ctx.stroke();
+    ctx.strokeStyle=col; ctx.lineWidth=R*0.2; ctx.lineCap='round';
+    ctx.beginPath(); ctx.moveTo(-R*0.38,R*0.15); ctx.lineTo(-R*1.0,-R*0.05);
+    ctx.moveTo(R*0.38,R*0.15); ctx.lineTo(R*1.0,-R*0.05); ctx.stroke(); ctx.lineWidth=2; ctx.strokeStyle=dark;
+    ctx.fillStyle='#ffd24d'; ctx.beginPath(); ctx.arc(-R*0.16,R*0.28,R*0.1,0,6.3); ctx.fill();
+    ctx.beginPath(); ctx.arc(R*0.16,R*0.28,R*0.1,0,6.3); ctx.fill();
+    ctx.strokeStyle='#2a1f0c'; ctx.beginPath(); ctx.arc(0,R*0.58,R*0.2,0.2,Math.PI-0.2); ctx.stroke();
+  }
+}
 function drawEnemy(e){
   ctx.save(); ctx.translate(e.x,e.y);
   ctx.fillStyle='rgba(0,0,0,.3)';
@@ -3184,10 +3431,13 @@ function drawEnemy(e){
   ctx.globalAlpha=.85; ctx.fillStyle='#0a0714';
   ctx.beginPath(); ctx.arc(0,0,R+3.5,0,6.3); ctx.fill();
   ctx.globalAlpha=1;
-  ctx.fillStyle=hit?'#ffffff':(e.frz>0?'#cfeeff':(e.slow>0?'#8fd4ff':e.col));
+  var bodyCol=hit?'#ffffff':(e.frz>0?'#cfeeff':(e.slow>0?'#8fd4ff':e.col));
+  ctx.fillStyle=bodyCol;
   ctx.strokeStyle=hit?'#ffffff':e.dark; ctx.lineWidth=2;
 
-  if(e.shape==='bat'){
+  if(FOREST2[e.shape]){
+    drawForestShape(e.shape,R,bodyCol,hit?'#ffffff':e.dark,time);
+  }else if(e.shape==='bat'){
     var f=Math.sin(time*14+e.ph)*0.5;
     ctx.beginPath();
     ctx.moveTo(-R*2.1,-R*f); ctx.quadraticCurveTo(-R*0.6,-R*0.8,0,0);
@@ -3270,6 +3520,21 @@ function drawEnemy(e){
     var sq=1+Math.sin(time*8+e.ph)*0.12;
     ctx.beginPath(); ctx.ellipse(0,0,R/sq,R*sq,0,0,6.3); ctx.fill();
     ctx.stroke();
+  }
+
+  // 突進の予告：溜め中はプレイヤー方向へ赤いラインを伸ばす
+  if(e.st==='wind'&&e.ai==='charge'){
+    var ta=Math.atan2(P.y-e.y,P.x-e.x);
+    ctx.save(); ctx.rotate(ta);
+    ctx.globalAlpha=0.30+0.25*Math.sin(time*20); ctx.fillStyle='#ff4d4d';
+    ctx.beginPath(); ctx.moveTo(R*0.5,-R*0.45); ctx.lineTo(R*6.5,-R*0.14);
+    ctx.lineTo(R*6.5,R*0.14); ctx.lineTo(R*0.5,R*0.45); ctx.closePath(); ctx.fill();
+    ctx.globalAlpha=1; ctx.restore();
+  }
+  // 弾幕の予告：溜め中は警告リング
+  if(e.st==='wind'&&e.ai==='slam'){
+    ctx.strokeStyle='#ffd08a'; ctx.globalAlpha=0.5+0.3*Math.sin(time*24); ctx.lineWidth=3;
+    ctx.beginPath(); ctx.arc(0,0,R+12+Math.sin(time*20)*4,0,6.3); ctx.stroke(); ctx.globalAlpha=1;
   }
 
   if(e.el&&ELEM[e.el]){
