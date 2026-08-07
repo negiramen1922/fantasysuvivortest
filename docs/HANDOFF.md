@@ -7,6 +7,14 @@
 
 ## 変更履歴（新しい順）
 
+- **床の装備（Floor Relic）システム追加**
+  - ラン開始時に `placeRelics()` が4個配置（原点から450〜1000px・互いに300px以上・PASSIVES9種から重複なし4種）
+  - 取得は `movePickups` 末尾で34px判定 → `takeRelic()`。対象パッシブ+1、**6枠上限を無視して取得可**（唯一の枠突破）
+  - 上限(max5)なら銀貨+15に変換。vital は最大HP+30＆回復、magnet は magFx=1.6
+  - 描画 `drawRelic()`（青い光柱 `#7fe6ff`＋台座＋glyph、drawChest 直前に描画）。`objCount` に relics 加算
+  - 一時停止画面(`buildText`)に「床の装備」行。localStorage には保存しない（ラン内限定）
+  - 検証: 配置1000回で距離450〜1000・相互300以上・重複0を確認。6枠→7種目取得の成立をロジック検証で確認
+
 - **ガトリングに弾数(ammo)軸を追加／覚醒を2連バレルに変更**
   - 新軸 `ammo`（弾数）を追加。AXN/AXT に登録、`AMMO(w)=AX(w,'ammo')`。銃系 WAX（musket/gatling）に `ammo:3` を付与
   - gatling: `GATMAG=40+ammo*8`（覚醒で×1.5）。musket: ペレット数 `5+CNT+AMMO`

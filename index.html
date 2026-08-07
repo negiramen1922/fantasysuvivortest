@@ -753,7 +753,7 @@ var state='title';
 var P, enemies, gems, shots, fx, dmgs, parts, bolts, chests, coins, chaks, scys, bombs, rocks, holes;
 var time, kills, spawnT, eliteT, shake, hitStop, flash, chain, chainT, choices;
 var whirlA, marks, reacts, rdep, rtok, pending, score, silver, gold, magFx, chakSpin;
-var ebul, boss, bossN, quakes, dhits, vacs, vacT, bells, swords, zones, volley;
+var ebul, boss, bossN, quakes, dhits, vacs, vacT, bells, swords, zones, volley, relics;
 var lasers;
 
 /* ============ 武器熟練度・特性 ============ */
@@ -1274,7 +1274,7 @@ function reset(){
       lv:1, xp:0, need:xpNeed(1), hurt:0,
       w:w0, wa:wa0, aw:{}, lb:{}, p:{},
       rr:5+M('reroll'), sk:5+M('skipn') };
-  enemies=[]; gems=[]; shots=[]; fx=[]; dmgs=[]; parts=[]; bolts=[]; chests=[]; coins=[]; chaks=[]; scys=[]; bombs=[]; rocks=[]; holes=[]; ebul=[]; quakes=[]; dhits=[]; vacs=[]; vacT=40; bells=[]; swords=[]; zones=[]; volley=[];
+  enemies=[]; gems=[]; shots=[]; fx=[]; dmgs=[]; parts=[]; bolts=[]; chests=[]; coins=[]; chaks=[]; scys=[]; bombs=[]; rocks=[]; holes=[]; ebul=[]; quakes=[]; dhits=[]; vacs=[]; vacT=40; bells=[]; swords=[]; zones=[]; volley=[]; relics=placeRelics();
   boss=null; bossN=0; lasers=[];
   time=0; kills=0; spawnT=0; eliteT=55; swarmT=3; shake=0; hitStop=0; flash=0; chain=0; chainT=0;
   gat.t=0; gat.mag=-1; gat.rl=0;
@@ -1313,7 +1313,7 @@ var fpsA=[], fpsI=0, perfT=0, perfEl=null, PERF=0;
 function objCount(){
   return shots.length+chaks.length+scys.length+bells.length+swords.length+
          rocks.length+holes.length+zones.length+bombs.length+ebul.length+
-         quakes.length+dhits.length+volley.length+lasers.length+fx.length+parts.length;
+         quakes.length+dhits.length+volley.length+lasers.length+fx.length+parts.length+relics.length;
 }
 function perfTick(dt){
   if(!PERF) return;
@@ -2861,6 +2861,48 @@ function movePickups(dt){
     var ch=chests[i]; ch.t+=dt;
     if(Math.hypot(P.x-ch.x,P.y-ch.y)<34){ chests.splice(i,1); openChest(ch); }
   }
+  // 床の装備（Floor Relic）：34px以内で取得
+  for(i=relics.length-1;i>=0;i--){
+    var rl=relics[i]; rl.t+=dt;
+    if(Math.hypot(P.x-rl.x,P.y-rl.y)<34){ relics.splice(i,1); takeRelic(rl); }
+  }
+}
+// 開始時に4個配置。原点から450〜1000px、互いに300px以上、中身は重複なし4種。
+function placeRelics(){
+  for(var attempt=0;attempt<50;attempt++){
+    var keys=Object.keys(PASSIVES); shuffle(keys);
+    var pick=keys.slice(0,4), out=[], failed=0;
+    for(var i=0;i<pick.length;i++){
+      var placed=0;
+      for(var tries=0;tries<300;tries++){
+        var a=Math.random()*6.283, d=450+Math.random()*550;
+        var x=Math.cos(a)*d, y=Math.sin(a)*d, ok=1;
+        for(var j=0;j<out.length;j++) if(Math.hypot(x-out[j].x,y-out[j].y)<300){ ok=0; break; }
+        if(ok){ out.push({x:x,y:y,id:pick[i],t:Math.random()*6.28}); placed=1; break; }
+      }
+      if(!placed){ failed=1; break; }
+    }
+    if(!failed) return out;
+  }
+  return out;
+}
+// 取得：6枠を無視して対象パッシブ+1。上限なら銀貨+15に変換。
+function takeRelic(rl){
+  var id=rl.id, p=PASSIVES[id], cur=P.p[id]||0, txt;
+  if(cur>=p.max){
+    silver+=15; score+=15; txt='銀貨 +15';
+  }else{
+    P.p[id]=cur+1;
+    if(id==='vital'){ P.max+=30; P.hp=Math.min(P.max,P.hp+30); }
+    if(id==='magnet') magFx=1.6;
+    txt=p.nm+' Lv'+(cur+1);
+  }
+  banner(p.nm);
+  flash=Math.max(flash,.5); shake=Math.min(16,shake+5);
+  fx.push({k:'ring',x:rl.x,y:rl.y,r:0,to:120,t:0,life:.4,col:'#7fe6ff'});
+  dmgs.push({x:rl.x,y:rl.y-30,v:-40,t:0,life:.95,txt:txt,rx:1,col:'#7fe6ff'});
+  [0,90,180].forEach(function(ms,i){ setTimeout(function(){ sfx([784,988,1319][i],.16,'triangle',.075); },ms); });
+  syncHud();
 }
 /* ============ 宝箱 ============ */
 // 候補は「所持している武器の、まだ伸ばせる軸」だけ。新しい武器は絶対に出ない。
@@ -3225,6 +3267,7 @@ function render(){
 
   // ---- 地面の層：広い面の演出はすべて敵より下に描く ----
   drawMagRing();
+  for(i=0;i<relics.length;i++) drawRelic(relics[i]);
   for(i=0;i<chests.length;i++) drawChest(chests[i]);
   for(i=0;i<coins.length;i++) drawCoin(coins[i]);
   for(i=0;i<vacs.length;i++) drawVac(vacs[i]);
@@ -3926,6 +3969,23 @@ function drawChest(ch){
   ctx.fillStyle='#ffd94d'; ctx.fillRect(-4,-9,8,8);
   ctx.restore();
 }
+// 床の装備：青い光の柱＋台座＋パッシブの絵文字。画面外でも消さない。
+function drawRelic(rl){
+  ctx.save(); ctx.translate(rl.x,rl.y);
+  var bob=Math.sin(rl.t*3.2)*3, pulse=0.55+Math.sin(rl.t*5)*0.45;
+  ctx.globalAlpha=0.10+pulse*0.14;
+  ctx.fillStyle='#7fe6ff'; ctx.fillRect(-13,-260,26,260);
+  ctx.globalAlpha=0.22+pulse*0.2;
+  ctx.beginPath(); ctx.arc(0,bob,30,0,6.3); ctx.fill();
+  ctx.globalAlpha=1;
+  ctx.translate(0,bob);
+  ctx.fillStyle='#24485a'; ctx.beginPath(); ctx.ellipse(0,15,20,7,0,0,6.3); ctx.fill();
+  ctx.fillStyle='#356981'; ctx.fillRect(-13,5,26,8);
+  ctx.strokeStyle='#7fe6ff'; ctx.lineWidth=2; ctx.strokeRect(-13,5,26,8);
+  ctx.font='22px sans-serif'; ctx.textAlign='center'; ctx.textBaseline='middle';
+  ctx.fillStyle='#eafcff'; ctx.fillText(PASSIVES[rl.id].glyph,0,-9);
+  ctx.restore();
+}
 function drawGem(g){
   ctx.save(); ctx.translate(g.x,g.y);
   var s=g.val>=10?7:4.5;
@@ -4497,6 +4557,11 @@ function buildText(){
   for(id in P.p){ ps.push(PASSIVES[id].nm+' <b>'+P.p[id]+'</b>'); }
   var ch=[];
   for(id in ELEM){ if(elemSourceOwned(id)) ch.push(ELEM[id].nm+' <b>'+Math.round(elemChance(id)*100)+'%</b>'); }
+  var relTxt='';
+  if(relics&&relics.length){
+    var rr=[]; for(var ri=0;ri<relics.length;ri++){ var pp=PASSIVES[relics[ri].id]; rr.push(pp.glyph+pp.nm); }
+    relTxt='床の装備 <span style="color:#7fe6ff">'+rr.join('　')+'</span><br>';
+  }
   return '経過 <b>'+(m<10?'0':'')+m+':'+(s<10?'0':'')+s+' / 20:00</b>　'+
          'SCORE <b>'+fmt(score)+'</b>　討伐 <b>'+kills+'</b>　元素反応 <span class="el">'+reacts+'</span><br>'+
          '持ち帰り 銀貨 <b>'+silver+'</b>　金貨 <b>'+gold+'</b><br>'+
@@ -4505,7 +4570,7 @@ function buildText(){
          (CH().grow?'<span style="color:var(--gold)">　'+CH().grow.tx+'（現在 +'+
             (CH().grow.v*(P.lv-1)*100).toFixed(0)+'%）</span>':'')+'<br>'+
          '能力 '+(ps.join('　')||'—')+'<span style="color:#6b5f9c">（'+ps.length+'/6枠）</span><br>'+
-         '付与率 '+(ch.join('　')||'—')+'　反応倍率 <b>×'+elemPow().toFixed(2)+'</b><br>'+
+         relTxt+'付与率 '+(ch.join('　')||'—')+'　反応倍率 <b>×'+elemPow().toFixed(2)+'</b><br>'+
                   '<span style="font-size:12px;color:#6b5f9c">P / Esc でも再開できます</span>';
 }
 function _unused(){
