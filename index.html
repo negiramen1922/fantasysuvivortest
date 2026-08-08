@@ -767,7 +767,7 @@ var WEAPONS={
   dynamite:{ nm:'ダイナマイト', glyph:'\u{1F9E8}', tag:'射撃', max:10,
     tx:'放物線を描いて投げ、着弾地点で爆発する。' },
   fire:{ nm:'ファイヤーボール', glyph:'\u{1F525}', tag:'炎', max:10,
-    tx:'最寄りの敵へ火球を放つ。貫通し、数が増えていく。' },
+    tx:'最寄りの敵へ火球を放つ。当たると爆発し、貫通しながら数が増えていく。' },
   flame:{ nm:'焔輪', glyph:'\u{1F7E0}', tag:'炎', max:10,
     tx:'火の玉が周囲を巡る。触れた敵を焼き続ける。' },
   ice:{ nm:'アイスジャベリン', glyph:'\u2744', tag:'氷', max:10,
@@ -1009,10 +1009,10 @@ var WTRAIT={
     [{id:'f1a',nm:'火力',tx:'ダメージ +22%',ef:{dmg:.22}},
      {id:'f1b',nm:'連射',tx:'発射の間隔 −18%',ef:{cd:-.18}},
      {id:'f1c',nm:'増弾',tx:'発射数 +1',ef:{count:1}}],
-    [{id:'f2a',nm:'爆炎',tx:'着弾時に小爆発が起きる',ef:{explode:1}},
+    [{id:'f2a',nm:'爆炎',tx:'爆発の範囲が広がる',ef:{explode:1}},
      {id:'f2b',nm:'火力強化',tx:'ダメージ +32%',ef:{dmg:.32}},
      {id:'f2c',nm:'増弾II',tx:'発射数 +2',ef:{count:2}}],
-    [{id:'f3a',nm:'大爆発',tx:'着弾で大爆発が起きる',ef:{explode:1,bigboom:1}},
+    [{id:'f3a',nm:'大爆発',tx:'爆発の範囲がさらに広がる',ef:{explode:1,bigboom:1}},
      {id:'f3b',nm:'貫通',tx:'貫通数 +2',ef:{pierce:2}},
      {id:'f3c',nm:'猛射',tx:'発射の間隔 −28%',ef:{cd:-.28}}]
   ],
@@ -1282,7 +1282,7 @@ var AWT={ chainsaw:'前方だけでなく全方位を削るようになる', mus
   chakram:'軌道が内外2重になり、内側は逆回転', bow:'貫通するたび威力が上がる（最大3倍）',
   dynamite:'爆発が巻き込んだ敵を起点にもう一度爆発', bell:'最大半径で反射し収縮しながら戻る',
   quake:'隆起点に亀裂が残り、通る敵に継続ダメージ', rock:'敵に当たるたび大きくなる',
-  fire:'敵に当たるたび爆発する', flame:'火の玉が軌道上に炎の帯を残す',
+  fire:'着弾の爆発が一回り大きく強くなる', flame:'火の玉が軌道上に炎の帯を残す',
   ice:'貫いた位置に氷柱が立ち、触れた敵を鈍足', thunder:'落雷地点から追加の落雷が1度連鎖',
   chain:'減衰が止まり、跳ぶ距離が倍に', holy:'拡散した破片がさらに1度拡散',
   aura:'剣が消えるとき光の柱が立ち周囲を一掃', voidh:'消滅時に大爆発',
@@ -1676,7 +1676,7 @@ function runWeapons(dt){
   if(P.w.chainsaw&&ready('chainsaw',0.20*RATE('chainsaw'),dt)) doChain2();
   if(P.w.musket  &&ready('musket',  1.50*RATE('musket'),dt)){  doMusket(); queueVolley('musket',0.13); }
   if(P.w.blizzard&&ready('blizzard',0.50*RATE('blizzard'),dt)) doBlizzard();
-  if(P.w.laser   &&ready('laser',   1.40*RATE('laser'),dt))    doLaser();
+  if(P.w.laser   &&ready('laser',   2.00*RATE('laser'),dt))    doLaser();
   if(P.w.slash&&ready('slash',0.85*RATE('slash'),dt)) doSlash();
   if(P.w.scythe  &&ready('scythe',  1.45*RATE('scythe'),dt))   doScythe();
   if(P.w.chakram &&ready('chakram', 1.65*RATE('chakram'),dt))  doChakram();
@@ -1765,7 +1765,7 @@ function doLaser(){
   SRC='laser';
   var c=Math.min(4,AX('laser','count')+TR('laser','count'));
   var n=LASN[c], len=420, wid=14*AREA('laser');
-  var dmg=16*DMG('laser')*pw('laser'), hits=0;
+  var dmg=11*DMG('laser')*pw('laser'), hits=0;
   var base=P.face;
   for(var i=0;i<n;i++){
     var ang=base+i/n*6.283;
@@ -2006,7 +2006,8 @@ function doFire(){
   var cnt=1+CNT('fire');
   var e=nearest(P.x,P.y,620); if(!e) return;
   var base=Math.atan2(e.y-P.y,e.x-P.x);
-  var bm=TF('fire','explode')?(TF('fire','bigboom')?104:62):0;
+  // 標準で着弾＝爆発。熟練の爆炎/大爆発で爆発が一回り大きくなる。
+  var bm=(TF('fire','explode')?(TF('fire','bigboom')?108:88):64)*AREA('fire');
   for(var i=0;i<cnt;i++){
     var a=base+(i-(cnt-1)/2)*0.17;
     shots.push({x:P.x,y:P.y,vx:Math.cos(a)*400,vy:Math.sin(a)*400,r:8,
@@ -2460,7 +2461,9 @@ function boom(x,y,rad,dmg,col,slowSec){
     var e=enemies[i], dx=e.x-x, dy=e.y-y, d=Math.hypot(dx,dy);
     if(d<rad+e.r){
       if(slowSec) e.slow=Math.max(e.slow,slowSec);
-      hurt(e,dmg,dx/(d||1),dy/(d||1),null);
+      // 距離減衰：中心で全力、外周ほど弱まる（下限40%）
+      var fo=1-0.6*Math.min(1,d/(rad||1));
+      hurt(e,dmg*fo,dx/(d||1),dy/(d||1),null);
     }
   }
 }
@@ -2930,9 +2933,9 @@ function moveShots(dt){
         if(s.src==='ice'&&AW('ice')) addZone(e.x,e.y,44,s.dmg*0.18,3.0,'ice',1.6,'#7fd8ff','ice');
         s.hit.push(e); s.pierce--;
         if(s.split) { holySplit(s); s.split=0; }
-        if(s.src==='fire'&&AW('fire')) fireBoom(s);
+        if(s.src==='fire'&&s.boom) fireBoom(s);  // 敵に当たるたび爆発
         if(s.grow&&s.dmg<s.base*3) s.dmg*=1.35;
-        if(s.pierce<=0){ if(s.boom) fireBoom(s); s.life=0; break; }
+        if(s.pierce<=0){ s.life=0; break; }
       }
     }
     if(s.life<=0) shots.splice(i,1);
@@ -2940,9 +2943,12 @@ function moveShots(dt){
 }
 function fireBoom(s){
   SRC='fire';
-  boom(s.x,s.y,s.boom,s.dmg*0.8,'#ff9040',0);
+  // 爆発は直撃より低い。覚醒で爆発が大きく強くなる。
+  var r=s.boom, dm=s.dmg*0.5;
+  if(AW('fire')){ r*=1.5; dm*=1.5; }
+  boom(s.x,s.y,r,dm,'#ff9040',0);
   SRC=null;
-  shake=Math.min(16,shake+(s.boom>80?5:2.5));
+  shake=Math.min(16,shake+(r>90?5:2.5));
   sfx(170,.18,'sawtooth',.075,.4); noise(.16,.1);
 }
 // 磁石：拾うと場に散らばった経験値と銀貨を一気に引き寄せる
