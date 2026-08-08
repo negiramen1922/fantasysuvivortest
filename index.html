@@ -1476,7 +1476,7 @@ var VOLM=0.8; // 全体音量 0〜1
 var VOLS=0.8; // 効果音音量
 var VOLB=0.55; // BGM音量
 var TUTSEEN=0; // チュートリアルを一度でも見たか
-var VERSION='α1.0.10'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
+var VERSION='α1.0.11'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
 (function loadSave(){
   for(var i=0;i<UPG.length;i++) META[UPG[i].id]=0;
   try{
@@ -2936,7 +2936,9 @@ function hurt(e,dmg,nx,ny,el){
   if(P.nodmg) d=0;                         // テスト：判定は走るが敵は死なない
   if(e.vuln>0) d*=1.2;                     // 深淵の手：被ダメージ上昇
   if(e.flat) d=Math.max(d*0.25,d-e.flat);   // 甲羅：軽い攻撃ほど通らない
-  e.hp-=d; e.ht=0.12; e.kb=Math.max(e.kb,crit?4:2.2); e.kbx=nx||0; e.kby=ny||0;
+  e.hp-=d; e.ht=0.12;
+  // ベル・ホーリージャッジ（十字架のAoE）はノックバックさせない
+  if(SRC!=='bell'&&SRC!=='aura'){ e.kb=Math.max(e.kb,crit?4:2.2); e.kbx=nx||0; e.kby=ny||0; }
   if(SRC) WDMG[SRC]=(WDMG[SRC]||0)+d; else WDMG._react=(WDMG._react||0)+d;   // 与ダメージ集計
   if(dmgs.length>110) dmgs.shift();
   dmgs.push({x:e.x,y:e.y-e.r-4,v:-52,t:0,life:.65,txt:Math.round(d),crit:crit});
@@ -5195,6 +5197,8 @@ Array.prototype.forEach.call(document.querySelectorAll('#setshake button'),funct
 // 更新履歴：1つのお知らせ内で「バージョン見出し」ごとに変更点を並べる（新しい順）。
 // マージのたびに先頭へ新バージョンを追加し、VERSION も更新する。
 var UPDATES=[
+  {v:'α1.0.11', items:[
+    'ベルと、ホーリージャッジ（十字架）の範囲ダメージのノックバックを廃止（敵を吹き飛ばしすぎていたため）。']},
   {v:'α1.0.10', items:[
     'レベルアップの選択直後に短い無敵（0.6秒）を追加。再開した瞬間に敵と重なって理不尽に被弾するのを防ぎます（無敵中はシールドリング表示）。']},
   {v:'α1.0.09', items:[
