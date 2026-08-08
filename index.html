@@ -913,10 +913,10 @@ var BOSS={
   // ===== ステージ2（森）ボス =====
   kervi:      { nm:'神鹿ケルビ',       res:0.92, key:'deer',    hp:30000,  r:46, spd:60, dmg:40, xp:1200, pts:16000,
                ai:'charge', range:560, acd:2.6, chspd:580, wind:0.9, chdur:1.0 },
-  gmoth:      { nm:'ジャイアントモス', res:0.93, key:'moth',    hp:75000,  r:50, spd:44, dmg:42, xp:1600, pts:24000,
-               ai:'slam', acd:3.0, wind:0.65, nbul:26, bspd:205, bdmg:16 },
+  gmoth:      { nm:'ジャイアントモス', res:0.93, key:'moth',    hp:75000,  r:50, spd:48, dmg:42, xp:1600, pts:24000,
+               ai:'flutter', acd:3.4, bspd:200, bdmg:15 },
   arachnid:   { nm:'アラクネイド',     res:0.94, key:'arachne', hp:140000, r:50, spd:58, dmg:44, xp:1900, pts:40000,
-               ai:'summon', acd:3.2, sum:'spider', nsum:3 },
+               ai:'weaver', acd:2.8, wind:0.55, nbul:7, bspd:230, bdmg:16 },
   eldertreant:{ nm:'エルダートレント', res:0.96, key:'wtreant', hp:260000, r:56, spd:34, dmg:50, xp:2400, pts:60000,
                ai:'slam', acd:3.4, wind:0.7, nbul:20, bspd:230, bdmg:20, last:1 }
 };
@@ -1476,7 +1476,7 @@ var VOLM=0.8; // 全体音量 0〜1
 var VOLS=0.8; // 効果音音量
 var VOLB=0.55; // BGM音量
 var TUTSEEN=0; // チュートリアルを一度でも見たか
-var VERSION='α1.0.13'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
+var VERSION='α1.0.14'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
 (function loadSave(){
   for(var i=0;i<UPG.length;i++) META[UPG[i].id]=0;
   try{
@@ -2833,11 +2833,16 @@ function moveEnemies(dt){
       }
     }
     else if(e.ai==='kingcombo'){
-      // ゴブリンキング：武器を4回ブン！と振りながら前進→少し休憩→ボア風の突進
-      if(e.st==='swing'){
+      // ゴブリンキング：予備動作（予測線）→ブン！と踏み込み斬り を4回→休憩→ボア風の突進
+      if(e.st==='swwind'){          // 予備動作：赤い扇の予測を出しつつゆっくり詰める
         e.stT-=dt; moved=1;
-        e.x+=dx/d*e.spd*2.4*dt; e.y+=dy/d*e.spd*2.4*dt;   // 攻撃しながら前進
-        if(!e.swung&&e.stT<=0.21){
+        e.x+=dx/d*e.spd*0.6*dt; e.y+=dy/d*e.spd*0.6*dt;
+        if(e.stT<=0){ e.st='swing'; e.stT=0.22; e.swung=0; }
+      }
+      else if(e.st==='swing'){      // 斬撃：速く踏み込みつつ判定
+        e.stT-=dt; moved=1;
+        e.x+=dx/d*e.spd*2.6*dt; e.y+=dy/d*e.spd*2.6*dt;
+        if(!e.swung){
           e.swung=1;
           fx.push({k:'slash',x:e.x+dx/d*(e.r+20),y:e.y+dy/d*(e.r+20),a:Math.atan2(dy,dx),arc:1.9,rad:e.r+66,t:0,life:.2,col:'#ffd08a'});
           sfx(300,.09,'square',.06,0.65);
@@ -2846,8 +2851,8 @@ function moveEnemies(dt){
             if(P.hp<=0){ P.hp=0; die(); return; }
           }
         }
-        if(e.stT<=0){ e.combo--; e.swung=0;
-          if(e.combo>0){ e.st='swing'; e.stT=0.42; }
+        if(e.stT<=0){ e.combo--;
+          if(e.combo>0){ e.st='swwind'; e.stT=0.32; }
           else{ e.st='rest'; e.stT=1.0; } }
       }
       else if(e.st==='rest'){ e.stT-=dt; moved=1; if(e.stT<=0){ e.st='wind'; e.stT=e.wind; } }
@@ -2855,7 +2860,7 @@ function moveEnemies(dt){
         if(e.stT<=0){ e.st='dash'; e.stT=e.chdur; e.vx=dx/d*e.chspd; e.vy=dy/d*e.chspd; sfx(150,.16,'sawtooth',.05,.6); } }
       else if(e.st==='dash'){ e.stT-=dt; moved=1; e.x+=e.vx*dt; e.y+=e.vy*dt;
         if(e.stT<=0){ e.st=''; e.at=e.acd; } }
-      else if(e.at<=0&&d<600){ e.st='swing'; e.combo=4; e.stT=0.42; e.swung=0; }
+      else if(e.at<=0&&d<600){ e.st='swwind'; e.combo=4; e.stT=0.32; e.swung=0; }
     }
     else if(e.ai==='fenrir'){
       // フェンリル：2方向へ渦を描く弾幕（ﾊﾟﾊﾟﾊﾟ…）→突進→突進終わりに全方位弾幕
@@ -2874,6 +2879,37 @@ function moveEnemies(dt){
           fx.push({k:'ring',x:e.x,y:e.y,r:0,to:150,t:0,life:.4,col:'#cfe0ff'});
           shake=Math.min(18,shake+6); sfx(90,.26,'square',.09,.4); noise(.2,.1); } }
       else if(e.at<=0&&d<640){ e.st='spiral'; e.stT=2.4; e.tick=0; e.sa=Math.atan2(dy,dx); }
+    }
+    else if(e.ai==='flutter'){
+      // ジャイアントモス：3方向の渦をゆらゆら撒き続ける（弾幕だが放射slamとは別物）
+      if(e.st==='cast'){
+        e.stT-=dt; e.tick-=dt; moved=1;
+        if(e.tick<=0){ e.tick=0.08; e.sa=(e.sa||0)+0.5;
+          for(var ma=0;ma<3;ma++) eshoot(e,e.sa+ma/3*6.283,e.bspd,e.bdmg);
+          sfx(560,.03,'square',.025,1.1); }
+        if(e.stT<=0){ e.st=''; e.at=e.acd; }
+      }
+      else if(e.at<=0&&d<720){ e.st='cast'; e.stT=2.6; e.tick=0; e.sa=Math.random()*6.283; }
+    }
+    else if(e.ai==='weaver'){
+      // アラクネイド：狙い撃ちの扇状ショット、3回に1回は放射状の網（予告リングあり）。召喚はしない。
+      if(e.st==='cast'){
+        e.stT-=dt; moved=1;
+        if(!e.fired&&e.stT<=e.wind-0.25){
+          e.fired=1;
+          if(e.radial){
+            for(var wr=0;wr<22;wr++) eshoot(e,wr/22*6.283+Math.random()*0.12,e.bspd*0.85,e.bdmg);
+            fx.push({k:'ring',x:e.x,y:e.y,r:0,to:130,t:0,life:.35,col:'#c89ce0'});
+            shake=Math.min(16,shake+5); sfx(120,.2,'square',.07,.5);
+          }else{
+            var wb=Math.atan2(dy,dx), wk=e.nbul;
+            for(var wf=0;wf<wk;wf++) eshoot(e,wb+(wf-(wk-1)/2)*0.15,e.bspd,e.bdmg);
+            sfx(300,.1,'sawtooth',.05,.6);
+          }
+        }
+        if(e.stT<=0){ e.st=''; e.at=e.acd; e.wcount=(e.wcount||0)+1; }
+      }
+      else if(e.at<=0&&d<680){ e.st='cast'; e.stT=e.wind; e.fired=0; e.radial=(((e.wcount||0)%3)===2); }
     }
     else if(e.ai==='dash'){
       // スウォーム：出現時に決めた方向へ直進。追尾せず画面外で消滅。
@@ -4066,6 +4102,19 @@ function drawEnemy(e){
     ctx.strokeStyle='#ffd08a'; ctx.globalAlpha=0.5+0.3*Math.sin(time*24); ctx.lineWidth=3;
     ctx.beginPath(); ctx.arc(0,0,R+12+Math.sin(time*20)*4,0,6.3); ctx.stroke(); ctx.globalAlpha=1;
   }
+  // ゴブリンキングの斬り予告：踏み込む方向へ赤い扇（予備動作中のみ）
+  if(e.st==='swwind'){
+    var sa=Math.atan2(P.y-e.y,P.x-e.x);
+    ctx.save(); ctx.rotate(sa);
+    ctx.globalAlpha=0.22+0.28*Math.sin(time*26); ctx.fillStyle='#ff6a4d';
+    ctx.beginPath(); ctx.moveTo(0,0); ctx.arc(0,0,R+72,-0.95,0.95); ctx.closePath(); ctx.fill();
+    ctx.globalAlpha=1; ctx.restore();
+  }
+  // アラクネイドの網（放射）予告：詠唱中は紫の警告リング
+  if(e.st==='cast'&&e.radial&&!e.fired){
+    ctx.strokeStyle='#c89ce0'; ctx.globalAlpha=0.5+0.3*Math.sin(time*24); ctx.lineWidth=3;
+    ctx.beginPath(); ctx.arc(0,0,R+12+Math.sin(time*20)*4,0,6.3); ctx.stroke(); ctx.globalAlpha=1;
+  }
 
   // 射撃の予告：狙い澄まし中はリング
   if(e.st==='wind'&&e.ai==='shoot'){
@@ -5209,6 +5258,9 @@ Array.prototype.forEach.call(document.querySelectorAll('#setshake button'),funct
 // 更新履歴：1つのお知らせ内で「バージョン見出し」ごとに変更点を並べる（新しい順）。
 // マージのたびに先頭へ新バージョンを追加し、VERSION も更新する。
 var UPDATES=[
+  {v:'α1.0.14', items:[
+    'ゴブリンキングの連続斬りに予備動作（赤い扇の予測）を追加。予告なしで突然死する不具合を修正。',
+    'ステージ2ボスの挙動を変更：ジャイアントモスは3方向の渦弾幕（放射弾幕から差別化）、アラクネイドは召喚を廃止し「狙い撃ちの扇＋3回に1回の放射網（予告あり）」に。']},
   {v:'α1.0.13', items:[
     'リザルトに会心（クリティカル）発生回数とステージ名を表示。構成をラン中メニュー風にアイコン付きで見やすく。',
     '宝箱も画面外にあるとき画面端に方向マーカーを表示。',
