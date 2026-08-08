@@ -10,6 +10,12 @@
 - リザルト画面と設定画面に `VERSION` を表示。
 - お知らせ（`UPDATES` 配列）は**1枠内でバージョン見出しごとに変更点を掲載**（新しい順）。マージ時は `UPDATES` 先頭に新バージョンを追加し `VERSION` を一致させる。
 
+## ver.α1.0.15
+- **テストボタンをdev限定**：`DEVMODE=/dev/i.test(location.search+location.hash)`。非devでは `#testbtn` を `display:none`。スマホでLv数字と被る問題の主因を解消。
+- 予備で `@media(max-width:560px)` に上段の右パディング（`#topline/#subline` padding-right:58px, gap:16px）。
+- **DPS/DPM表示**：設定に `#setdps`/`#setdpm` 追加。`SHOWDPS/SHOWDPM` 保存。`perfTick`→`infoTick` に統合し、`dmgSec`（hurtで加算）→1秒ごとに `dpsVal`＝直近1秒、`dpmVal`＝60スロットリングの合計。`PERF`も保存対象に。
+- **エリートHPを時間スケール**：`em=3.4+time*0.05`（5分18倍/10分33倍/20分63倍）。
+
 ## ver.α1.0.14
 - **ゴブリンキングの連続斬りに予備動作を追加（突然死の修正）**：`kingcombo` を `swwind`（予告・ゆっくり詰め）→`swing`（踏み込み斬り）の2段に。`drawEnemy` に `swwind` 用の赤い扇の予測を追加。
 - **ステージ2ボスの挙動変更**：

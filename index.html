@@ -76,6 +76,8 @@ canvas{display:block;width:100%;height:100%;touch-action:none}
 #perf .mid{color:var(--gold)}
 #perf .bad{color:var(--blood)}
 @media (max-width:820px){ #perf{left:10px;bottom:62px;font-size:10px} }
+/* スマホ：中央寄せの上段が右上のボタン（一時停止/テスト）に被らないよう右側に余白 */
+@media (max-width:560px){ #topline{gap:16px;padding-right:58px} #subline{padding-right:58px} }
 #hpwrap{position:absolute;left:14px;bottom:14px;width:220px;max-width:44%}
 #hpbg{height:16px;background:#0e0a1f;border:1px solid var(--line)}
 #hpbar{height:100%;width:100%;background:linear-gradient(90deg,#c0203f,var(--blood));transition:width .15s}
@@ -522,6 +524,8 @@ canvas{display:block;width:100%;height:100%;touch-action:none}
         <div class="setrow"><span>効果音の音量</span><input type="range" id="vols" min="0" max="100" step="5"><span id="volsval" class="setval">80%</span></div>
         <div class="setrow"><span>BGM の音量</span><input type="range" id="volb" min="0" max="100" step="5"><span id="volbval" class="setval">55%</span></div>
         <div class="setrow"><span>FPS 表示</span><button class="tg" id="setperf">OFF</button></div>
+        <div class="setrow"><span>DPS 表示</span><button class="tg" id="setdps">OFF</button></div>
+        <div class="setrow"><span>DPM 表示</span><button class="tg" id="setdpm">OFF</button></div>
         <div class="setrow"><span>画面の揺れ</span><span id="setshake">
           <button class="tg" data-s2="0">なし</button><button class="tg" data-s2="0.5">弱</button><button class="tg" data-s2="1">標準</button><button class="tg" data-s2="1.5">強</button>
         </span></div>
@@ -1476,7 +1480,7 @@ var VOLM=0.8; // 全体音量 0〜1
 var VOLS=0.8; // 効果音音量
 var VOLB=0.55; // BGM音量
 var TUTSEEN=0; // チュートリアルを一度でも見たか
-var VERSION='α1.0.14'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
+var VERSION='α1.0.15'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
 (function loadSave(){
   for(var i=0;i<UPG.length;i++) META[UPG[i].id]=0;
   try{
@@ -1499,11 +1503,12 @@ var VERSION='α1.0.14'; // マージのたびに末尾を増やす（お知ら�
       if(o.ban) for(var bi=0;bi<o.ban.length;bi++) if(WEAPONS[o.ban[bi]]) BAN[o.ban[bi]]=1;
       if(o.ch&&CHARS[o.ch]&&UNL[o.ch]) SELCH=o.ch;
       if(o.tut) TUTSEEN=1;
+      if(o.perf) PERF=1; if(o.dps) SHOWDPS=1; if(o.dpm) SHOWDPM=1;
     }
   }catch(e){}
 })();
 function saveGame(){
-  try{ localStorage.setItem('bsv_save',JSON.stringify({m:META,w:WALLET,wx:WX,sel:SEL,best:best,shk:SHK,volm:VOLM,vols:VOLS,volb:VOLB,unl:UNL,ach:ACH,ch:SELCH,stg:STGCLEAR,ban:Object.keys(BAN).filter(function(k){return BAN[k];}),tut:TUTSEEN})); }catch(e){}
+  try{ localStorage.setItem('bsv_save',JSON.stringify({m:META,w:WALLET,wx:WX,sel:SEL,best:best,shk:SHK,volm:VOLM,vols:VOLS,volb:VOLB,unl:UNL,ach:ACH,ch:SELCH,stg:STGCLEAR,ban:Object.keys(BAN).filter(function(k){return BAN[k];}),tut:TUTSEEN,perf:PERF,dps:SHOWDPS,dpm:SHOWDPM})); }catch(e){}
 }
 function M(id){ return META[id]||0; }
 
@@ -1533,6 +1538,7 @@ function reset(){
   time=0; kills=0; spawnT=0; eliteT=55; swarmT=3; shake=0; hitStop=0; flash=0; chain=0; chainT=0;
   gat.t=0; gat.mag=-1; gat.rl=0;
   whirlA=0; marks=[1140]; reacts=0; crits=0; rdep=0; rtok=8; pending=0;
+  dpsVal=0; dpmVal=0; dmgSec=0; dmgRing=[]; dmgRingI=0; dpsClock=1;
   score=0; silver=0; gold=0; magFx=0; chakSpin=0; wxRun={}; lastCd={}; coolMax={}; WDMG={};
   slotSig='';
   cool={};
@@ -1564,28 +1570,41 @@ function elemPow(){
 
 /* ============ ループ ============ */
 var fpsA=[], fpsI=0, perfT=0, perfEl=null, PERF=0;
+var SHOWDPS=0, SHOWDPM=0;                    // DPS/DPM 表示（設定で切替・保存）
+var dpsVal=0, dpmVal=0, dmgSec=0, dmgRing=[], dmgRingI=0, dpsClock=1;   // 与ダメージ計測
 function objCount(){
   return shots.length+chaks.length+scys.length+bells.length+swords.length+
          rocks.length+holes.length+zones.length+bombs.length+ebul.length+
          quakes.length+dhits.length+volley.length+lasers.length+fx.length+parts.length+relics.length;
 }
-function perfTick(dt){
-  if(!PERF) return;
-  fpsA[fpsI++%30]=dt;
-  perfT-=dt;
-  if(perfT>0) return;
-  perfT=0.25;
-  var sum=0; for(var i=0;i<fpsA.length;i++) sum+=fpsA[i];
-  var fps=fpsA.length/(sum||1);
-  var mn=1e9; for(var q=0;q<fpsA.length;q++) if(fpsA[q]>0) mn=Math.min(mn,1/fpsA[q]);
-  var cls=fps>=55?'ok':(fps>=35?'mid':'bad');
+function infoTick(dt){
+  // DPS/DPM 集計（1秒ごとに更新。DPS=直近1秒、DPM=直近60秒の合計）
+  if(state==='playing'){
+    dpsClock-=dt;
+    if(dpsClock<=0){ dpsClock+=1;
+      dpsVal=dmgSec; dmgRing[dmgRingI]=dmgSec; dmgRingI=(dmgRingI+1)%60; dmgSec=0;
+      var ds=0; for(var r=0;r<dmgRing.length;r++) ds+=dmgRing[r]||0; dpmVal=ds; }
+  }
+  var show=PERF||SHOWDPS||SHOWDPM;
   perfEl=perfEl||document.getElementById('perf');
-  var en=0; for(var j=0;j<enemies.length;j++) if(!enemies[j].dead) en++;
-  var ob=objCount();
-  perfEl.innerHTML='FPS <b class="'+cls+'">'+fps.toFixed(0)+'</b> <b style="color:#6b5f9c">min '+
-    (mn<1e9?mn.toFixed(0):'-')+'</b><br>'+
-    '敵 <b>'+en+'</b>　判定 <b>'+ob+'</b><br>'+
-    '積 <b>'+((en*ob/1000).toFixed(0))+'千</b>/フレーム';
+  perfEl.classList.toggle('on',!!show);
+  if(!show) return;
+  if(PERF) fpsA[fpsI++%30]=dt;
+  perfT-=dt; if(perfT>0) return; perfT=0.25;
+  var html='';
+  if(PERF){
+    var sum=0; for(var i=0;i<fpsA.length;i++) sum+=fpsA[i];
+    var fps=fpsA.length/(sum||1);
+    var mn=1e9; for(var q=0;q<fpsA.length;q++) if(fpsA[q]>0) mn=Math.min(mn,1/fpsA[q]);
+    var cls=fps>=55?'ok':(fps>=35?'mid':'bad');
+    var en=0; for(var j=0;j<enemies.length;j++) if(!enemies[j].dead) en++;
+    var ob=objCount();
+    html+='FPS <b class="'+cls+'">'+fps.toFixed(0)+'</b> <b style="color:#6b5f9c">min '+
+      (mn<1e9?mn.toFixed(0):'-')+'</b><br>敵 <b>'+en+'</b>　判定 <b>'+ob+'</b><br>';
+  }
+  if(SHOWDPS) html+='DPS <b>'+fmt(Math.round(dpsVal))+'</b><br>';
+  if(SHOWDPM) html+='DPM <b>'+fmt(Math.round(dpmVal))+'</b>';
+  perfEl.innerHTML=html;
 }
 var last=0;
 function frame(t){
@@ -1595,7 +1614,7 @@ function frame(t){
     else if(state==='levelup') stepFx(dt);
     else if(state==='chest'){ stepFx(dt); chestAnim(dt); }
     render();
-    perfTick(dt);
+    infoTick(dt);
   }catch(err){ if(window.console&&console.error) console.error('frame error:',err); }
   requestAnimationFrame(frame);   // 例外時も必ず次フレームを予約（追従が止まらない）
 }
@@ -2640,7 +2659,9 @@ function spawn(dt){
   if(eliteT<=0&&!boss){
     eliteT=Math.max(30,54-time*0.015);
     var k=rollType(), e=makeEnemy(k);
-    e.elite=1; e.hp*=3.4; e.mhp=e.hp; e.r*=1.5; e.res=Math.max(e.res,0.55);
+    // HP倍率は時間で増える（後半に一瞬で溶けて宝箱を落とすだけの存在にならないよう）
+    var em=3.4+time*0.05;                       // 5分=18倍 / 10分=33倍 / 20分=63倍
+    e.elite=1; e.hp*=em; e.mhp=e.hp; e.r*=1.5; e.res=Math.max(e.res,0.55);
     flash=Math.max(flash,.3); sfx(90,.5,'sawtooth',.09,.5);
   }
 }
@@ -2975,7 +2996,7 @@ function hurt(e,dmg,nx,ny,el){
   if(P.nodmg) d=0;                         // テスト：判定は走るが敵は死なない
   if(e.vuln>0) d*=1.2;                     // 深淵の手：被ダメージ上昇
   if(e.flat) d=Math.max(d*0.25,d-e.flat);   // 甲羅：軽い攻撃ほど通らない
-  e.hp-=d; e.ht=0.12;
+  e.hp-=d; e.ht=0.12; dmgSec+=d;   // DPS/DPM 集計
   // ベル・ホーリージャッジ（十字架AoE）・アイスブリザードはノックバックさせない
   if(SRC!=='bell'&&SRC!=='aura'&&SRC!=='blizzard'){ e.kb=Math.max(e.kb,crit?4:2.2); e.kbx=nx||0; e.kby=ny||0; }
   if(SRC) WDMG[SRC]=(WDMG[SRC]||0)+d; else WDMG._react=(WDMG._react||0)+d;   // 与ダメージ集計
@@ -4976,6 +4997,9 @@ function toggleTest(){
   }
 }
 document.getElementById('testbtn').onclick=function(){ audio(); toggleTest(); this.blur(); };
+// テストボタンは通常は非表示。URLに dev が含まれるときだけ表示（例 ...index.html?dev）
+var DEVMODE=/dev/i.test(location.search+location.hash);
+if(!DEVMODE) document.getElementById('testbtn').style.display='none';
 document.getElementById('testclose').onclick=function(){ toggleTest(); };
 
 /* ============ 一時停止 ============ */
@@ -5236,6 +5260,8 @@ function renderSettings(){
   document.getElementById('volb').value=Math.round(VOLB*100);
   document.getElementById('volbval').textContent=Math.round(VOLB*100)+'%';
   var pb=document.getElementById('setperf'); pb.textContent=PERF?'ON':'OFF'; pb.classList.toggle('on',!!PERF);
+  var db=document.getElementById('setdps'); db.textContent=SHOWDPS?'ON':'OFF'; db.classList.toggle('on',!!SHOWDPS);
+  var mb=document.getElementById('setdpm'); mb.textContent=SHOWDPM?'ON':'OFF'; mb.classList.toggle('on',!!SHOWDPM);
   Array.prototype.forEach.call(document.querySelectorAll('#setshake button'),function(b){
     b.classList.toggle('on',parseFloat(b.getAttribute('data-s2'))===SHK);
   });
@@ -5249,7 +5275,9 @@ document.getElementById('vols').oninput=function(){ VOLS=(+this.value)/100; docu
 document.getElementById('vols').onchange=function(){ VOLS=(+this.value)/100; saveGame(); sfx(880,.08,'triangle',.06); };
 document.getElementById('volb').oninput=function(){ VOLB=(+this.value)/100; document.getElementById('volbval').textContent=this.value+'%'; syncBgmGain(); };
 document.getElementById('volb').onchange=function(){ VOLB=(+this.value)/100; saveGame(); };
-document.getElementById('setperf').onclick=function(){ PERF=PERF?0:1; document.getElementById('perf').classList.toggle('on',!!PERF); fpsA=[];fpsI=0;perfT=0; syncPerfBtn(); renderSettings(); };
+document.getElementById('setperf').onclick=function(){ PERF=PERF?0:1; fpsA=[];fpsI=0;perfT=0; saveGame(); syncPerfBtn(); renderSettings(); };
+document.getElementById('setdps').onclick=function(){ SHOWDPS=SHOWDPS?0:1; saveGame(); renderSettings(); };
+document.getElementById('setdpm').onclick=function(){ SHOWDPM=SHOWDPM?0:1; saveGame(); renderSettings(); };
 Array.prototype.forEach.call(document.querySelectorAll('#setshake button'),function(b){
   b.onclick=function(){ SHK=parseFloat(b.getAttribute('data-s2')); saveGame(); syncShakeBtns(); renderSettings(); };
 });
@@ -5258,6 +5286,10 @@ Array.prototype.forEach.call(document.querySelectorAll('#setshake button'),funct
 // 更新履歴：1つのお知らせ内で「バージョン見出し」ごとに変更点を並べる（新しい順）。
 // マージのたびに先頭へ新バージョンを追加し、VERSION も更新する。
 var UPDATES=[
+  {v:'α1.0.15', items:[
+    'スマホでレベル数字がボタンに隠れる問題を修正。テスト用ボタンは通常非表示にし、URL末尾に dev があるとき（例 …/?dev）だけ表示するようにしました。',
+    '設定に DPS 表示 / DPM 表示 を追加（FPS表示と同じ要領で左下に表示）。',
+    'エリートのHP倍率を時間経過で増加（後半に一瞬で溶けて宝箱を落とすだけにならないよう調整）。']},
   {v:'α1.0.14', items:[
     'ゴブリンキングの連続斬りに予備動作（赤い扇の予測）を追加。予告なしで突然死する不具合を修正。',
     'ステージ2ボスの挙動を変更：ジャイアントモスは3方向の渦弾幕（放射弾幕から差別化）、アラクネイドは召喚を廃止し「狙い撃ちの扇＋3回に1回の放射網（予告あり）」に。']},
