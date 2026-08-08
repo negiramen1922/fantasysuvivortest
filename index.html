@@ -162,6 +162,9 @@ canvas{display:block;width:100%;height:100%;touch-action:none}
 .newsitem .nt{color:var(--gold);font-size:14px}
 .newsitem .nd{color:#6b5f9c;font-size:11px;margin-left:8px}
 .newsitem .nb{color:#cfc9e8;font-size:12px;line-height:1.6;margin-top:4px}
+.newsitem .nver{color:var(--gold);font-size:15px;letter-spacing:1px}
+.newsitem ul.nb{margin:5px 0 0;padding-left:18px}
+.newsitem ul.nb li{margin:3px 0}
 .hicon .badge{position:absolute;top:-6px;right:-6px}
 #banlist{flex:1;min-height:0;overflow-y:auto;-webkit-overflow-scrolling:touch;
   display:flex;flex-wrap:wrap;gap:8px;align-content:flex-start;padding:4px 0}
@@ -522,6 +525,7 @@ canvas{display:block;width:100%;height:100%;touch-action:none}
         <div class="setrow"><span>画面の揺れ</span><span id="setshake">
           <button class="tg" data-s2="0">なし</button><button class="tg" data-s2="0.5">弱</button><button class="tg" data-s2="1">標準</button><button class="tg" data-s2="1.5">強</button>
         </span></div>
+        <div class="setrow"><span>バージョン</span><span id="setver" class="setval"></span></div>
       </div>
       <button class="btn sub2" id="setclose" style="margin-top:0">閉じる</button>
     </div>
@@ -1471,6 +1475,7 @@ var VOLM=0.8; // 全体音量 0〜1
 var VOLS=0.8; // 効果音音量
 var VOLB=0.55; // BGM音量
 var TUTSEEN=0; // チュートリアルを一度でも見たか
+var VERSION='α1.0.06'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
 (function loadSave(){
   for(var i=0;i<UPG.length;i++) META[UPG[i].id]=0;
   try{
@@ -5027,7 +5032,8 @@ function finish(won){
   document.getElementById('vtitle').textContent=won?'討伐完了':(time>=RUN?'敗北':'力尽きた');
   document.getElementById('vtitle').style.color=won?'#56e0ff':'#ffcc4d';
   document.getElementById('res').innerHTML=
-    '<div style="font-size:30px;color:#fff;letter-spacing:2px;margin:6px 0 2px">'+fmt(score)+'</div>'+
+    '<div style="font-size:11px;color:#6b5f9c;letter-spacing:1px">ver '+VERSION+'</div>'+
+    '<div style="font-size:30px;color:#fff;letter-spacing:2px;margin:2px 0 2px">'+fmt(score)+'</div>'+
     '<div style="font-size:12px;color:#6b5f9c;margin-bottom:10px">'+
       '撃破 '+fmt(base)+'　生存 +'+fmt(bTime)+'　Lv +'+fmt(bLv)+
       (bClear?'　完走 +'+fmt(bClear):'')+'</div>'+
@@ -5104,6 +5110,7 @@ function renderSettings(){
   Array.prototype.forEach.call(document.querySelectorAll('#setshake button'),function(b){
     b.classList.toggle('on',parseFloat(b.getAttribute('data-s2'))===SHK);
   });
+  document.getElementById('setver').textContent=VERSION;
 }
 document.getElementById('setbtn').onclick=function(){ audio(); renderSettings(); setEl.classList.add('on'); };
 document.getElementById('setclose').onclick=function(){ setEl.classList.remove('on'); };
@@ -5119,18 +5126,42 @@ Array.prototype.forEach.call(document.querySelectorAll('#setshake button'),funct
 });
 
 /* ============ お知らせ（ホーム右上のメール）============ */
-var NEWS=[
-  {t:'チュートリアル追加', d:'NEW', b:'ホーム右上の「❓ 遊びかた」からゲームの流れを確認できます（初回は自動で表示）。'},
-  {t:'ホーム画面リニューアル', d:'UPDATE', b:'出撃 → ステージ選択の流れに変更。右上に設定（音量 / FPS / 画面揺れ）とお知らせを追加しました。'},
-  {t:'リザルトに与ダメージ内訳', d:'UPDATE', b:'武器ごとの与ダメージを多い順にバーで表示するようになりました。'},
-  {t:'遊び方', d:'HELP', b:'WASD / 矢印で移動、攻撃は自動。別々の属性を続けて当てると元素反応。武器は Lv10 で覚醒。床の装備を拾うとパッシブが強化されます。'}
+// 更新履歴：1つのお知らせ内で「バージョン見出し」ごとに変更点を並べる（新しい順）。
+// マージのたびに先頭へ新バージョンを追加し、VERSION も更新する。
+var UPDATES=[
+  {v:'α1.0.06', items:[
+    'リザルトと設定画面にバージョンを表示するようにしました。',
+    'お知らせをバージョン別の更新履歴に刷新（見出しごとに変更点を掲載）。']},
+  {v:'α1.0.05', items:[
+    'チュートリアル（遊びかた）を追加。初回は自動表示、ホーム右上の❓からいつでも確認できます。',
+    '聖女の最大HPを +35% → +20% に調整（火力スケーリングは維持）。']},
+  {v:'α1.0.04', items:[
+    'ラン中の右下表示を「装備 / パッシブ / 武器」の3段構成に。',
+    '一時停止画面に設定ボタン（音量・FPS・画面揺れ）を追加。武器・キャラを縦並び＋アイコン表示に。',
+    '床の装備がパッシブのレベル上限を1だけ超えられるように（例：Lv5＋装備1＝Lv6）。',
+    'ブラックホールのサイズを縮小、ホーリージャッジの火力を軽微弱体。']},
+  {v:'α1.0.03', items:[
+    'アイスジャベリンの見た目を「片方が長いひし形」の氷槍に変更。']},
+  {v:'α1.0.02', items:[
+    '間合いによる火力補正を追加（近接ほど高く、遠距離ほど低い）。',
+    'チャクラムを自己中心型、鎌を中射程に整理。',
+    'ウルフの移動速度を上方修正。焔輪が「拡大」で玉も回転半径も大きくなるよう修正。']},
+  {v:'α1.0.01', items:[
+    'ファイヤーボールが着弾で爆発するように（弱すぎたため強化）。全爆発に距離減衰を追加。',
+    'セイクリッドレーザーを弱体（頻度・火力ダウン）。ブラックホールを弱体＋中心距離減衰。',
+    'ホーリーランスの拡散後ダメージを30%に。',
+    '武器に「射程」の概念と強化軸を追加（近接／中／長）。',
+    'アイスブリザードの頻度を調整し、展開時に足元へ雪の結晶を表示。',
+    'ケルト風BGM（5曲）と、全体／効果音／BGMの音量設定を追加。']}
 ];
 var newsEl=document.getElementById('news');
 function renderNews(){
   var L=document.getElementById('newslist'); L.innerHTML='';
-  for(var i=0;i<NEWS.length;i++){
-    var n=NEWS[i], d=document.createElement('div'); d.className='newsitem';
-    d.innerHTML='<div><span class="nt">'+n.t+'</span><span class="nd">'+n.d+'</span></div><div class="nb">'+n.b+'</div>';
+  for(var i=0;i<UPDATES.length;i++){
+    var u=UPDATES[i], d=document.createElement('div'); d.className='newsitem';
+    var lis=''; for(var j=0;j<u.items.length;j++) lis+='<li>'+u.items[j]+'</li>';
+    d.innerHTML='<div class="nver">'+u.v+(i===0?'<span class="nd">最新</span>':'')+'</div>'+
+                '<ul class="nb">'+lis+'</ul>';
     L.appendChild(d);
   }
 }
