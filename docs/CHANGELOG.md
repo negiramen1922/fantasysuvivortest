@@ -10,6 +10,10 @@
 - リザルト画面と設定画面に `VERSION` を表示。
 - お知らせ（`UPDATES` 配列）は**1枠内でバージョン見出しごとに変更点を掲載**（新しい順）。マージ時は `UPDATES` 先頭に新バージョンを追加し `VERSION` を一致させる。
 
+## ver.α1.0.16
+- **永続強化の振り直し（週1回）**：ショップ下部に `#respecbtn`。`refundTotal()` で全 `UPG` の消費（`costOf` を Lv 分合算）を集計→`WALLET` に全額返金し `META` を全0に。`RESPEC_AT`（`Date.now()`）を保存し `RESPEC_WEEK=7日` のクールタイム。2段階確認、クール中はボタンに残り日数表示・無効化。保存キー `rsp`。
+- （エリートHPは α1.0.15 の `3.4+time*0.05` のまま据え置き）
+
 ## ver.α1.0.15
 - **テストボタンをdev限定**：`DEVMODE=/dev/i.test(location.search+location.hash)`。非devでは `#testbtn` を `display:none`。スマホでLv数字と被る問題の主因を解消。
 - 予備で `@media(max-width:560px)` に上段の右パディング（`#topline/#subline` padding-right:58px, gap:16px）。

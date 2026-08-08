@@ -185,6 +185,8 @@ canvas{display:block;width:100%;height:100%;touch-action:none}
 .shopbox{width:100%;max-width:560px;max-height:100%;display:flex;flex-direction:column;gap:10px}
 .shophead{display:flex;align-items:baseline;justify-content:space-between;gap:10px}
 .shophead .title{font-size:23px;letter-spacing:5px}
+#shopfoot{display:flex;gap:10px}
+#shopfoot .btn{flex:1}
 #purse{font-size:14px;white-space:nowrap}
 #purse .sv{color:#cfd8e8}
 #purse .gd{color:var(--gold);margin-left:10px}
@@ -600,7 +602,10 @@ canvas{display:block;width:100%;height:100%;touch-action:none}
         <div id="purse"></div>
       </div>
       <div id="upglist"></div>
-      <button class="btn sub2" id="shopclose" style="margin-top:0">閉じる</button>
+      <div id="shopfoot">
+        <button class="btn sub2" id="respecbtn" style="margin-top:0">振り直し</button>
+        <button class="btn sub2" id="shopclose" style="margin-top:0">閉じる</button>
+      </div>
     </div>
   </div>
 
@@ -1480,7 +1485,9 @@ var VOLM=0.8; // 全体音量 0〜1
 var VOLS=0.8; // 効果音音量
 var VOLB=0.55; // BGM音量
 var TUTSEEN=0; // チュートリアルを一度でも見たか
-var VERSION='α1.0.15'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
+var RESPEC_AT=0; // 前回 永続強化を振り直した時刻（ms）
+var RESPEC_WEEK=7*24*3600*1000; // 振り直しのクールタイム（1週間）
+var VERSION='α1.0.16'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
 (function loadSave(){
   for(var i=0;i<UPG.length;i++) META[UPG[i].id]=0;
   try{
@@ -1504,11 +1511,12 @@ var VERSION='α1.0.15'; // マージのたびに末尾を増やす（お知ら�
       if(o.ch&&CHARS[o.ch]&&UNL[o.ch]) SELCH=o.ch;
       if(o.tut) TUTSEEN=1;
       if(o.perf) PERF=1; if(o.dps) SHOWDPS=1; if(o.dpm) SHOWDPM=1;
+      if(typeof o.rsp==='number') RESPEC_AT=o.rsp;
     }
   }catch(e){}
 })();
 function saveGame(){
-  try{ localStorage.setItem('bsv_save',JSON.stringify({m:META,w:WALLET,wx:WX,sel:SEL,best:best,shk:SHK,volm:VOLM,vols:VOLS,volb:VOLB,unl:UNL,ach:ACH,ch:SELCH,stg:STGCLEAR,ban:Object.keys(BAN).filter(function(k){return BAN[k];}),tut:TUTSEEN,perf:PERF,dps:SHOWDPS,dpm:SHOWDPM})); }catch(e){}
+  try{ localStorage.setItem('bsv_save',JSON.stringify({m:META,w:WALLET,wx:WX,sel:SEL,best:best,shk:SHK,volm:VOLM,vols:VOLS,volb:VOLB,unl:UNL,ach:ACH,ch:SELCH,stg:STGCLEAR,ban:Object.keys(BAN).filter(function(k){return BAN[k];}),tut:TUTSEEN,perf:PERF,dps:SHOWDPS,dpm:SHOWDPM,rsp:RESPEC_AT})); }catch(e){}
 }
 function M(id){ return META[id]||0; }
 
@@ -4659,6 +4667,32 @@ function renderShop(){
   Array.prototype.forEach.call(listEl.querySelectorAll('.ubuy[data-id]'),function(b){
     b.onclick=function(){ buy(b.getAttribute('data-id')); };
   });
+  syncRespecBtn();
+}
+// 永続強化の振り直し（週1回）：使った銀貨/金貨を全額返して全リセット
+function respecReady(){ return !RESPEC_AT || (Date.now()-RESPEC_AT)>=RESPEC_WEEK; }
+function respecDaysLeft(){ return Math.max(1,Math.ceil((RESPEC_WEEK-(Date.now()-RESPEC_AT))/86400000)); }
+function refundTotal(){
+  var sil=0,gld=0;
+  for(var i=0;i<UPG.length;i++){ var L=M(UPG[i].id); for(var lv=0;lv<L;lv++){ var c=costOf(lv); if(c.g) gld+=c.c; else sil+=c.c; } }
+  return {sil:sil,gld:gld};
+}
+var respecArm=0, respecTO=null;
+function syncRespecBtn(){
+  var b=document.getElementById('respecbtn'); if(!b) return;
+  if(!respecReady()){ b.textContent='振り直し（あと'+respecDaysLeft()+'日）'; b.disabled=true; b.classList.remove('warn'); return; }
+  b.disabled=false;
+  b.textContent=respecArm?'本当に振り直す？':'振り直し';
+  b.classList.toggle('warn',!!respecArm);
+}
+function doRespec(){
+  if(!respecReady()) return;
+  var r=refundTotal();
+  WALLET.silver+=r.sil; WALLET.gold+=r.gld;
+  for(var i=0;i<UPG.length;i++) META[UPG[i].id]=0;
+  RESPEC_AT=Date.now(); respecArm=0;
+  saveGame(); renderShop();   // 財布が増え、全ピップが空に戻る＝振り直し完了の合図。ボタンはクールタイム表示になる
+  [0,90,180].forEach(function(ms,i){ setTimeout(function(){ sfx([660,880,1174][i],.16,'triangle',.07); },ms); });
 }
 function buy(id){
   var lv=M(id);
@@ -4681,8 +4715,16 @@ document.getElementById('chest').addEventListener('pointerdown',function(e){
   if(e.target.id==='chestok') return;
   chestSkip();
 });
-document.getElementById('shopbtn').onclick=function(){ audio(); renderShop(); shopEl.classList.add('on'); };
+document.getElementById('shopbtn').onclick=function(){ audio(); respecArm=0; renderShop(); shopEl.classList.add('on'); };
 document.getElementById('shopclose').onclick=function(){ shopEl.classList.remove('on'); syncTitle(); };
+document.getElementById('respecbtn').onclick=function(){
+  if(!respecReady()) return;
+  if(!respecArm){ respecArm=1; syncRespecBtn();
+    if(respecTO) clearTimeout(respecTO);
+    respecTO=setTimeout(function(){ respecArm=0; syncRespecBtn(); },3500); return; }   // 2段階確認
+  if(respecTO){ clearTimeout(respecTO); respecTO=null; }
+  doRespec();
+};
 function stageUnlocked(n){
   var s=STAGES[n]; if(!s) return false;
   return !!(ALLSTG || s.req===0 || STGCLEAR[s.req]);
@@ -5286,6 +5328,8 @@ Array.prototype.forEach.call(document.querySelectorAll('#setshake button'),funct
 // 更新履歴：1つのお知らせ内で「バージョン見出し」ごとに変更点を並べる（新しい順）。
 // マージのたびに先頭へ新バージョンを追加し、VERSION も更新する。
 var UPDATES=[
+  {v:'α1.0.16', items:[
+    '永続強化に「振り直し」を追加。使った銀貨・金貨を全額返してすべてリセットできます（週1回・2段階確認。次回まではボタンに残り日数を表示）。']},
   {v:'α1.0.15', items:[
     'スマホでレベル数字がボタンに隠れる問題を修正。テスト用ボタンは通常非表示にし、URL末尾に dev があるとき（例 …/?dev）だけ表示するようにしました。',
     '設定に DPS 表示 / DPM 表示 を追加（FPS表示と同じ要領で左下に表示）。',
