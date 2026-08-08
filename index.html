@@ -867,7 +867,7 @@ var ETYPE={
   archer:  { nm:'ゴブリンアーチャー', res:0.08, hp:58,  spd:62,  r:12, col:'#b6d86a', dark:'#4d5c22', xp:3, dmg:9,  shape:'archer', pts:26,  sv:0.09,
              ai:'shoot', range:340, acd:2.6, bspd:230, bdmg:13 },
   boar:    { nm:'ボア',               res:0.35, hp:115, spd:54,  r:16, col:'#b98a5e', dark:'#513524', xp:3, dmg:16, shape:'boar',   pts:30,  sv:0.09,
-             ai:'charge', range:380, acd:3.0, chspd:430, wind:0.55, chdur:0.85 },
+             ai:'charge', range:240, acd:3.0, chspd:430, wind:0.55, chdur:0.85 },
   wolf:    { nm:'ウルフ',             res:0.15, hp:92,  spd:188, r:13, col:'#9aa6b8', dark:'#3b4350', xp:3, dmg:14, shape:'wolf',   pts:28,  sv:0.08 },
   orc:     { nm:'オーク',             res:0.45, hp:235, spd:42,  r:20, col:'#79a05c', dark:'#31421f', xp:5, dmg:22, shape:'orc',    pts:52,  sv:0.14 },
   rider:   { nm:'ゴブリンライダー',   res:0.62, hp:175, spd:132, r:16, col:'#a8c46a', dark:'#414f22', xp:4, dmg:20, shape:'rider',  pts:48,  sv:0.13 },
@@ -1281,8 +1281,8 @@ var WAX={
   scythe:  { dmg:4, area:4, count:3, rate:3, range:2 },
   chakram: { dmg:4, area:4, count:3, rate:3 },
   bow:     { dmg:4, pierce:3, count:3, rate:3, burst:3, range:3 },
-  dynamite:{ dmg:4, area:4, count:3, rate:3, range:2 },
-  quake:   { dmg:4, area:4, count:3, rate:3, range:2 },
+  dynamite:{ dmg:4, area:4, burst:4, rate:3, range:2 },
+  quake:   { dmg:4, area:4, rate:3, range:3 },
   rock:    { dmg:4, area:4, count:2, rate:3, burst:3, range:3 },
   fire:    { dmg:4, count:3, pierce:3, rate:3, burst:3, range:3 },
   flame:   { dmg:4, count:4, area:3, rate:3 },
@@ -1379,12 +1379,13 @@ function AMMO(w){ return AX(w,'ammo'); }
 function CHN(w){ return AX(w,'chain')*2+TR(w,'chain'); }
 function SPL(w){ return AX(w,'split')*2+TR(w,'split'); }
 // 射程：基本距離（カテゴリ）×射程軸の倍率。ここに無い武器は近接/自己中心（射程軸なし）。
+// 基本射程は「おおむね画面内」に収める（射程軸を伸ばすと画面外まで届く）。
 var WRNG={
-  scythe:{base:620,cat:'中'},
-  dhand:{base:360,cat:'中'}, dynamite:{base:560,cat:'中'}, quake:{base:640,cat:'中'}, musket:{base:440,cat:'中'},
-  chain:{base:720,cat:'長'}, thunder:{base:660,cat:'長'},
-  fire:{base:840,cat:'長'}, ice:{base:860,cat:'長'}, bow:{base:940,cat:'長'},
-  holy:{base:860,cat:'長'}, rock:{base:900,cat:'長'}, gatling:{base:900,cat:'長'} };
+  scythe:{base:380,cat:'中'},
+  dhand:{base:300,cat:'中'}, dynamite:{base:360,cat:'中'}, quake:{base:400,cat:'中'}, musket:{base:320,cat:'中'},
+  chain:{base:460,cat:'長'}, thunder:{base:460,cat:'長'},
+  fire:{base:520,cat:'長'}, ice:{base:520,cat:'長'}, bow:{base:560,cat:'長'},
+  holy:{base:520,cat:'長'}, rock:{base:540,cat:'長'}, gatling:{base:560,cat:'長'} };
 function RNGM(w){ return Math.pow(1.20,AX(w,'range')); }   // 射程軸の倍率
 function RNG(w){ return (WRNG[w]?WRNG[w].base:640)*RNGM(w); }
 function axLeft(w,k){ return (WAX[w][k]||0)-AX(w,k); }
@@ -1475,7 +1476,7 @@ var VOLM=0.8; // 全体音量 0〜1
 var VOLS=0.8; // 効果音音量
 var VOLB=0.55; // BGM音量
 var TUTSEEN=0; // チュートリアルを一度でも見たか
-var VERSION='α1.0.06'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
+var VERSION='α1.0.07'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
 (function loadSave(){
   for(var i=0;i<UPG.length;i++) META[UPG[i].id]=0;
   try{
@@ -1731,7 +1732,7 @@ function runWeapons(dt){
   if(P.w.scythe  &&ready('scythe',  1.45*RATE('scythe'),dt))   doScythe();
   if(P.w.chakram &&ready('chakram', 1.65*RATE('chakram'),dt))  doChakram();
   if(P.w.bow     &&ready('bow',     0.58*RATE('bow'),dt)){     doBow(); queueVolley('bow',0.10); }
-  if(P.w.dynamite&&ready('dynamite',1.85*RATE('dynamite'),dt)) doDyna();
+  if(P.w.dynamite&&ready('dynamite',1.85*RATE('dynamite'),dt)){ doDyna(); queueVolley('dynamite',0.12); }
   if(P.w.fire    &&ready('fire',    1.00*RATE('fire'),dt)){    doFire(); queueVolley('fire',0.12); }
   if(P.w.flame)  doFlame(dt);
   if(P.w.ice     &&ready('ice',     1.30*RATE('ice'),dt)){     doIce(); queueVolley('ice',0.12); }
@@ -2039,14 +2040,12 @@ function doBow(){
 }
 function doDyna(){
   var e=nearest(P.x,P.y,RNG('dynamite')); if(!e) return;
-  var cnt=1+CNT('dynamite'), sp=(cnt>1?1:0);
-  for(var i=0;i<cnt;i++){
-    bombs.push({ sx:P.x, sy:P.y, tx:e.x+(Math.random()-.5)*90*sp, ty:e.y+(Math.random()-.5)*90*sp,
-      t:0, dur:0.62, spin:0, dmg:34*DMG('dynamite')*pw('dynamite'),
-      rad:88*AREA('dynamite'), x:P.x, y:P.y });
-  }
+  // 1発ずつ投げる（連射軸で ポポポポイ と連続投擲）。狙いは毎回ばらけさせる。
+  bombs.push({ sx:P.x, sy:P.y, tx:e.x+(Math.random()-.5)*80, ty:e.y+(Math.random()-.5)*80,
+    t:0, dur:0.62, spin:0, dmg:34*DMG('dynamite')*pw('dynamite'),
+    rad:88*AREA('dynamite'), x:P.x, y:P.y });
   sfx(220,.07,'square',.04,1.5);
-  wgain('dynamite',cnt);
+  wgain('dynamite',1);
 }
 function moveBombs(dt){
   for(var i=bombs.length-1;i>=0;i--){
@@ -2286,7 +2285,7 @@ function doQuake(){
   SRC='quake';
   var e=nearest(P.x,P.y,RNG('quake'));
   var ang=e?Math.atan2(e.y-P.y,e.x-P.x):P.face;
-  var n=3+CNT('quake');                        // 数の軸で波が長くなる
+  var n=3+AX('quake','range')*2;               // 射程軸で段数（届く距離）が伸びる
   var rad=68*AREA('quake');
   var step=rad*1.15;                           // 隆起の間隔
   var dmg=26*DMG('quake')*pw('quake');
@@ -3981,13 +3980,17 @@ function drawEnemy(e){
     drawS1Shape(e.shape,R,bodyCol,hit?'#ffffff':e.dark,time);
   }
 
-  // 突進の予告：溜め中はプレイヤー方向へ赤いラインを伸ばす
+  // 突進の予告：溜め中はプレイヤー方向へ、実際の突進距離ぶんの赤いラインを伸ばす
   if(e.st==='wind'&&e.ai==='charge'){
     var ta=Math.atan2(P.y-e.y,P.x-e.x);
+    var dl=((e.chspd||0)*(e.chdur||0))||R*6.5;   // 突進の到達距離＝警告線の長さ
     ctx.save(); ctx.rotate(ta);
-    ctx.globalAlpha=0.30+0.25*Math.sin(time*20); ctx.fillStyle='#ff4d4d';
-    ctx.beginPath(); ctx.moveTo(R*0.5,-R*0.45); ctx.lineTo(R*6.5,-R*0.14);
-    ctx.lineTo(R*6.5,R*0.14); ctx.lineTo(R*0.5,R*0.45); ctx.closePath(); ctx.fill();
+    ctx.globalAlpha=0.28+0.24*Math.sin(time*20); ctx.fillStyle='#ff4d4d';
+    ctx.beginPath(); ctx.moveTo(R*0.5,-R*0.42); ctx.lineTo(dl,-R*0.16);
+    ctx.lineTo(dl,R*0.16); ctx.lineTo(R*0.5,R*0.42); ctx.closePath(); ctx.fill();
+    // 到達点のマーカー
+    ctx.globalAlpha=0.5+0.3*Math.sin(time*20);
+    ctx.beginPath(); ctx.arc(dl,0,R*0.35,0,6.3); ctx.fill();
     ctx.globalAlpha=1; ctx.restore();
   }
   // 弾幕の予告：溜め中は警告リング
@@ -5129,6 +5132,11 @@ Array.prototype.forEach.call(document.querySelectorAll('#setshake button'),funct
 // 更新履歴：1つのお知らせ内で「バージョン見出し」ごとに変更点を並べる（新しい順）。
 // マージのたびに先頭へ新バージョンを追加し、VERSION も更新する。
 var UPDATES=[
+  {v:'α1.0.07', items:[
+    '武器の基本射程を「おおむね画面内」に短縮（射程軸を伸ばすと画面外まで届く）。ダイナマイトの射程も短縮。',
+    'ダイナマイトは1発ずつ連続で投げるように（連射軸）。グランドアッパーは「数」を廃止し、射程で段数（届く距離）が伸びる形に。',
+    'ボス・イノシシの突進の警告線を、実際の突進距離ぶんまで長く表示。到達点マーカーも追加。',
+    'ザコのボアが画面外から突進してこないよう、突進を構える距離を短縮。']},
   {v:'α1.0.06', items:[
     'リザルトと設定画面にバージョンを表示するようにしました。',
     'お知らせをバージョン別の更新履歴に刷新（見出しごとに変更点を掲載）。']},
@@ -5177,7 +5185,7 @@ document.getElementById('tutclose').onclick=function(){
   if(!TUTSEEN){ TUTSEEN=1; saveGame(); }   // 初回は閉じたら既読に
 };
 
-VOLLEY={bow:doBow,fire:doFire,ice:doIce,holy:doHoly,rock:doRock,musket:doMusket};
+VOLLEY={bow:doBow,fire:doFire,ice:doIce,holy:doHoly,rock:doRock,musket:doMusket,dynamite:doDyna};
 resize();
 reset();
 syncTitle();
