@@ -1476,7 +1476,7 @@ var VOLM=0.8; // 全体音量 0〜1
 var VOLS=0.8; // 効果音音量
 var VOLB=0.55; // BGM音量
 var TUTSEEN=0; // チュートリアルを一度でも見たか
-var VERSION='α1.0.08'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
+var VERSION='α1.0.09'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
 (function loadSave(){
   for(var i=0;i<UPG.length;i++) META[UPG[i].id]=0;
   try{
@@ -4350,36 +4350,36 @@ function drawRelic(rl){
   ctx.restore();
 }
 // 画面外の床の装備を、画面端に「方向矢印＋パッシブアイコン」で示す（画面座標）
-function drawRelicMarkers(){
-  if(!relics||!relics.length||!P) return;
-  if(state==='title'||state==='dead') return;
+// 画面外の対象を画面端に「方向矢印＋アイコン」で表示する汎用マーカー
+function edgeMarker(wx,wy,glyph,col,big){
   var mgn=26, cxp=W/2, cyp=H/2, hw=W/2-mgn, hh=H/2-mgn;
+  var sx=wx-P.x+W/2, sy=wy-P.y+H/2;
+  if(sx>mgn&&sx<W-mgn&&sy>mgn&&sy<H-mgn) return;   // 画面内なら不要
+  var ang=Math.atan2(wy-P.y,wx-P.x), ux=Math.cos(ang), uy=Math.sin(ang);
+  var tx=ux!==0?hw/Math.abs(ux):1e9, ty=uy!==0?hh/Math.abs(uy):1e9, tt=Math.min(tx,ty);
+  var mx=Math.max(mgn,Math.min(W-mgn,cxp+ux*tt));
+  var my=Math.max(72,Math.min(H-mgn,cyp+uy*tt));   // 上部はHUDを避ける
+  var rr=big?19:15;
+  ctx.globalAlpha=0.92;
+  ctx.fillStyle='rgba(16,28,42,.9)'; ctx.strokeStyle=col; ctx.lineWidth=big?2.5:2;
+  ctx.beginPath(); ctx.arc(mx,my,rr,0,6.3); ctx.fill(); ctx.stroke();
+  ctx.save(); ctx.translate(mx,my); ctx.rotate(ang);
+  ctx.fillStyle=col;
+  ctx.beginPath(); ctx.moveTo(rr+9,0); ctx.lineTo(rr+1,-6); ctx.lineTo(rr+1,6); ctx.closePath(); ctx.fill();
+  ctx.restore();
+  ctx.globalAlpha=1; ctx.fillStyle='#eafcff'; ctx.font=(big?'18px':'15px')+' sans-serif';
+  ctx.fillText(glyph, mx, my+1);
+}
+function drawRelicMarkers(){
+  if(state==='title'||state==='dead'||!P) return;
   ctx.save();
   ctx.textAlign='center'; ctx.textBaseline='middle';
-  for(var i=0;i<relics.length;i++){
-    var rl=relics[i];
-    var sx=rl.x-P.x+W/2, sy=rl.y-P.y+H/2;
-    // 画面内に本体が見えているならマーカー不要
-    if(sx>mgn&&sx<W-mgn&&sy>mgn&&sy<H-mgn) continue;
-    // 中心から装備方向へレイを飛ばし、画面矩形の端に置く
-    var ang=Math.atan2(rl.y-P.y,rl.x-P.x), ux=Math.cos(ang), uy=Math.sin(ang);
-    var tx=ux!==0?hw/Math.abs(ux):1e9, ty=uy!==0?hh/Math.abs(uy):1e9, tt=Math.min(tx,ty);
-    var mx=cxp+ux*tt, my=cyp+uy*tt;
-    mx=Math.max(mgn,Math.min(W-mgn,mx));
-    my=Math.max(72,Math.min(H-mgn,my));    // 上部はHUD（タイマー等）を避ける
-    // アイコン台
-    ctx.globalAlpha=0.92;
-    ctx.fillStyle='rgba(16,28,42,.9)'; ctx.strokeStyle='#7fe6ff'; ctx.lineWidth=2;
-    ctx.beginPath(); ctx.arc(mx,my,15,0,6.3); ctx.fill(); ctx.stroke();
-    // 方向矢印（装備の向き）
-    ctx.save(); ctx.translate(mx,my); ctx.rotate(ang);
-    ctx.fillStyle='#7fe6ff';
-    ctx.beginPath(); ctx.moveTo(24,0); ctx.lineTo(16,-6); ctx.lineTo(16,6); ctx.closePath(); ctx.fill();
-    ctx.restore();
-    // パッシブのアイコン
-    ctx.globalAlpha=1; ctx.fillStyle='#eafcff'; ctx.font='15px sans-serif';
-    ctx.fillText(PASSIVES[rl.id].glyph, mx, my+1);
-  }
+  // 床の装備
+  if(relics) for(var i=0;i<relics.length;i++) edgeMarker(relics[i].x,relics[i].y,PASSIVES[relics[i].id].glyph,'#7fe6ff',0);
+  // 全回収（磁石）アイテム
+  if(vacs) for(var v=0;v<vacs.length;v++) edgeMarker(vacs[v].x,vacs[v].y,'\u{1F9F2}','#ffd94d',0);
+  // 画面外のボス（大きめ・赤）
+  if(boss&&!boss.dead) edgeMarker(boss.x,boss.y,'☠','#ff4d6d',1);
   ctx.globalAlpha=1; ctx.restore();
 }
 function drawGem(g){
@@ -5185,6 +5185,8 @@ Array.prototype.forEach.call(document.querySelectorAll('#setshake button'),funct
 // 更新履歴：1つのお知らせ内で「バージョン見出し」ごとに変更点を並べる（新しい順）。
 // マージのたびに先頭へ新バージョンを追加し、VERSION も更新する。
 var UPDATES=[
+  {v:'α1.0.09', items:[
+    '画面外のボスと全回収（磁石）アイテムを、床装備と同じように画面端へ方向マーカー表示するようにしました。']},
   {v:'α1.0.08', items:[
     'ボス戦中の雑魚の湧きを大幅に抑制（上限・湧き数・登場時の取り巻きを削減）。',
     '画面外にかなり離れた雑魚は消滅するように（動作の軽さと難易度の両立）。',
