@@ -974,7 +974,7 @@ var RUN=1200;            // 1ランの長さ（秒）＝20分
 var state='title';
 var P, enemies, gems, shots, fx, dmgs, parts, bolts, chests, coins, chaks, scys, bombs, rocks, holes;
 var time, kills, spawnT, eliteT, shake, hitStop, flash, chain, chainT, choices;
-var whirlA, marks, reacts, rdep, rtok, pending, score, silver, gold, magFx, chakSpin;
+var whirlA, marks, reacts, crits, rdep, rtok, pending, score, silver, gold, magFx, chakSpin;
 var ebul, boss, bossN, quakes, dhits, vacs, vacT, bells, swords, zones, volley, relics;
 var lasers;
 
@@ -1476,7 +1476,7 @@ var VOLM=0.8; // 全体音量 0〜1
 var VOLS=0.8; // 効果音音量
 var VOLB=0.55; // BGM音量
 var TUTSEEN=0; // チュートリアルを一度でも見たか
-var VERSION='α1.0.12'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
+var VERSION='α1.0.13'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
 (function loadSave(){
   for(var i=0;i<UPG.length;i++) META[UPG[i].id]=0;
   try{
@@ -1510,10 +1510,12 @@ function M(id){ return META[id]||0; }
 function fmt(n){ return String(Math.floor(n)).replace(/\B(?=(\d{3})+(?!\d))/g,','); }
 
 function xpNeed(lv){
-  if(lv<=15) return 6+lv*3;
-  if(lv<=35) return 51+(lv-15)*9;
-  if(lv<=55) return 231+(lv-35)*18;
-  return 591+(lv-55)*32;
+  var n;
+  if(lv<=15) n=6+lv*3;
+  else if(lv<=35) n=51+(lv-15)*9;
+  else if(lv<=55) n=231+(lv-35)*18;
+  else n=591+(lv-55)*32;
+  return Math.round(n*1.12);   // 全回収が拾いやすくなったぶん、必要経験値を少し増やす
 }
 function reset(){
   var c=CH();
@@ -1530,7 +1532,7 @@ function reset(){
   boss=null; bossN=0; lasers=[];
   time=0; kills=0; spawnT=0; eliteT=55; swarmT=3; shake=0; hitStop=0; flash=0; chain=0; chainT=0;
   gat.t=0; gat.mag=-1; gat.rl=0;
-  whirlA=0; marks=[1140]; reacts=0; rdep=0; rtok=8; pending=0;
+  whirlA=0; marks=[1140]; reacts=0; crits=0; rdep=0; rtok=8; pending=0;
   score=0; silver=0; gold=0; magFx=0; chakSpin=0; wxRun={}; lastCd={}; coolMax={}; WDMG={};
   slotSig='';
   cool={};
@@ -2932,6 +2934,7 @@ function moveEbul(dt){
 function hurt(e,dmg,nx,ny,el){
   if(e.dead) return;
   var crit=Math.random()<CRITC();
+  if(crit) crits++;
   var d=crit?dmg*CRITD():dmg;
   if(P.nodmg) d=0;                         // テスト：判定は走るが敵は死なない
   if(e.vuln>0) d*=1.2;                     // 深淵の手：被ダメージ上昇
@@ -4391,6 +4394,8 @@ function drawRelicMarkers(){
   if(relics) for(var i=0;i<relics.length;i++) edgeMarker(relics[i].x,relics[i].y,PASSIVES[relics[i].id].glyph,'#7fe6ff',0);
   // 全回収（磁石）アイテム
   if(vacs) for(var v=0;v<vacs.length;v++) edgeMarker(vacs[v].x,vacs[v].y,'\u{1F9F2}','#ffd94d',0);
+  // 宝箱
+  if(chests) for(var c=0;c<chests.length;c++) edgeMarker(chests[c].x,chests[c].y,'\u{1F381}','#ffcc4d',0);
   // 画面外のボス（大きめ・赤）
   if(boss&&!boss.dead) edgeMarker(boss.x,boss.y,'☠','#ff4d6d',1);
   ctx.globalAlpha=1; ctx.restore();
@@ -5000,7 +5005,7 @@ function buildText(){
     (CH().grow?'<span style="color:var(--gold)">　'+CH().grow.tx+'（現在 +'+
        (CH().grow.v*(P.lv-1)*100).toFixed(0)+'%）</span>':'')+'</div>';
   return '経過 <b>'+(m<10?'0':'')+m+':'+(s<10?'0':'')+s+' / 20:00</b>　'+
-         'SCORE <b>'+fmt(score)+'</b>　討伐 <b>'+kills+'</b>　元素反応 <span class="el">'+reacts+'</span><br>'+
+         'SCORE <b>'+fmt(score)+'</b>　討伐 <b>'+kills+'</b>　元素反応 <span class="el">'+reacts+'</span>　会心 <b>'+crits+'</b><br>'+
          '持ち帰り 銀貨 <b>'+silver+'</b>　金貨 <b>'+gold+'</b><br>'+
          '<div class="psec">キャラ</div>'+charBlock+
          '<div class="psec">武器</div>'+(ws.join('')||'—')+
@@ -5097,11 +5102,17 @@ function finish(won){
     if(WEAPONS[wk]) wtxt.push(WEAPONS[wk].nm+' +'+fmt(wxRun[wk]));
   }
   saveGame();
-  var names=[]; for(var id in P.w) names.push(WEAPONS[id].nm+' '+P.w[id]+(AW(id)?'★':''));
+  // 構成：ラン中メニューと同じく縦並び＋アイコン
+  var comp=''; for(var id in P.w){
+    comp+='<div class="wrow"><span class="wg">'+WEAPONS[id].glyph+'</span>'+WEAPONS[id].nm+
+          ' <b>'+P.w[id]+'</b>'+(AW(id)?'<span style="color:var(--gold)">★</span>':'')+'</div>';
+  }
+  var stg=STAGES[curStage]||STAGES[1];
+  var stgLabel=(STGNUM[curStage-1]||curStage)+' '+stg.nm;
   document.getElementById('vtitle').textContent=won?'討伐完了':(time>=RUN?'敗北':'力尽きた');
   document.getElementById('vtitle').style.color=won?'#56e0ff':'#ffcc4d';
   document.getElementById('res').innerHTML=
-    '<div style="font-size:11px;color:#6b5f9c;letter-spacing:1px">ver '+VERSION+'</div>'+
+    '<div style="font-size:11px;color:#6b5f9c;letter-spacing:1px">ver '+VERSION+'　'+stgLabel+'</div>'+
     '<div style="font-size:30px;color:#fff;letter-spacing:2px;margin:2px 0 2px">'+fmt(score)+'</div>'+
     '<div style="font-size:12px;color:#6b5f9c;margin-bottom:10px">'+
       '撃破 '+fmt(base)+'　生存 +'+fmt(bTime)+'　Lv +'+fmt(bLv)+
@@ -5109,12 +5120,12 @@ function finish(won){
     (rec?'<div style="color:var(--gold);font-size:15px;margin-bottom:6px">★ 自己ベスト更新</div>'
         :'<div style="font-size:12px;color:#6b5f9c;margin-bottom:6px">ベスト '+fmt(best)+'</div>')+
     '生存 <b>'+(m<10?'0':'')+m+':'+(s<10?'0':'')+s+' / 20:00</b>　討伐 <b>'+kills+'</b> 体<br>'+
-    '到達 <b>Lv '+P.lv+'</b>　元素反応 <b>'+reacts+'</b> 回<br>'+
+    '到達 <b>Lv '+P.lv+'</b>　元素反応 <b>'+reacts+'</b> 回　会心 <b>'+crits+'</b> 回<br>'+
     '持ち帰り <b>銀貨 +'+silver+' / 金貨 +'+gold+'</b><br>'+
-    '熟練度 <b>'+(wtxt.join('　')||'—')+'</b><br>'+
-    (anyPicks()?'<span style="color:var(--gold)">★ 武器熟練で特性を選べます</span><br>':'')+
-    '構成 <b>'+(names.join(' / ')||'—')+'</b>'+
+    '熟練度 <b>'+(wtxt.join('　')||'—')+'</b>'+
+    (anyPicks()?'<br><span style="color:var(--gold)">★ 武器熟練で特性を選べます</span>':'')+
     (newCh.length?'<br><span style="color:var(--gold)">★ '+newCh.join('・')+' が解放されました</span>':'')+
+    '<div class="psec">構成</div>'+(comp||'—')+
     damageBreakdownHtml();
   showView('result');
   document.getElementById('veil').classList.remove('hide');
@@ -5198,6 +5209,10 @@ Array.prototype.forEach.call(document.querySelectorAll('#setshake button'),funct
 // 更新履歴：1つのお知らせ内で「バージョン見出し」ごとに変更点を並べる（新しい順）。
 // マージのたびに先頭へ新バージョンを追加し、VERSION も更新する。
 var UPDATES=[
+  {v:'α1.0.13', items:[
+    'リザルトに会心（クリティカル）発生回数とステージ名を表示。構成をラン中メニュー風にアイコン付きで見やすく。',
+    '宝箱も画面外にあるとき画面端に方向マーカーを表示。',
+    '必要経験値を少しだけ引き上げ（全回収が拾いやすくなったぶんの調整）。']},
   {v:'α1.0.12', items:[
     '大剣の覚醒「飛翔斬撃」が、そこまでに伸ばした範囲に応じた大きさで飛ぶように（当たり判定・見た目とも連動）。',
     'アイスブリザード（氷の範囲攻撃）のノックバックを廃止（短射程＋鈍足/凍結が持ち味のため）。']},
