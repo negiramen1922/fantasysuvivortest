@@ -125,9 +125,17 @@ canvas{display:block;width:100%;height:100%;touch-action:none}
 #pstat b{color:#fff;font-weight:normal}
 #pstat .el{color:var(--gold)}
 
-#shop,#mast,#ban,#settings,#news{position:absolute;inset:0;display:none;align-items:center;justify-content:center;
+#shop,#mast,#ban,#settings,#news,#tutorial{position:absolute;inset:0;display:none;align-items:center;justify-content:center;
   background:rgba(6,4,16,.95);padding:14px;z-index:6}
-#shop.on,#mast.on,#ban.on,#settings.on,#news.on{display:flex}
+#shop.on,#mast.on,#ban.on,#settings.on,#news.on,#tutorial.on{display:flex}
+#tutlist{width:100%;max-width:460px;margin:0 auto;flex:1;min-height:0;overflow-y:auto;text-align:left}
+.tutstep{display:flex;gap:11px;padding:11px 4px;border-bottom:1px solid var(--line)}
+.tutstep .tn{flex:none;width:26px;height:26px;border-radius:50%;border:2px solid var(--arc);
+  color:var(--arc);display:flex;align-items:center;justify-content:center;font-size:13px}
+.tutstep .tt{color:#e9e2ff;font-size:14px;line-height:1.6}
+.tutstep .tt b{color:var(--gold);font-weight:normal}
+.tutstep .tt .sub{display:block;color:#a99fce;font-size:12px;margin-top:3px}
+.tutgoal{color:var(--gold);text-align:center;font-size:14px;margin-top:6px;line-height:1.6}
 .vview{display:none;flex-direction:column;align-items:center;width:100%;max-width:540px}
 #homehead{position:absolute;top:16px;right:16px;display:flex;gap:10px;z-index:2}
 .hicon{width:46px;height:46px;font-size:20px;cursor:pointer;pointer-events:auto;
@@ -471,6 +479,7 @@ canvas{display:block;width:100%;height:100%;touch-action:none}
     <!-- ホーム -->
     <div id="homeview" class="vview">
       <div id="homehead">
+        <button id="tutbtn" class="hicon" aria-label="遊びかた">❓</button>
         <button id="newsbtn" class="hicon" aria-label="お知らせ">✉</button>
         <button id="setbtn" class="hicon" aria-label="設定">⚙</button>
       </div>
@@ -523,6 +532,22 @@ canvas{display:block;width:100%;height:100%;touch-action:none}
       <div class="shophead"><div class="title">お知らせ</div></div>
       <div id="newslist"></div>
       <button class="btn sub2" id="newsclose" style="margin-top:0">閉じる</button>
+    </div>
+  </div>
+
+  <div id="tutorial">
+    <div class="shopbox">
+      <div class="shophead"><div class="title">遊びかた</div></div>
+      <div id="tutlist">
+        <div class="tutstep"><div class="tn">1</div><div class="tt">まずは <b>「出撃」</b>！ステージを選んで冒険へ。移動は <b>WASD / 矢印キー</b>（スマホは左下スティック）、<b>攻撃は自動</b>です。</div></div>
+        <div class="tutstep"><div class="tn">2</div><div class="tt">敵を倒すと <b>経験値</b> を落とします。拾ってキャラを育てましょう。</div></div>
+        <div class="tutstep"><div class="tn">3</div><div class="tt">レベルが上がると <b>武器・パッシブの選択肢</b> が出ます。選んで強化！<span class="sub">武器は最大6種・パッシブも最大6種まで。枠が埋まると新しいものは選べないので、何を取るかは計画的に。</span><span class="sub">ピンとくるものが無ければ <b>「引き直す」</b> で再抽選するのもアリ。</span></div></div>
+        <div class="tutstep"><div class="tn">4</div><div class="tt">戦っていると <b>銀貨・金貨</b> が落ちます。ホームの <b>「永続強化」</b> で恒久ステータスを底上げ。</div></div>
+        <div class="tutstep"><div class="tn">5</div><div class="tt">武器を使うほど <b>「武器熟練」</b> が上がり、最初から火力を上げるなどの特性を選べるようになります。</div></div>
+        <div class="tutstep"><div class="tn">6</div><div class="tt">武器 × パッシブ × 永続強化 × 熟練の <b>組み合わせ（ビルド）</b> で強くなろう。</div></div>
+        <div class="tutgoal">⏱ 5分ごとにボスが出現。<br>まずは <b>草原（ステージ1）のボス撃破</b> を目標に！</div>
+      </div>
+      <button class="btn" id="tutclose" style="margin-top:0">とじる</button>
     </div>
   </div>
 
@@ -1445,6 +1470,7 @@ var SHK=1;   // 画面揺れの強さ 0 / 0.5 / 1 / 1.5
 var VOLM=0.8; // 全体音量 0〜1
 var VOLS=0.8; // 効果音音量
 var VOLB=0.55; // BGM音量
+var TUTSEEN=0; // チュートリアルを一度でも見たか
 (function loadSave(){
   for(var i=0;i<UPG.length;i++) META[UPG[i].id]=0;
   try{
@@ -1466,11 +1492,12 @@ var VOLB=0.55; // BGM音量
       if(o.stg) for(var sg in STAGES) if(o.stg[sg]) STGCLEAR[sg]=1;
       if(o.ban) for(var bi=0;bi<o.ban.length;bi++) if(WEAPONS[o.ban[bi]]) BAN[o.ban[bi]]=1;
       if(o.ch&&CHARS[o.ch]&&UNL[o.ch]) SELCH=o.ch;
+      if(o.tut) TUTSEEN=1;
     }
   }catch(e){}
 })();
 function saveGame(){
-  try{ localStorage.setItem('bsv_save',JSON.stringify({m:META,w:WALLET,wx:WX,sel:SEL,best:best,shk:SHK,volm:VOLM,vols:VOLS,volb:VOLB,unl:UNL,ach:ACH,ch:SELCH,stg:STGCLEAR,ban:Object.keys(BAN).filter(function(k){return BAN[k];})})); }catch(e){}
+  try{ localStorage.setItem('bsv_save',JSON.stringify({m:META,w:WALLET,wx:WX,sel:SEL,best:best,shk:SHK,volm:VOLM,vols:VOLS,volb:VOLB,unl:UNL,ach:ACH,ch:SELCH,stg:STGCLEAR,ban:Object.keys(BAN).filter(function(k){return BAN[k];}),tut:TUTSEEN})); }catch(e){}
 }
 function M(id){ return META[id]||0; }
 
@@ -5024,7 +5051,7 @@ function showView(v){
   document.getElementById('homeview').style.display  = v==='home' ?'flex':'none';
   document.getElementById('stageview').style.display = v==='stage'?'flex':'none';
   document.getElementById('resultview').style.display= v==='result'?'flex':'none';
-  if(v==='home'){ syncTitle(); playBGM('home'); }
+  if(v==='home'){ syncTitle(); playBGM('home'); if(!TUTSEEN) openTutorial(); }
   else if(v==='stage') renderStageSelect();
 }
 function startRun(n){
@@ -5093,6 +5120,7 @@ Array.prototype.forEach.call(document.querySelectorAll('#setshake button'),funct
 
 /* ============ お知らせ（ホーム右上のメール）============ */
 var NEWS=[
+  {t:'チュートリアル追加', d:'NEW', b:'ホーム右上の「❓ 遊びかた」からゲームの流れを確認できます（初回は自動で表示）。'},
   {t:'ホーム画面リニューアル', d:'UPDATE', b:'出撃 → ステージ選択の流れに変更。右上に設定（音量 / FPS / 画面揺れ）とお知らせを追加しました。'},
   {t:'リザルトに与ダメージ内訳', d:'UPDATE', b:'武器ごとの与ダメージを多い順にバーで表示するようになりました。'},
   {t:'遊び方', d:'HELP', b:'WASD / 矢印で移動、攻撃は自動。別々の属性を続けて当てると元素反応。武器は Lv10 で覚醒。床の装備を拾うとパッシブが強化されます。'}
@@ -5108,6 +5136,15 @@ function renderNews(){
 }
 document.getElementById('newsbtn').onclick=function(){ audio(); renderNews(); newsEl.classList.add('on'); };
 document.getElementById('newsclose').onclick=function(){ newsEl.classList.remove('on'); };
+
+/* ============ チュートリアル（遊びかた）============ */
+var tutEl=document.getElementById('tutorial');
+function openTutorial(){ audio(); tutEl.classList.add('on'); }
+document.getElementById('tutbtn').onclick=openTutorial;
+document.getElementById('tutclose').onclick=function(){
+  tutEl.classList.remove('on');
+  if(!TUTSEEN){ TUTSEEN=1; saveGame(); }   // 初回は閉じたら既読に
+};
 
 VOLLEY={bow:doBow,fire:doFire,ice:doIce,holy:doHoly,rock:doRock,musket:doMusket};
 resize();
