@@ -2062,7 +2062,7 @@ function doIce(){
   for(var i=0;i<cnt;i++){
     var an=a+(i-(cnt-1)/2)*0.28;
     shots.push({x:P.x,y:P.y,vx:Math.cos(an)*640,vy:Math.sin(an)*640,r:7,
-      src:'ice',dmg:17*DMG('ice')*pw('ice'),pierce:3+PRC('ice'),life:RNG('ice')/640,
+      src:'ice',kind:'icejav',ang:an,dmg:17*DMG('ice')*pw('ice'),pierce:3+PRC('ice'),life:RNG('ice')/640,
       col:'#bff0ff',col2:'#3aa9e0',slow:2.0+SLW('ice'),el:'ice',hit:[]});
   }
   sfx(1240,.08,'sine',.05,.5);
@@ -4173,6 +4173,18 @@ function drawShot(s){
     ctx.globalAlpha=.35; ctx.strokeStyle=s.col2; ctx.lineWidth=11;
     ctx.beginPath(); ctx.arc(-16,0,24,-1.0,1.0); ctx.stroke();
     ctx.globalAlpha=1;
+  }else if(s.kind==='icejav'){
+    ctx.rotate(s.ang);
+    // 片方（進行方向）が長いひし形の氷槍
+    var fl=16, bl=6, w=5;
+    ctx.globalAlpha=.35; ctx.fillStyle=s.col;
+    ctx.beginPath(); ctx.arc(0,0,8,0,6.3); ctx.fill(); ctx.globalAlpha=1;
+    ctx.fillStyle=s.col;
+    ctx.beginPath(); ctx.moveTo(fl,0); ctx.lineTo(0,-w); ctx.lineTo(-bl,0); ctx.lineTo(0,w);
+    ctx.closePath(); ctx.fill();
+    ctx.fillStyle=s.col2;
+    ctx.beginPath(); ctx.moveTo(fl*0.6,0); ctx.lineTo(0,-w*0.45); ctx.lineTo(-bl*0.6,0); ctx.lineTo(0,w*0.45);
+    ctx.closePath(); ctx.fill();
   }else if(s.kind==='arrow'||s.kind==='lance'){
     ctx.rotate(s.ang);
     var L=s.kind==='lance'?20:17;
