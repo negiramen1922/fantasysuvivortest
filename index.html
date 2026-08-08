@@ -80,8 +80,10 @@ canvas{display:block;width:100%;height:100%;touch-action:none}
 #hpbg{height:16px;background:#0e0a1f;border:1px solid var(--line)}
 #hpbar{height:100%;width:100%;background:linear-gradient(90deg,#c0203f,var(--blood));transition:width .15s}
 #hptext{font-size:13px;color:var(--ash);margin-top:3px}
-#slots{position:absolute;right:14px;bottom:14px;display:flex;gap:6px;
-  flex-wrap:wrap-reverse;justify-content:flex-end;max-width:52%}
+#slots{position:absolute;right:14px;bottom:14px;display:flex;flex-direction:column;
+  gap:5px;align-items:flex-end;max-width:56%}
+.srow{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end}
+.srow:empty{display:none}
 .slot{position:relative;width:46px;height:46px;border-radius:50%}
 .sring{position:absolute;inset:0;border-radius:50%;
   background:conic-gradient(from -90deg, var(--arc) var(--p,100%), #2b2150 0)}
@@ -93,6 +95,9 @@ canvas{display:block;width:100%;height:100%;touch-action:none}
 .slot.evo{box-shadow:0 0 12px rgba(255,204,77,.5);border-radius:50%}
 .slot.pas .sring{background:#2b2150}
 .slot.pas .lv{color:var(--ash)}
+.slot.eq .sring{background:#1c4a55}
+.slot.eq{box-shadow:0 0 8px rgba(127,230,255,.35)}
+.slot.eq .lv{color:#7fe6ff}
 
 #banner{position:absolute;left:0;right:0;top:31%;text-align:center;font-size:40px;
   color:var(--gold);letter-spacing:9px;opacity:0;
@@ -110,6 +115,9 @@ canvas{display:block;width:100%;height:100%;touch-action:none}
   width:38px;height:34px;background:rgba(20,14,45,.85);border:1px solid var(--line);
   color:var(--ash);font-family:inherit;font-size:15px;line-height:1;letter-spacing:1px;transition:.12s}
 #pausebtn:hover,#pausebtn:focus-visible{color:var(--gold);border-color:var(--gold);outline:none}
+#psetbtn{position:absolute;top:16px;right:16px;z-index:2;width:46px;height:46px;cursor:pointer;
+  background:transparent;color:var(--ash);border:2px solid var(--line);font-size:20px;transition:.12s}
+#psetbtn:hover,#psetbtn:focus-visible{color:var(--arc);border-color:var(--arc);outline:none}
 #paused{position:absolute;inset:0;display:none;align-items:center;justify-content:center;
   background:rgba(6,4,16,.88);text-align:center;padding:24px}
 #paused.on{display:flex}
@@ -219,6 +227,9 @@ canvas{display:block;width:100%;height:100%;touch-action:none}
 
 #popt{display:flex;align-items:center;justify-content:center;gap:6px;margin-top:14px;
   font-size:12px;color:var(--ash);flex-wrap:wrap}
+.psec{margin:10px 0 3px;color:var(--gold);font-size:13px;letter-spacing:2px}
+.wrow{display:flex;align-items:center;gap:7px;justify-content:center;margin:3px 0;font-size:14px}
+.wrow .wg{font-size:20px;line-height:1}
 #pbtns{display:flex;gap:10px;justify-content:center;flex-wrap:wrap}
 #pbtns .btn{margin-top:22px}
 .btn.warn{border-color:var(--blood);color:var(--blood)}
@@ -365,7 +376,8 @@ canvas{display:block;width:100%;height:100%;touch-action:none}
   #hpwrap{left:10px;bottom:10px;width:150px}
   #hpbg{height:13px}
   #hptext{font-size:11px}
-  #slots{right:10px;bottom:10px;gap:4px;max-width:56%}
+  #slots{right:10px;bottom:10px;gap:4px;max-width:60%}
+  .srow{gap:4px}
   .slot{width:34px;height:34px}
   .sin{inset:2.5px}
   .slot .ic{font-size:14px}
@@ -434,20 +446,10 @@ canvas{display:block;width:100%;height:100%;touch-action:none}
   </div>
 
   <div id="paused">
+    <button id="psetbtn" aria-label="設定">⚙</button>
     <div>
       <div class="title" style="font-size:32px;letter-spacing:8px">一時停止</div>
       <div id="pstat"></div>
-      <div id="popt">
-        <span>FPS表示</span>
-        <button class="tg" id="perfbtn">OFF</button>
-      </div>
-      <div id="popt">
-        <span>画面の揺れ</span>
-        <button class="tg" data-s="0">なし</button>
-        <button class="tg" data-s="0.5">弱</button>
-        <button class="tg" data-s="1">標準</button>
-        <button class="tg" data-s="1.5">強</button>
-      </div>
       <div id="pbtns">
         <button class="btn" id="resumebtn">再開する</button>
         <button class="btn sub2" id="retirebtn">リタイア</button>
@@ -1489,7 +1491,7 @@ function reset(){
   var w0={}, wa0={}; w0[c.w]=1; wa0[c.w]={};
   P={ x:0,y:0, r:12, hp:hp, max:hp, spd:190*c.spd, face:0,
       lv:1, xp:0, need:xpNeed(1), hurt:0,
-      w:w0, wa:wa0, aw:{}, lb:{}, p:{},
+      w:w0, wa:wa0, aw:{}, lb:{}, p:{}, rel:{},
       rr:5+M('reroll'), sk:5+M('skipn') };
   enemies=[]; gems=[]; shots=[]; fx=[]; dmgs=[]; parts=[]; bolts=[]; chests=[]; coins=[]; chaks=[]; scys=[]; bombs=[]; rocks=[]; holes=[]; ebul=[]; quakes=[]; dhits=[]; vacs=[]; vacT=40; bells=[]; swords=[]; zones=[]; volley=[]; relics=placeRelics();
   boss=null; bossN=0; lasers=[];
@@ -2154,7 +2156,7 @@ function holySplit(s){
 }
 // ホーリージャッジ：十字の剣が敵の元へ落ち、着弾後もしばらく周囲を裁く
 function doAura(){
-  var n=1+CNT('aura'), rad=70*AREA('aura'), dmg=10*DMG('aura')*pw('aura');
+  var n=1+CNT('aura'), rad=70*AREA('aura'), dmg=8*DMG('aura')*pw('aura');
   var life=4.0+TR('aura','life');
   var used=[];
   for(var i=0;i<n;i++){
@@ -2412,7 +2414,7 @@ function moveDhand(dt){
 
 // ブラックホール：周囲の敵を引き寄せながら削る
 function doVoid(){
-  var cnt=1+CNT('voidh'), rad=120*AREA('voidh'), dmg=2.2*DMG('voidh')*pw('voidh');
+  var cnt=1+CNT('voidh'), rad=88*AREA('voidh'), dmg=2.2*DMG('voidh')*pw('voidh');
   var pull=TF('voidh','pull')?230:135;
   for(var i=0;i<cnt;i++){
     var e=nearest(P.x,P.y,520);
@@ -3138,13 +3140,15 @@ function placeRelics(){
   }
   return out;
 }
-// 取得：6枠を無視して対象パッシブ+1。上限なら銀貨+15に変換。
+// 取得：6枠を無視して対象パッシブ+1。床装備はレベル上限を1だけ超えられる（例：パッシブ5＋装備1＝6）。
+// それも超える（すでに max+1）なら銀貨+15に変換。
 function takeRelic(rl){
   var id=rl.id, p=PASSIVES[id], cur=P.p[id]||0, txt;
-  if(cur>=p.max){
+  if(cur>=p.max+1){
     silver+=15; score+=15; txt='銀貨 +15';
   }else{
     P.p[id]=cur+1;
+    P.rel[id]=(P.rel[id]||0)+1;         // 床装備由来のレベルを別勘定（表示の「装備」段に使う）
     if(id==='vital'){ P.max+=30; P.hp=Math.min(P.max,P.hp+30); }
     if(id==='magnet') magFx=1.6;
     txt=p.nm+' Lv'+(cur+1);
@@ -3435,14 +3439,15 @@ function rollChoices(){
         gold:(lv+1>=10&&AWK[id]&&!AW(id))?1:0});
     }
   }
+  // 枠・上限はレベルアップ由来ぶんだけで数える（床装備由来は別勘定＝6枠と上限5を圧迫しない）
   var pslots=0;
-  for(id in P.p) if(P.p[id]>0) pslots++;
+  for(id in P.p) if(((P.p[id]||0)-(P.rel[id]||0))>0) pslots++;
   for(id in PASSIVES){
-    var p=PASSIVES[id], plv=P.p[id]||0;
-    if(plv>=p.max) continue;
-    if(plv===0&&pslots>=6) continue;          // パッシブも6枠まで
+    var p=PASSIVES[id], tot=P.p[id]||0, lvup=tot-(P.rel[id]||0);
+    if(lvup>=p.max) continue;
+    if(lvup===0&&pslots>=6) continue;          // パッシブも6枠まで（レベルアップ由来のみ）
     pool.push({id:id,kind:'p',nm:p.nm,glyph:p.glyph,tag:p.tag,tx:p.tx,
-      lvtx:plv===0?'NEW':('Lv '+plv+' → '+(plv+1))});
+      lvtx:tot===0?'NEW':('Lv '+tot+' → '+(tot+1))});
   }
   // 通常の強化先が尽きたら限界突破に切り替わる
   if(!pool.length) pool=lbPool();
@@ -4366,23 +4371,39 @@ var slotSig='', slotRefs=[];
 function rebuildSlots(){
   slotsEl.innerHTML=''; slotRefs=[];
   var id;
+  // 3段構成：上=装備（床装備由来）／中=パッシブ（レベルアップ由来）／下=武器
+  var rEq=document.createElement('div'); rEq.className='srow';
+  var rPas=document.createElement('div'); rPas.className='srow';
+  var rW=document.createElement('div'); rW.className='srow';
+  slotsEl.appendChild(rEq); slotsEl.appendChild(rPas); slotsEl.appendChild(rW);
+  // 装備段：床装備で得たぶん
+  for(id in P.rel){
+    if(!P.rel[id]) continue;
+    var eq=document.createElement('div'); eq.className='slot eq';
+    eq.innerHTML='<div class="sring"></div><div class="sin">'+
+      '<div class="ic">'+PASSIVES[id].glyph+'</div>'+
+      '<div class="lv">'+P.rel[id]+'</div></div>';
+    rEq.appendChild(eq);
+  }
+  // パッシブ段：レベルアップで得たぶん（総レベル − 装備ぶん）
+  for(id in P.p){
+    var lvup=(P.p[id]||0)-(P.rel[id]||0);
+    if(lvup<=0) continue;
+    var q=document.createElement('div'); q.className='slot pas';
+    q.innerHTML='<div class="sring"></div><div class="sin">'+
+      '<div class="ic">'+PASSIVES[id].glyph+'</div>'+
+      '<div class="lv">'+lvup+'</div></div>';
+    rPas.appendChild(q);
+  }
+  // 武器段（クールダウンのリングを回すのは武器だけ）
   for(id in P.w){
     var d=document.createElement('div');
     d.className='slot'+(AW(id)?' evo':'');
     d.innerHTML='<div class="sring"></div><div class="sin">'+
       '<div class="ic">'+WEAPONS[id].glyph+'</div>'+
       '<div class="lv">'+P.w[id]+'</div></div>';
-    slotsEl.appendChild(d);
-    // 雷迅斬は大剣のクールダウンを共有している
+    rW.appendChild(d);
     slotRefs.push({el:d,key:id});
-  }
-  for(id in P.p){
-    var q=document.createElement('div');
-    q.className='slot pas';
-    q.innerHTML='<div class="sring"></div><div class="sin">'+
-      '<div class="ic">'+PASSIVES[id].glyph+'</div>'+
-      '<div class="lv">'+P.p[id]+'</div></div>';
-    slotsEl.appendChild(q);
   }
 }
 function updateSlotRings(){
@@ -4828,7 +4849,6 @@ function togglePause(){
     keys={}; stick=null;
     disarmRetire();
     document.getElementById('pstat').innerHTML=buildText();
-    syncShakeBtns(); syncPerfBtn();
     pauseEl.classList.add('on');
     document.getElementById('resumebtn').focus();
   }else if(state==='paused'){
@@ -4839,6 +4859,7 @@ function togglePause(){
 }
 function syncPerfBtn(){
   var b=document.getElementById('perfbtn');
+  if(!b) return;
   b.textContent=PERF?'ON':'OFF';
   b.classList.toggle('on',!!PERF);
   b.onclick=function(){
@@ -4861,28 +4882,31 @@ function buildText(){
     for(var k2 in a2) if(a2[k2]) ax.push(AXN[k2]+a2[k2]);
     var lbs=[], l2=P.lb[id]||{};
     for(var k3 in l2) if(l2[k3]) lbs.push(LBN[k3]+'+'+l2[k3]);
-    ws.push(WEAPONS[id].nm+' <b>'+P.w[id]+'</b>'+(AW(id)?'<span style="color:var(--gold)">★'+AWK[id]+'</span>':'')+
+    ws.push('<div class="wrow"><span class="wg">'+WEAPONS[id].glyph+'</span>'+
+      WEAPONS[id].nm+' <b>'+P.w[id]+'</b>'+(AW(id)?'<span style="color:var(--gold)">★'+AWK[id]+'</span>':'')+
       (ax.length?'<span style="color:#6b5f9c">('+ax.join(',')+')</span>':'')+
-      (lbs.length?'<span style="color:var(--arc)">［限界 '+lbs.join(',')+'］</span>':''));
+      (lbs.length?'<span style="color:var(--arc)">［限界 '+lbs.join(',')+'］</span>':'')+'</div>');
   }
-  for(id in P.p){ ps.push(PASSIVES[id].nm+' <b>'+P.p[id]+'</b>'); }
+  var pslots=0;
+  for(id in P.p){
+    var lvup=(P.p[id]||0)-(P.rel[id]||0);
+    ps.push(PASSIVES[id].nm+' <b>'+P.p[id]+'</b>');
+    if(lvup>0) pslots++;
+  }
   var ch=[];
   for(id in ELEM){ if(elemSourceOwned(id)) ch.push(ELEM[id].nm+' <b>'+Math.round(elemChance(id)*100)+'%</b>'); }
-  var relTxt='';
-  if(relics&&relics.length){
-    var rr=[]; for(var ri=0;ri<relics.length;ri++){ var pp=PASSIVES[relics[ri].id]; rr.push(pp.glyph+pp.nm); }
-    relTxt='床の装備 <span style="color:#7fe6ff">'+rr.join('　')+'</span><br>';
-  }
+  var charBlock='<div class="wrow"><span class="wg">'+CH().glyph+'</span>'+CH().nm+
+    (CH().grow?'<span style="color:var(--gold)">　'+CH().grow.tx+'（現在 +'+
+       (CH().grow.v*(P.lv-1)*100).toFixed(0)+'%）</span>':'')+'</div>';
   return '経過 <b>'+(m<10?'0':'')+m+':'+(s<10?'0':'')+s+' / 20:00</b>　'+
          'SCORE <b>'+fmt(score)+'</b>　討伐 <b>'+kills+'</b>　元素反応 <span class="el">'+reacts+'</span><br>'+
          '持ち帰り 銀貨 <b>'+silver+'</b>　金貨 <b>'+gold+'</b><br>'+
-         '武器 '+(ws.join('　')||'—')+'<br>'+
-         'キャラ <span style="color:#fff">'+CH().glyph+CH().nm+'</span>'+
-         (CH().grow?'<span style="color:var(--gold)">　'+CH().grow.tx+'（現在 +'+
-            (CH().grow.v*(P.lv-1)*100).toFixed(0)+'%）</span>':'')+'<br>'+
-         '能力 '+(ps.join('　')||'—')+'<span style="color:#6b5f9c">（'+ps.length+'/6枠）</span><br>'+
-         relTxt+'付与率 '+(ch.join('　')||'—')+'　反応倍率 <b>×'+elemPow().toFixed(2)+'</b><br>'+
-                  '<span style="font-size:12px;color:#6b5f9c">P / Esc でも再開できます</span>';
+         '<div class="psec">キャラ</div>'+charBlock+
+         '<div class="psec">武器</div>'+(ws.join('')||'—')+
+         '<div class="psec">能力 <span style="color:#6b5f9c">（'+pslots+'/6枠）</span></div>'+
+         '<div style="margin:2px 0">'+(ps.join('　')||'—')+'</div>'+
+         '付与率 '+(ch.join('　')||'—')+'　反応倍率 <b>×'+elemPow().toFixed(2)+'</b><br>'+
+         '<span style="font-size:12px;color:#6b5f9c">P / Esc でも再開できます</span>';
 }
 function _unused(){
 }
@@ -4893,6 +4917,8 @@ function elemSourceOwned(el){
 }
 document.getElementById('pausebtn').onclick=function(){ togglePause(); this.blur(); };
 document.getElementById('resumebtn').onclick=function(){ togglePause(); };
+// 一時停止画面の設定ボタン（音量・FPS・画面揺れ）＝ホームと同じ設定パネルを開く
+document.getElementById('psetbtn').onclick=function(){ audio(); renderSettings(); setEl.classList.add('on'); };
 addEventListener('blur',function(){ if(state==='playing') togglePause(); });
 document.addEventListener('visibilitychange',function(){
   if(document.hidden&&state==='playing') togglePause();
