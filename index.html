@@ -1476,7 +1476,7 @@ var VOLM=0.8; // 全体音量 0〜1
 var VOLS=0.8; // 効果音音量
 var VOLB=0.55; // BGM音量
 var TUTSEEN=0; // チュートリアルを一度でも見たか
-var VERSION='α1.0.11'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
+var VERSION='α1.0.12'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
 (function loadSave(){
   for(var i=0;i<UPG.length;i++) META[UPG[i].id]=0;
   try{
@@ -1928,9 +1928,9 @@ function doSlash(){
   var dmg=22*DMG('slash')*pw('slash');
   var n=arcHit(r2,arc,dmg,null);
   fx.push({k:'slash',x:P.x,y:P.y,a:P.face,arc:arc,rad:r2,t:0,life:.18,col:'#dcd6ff'});
-  // 覚醒「飛翔斬撃」：斬撃が飛んでいく
+  // 覚醒「飛翔斬撃」：そこまでに伸ばした範囲に応じた大きさの斬撃が飛ぶ
   if(AW('slash')){
-    shots.push({x:P.x,y:P.y,vx:Math.cos(P.face)*560,vy:Math.sin(P.face)*560,r:16,
+    shots.push({x:P.x,y:P.y,vx:Math.cos(P.face)*560,vy:Math.sin(P.face)*560,r:24*ar,sz:ar,
       src:'slash',kind:'wave',ang:P.face,dmg:dmg*0.85,pierce:99,life:0.85,
       col:'#e8e2ff',col2:'#9b8bff',el:null,hit:[]});
     sfx(700,.09,'sawtooth',.045,.7);
@@ -2937,8 +2937,8 @@ function hurt(e,dmg,nx,ny,el){
   if(e.vuln>0) d*=1.2;                     // 深淵の手：被ダメージ上昇
   if(e.flat) d=Math.max(d*0.25,d-e.flat);   // 甲羅：軽い攻撃ほど通らない
   e.hp-=d; e.ht=0.12;
-  // ベル・ホーリージャッジ（十字架のAoE）はノックバックさせない
-  if(SRC!=='bell'&&SRC!=='aura'){ e.kb=Math.max(e.kb,crit?4:2.2); e.kbx=nx||0; e.kby=ny||0; }
+  // ベル・ホーリージャッジ（十字架AoE）・アイスブリザードはノックバックさせない
+  if(SRC!=='bell'&&SRC!=='aura'&&SRC!=='blizzard'){ e.kb=Math.max(e.kb,crit?4:2.2); e.kbx=nx||0; e.kby=ny||0; }
   if(SRC) WDMG[SRC]=(WDMG[SRC]||0)+d; else WDMG._react=(WDMG._react||0)+d;   // 与ダメージ集計
   if(dmgs.length>110) dmgs.shift();
   dmgs.push({x:e.x,y:e.y-e.r-4,v:-52,t:0,life:.65,txt:Math.round(d),crit:crit});
@@ -4272,11 +4272,12 @@ function drawShot(s){
     ctx.fillStyle='#fff'; ctx.beginPath(); ctx.arc(5,0,2,0,6.3); ctx.fill();
   }else if(s.kind==='wave'){
     ctx.rotate(s.ang);
+    var z=s.sz||1;                       // 範囲に応じた斬撃サイズ
     ctx.globalAlpha=.85;
-    ctx.strokeStyle=s.col; ctx.lineWidth=6; ctx.lineCap='round';
-    ctx.beginPath(); ctx.arc(-14,0,22,-1.15,1.15); ctx.stroke();
-    ctx.globalAlpha=.35; ctx.strokeStyle=s.col2; ctx.lineWidth=11;
-    ctx.beginPath(); ctx.arc(-16,0,24,-1.0,1.0); ctx.stroke();
+    ctx.strokeStyle=s.col; ctx.lineWidth=6*z; ctx.lineCap='round';
+    ctx.beginPath(); ctx.arc(-14*z,0,22*z,-1.15,1.15); ctx.stroke();
+    ctx.globalAlpha=.35; ctx.strokeStyle=s.col2; ctx.lineWidth=11*z;
+    ctx.beginPath(); ctx.arc(-16*z,0,24*z,-1.0,1.0); ctx.stroke();
     ctx.globalAlpha=1;
   }else if(s.kind==='icejav'){
     ctx.rotate(s.ang);
@@ -5197,6 +5198,9 @@ Array.prototype.forEach.call(document.querySelectorAll('#setshake button'),funct
 // 更新履歴：1つのお知らせ内で「バージョン見出し」ごとに変更点を並べる（新しい順）。
 // マージのたびに先頭へ新バージョンを追加し、VERSION も更新する。
 var UPDATES=[
+  {v:'α1.0.12', items:[
+    '大剣の覚醒「飛翔斬撃」が、そこまでに伸ばした範囲に応じた大きさで飛ぶように（当たり判定・見た目とも連動）。',
+    'アイスブリザード（氷の範囲攻撃）のノックバックを廃止（短射程＋鈍足/凍結が持ち味のため）。']},
   {v:'α1.0.11', items:[
     'ベルと、ホーリージャッジ（十字架）の範囲ダメージのノックバックを廃止（敵を吹き飛ばしすぎていたため）。']},
   {v:'α1.0.10', items:[
