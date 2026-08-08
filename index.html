@@ -837,7 +837,7 @@ var ETYPE={
              ai:'shoot', range:340, acd:2.6, bspd:230, bdmg:13 },
   boar:    { nm:'ボア',               res:0.35, hp:115, spd:54,  r:16, col:'#b98a5e', dark:'#513524', xp:3, dmg:16, shape:'boar',   pts:30,  sv:0.09,
              ai:'charge', range:380, acd:3.0, chspd:430, wind:0.55, chdur:0.85 },
-  wolf:    { nm:'ウルフ',             res:0.15, hp:92,  spd:142, r:13, col:'#9aa6b8', dark:'#3b4350', xp:3, dmg:14, shape:'wolf',   pts:28,  sv:0.08 },
+  wolf:    { nm:'ウルフ',             res:0.15, hp:92,  spd:188, r:13, col:'#9aa6b8', dark:'#3b4350', xp:3, dmg:14, shape:'wolf',   pts:28,  sv:0.08 },
   orc:     { nm:'オーク',             res:0.45, hp:235, spd:42,  r:20, col:'#79a05c', dark:'#31421f', xp:5, dmg:22, shape:'orc',    pts:52,  sv:0.14 },
   rider:   { nm:'ゴブリンライダー',   res:0.62, hp:175, spd:132, r:16, col:'#a8c46a', dark:'#414f22', xp:4, dmg:20, shape:'rider',  pts:48,  sv:0.13 },
   harpy:   { nm:'ハーピー',           res:0.20, hp:72,  spd:255, r:13, col:'#e2b0d8', dark:'#5e2f57', xp:3, dmg:15, shape:'harpy',  pts:32,  sv:0.09, ai:'fly' },
@@ -1247,7 +1247,7 @@ var WKIND={ slash:'phys', scythe:'phys', chakram:'phys', bow:'phys', dynamite:'p
             holy:'mag', aura:'mag', voidh:'mag', dhand:'mag', gatling:'phys' };
 var WAX={
   slash:   { dmg:5, area:4, rate:3 },
-  scythe:  { dmg:4, area:4, count:3, rate:3 },
+  scythe:  { dmg:4, area:4, count:3, rate:3, range:2 },
   chakram: { dmg:4, area:4, count:3, rate:3 },
   bow:     { dmg:4, pierce:3, count:3, rate:3, burst:3, range:3 },
   dynamite:{ dmg:4, area:4, count:3, rate:3, range:2 },
@@ -1329,8 +1329,15 @@ function lbOK(w,k){
   if(LBCAP[k]&&LB(w,k)>=LBCAP[k]) return 0;
   return 1;
 }
+// 間合いによる火力補正：近接ほど高く、遠距離ほど低い（射程との住み分け）
+var WCLASS={ slash:'melee', chainsaw:'melee',
+  chakram:'self', flame:'self', blizzard:'self', bell:'self', laser:'self', aura:'self', voidh:'self',
+  scythe:'mid', dhand:'mid', dynamite:'mid', quake:'mid', musket:'mid',
+  fire:'long', ice:'long', bow:'long', holy:'long', thunder:'long', chain:'long', rock:'long', gatling:'long' };
+var CLMUL={ melee:1.15, self:1.0, mid:1.0, long:0.78 };
+function RCM(w){ return CLMUL[WCLASS[w]||'mid']; }
 // 各軸の効き。ダメージと範囲は乗算、頻度はクールダウンの短縮。
-function DMG(w){ return Math.pow(1.45,AX(w,'dmg'))*(1+TR(w,'dmg'))*(1+0.08*LB(w,'dmg')); }
+function DMG(w){ return RCM(w)*Math.pow(1.45,AX(w,'dmg'))*(1+TR(w,'dmg'))*(1+0.08*LB(w,'dmg')); }
 function AREA(w){ return Math.pow(1.18,AX(w,'area'))*(1+TR(w,'area'))*(1+0.04*LB(w,'area'))*CH().area*(1+0.05*(P.p.reach||0)); }
 function RATE(w){ return Math.max(0.20,Math.pow(0.85,AX(w,'rate'))*(1+TR(w,'cd'))*(1-0.015*LB(w,'rate'))); }
 function CNT(w){ return AX(w,'count')+TR(w,'count')+LB(w,'count'); }
@@ -1342,6 +1349,7 @@ function CHN(w){ return AX(w,'chain')*2+TR(w,'chain'); }
 function SPL(w){ return AX(w,'split')*2+TR(w,'split'); }
 // 射程：基本距離（カテゴリ）×射程軸の倍率。ここに無い武器は近接/自己中心（射程軸なし）。
 var WRNG={
+  scythe:{base:620,cat:'中'},
   dhand:{base:360,cat:'中'}, dynamite:{base:560,cat:'中'}, quake:{base:640,cat:'中'}, musket:{base:440,cat:'中'},
   chain:{base:720,cat:'長'}, thunder:{base:660,cat:'長'},
   fire:{base:840,cat:'長'}, ice:{base:860,cat:'長'}, bow:{base:940,cat:'長'},
@@ -1896,7 +1904,8 @@ function doSlash(){
   wgain('slash',n); SRC=null;
 }
 function flameOrbs(){
-  var cnt=2+CNT('flame'), rad=72*AREA('flame'), out=[];
+  // 拡大(範囲/reach)で玉が大きくなるぶん、回転半径も少し広げて自キャラに被らないようにする
+  var ar=AREA('flame'), cnt=2+CNT('flame'), rad=72*ar+9*(ar-1), out=[];
   for(var i=0;i<cnt;i++){
     var a=whirlA+i/cnt*6.283;
     out.push({x:P.x+Math.cos(a)*rad,y:P.y+Math.sin(a)*rad,a:a});
@@ -1921,9 +1930,9 @@ function doFlame(dt){
   wgain('flame',hits); SRC=null;
 }
 function doScythe(){
-  var e=nearest(P.x,P.y,760);
+  var e=nearest(P.x,P.y,RNG('scythe'));
   var base=e?Math.atan2(e.y-P.y,e.x-P.x):P.face;
-  var cnt=1+CNT('scythe'), rng=210*AREA('scythe'), dmg=20*DMG('scythe')*pw('scythe');
+  var cnt=1+CNT('scythe'), rng=210*AREA('scythe')*RNGM('scythe'), dmg=20*DMG('scythe')*pw('scythe');
   for(var i=0;i<cnt;i++){
     scys.push({ a:base+(i-(cnt-1)/2)*0.55, t:0, dur:0.95, rng:rng, dmg:dmg,
                 x:P.x, y:P.y, spin:0, back:0, hit:[] });
@@ -3410,7 +3419,8 @@ function rollChoices(){
       // 未所持：新規取得のカード
       if(BAN[id]) continue;                     // 排他でBANされた武器は出さない
       if(slots>=6) continue;
-      var rc=WRNG[id]?('　［射程：'+WRNG[id].cat+'］'):'';
+      var CATLBL={melee:'近接',mid:'中射程',long:'長射程'};
+      var rc=CATLBL[WCLASS[id]]?('　［'+CATLBL[WCLASS[id]]+'］'):'';
       pool.push({id:id,kind:'new',nm:W_.nm,glyph:W_.glyph,tag:W_.tag,tx:W_.tx+rc,lvtx:'NEW'});
       continue;
     }
@@ -4028,7 +4038,7 @@ function drawChak(c){
   ctx.globalAlpha=1; ctx.restore();
 }
 function drawFlame(lv){
-  var bl=flameOrbs(lv), rr=9*(1+TR('flame','area'));
+  var bl=flameOrbs(lv), rr=9*AREA('flame');   // 玉の見た目も範囲・拡大に合わせて大きくなる
   for(var i=0;i<bl.length;i++){
     var b=bl[i], f=0.75+Math.sin(time*13+i)*0.25;
     ctx.save(); ctx.translate(b.x,b.y);
