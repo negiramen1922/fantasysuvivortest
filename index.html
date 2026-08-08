@@ -1675,7 +1675,7 @@ function runWeapons(dt){
   if(P.w.gatling) doGatling(dt);
   if(P.w.chainsaw&&ready('chainsaw',0.20*RATE('chainsaw'),dt)) doChain2();
   if(P.w.musket  &&ready('musket',  1.50*RATE('musket'),dt)){  doMusket(); queueVolley('musket',0.13); }
-  if(P.w.blizzard&&ready('blizzard',0.50*RATE('blizzard'),dt)) doBlizzard();
+  if(P.w.blizzard&&ready('blizzard',0.85*RATE('blizzard'),dt)) doBlizzard();
   if(P.w.laser   &&ready('laser',   2.00*RATE('laser'),dt))    doLaser();
   if(P.w.slash&&ready('slash',0.85*RATE('slash'),dt)) doSlash();
   if(P.w.scythe  &&ready('scythe',  1.45*RATE('scythe'),dt))   doScythe();
@@ -1757,6 +1757,13 @@ function doBlizzard(){
     }
   }
   fx.push({k:'bliz',x:P.x,y:P.y,r:rad,t:0,life:.34});
+  // 展開のたび、足元に雪の結晶が残る（歩いた跡に霜が降りるように）
+  var sc=1+(Math.random()<0.5?1:0);
+  for(var s2=0;s2<sc;s2++){
+    var ang2=Math.random()*6.283, off=Math.random()*30;
+    fx.push({k:'snowc',x:P.x+Math.cos(ang2)*off,y:P.y+P.r*0.35+Math.sin(ang2)*off*0.5,
+             t:0,life:1.2,sz:6+Math.random()*5,rot:Math.random()*1.05});
+  }
   wgain('blizzard',n); SRC=null;
 }
 // セイクリッドレーザー：自身から光の柱を放つ
@@ -1844,6 +1851,21 @@ function drawBliz(f){
     ctx.fillStyle='#eafaff';
     ctx.fillRect(f.x+Math.cos(a)*r-1.5,f.y+Math.sin(a)*r-1.5,3,3);
   }
+  ctx.globalAlpha=1; ctx.restore();
+}
+// 足元の雪の結晶（地面に残る六花）
+function drawSnowC(f){
+  var k=f.t/f.life, a=(k<0.25?k/0.25:1-(k-0.25)/0.75); // 出て→ゆっくり消える
+  ctx.save(); ctx.translate(f.x,f.y); ctx.rotate(f.rot);
+  ctx.globalAlpha=Math.max(0,a)*0.8;
+  ctx.strokeStyle='#dff2ff'; ctx.lineWidth=1.4; ctx.lineCap='round';
+  for(var i=0;i<6;i++){
+    ctx.rotate(Math.PI/3);
+    ctx.beginPath(); ctx.moveTo(0,0); ctx.lineTo(0,-f.sz); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(0,-f.sz*0.55); ctx.lineTo(f.sz*0.28,-f.sz*0.8); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(0,-f.sz*0.55); ctx.lineTo(-f.sz*0.28,-f.sz*0.8); ctx.stroke();
+  }
+  ctx.fillStyle='#eafaff'; ctx.beginPath(); ctx.arc(0,0,1.6,0,6.3); ctx.fill();
   ctx.globalAlpha=1; ctx.restore();
 }
 
@@ -3494,6 +3516,7 @@ function render(){
   for(i=0;i<fx.length;i++){ f=fx[i];
     if(f.k==='ring') drawRing(f);
     else if(f.k==='quake') drawQuake(f);
+    else if(f.k==='snowc') drawSnowC(f);
     else if(f.k==='aura') drawAura(f); }
 
   // ---- 敵と自機 ----
