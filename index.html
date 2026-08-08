@@ -1235,10 +1235,10 @@ function wgain(id,hits){
 // 1回の強化で必ずレベルが1上がり、選んだ軸に1点入る。
 // 軸ごとに上限があり、上限の合計は取得可能な点数(7)より多いので必ず取捨選択になる。
 var AXN={ dmg:'攻撃力', area:'範囲', rate:'頻度', count:'数',
-          pierce:'貫通', slow:'鈍足', chain:'連鎖', split:'拡散', burst:'連射', ammo:'弾数' };
+          pierce:'貫通', slow:'鈍足', chain:'連鎖', split:'拡散', burst:'連射', ammo:'弾数', range:'射程' };
 var AXT={ dmg:'ダメージ +45%', area:'範囲 +18%', rate:'間隔 −15%', count:'発生数 +1',
           pierce:'貫通 +2', slow:'鈍足の持続 +1.0秒', chain:'連鎖 +2', split:'拡散 +2',
-          burst:'同じ方向へ続けて撃つ回数 +1', ammo:'装填数が増える' };
+          burst:'同じ方向へ続けて撃つ回数 +1', ammo:'装填数が増える', range:'届く距離・飛距離 +20%' };
 // 物理は会心で殲滅、魔法は元素反応で連鎖させる
 var WKIND={ slash:'phys', scythe:'phys', chakram:'phys', bow:'phys', dynamite:'phys',
             quake:'phys', rock:'phys', bell:'phys', chainsaw:'phys', musket:'phys',
@@ -1249,25 +1249,25 @@ var WAX={
   slash:   { dmg:5, area:4, rate:3 },
   scythe:  { dmg:4, area:4, count:3, rate:3 },
   chakram: { dmg:4, area:4, count:3, rate:3 },
-  bow:     { dmg:4, pierce:3, count:3, rate:3, burst:3 },
-  dynamite:{ dmg:4, area:4, count:3, rate:3 },
-  quake:   { dmg:4, area:4, count:3, rate:3 },
-  rock:    { dmg:4, area:4, count:2, rate:3, burst:3 },
-  fire:    { dmg:4, count:3, pierce:3, rate:3, burst:3 },
+  bow:     { dmg:4, pierce:3, count:3, rate:3, burst:3, range:3 },
+  dynamite:{ dmg:4, area:4, count:3, rate:3, range:2 },
+  quake:   { dmg:4, area:4, count:3, rate:3, range:2 },
+  rock:    { dmg:4, area:4, count:2, rate:3, burst:3, range:3 },
+  fire:    { dmg:4, count:3, pierce:3, rate:3, burst:3, range:3 },
   flame:   { dmg:4, count:4, area:3, rate:3 },
-  ice:     { dmg:4, pierce:3, slow:3, count:3, rate:3, burst:3 },
-  thunder: { dmg:4, count:4, area:3, rate:3 },
-  chain:   { dmg:4, chain:4, count:3, rate:3 },
-  holy:    { dmg:4, count:3, split:3, pierce:2, rate:3, burst:3 },
+  ice:     { dmg:4, pierce:3, slow:3, count:3, rate:3, burst:3, range:3 },
+  thunder: { dmg:4, count:4, area:3, rate:3, range:2 },
+  chain:   { dmg:4, chain:4, count:3, rate:3, range:2 },
+  holy:    { dmg:4, count:3, split:3, pierce:2, rate:3, burst:3, range:3 },
   aura:    { dmg:3, area:3, count:3, rate:3 },
   voidh:   { dmg:4, area:4, count:2, rate:3 },
-  dhand:   { dmg:4, count:6, rate:3 },
+  dhand:   { dmg:4, count:6, rate:3, range:2 },
   bell:    { dmg:3, area:4, count:3, rate:3 },
   chainsaw:{ dmg:4, area:3, rate:3 },
-  musket:  { dmg:4, rate:3, burst:5, ammo:3 },
+  musket:  { dmg:4, rate:3, burst:5, ammo:3, range:2 },
   blizzard:{ dmg:4, area:3, rate:3, slow:3 },
   laser:   { dmg:3, count:4, rate:3, area:3 },
-  gatling: { dmg:5, rate:4, count:3, pierce:3, ammo:3 }
+  gatling: { dmg:5, rate:4, count:3, pierce:3, ammo:3, range:3 }
 };
 // Lv10 到達で覚醒。数値ではなく挙動が変わる。
 var AWK={ chainsaw:'暴走鋸', musket:'貫通弾', blizzard:'絶対氷結', laser:'追尾光線',
@@ -1340,6 +1340,14 @@ function SLW(w){ return AX(w,'slow')*1.0+TR(w,'slow'); }
 function AMMO(w){ return AX(w,'ammo'); }
 function CHN(w){ return AX(w,'chain')*2+TR(w,'chain'); }
 function SPL(w){ return AX(w,'split')*2+TR(w,'split'); }
+// 射程：基本距離（カテゴリ）×射程軸の倍率。ここに無い武器は近接/自己中心（射程軸なし）。
+var WRNG={
+  dhand:{base:360,cat:'中'}, dynamite:{base:560,cat:'中'}, quake:{base:640,cat:'中'}, musket:{base:440,cat:'中'},
+  chain:{base:720,cat:'長'}, thunder:{base:660,cat:'長'},
+  fire:{base:840,cat:'長'}, ice:{base:860,cat:'長'}, bow:{base:940,cat:'長'},
+  holy:{base:860,cat:'長'}, rock:{base:900,cat:'長'}, gatling:{base:900,cat:'長'} };
+function RNGM(w){ return Math.pow(1.20,AX(w,'range')); }   // 射程軸の倍率
+function RNG(w){ return (WRNG[w]?WRNG[w].base:640)*RNGM(w); }
 function axLeft(w,k){ return (WAX[w][k]||0)-AX(w,k); }
 
 /* ============ キャラクター ============ */
@@ -1643,7 +1651,7 @@ function doGatling(dt){
   if(gat.t>0) return;
   var r=RATE('gatling');
   gat.t=Math.max(0.03,0.05*r);                           // 連射間隔（rate軸で短縮）
-  var e=nearest(P.x,P.y,780);
+  var e=nearest(P.x,P.y,RNG('gatling'));
   var a=e?Math.atan2(e.y-P.y,e.x-P.x):P.face;
   P.face=a;
   SRC='gatling';
@@ -1658,7 +1666,7 @@ function doGatling(dt){
       var an=a+(Math.random()-.5)*0.10+(cnt>1?(i-(cnt-1)/2)*0.05:0);
       shots.push({x:bx,y:by,vx:Math.cos(an)*920,vy:Math.sin(an)*920,r:4,
         src:'gatling',kind:'bullet',ang:an,dmg:dmg,
-        pierce:1+PRC('gatling'),life:0.55,col:'#ffe27a',col2:'#a5701f',el:null,hit:[]});
+        pierce:1+PRC('gatling'),life:RNG('gatling')/920,col:'#ffe27a',col2:'#a5701f',el:null,hit:[]});
     }
   }
   wgain('gatling',cnt*barrels.length); SRC=null;
@@ -1724,7 +1732,7 @@ function doChain2(){
 }
 // マスケット：短射程の散弾
 function doMusket(){
-  var e=nearest(P.x,P.y,420); if(!e) return;
+  var e=nearest(P.x,P.y,RNG('musket')); if(!e) return;
   SRC='musket';
   var a=Math.atan2(e.y-P.y,e.x-P.x);
   var cnt=5+CNT('musket')+AMMO('musket'), dmg=9*DMG('musket')*pw('musket');
@@ -1733,7 +1741,7 @@ function doMusket(){
     shots.push({x:P.x,y:P.y,vx:Math.cos(an)*(560+Math.random()*140),
       vy:Math.sin(an)*(560+Math.random()*140),r:5,
       src:'musket',kind:'pellet',ang:an,dmg:dmg,
-      pierce:(AW('musket')?4:1)+PRC('musket'),life:0.34,
+      pierce:(AW('musket')?4:1)+PRC('musket'),life:0.34*RNGM('musket'),
       col:'#ffe6b0',col2:'#8a7145',el:null,hit:[]});
   }
   sfx(150,.12,'sawtooth',.075,.35); noise(.1,.07);
@@ -1975,19 +1983,19 @@ function moveChaks(dt){
   }
 }
 function doBow(){
-  var e=nearest(P.x,P.y,820); if(!e) return;
+  var e=nearest(P.x,P.y,RNG('bow')); if(!e) return;
   var a=Math.atan2(e.y-P.y,e.x-P.x), cnt=1+CNT('bow');
   for(var i=0;i<cnt;i++){
     var an=a+(i-(cnt-1)/2)*0.13;
     shots.push({x:P.x,y:P.y,vx:Math.cos(an)*760,vy:Math.sin(an)*760,r:6,
       src:'bow',kind:'arrow',ang:an,dmg:13*DMG('bow')*pw('bow'),grow:AW('bow')?1:0,base:13*DMG('bow')*pw('bow'),
-      pierce:2+PRC('bow'),life:1.3,col:'#e6dcc0',col2:'#8d7c50',el:null,hit:[]});
+      pierce:2+PRC('bow'),life:RNG('bow')/760,col:'#e6dcc0',col2:'#8d7c50',el:null,hit:[]});
   }
   sfx(880,.05,'triangle',.04,1.6);
   wgain('bow',cnt);
 }
 function doDyna(){
-  var e=nearest(P.x,P.y,560); if(!e) return;
+  var e=nearest(P.x,P.y,RNG('dynamite')); if(!e) return;
   var cnt=1+CNT('dynamite'), sp=(cnt>1?1:0);
   for(var i=0;i<cnt;i++){
     bombs.push({ sx:P.x, sy:P.y, tx:e.x+(Math.random()-.5)*90*sp, ty:e.y+(Math.random()-.5)*90*sp,
@@ -2026,26 +2034,26 @@ function moveBombs(dt){
 }
 function doFire(){
   var cnt=1+CNT('fire');
-  var e=nearest(P.x,P.y,620); if(!e) return;
+  var e=nearest(P.x,P.y,RNG('fire')); if(!e) return;
   var base=Math.atan2(e.y-P.y,e.x-P.x);
   // 標準で着弾＝爆発。熟練の爆炎/大爆発で爆発が一回り大きくなる。
   var bm=(TF('fire','explode')?(TF('fire','bigboom')?108:88):64)*AREA('fire');
   for(var i=0;i<cnt;i++){
     var a=base+(i-(cnt-1)/2)*0.17;
     shots.push({x:P.x,y:P.y,vx:Math.cos(a)*400,vy:Math.sin(a)*400,r:8,
-      src:'fire',dmg:19*DMG('fire')*pw('fire'),pierce:1+PRC('fire'),life:1.6,
+      src:'fire',dmg:19*DMG('fire')*pw('fire'),pierce:1+PRC('fire'),life:RNG('fire')/400,
       col:'#ffd08a',col2:'#ff6a1f',el:'fire',boom:bm,hit:[]});
   }
   sfx(300,.08,'triangle',.05,1.9);
   wgain('fire',cnt);
 }
 function doIce(){
-  var e=nearest(P.x,P.y,680); if(!e) return;
+  var e=nearest(P.x,P.y,RNG('ice')); if(!e) return;
   var a=Math.atan2(e.y-P.y,e.x-P.x), cnt=1+CNT('ice');
   for(var i=0;i<cnt;i++){
     var an=a+(i-(cnt-1)/2)*0.28;
     shots.push({x:P.x,y:P.y,vx:Math.cos(an)*640,vy:Math.sin(an)*640,r:7,
-      src:'ice',dmg:17*DMG('ice')*pw('ice'),pierce:3+PRC('ice'),life:1.1,
+      src:'ice',dmg:17*DMG('ice')*pw('ice'),pierce:3+PRC('ice'),life:RNG('ice')/640,
       col:'#bff0ff',col2:'#3aa9e0',slow:2.0+SLW('ice'),el:'ice',hit:[]});
   }
   sfx(1240,.08,'sine',.05,.5);
@@ -2054,14 +2062,14 @@ function doIce(){
 function doThunder(){
   SRC='thunder';
   var cnt=1+CNT('thunder'), used=[];
-  var dmg=30*DMG('thunder')*pw('thunder'), rad=56*AREA('thunder');
+  var dmg=30*DMG('thunder')*pw('thunder'), rad=56*AREA('thunder'), trng=RNG('thunder');
   for(var i=0;i<cnt;i++){
     var pick=null,bd=1e9;
     for(var j=0;j<enemies.length;j++){
       var e=enemies[j];
       if(e.dead||used.indexOf(e)>=0) continue;
       var d=(e.x-P.x)*(e.x-P.x)+(e.y-P.y)*(e.y-P.y);
-      if(d<bd&&d<440*440){ bd=d; pick=e; }
+      if(d<bd&&d<trng*trng){ bd=d; pick=e; }
     }
     if(!pick) break;
     used.push(pick);
@@ -2079,7 +2087,7 @@ function doThunder(){
   SRC=null;
 }
 function doChain(){
-  var e0=nearest(P.x,P.y,520); if(!e0) return;
+  var e0=nearest(P.x,P.y,RNG('chain')); if(!e0) return;
   SRC='chain';
   var beams=1+CNT('chain');
   var jumps=2+CHN('chain'), dmg0=22*DMG('chain')*pw('chain');
@@ -2114,13 +2122,13 @@ function doChain(){
   wgain('chain',n); SRC=null;
 }
 function doHoly(){
-  var e=nearest(P.x,P.y,720); if(!e) return;
+  var e=nearest(P.x,P.y,RNG('holy')); if(!e) return;
   var a=Math.atan2(e.y-P.y,e.x-P.x), cnt=1+CNT('holy');
   for(var i=0;i<cnt;i++){
     var an=a+(i-(cnt-1)/2)*0.22;
     shots.push({x:P.x,y:P.y,vx:Math.cos(an)*620,vy:Math.sin(an)*620,r:7,
       src:'holy',kind:'lance',ang:an,dmg:18*DMG('holy')*pw('holy'),
-      pierce:1+PRC('holy'),life:1.3,col:'#ffffff',col2:'#cfd8e8',el:'holy',
+      pierce:1+PRC('holy'),life:RNG('holy')/620,col:'#ffffff',col2:'#cfd8e8',el:'holy',
       split:3+SPL('holy'),hit:[]});
   }
   sfx(1320,.09,'triangle',.05,.7);
@@ -2131,7 +2139,7 @@ function holySplit(s){
   for(var i=0;i<n;i++){
     var an=s.ang+(i-(n-1)/2)*0.5+(Math.random()-.5)*0.2;
     shots.push({x:s.x,y:s.y,vx:Math.cos(an)*440,vy:Math.sin(an)*440,r:5,
-      src:'holy',kind:'lance',ang:an,dmg:s.dmg*0.45,pierce:1,life:0.5,
+      src:'holy',kind:'lance',ang:an,dmg:s.dmg*0.3,pierce:1,life:0.5,
       col:'#ffffff',col2:'#cfd8e8',el:'holy',split:(s.gen?0:(AW('holy')?2:0)),gen:1,hit:[]});
   }
 }
@@ -2233,7 +2241,7 @@ function drawSword(w){
 // グランドアッパー：最寄りの敵へ向けて、岩の隆起が一直線に走る
 function doQuake(){
   SRC='quake';
-  var e=nearest(P.x,P.y,640);
+  var e=nearest(P.x,P.y,RNG('quake'));
   var ang=e?Math.atan2(e.y-P.y,e.x-P.x):P.face;
   var n=3+CNT('quake');                        // 数の軸で波が長くなる
   var rad=68*AREA('quake');
@@ -2281,8 +2289,8 @@ function moveQuakes(dt){
 // ロックボール：転がり続けて進路の敵をなぎ倒す
 function doRock(){
   var cnt=1+CNT('rock'), rr=Math.min(86,30*AREA('rock')), dmg=22*DMG('rock')*pw('rock');
-  var life=2.4+(TF('rock','life')?1.6:0);
-  var e=nearest(P.x,P.y,900);
+  var life=(2.4+(TF('rock','life')?1.6:0))*RNGM('rock');
+  var e=nearest(P.x,P.y,RNG('rock'));
   var base=e?Math.atan2(e.y-P.y,e.x-P.x):P.face;
   for(var i=0;i<cnt;i++){
     var a=base+(i-(cnt-1)/2)*0.8;
@@ -2373,7 +2381,7 @@ function moveDhand(dt){
     h.t-=dt;
     if(h.t>0) continue;
     dhits.splice(i,1);
-    var e=nearest(P.x,P.y,300);
+    var e=nearest(P.x,P.y,RNG('dhand'));
     if(!e) continue;
     var ang=Math.atan2(e.y-P.y,e.x-P.x);
     fx.push({k:'hand',x:e.x,y:e.y,a:ang,t:0,life:.26});
@@ -2395,7 +2403,7 @@ function moveDhand(dt){
 
 // ブラックホール：周囲の敵を引き寄せながら削る
 function doVoid(){
-  var cnt=1+CNT('voidh'), rad=120*AREA('voidh'), dmg=6*DMG('voidh')*pw('voidh');
+  var cnt=1+CNT('voidh'), rad=120*AREA('voidh'), dmg=2.2*DMG('voidh')*pw('voidh');
   var pull=TF('voidh','pull')?230:135;
   for(var i=0;i<cnt;i++){
     var e=nearest(P.x,P.y,520);
@@ -2414,7 +2422,7 @@ function moveHoles(dt){
     if(h.life<=0){
       if(AW('voidh')){                           // 覚醒「特異点」
         SRC='voidh';
-        boom(h.x,h.y,h.r*0.9,h.dmg*14,'#c9a5ff',0);
+        boom(h.x,h.y,h.r*0.9,h.dmg*32,'#c9a5ff',0);
         SRC=null;
         shake=Math.min(20,shake+8); hitStop=Math.max(hitStop,.07);
         sfx(60,.5,'sine',.09,.3); noise(.4,.12);
@@ -2431,7 +2439,8 @@ function moveHoles(dt){
       if(d<h.r){
         var k=(1-d/h.r)*(1-(e.res||0));   // 抵抗が高い敵ほど吸い込まれない
         e.x+=dx/d*h.pull*k*dt; e.y+=dy/d*h.pull*k*dt;
-        if(fire){ SRC='voidh'; hurt(e,h.dmg,-dx/d,-dy/d,'dark'); SRC=null; hits++; }
+        // ダメージは飾り程度。中心ほど痛く、外周ほぼゼロ（距離減衰）
+        if(fire){ SRC='voidh'; hurt(e,h.dmg*(1-d/h.r),-dx/d,-dy/d,'dark'); SRC=null; hits++; }
       }
     }
   }
@@ -3401,7 +3410,8 @@ function rollChoices(){
       // 未所持：新規取得のカード
       if(BAN[id]) continue;                     // 排他でBANされた武器は出さない
       if(slots>=6) continue;
-      pool.push({id:id,kind:'new',nm:W_.nm,glyph:W_.glyph,tag:W_.tag,tx:W_.tx,lvtx:'NEW'});
+      var rc=WRNG[id]?('　［射程：'+WRNG[id].cat+'］'):'';
+      pool.push({id:id,kind:'new',nm:W_.nm,glyph:W_.glyph,tag:W_.tag,tx:W_.tx+rc,lvtx:'NEW'});
       continue;
     }
     if(lv>=W_.max) continue;
