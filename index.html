@@ -1602,7 +1602,7 @@ function figInfo(id){
   if(BOSS[id]){ var B=BOSS[id], tt=ETYPE[B.key]||{}; return {nm:B.nm,shape:tt.shape,col:tt.col,dark:tt.dark,desc:BDEX[id]||'',boss:true}; }
   var t=ETYPE[id]||{}; return {nm:t.nm,shape:t.shape,col:t.col,dark:t.dark,desc:DEX[id]||'',boss:false};
 }
-var VERSION='α1.0.26'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
+var VERSION='α1.0.27'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
 (function loadSave(){
   for(var i=0;i<UPG.length;i++) META[UPG[i].id]=0;
   try{
@@ -3982,6 +3982,71 @@ function drawGround(cx,cy){
     ctx.fillRect(px,py,3,3);
   }
 }
+/* ===== ドット絵スプライト（ユーザー提供画像を base64 で内蔵：単一ファイル維持） ===== */
+var SPRDATA={
+  knight:'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAYAAACqaXHeAAAABHNCSVQICAgIfAhkiAAAAAFzUkdCAK7OHOkAAAOdSURBVHic7VrRraswDPV7uhuwQHdgkUj5ZocySYfgG4lFukMXYAbel5Hr2kmcGG6lx5Eq3XKLsY+PnWAAuHDhwv+MP16Guq7bWs5f19XNFwtcCViWxXxeCOHt+9lEuCughgQKJOQsIv56GfJyGAnsum5rLasSuLLspQLEGWpwUwCAv6NnqMGdWdoMeYOjsKrkKDUcvgyO4yj+/vF4qLY0co4gwcUQBq8FawElRiLCm4QmI56BcyARGgm/TkDXddsRgVNoJHiqoMrAGcFTSER4qeDHekIqeKmxeRA1jqNou+u6rZUE08la8Ll6BfBrkN4qaN4IoVPa0oX/Sy17pRjHMbm3qEExe1L2eUZy8FIDXtejGRYpwBJ8CGH/cHiqAe21oqoESjOvybWVBM9SyBLAs58K3uKUpxJaYFKAteY5eHm0kOClgiQBNPs0eK3GOUrIaiWhFUUK4MFL4MctSvnNcsjuBFtlj6AESfbosmbNbMuOUCXAe7xVAq4yaenVgP5aifggIBV4LoteSJVb6rohBLMaxB5wZtZT4FvsnF90hlh6Ddeh6JEoTYqVhK8noGattyj46wkAOLYkv5oA71tfCV9NAMDxDdk8EvNACMHtISqH1a5IQImDHkHk7Ke+xxhd/PooAdxEWDchOdScyzdEMcb9oyHGaOodYg9IkVAKrwZGgz8CyS2jti2m9/PScYpa1Ui2SkiY53n/u2RLnG2COHiwbElbwAOn84gc5nluvxlCYPYfj4dIgje0kimdE9QED6CUAH3oiQRQZ3J3ZIiawal0zjRNb9KWSsGdAD4I5d81Z0vB7/m1wcs0TTAMg3guRe1AJKmA2+22H3u9XskBhTXbmi2e3WEYkiQc9mxQevaPTqaeD6aQG3WllDVNEwDAGxGUUFcFALyr4PV67cdjjDDP86EvRVAV8MxTNdDGXPugVFwFeBOkGZmmqWmAqUHLviR/ALl5hhDMw9GPnSDNfKox0ed8+KkFzTxKHYE9QAL3LcZofqXugy16coxRZF+qR4C27S9XmSZ9bZnlPpWWhEgAGtYC1ZzkKHVCetGa26d7Actymbv+WwlwR3IBngkM3nJTtCxLdji6E1D7uruG+/3+to+oBX+Y6g2XidD9fv849nw+Td1Y6h+Y9XVd//R9v+F1ns/nx2/7vhft3m43WNdVve4P/aEGKUDqiDVYjpI+UXCNTSImh91o3/dqrbQGeOHChQsXLly48I34B8euoFG5tTR9AAAAAElFTkSuQmCC',
+  sword:'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAYAAACqaXHeAAAABHNCSVQICAgIfAhkiAAAAAFzUkdCAK7OHOkAAAFrSURBVHic7Zq9DYMwEIUvERtcC7OwAhKLwCSsQsEC3oAdoKWmQXIqpCg/lqP47qzkvRId9/P4OLkwEaQrZvbWPZiJmf2+7z4nE65ahZjZT9NERERd12VDgooB98OfysUEcQNeDX8qBxNEDWBmP45jMMbaBDEDmNnP8xwV27atmQkiBpzDr+saFV9VlZkJyQ24//JlWUa9sywLEdmQILoDPiHASqIGfEqAhUCAZHIQAAJAQFQcCAABIECyjaBAgGRyEAACQEBUHAgAAT9MQFEUdBxHMA4E/DIBMQIBIAAESLYRFAiQTA4CQAAIiIoDASAABEi2ERQIkEwOAkAACIiKAwGGBFxSJkt5w2vbtqS9vVOROmHf91/nGIYhQSdxUrstnqv+3oC/3wEqRYieb443TaM2ZEgmv4BzzqLsS6kb4Jyjuq61y76VqgG5DU+kbEBuwxNhB2AHYAdoFstteCLsAOwA1aPw47McjsI3pFzWOtTnqZMAAAAASUVORK5CYII=',
+  blob:'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAYAAACqaXHeAAAABHNCSVQICAgIfAhkiAAAAAFzUkdCAK7OHOkAAALzSURBVHic7ZqxbhNBEIYniMIFHVsmEhYoCkhpKSIaIqeliWio8woU6fwgqdMgP0Ei06AUKB0SIAsUS0kVHWlCkc4U0Tp7p9nd2dnZGyHv3zi247v5v5nd2527tcVisYAV1iPtALRVAWgHoK0KQDsAbVUA2gFoqwLQDkBbFYB2ANqqALQD0FYFoB2AtioA7QC0VQFoB6CtlQfwuM+TGWO83zVN02MkDyoKoGv49Hfb5JeLxvu/fQFZK9EWt2a6hq1c4z6NR1vLv0vCEAPgZjDHOKbxaKsYBBEAxhivaQC+cVe2IqRBZAEIlXrX9JOXv+DvjxfcUy0lXQ1sAKGsS2Q8JEkILAA+865xSsa/fr+Knuv1q3X0cykISQB8JZ9a7hTjmLowJCCQAVCyHhPXuCsXwmx+CccHe1kQ2AshqnEJ093j+YYFRyQAscscJmnjPn04OgFjDLsKopshzHws+6753f07VmCU428+28g+VhBArnkAgOlkwAwtLKkK8wLglv3u/l2RrIdkhwFHYv0Aa346GcB0MugFgkQVoABSL3mpgUjCmV39yfq9aD/Azbxv7Nsqsa+YPn86QT9/+37Pe27u1YA8BKjZt0PAJ6r54fYODLd30O8kpdITpJgHALj4dkY6nh0GnMmQBKDE7i42D2Dmb+fnrffXN/lxiVVA6sQWGibUzGNKrQIxAJihVCihSa5E9gEKzgHubJ+j2/n50vy7j4cSobVUDIBvto8BsVXgGgdom49lP2UYFL0vgA0Lyt7gHgI+HKRK3wqtgKZpYPScRpCyN5da+UmbByAOgTdD+qxaYg9wfdMUMQ8QaYl19wSh9YBvPxBa9VFEMb65/rT1PqVNFu0JuhC6XV8AQJufubs0jmmr1B4hqSmKQQgBcEWBkVLePuMA6eYBmF1h6aXxbH7J+t3xQftKwekLsu4LuBqf/iSfjGK0ayqk3m+MYOK2onzq+0GJIs8H/E9a+WeEKgDtALRVAWgHoK0KQDsAba08gH+PucE1ZzwxqgAAAABJRU5ErkJggg==',
+  goblin:'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAYAAACqaXHeAAAABHNCSVQICAgIfAhkiAAAAAFzUkdCAK7OHOkAAAQqSURBVHic7Vu7ahtBFD0KkcskhG38A3KhxmCMq5BaAadQkX4xuHLhImDcqROGFClcpVGfQoUE8TcYE1CzRVy5UyNMCKRSoRTOXV2N5rHz2Bkb64AL7+7s3Hvuc2ZHjcViscAzxovUAqTGhoDUAqTGhoDUAqTGhoDUAqTGhoDUAqTGhoDUAqTGyxiTZFkmvT6bzWJMr0VtBHClz4dt4zNAGkIaoVeDpJRKaR363SI6CUEJyLLMSXGO2CQES4IhlE+BIASEVP582FYmzTrgHQKk/GQ8L6/tHjYrj+fj+NhYoSAlgFtAJ0SWZejkLQBLwUkhHQk6svj4GCSslUHRnU1kiArsHjYxGc8xGc+lJJgI4kRSOJhI8Cmnxj5ARQbd63cL6RjRtTmqhAg9UyUniPmnCmkEq0ZIlei+fltG0elxA4DZwgCk5Mnms0mwtmEjJUDlviq8e/+a/fen0ph+t1ghjnB63IhaTtcImM1m/12uZUWCDP1uoVVmlThCNQJV89kmTW0IVPWEvZ0HoX/+elUKAri1w7agXHM1uHWqGFICll4AmDyBK7m34644kWgzdjKe42pwC8B9IWVshHit5xBJMbm7DGISNI0XK4ur1TkqdYKyMtTJWytdW53uzt2cI0STVKkMyiaiRCkKZQJXpqrFfd1cB68NERLM1vpVlOfvr7Mddl4NklC2SasqqKRFXwuEhExhk/UpMcbaFHFeDuv2AFRJC9B7TL9boJOv5pUn5QGi4rY9PJVbGtfvFlYLGxc4eYC48emrOIC1fQXxfl0kOHsAV54UF91XB1FxQL6pQvPU5QleIUDKr7bOZnB3B+SbKvR+cV8gNAnOZVClfCdvadf5XPndw6b3itMXXjmAlBdzASCvAIA61qugjj1CpxBQCcFdV7aAEp8TUVxPMbq4x8ezt2gfbLuIZg2vHKCK+xBuXVxPo5Dg3QecD9ul5Xj9Vj2rQ/tgGzgDRhf3DxfOUDsJwVvhfrfA5dGW9N6JxU5RmVwZCXVUgiAEkOV0ygMo79kQUTeCeUD7YBsj3Fd6ViQCsCODvECWg4JuipqE8LUg95YTwzcC2fx8/N30b3k96Jch1eRceZt1vgpi6JB1Rxf3aA+XiVD1NcoVwc4HhO7oLo+2lPmEyL+b/i3/XBHlkJQvVN8nvvxYvxYtB3CEsr7cks3yi7M4T7RdYRlc49DGXbmF+RZ8SARbC6jaYtv45ErTPHUepwsSAlxAl4TElc4/vcHg+2/kvf0o5wi9zgiRgHlvHwAw6N3g8wd9SZQlLhH0PhGD3g2AR+ABouI6iApzt64ynoOeD7kesPYAk+BkJULe28egd2PMGzZkqN7nAisCbK1m47I27w5JQC2NkEusiosbXR5IngNU8E1SfFysI/ZOOUCFx3D+3xbBj8s/NTz7n8w8ewL+AZoWgsf+rYaPAAAAAElFTkSuQmCC',
+  orc:'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAYAAACqaXHeAAAABHNCSVQICAgIfAhkiAAAAAFzUkdCAK7OHOkAAASJSURBVHic7VsxSBxBFH2GRAISSHSLE4RAihQmV6Q+SHHxhDTpDpsUgggmSAhoYZMmlYU24SDCNSnSiF2KFK657soQyOqBIUUK8SxWrISkMsXle7OzMzu7M39vDfpAvL3dnf3vzf9//vzVobOzszNcYlwr2oCicSVA0QYUjUsvwHWugTzPixyHYZjLuJxjA0wCeJ6HdqsW+05lqIqQCmEYKsdNGtsGTgIQGdnITidQXqe6Voe3bx5qr223amwiDNnWAbrZIfLBHvDu/RGA9KQJm1sBZupl43WVqu8sQmYBdLMO9MgHe73PaQiYQGJOTurHchUhUwjoZh3ok+cgTiAxgSBRBBek9oBBkxexuRWg/EDvCS5e4FwHpCFfqfqZvh8knJdBIp9EJikJVqq+MUnO1MvY3AqQRyhkSoLyGi4aXqn68FeOI+drq2NGciYvoPspDIB4KAwsBMIwjPwkGZ+GPNAn6K8cR37Ec0DPCygpynWGC6xDQJUUa6tjkWOdQEnC0BiqaygUyBPoGQNbBpNABleqPtpNs9sniZckEBVXQO+3ayHEJgCQjjwAtJu1iAhZK0XOzZDVMqhyf5l8ZT7q/vIxiVA0Cu0HZBWBM/kRLn1DxEoA0xKYFWlmNo/ZB3L0ADkZpkmOOuRFHnAQQPaCZqMUS3QmVOZ9NBslbXnb6QQR8vOLR6wrAODQECGIK0KnE2B+8chwRx8m8iJoXG4BnOsA6t0BvfW82Uh/r4q8jnizUQLA2w8EGAuhZqMUCYksxY0qxmXiQE+wdqvMKoJTCNDMi0YSsoSCCjJxGRz9QIBBgE9bj86Px8Z6gnBlbdPen0MEp92gSB7od3Pz6t/lAbY6YKfV5RrqX/dnMGAthLiaov0WWDKajVLqN006XO0FbG8MwxDP6t84bYlhEKHA5gFT1XFWg2fq5dSh4AK2QoiSoE0fsEiwCLDT6p6/G2jMDSuvIWG4hKB9x4WqA3TkxXPcQrjC2QPSzL4IWQhAL4buNbm46xSXQRtvYO0KZ4Eolpw3kryDyIv3/+qeArDbKRYmgAjZcypVH69exDdYeeBCCCCjMTeMH4hWhHIo0Ky7wlkA7vVfhq68Xvt8I/ZdYTlgqjouvLKyQ2xG745GDuUt9oVqiBBMq0AWtz36cwuj929HviORL0xLjAzR7ciyxqno1v7G48i52sI2e0MUYE6CNokpSno6dv7r959ONpngLMDrmQn4G9OoLWwbr1UlLhVpApHf3T+0N9AAFg/QzZJMOImsapzd/UN8/PL7/Ji7JQ5YJkEx5p8/uXn+WTQWAFZf3stskDjbs0/juWVq+QBAgauA53nYWZtQGiaKYQsVaRWmlg9YRODrByhEEXHQPQEAzK6fRlaPD0sjAICJ8TuZn8cREpk6QrrZN0FFHui58ez6aeSaQSOzBxx0T4yzJZMhkqrZoneLH5ZGUo2tGt8FViGgM1Q0jEgD5oQli6ACPU/nTbawSoIUtyokzXaasVWQn8dFHmBYBmXkUa7m9f9IAMMfSPzvuHozVLQBReNKgKINKBqXXoC/GJ6a4S6k00oAAAAASUVORK5CYII=',
+  goblinBare:'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAYAAACqaXHeAAAABHNCSVQICAgIfAhkiAAAAAFzUkdCAK7OHOkAAAQGSURBVHic7Vo9axtBEH1K4jYBexv/AbkQAYNxXIXUKuxC/0CNIZ074SIgSCHcpQukUZ/ChVX4N8gmIDBXxH9AzcWEtMIoRTLyarXfO7dnY73G+LR7N+/tzOzs3DXm8/kczxgv6jagbqwFqNuAurEWoG4D6sZagLoNqBtrAeo2oG6sBajbgLrxKsdDhBDa62VZ5ni8FZUJIJM+PW85xwD1CNLgPg0SKRNpGwadIrsIrAIIIaKIy8gtAlsS5CBfB1gE4CR/et4yJs0qkBwCRH4ymi2u7R5ueM+X58lzc4WCVgB5BWxGCCHQ7jYBPBhOhGwi2MSS5+cQYWUbVN3ZJYZKYPdwA5PRDJPRTCuCSyBZSAoHlwgp26mzDjCJQb8NOoV2juraMnxChMb45AQ1//iIRggqhEyJ7su3hyg6OW4AcK8wAK14uueFJNjQsNEKYHJfE95/eCP998drzqBTLAlHODluZN1OVwQoy/K/yzWDRNBh0CmsZJaFI/gJaHpeaNK0hoCvJ+zt/DP6x8/XC0OAuHI4FJRrLoe3UTuGVoAHLwBcniCT3NuJJ04ihsydjGa4HN4CiD9IOQshea+XoYricncd1CTomq/uLLGrLsOrEtRtQ+1uc6lqq9LdZTeXwVEkeW2DugdRolSNckEm47viqW5uQ1JDhAwLXX0f8vL9qyyHo0+DZFRo0vIFbWnZzwKc0BF2rT4lxlxNkejjsK0HYEpagN1jBp0C7e5yXnlSHqASD63habuleYNOEXSwiUGUB6iNz1TiAFb6CurvVYkQ7QEyeSKuuq8NKnFA31Sh51TlCUkhQOSXS2c3ZHcH9E0Vur/aF+AWIXobNJFvd5vWc75MfvdwI/nEmYqkHEDk1VwA6HcAwBzrPqiiRxgVAiYjZNfVHaDUcSqK8RQXZ3c46m2idbAdY1owknKAKe453LoYT7OIkPxi5PS8hWI8dfb3fNA62MZRbxMXZ3e4OLtDMZ4m39OFR/t9QFmWKyJU8daIRQBaOQ4vyA22Urh1sA30uO5mB2c9EC2A6TBE3aEc8cuB6DpAJq/u/5TIvn6+x8dPL6ONU+sMAuf5gC0E6GUmgAV5AIu/vri62QIADL//No4xvZKLAXtDJJSwD0LfVIWAZReoup6nN85VINoDdC5YxeoT5BY8J9jOAkIIXN1s4d3bX8Z5FN8qbHN0R23OAxFLDpANNJEEbIlta2Vct7+f5TvCpG+EyMBufx8AMOxfW8fLBIQQxnl0XQWN4xQiqR9gMlTFsH+9YrQsQCh094tFcAikGC5DjW2Oe8YgSIBQ8i6XNYVETlTyZigmVn09gtP9AWYBUpOU6hGuMRwIToK2hsRj+P4/FOyfyz81PNqWWC48ewH+AiDUacF2W6g6AAAAAElFTkSuQmCC',
+  goblinClub:'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAYAAACqaXHeAAAABHNCSVQICAgIfAhkiAAAAAFzUkdCAK7OHOkAAAFqSURBVHic7ZoxUsMwEEU3DKGhVQMVd0tLzyVS0tJzAs5DR6OWhsYpPGEUYWMrWfkp4/9KJXH+PkkrO5NN13WdrZgbOgCNBNABaCSADkAjAXQAGgmgA9BIAB2ARgLoADQSQAegkQA6AI0E0AFoJIAOQCMBdAAaCaAD0EgAHYBGAugANBJAB6CRADoAjQTQAWgkgA5AIwF0ABoJoAPQ3Na4aAhhcDzGWOPrLsJdQAjBXnd3o6+ZtSVi4/1f4feXx8n3PL/9mFkbIlwF/Df7QxxFmJ0nY2irlV6nSg+YSyorL2aqkFz259f373iJBFRASr5yxhqpN80IyJmzlY6zfgnNCpii7x/bP+NX1QNyhmb06eH+pFmmeJwiiwsoWbb7j62Z1T0y3QSMNa3SfdoX3bPEfYL7CjinMS1ddIqbgBjjrKMrLTb9LEX1HpAX3MLtb4r7s0DpHR2Nu4BrY/U/iEgAHYBGAugANKsXcAAacWrRWTxZVwAAAABJRU5ErkJggg==',
+  orcBare:'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAYAAACqaXHeAAAABHNCSVQICAgIfAhkiAAAAAFzUkdCAK7OHOkAAARbSURBVHic7Vs9aFNRFP4qDkIXNW9IpaMo1EaQjgGH2AwuTk27CHYJOHQQ2qGLi1MHu0jAIUsFlzaC4GhqoELGIvhsoOIYTIdX26XiFofnad67uff93XPfMzQflPY1Lyfn++455557XjvR7/f7uMC4lLUDWWMsQNYOZI0LL8BlLkOWZfmuHccxYpfTNsAkgGVZaLfKQ7+TOSojJIPjOFK7QbaTQEsAIiM62enY0vtk96rw4vms8t52q8wmwkTSPkC1OkTePgBevT4CEJ00YbthY6lSCL2vWGpqixBbANWqAy55+8D9OQqBMJCYMzNqW7oixEoB1aoDA/IcxAkkJmAHiqCDyBGQNnkvths2CnfUkaATBdp9QBTyxVIz1u/ThPY2SOSDyAQVwWKpGVoklyoFbDdsmEiFWEVQ3MO9jhdLTTTXj32vlzdyoeTCooDeT2kADKdCaingOI7vK8j5KOSBAcHm+rHvy/sa4EYBFUWxz9BB4hSQFcXyRs53rRIoSBiyIbuHUoEigT4jtW0wCORwsdREux4e9kHiBQlEzRXgftdthNgEAKKRB4B2vewTIW6nyHkYSrQNysJfJF+s+sNfvCYRskam84C4InAWP8KFH4gkEiBsC4yLKCtrYvUBgxEgFsMoxVEFU+QBDQHEKKjX8kOFLgzFahP1Wl7Z3nY6to98deWIdQcANAYiBO+O0OnYqK4chbxjgDDyXpBdbgG0+wCa3QHufl6vRX+vjLyKeL2WB8A7DwQYG6F6Le9LiTjNjSzHReKAK1i7VWAVQSsFaOW9ThLipIIMInERHPNAgEGAD41759e5nCsIV9UOO/tziKB1GvSSBwbTXFPzOxNg6wN2Wz0uU/+mP+mAtRHiGooORmDBqNfykZ80qTA+CyR9o+M4eFT5wunLENJIBbYImC9NsTq8VClETgUd/JdFME2wdIK7rZ6xp0Iq0LlDtw9IHAGyPmAUoZ0CJldf9Zica/WBEdwGOckDKQqw824/1v1pdYOszwWA4YMQnQsWF+aw824fiwtzkW15t0FTaaYtAO3/9Lhq7/2pcIdfkLgnRdO7C0sEzJemsNvq4df3Uzyp3Pe99qbx2Xe9d/g7ks3rt676rk0NRlkGIgDw+MGVIfJJQaKJItBzQc6RmPZQFACeLU2zkVeh/PQj+0AUMFAEubH/9YdR+9rboMnVJ/LfDn8asQ8wRYB3lebu3mSxA7jE3376c37NPRIHEtYAsfgRZm/f0HbIu9rLD4enPfNrXQB8hTDRX4ruvpyWOuYVIylkpGWYX+uyiMBWBGWieNHtnQAAljfPzh23LAtbq5MAgOmpa7E/jyMlYhVB1eqHQUYecMN4efPMd0/aiB0B3d5J6GqJZIikbLXo2eLW6mQk2zL7OkiUAipHvY4RaSC8YIkiyECfp4qmpEhUBClvZQha7Si2ZRA/j4s8wLANijDRrpr6fySA6Swwyhi5kRg3xgJk7UDWGAuQtQNZ4y+14XM5wJvGaAAAAABJRU5ErkJggg==',
+  orcClub:'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAYAAACqaXHeAAAABHNCSVQICAgIfAhkiAAAAAFzUkdCAK7OHOkAAAFoSURBVHic7Zo9csIwEEaXTKBJq4ZUuVta+lwiJS09J+A86dKoTZPGKTxkFCHjn6x5Yvy9UoD59kla2QyrpmkaWzAPdAAaCaAD0EgAHYBGAugANBJAB6CRADoAjQTQAWgkgA5AIwF0ABoJoAPQSAAdgEYC6AA0EkAHoJEAOgCNBNABaCSADkAjAXQAGgmgA9A8el8whFAcjzF6f5ULrgJCCLZ/3XS+ZlafiJXnv8SOb8+979kdvs2sHhFuAq7NfomzCLNpMkpbbcp13HvAUFJZeTF9heSyPz6/fsfHSsAEpOQrp6uRzkEVAnKGbKXzrP+XKgX00faP9cX4XfWAnNKMvmyf/jTLFK9T5KYCxizb99PazOY/Ml0EdDWtsfu0LbrlVvcJritgSmMiik5xERBjHHR0pcWmnyWZtQfkBdPFlnB9Fhh7R1cDrgLukcX/ICIBdAAaCaAD0EgAHYBGAugANBJAB6BZvIAf+9pq0UVGjfcAAAAASUVORK5CYII='
+};
+var SPR={}, SPRT={}, SPRRDY={};
+// 端に接する白（不透明な白背景）だけを塗りつぶし（フラッドフィル）で透過にする。
+// 内部の白ハイライトは残すため、しきい値ではなく端からの連結成分だけを消す。
+function keyWhite(im){
+  var c=document.createElement('canvas'); c.width=im.naturalWidth; c.height=im.naturalHeight;
+  var g=c.getContext('2d'); g.drawImage(im,0,0);
+  var Wd=c.width, Hd=c.height, id=g.getImageData(0,0,Wd,Hd), d=id.data;
+  if(d[3]>0 && d[0]>=245 && d[1]>=245 && d[2]>=245){    // 角が不透明な白＝白背景あり
+    var seen=new Uint8Array(Wd*Hd), stack=[], x, y;
+    for(x=0;x<Wd;x++){ stack.push(x); stack.push(x+(Hd-1)*Wd); }
+    for(y=0;y<Hd;y++){ stack.push(y*Wd); stack.push(Wd-1+y*Wd); }
+    while(stack.length){
+      var idx=stack.pop();
+      if(seen[idx]) continue; seen[idx]=1;
+      var o=idx*4;
+      if(!(d[o+3]>0 && d[o]>=238 && d[o+1]>=238 && d[o+2]>=238)) continue;
+      d[o+3]=0;
+      var px=idx%Wd, py=(idx-px)/Wd;
+      if(px>0) stack.push(idx-1);
+      if(px<Wd-1) stack.push(idx+1);
+      if(py>0) stack.push(idx-Wd);
+      if(py<Hd-1) stack.push(idx+Wd);
+    }
+    g.putImageData(id,0,0);
+  }
+  return c;
+}
+(function(){ for(var k in SPRDATA){ (function(name,uri){
+  var im=new Image();
+  im.onload=function(){ SPR[name]=keyWhite(im); SPRRDY[name]=1; };
+  im.src=uri;
+})(k,SPRDATA[k]); } })();
+function sprReady(n){ return !!SPRRDY[n]; }
+function sprTinted(n,tint,alpha){
+  var key=n+'|'+tint+'|'+alpha, c=SPRT[key];
+  if(c) return c;
+  var im=SPR[n];
+  c=document.createElement('canvas'); c.width=im.width; c.height=im.height;
+  var g=c.getContext('2d'); g.drawImage(im,0,0);
+  g.globalCompositeOperation='source-atop'; g.globalAlpha=alpha; g.fillStyle=tint; g.fillRect(0,0,c.width,c.height);
+  SPRT[key]=c; return c;
+}
+// 原点中心・指定サイズで描画。tint 指定時は色被せ版。成功で true。
+function drawSpr(n,dw,dh,tint,alpha){
+  if(!sprReady(n)) return false;
+  var src=(tint&&alpha>0)?sprTinted(n,tint,alpha):SPR[n];
+  ctx.imageSmoothingEnabled=false; ctx.drawImage(src,-dw/2,-dh/2,dw,dh); ctx.imageSmoothingEnabled=true;
+  return true;
+}
+// 敵の形→スプライト名（未ロード時は null で手続き描画にフォールバック）
+var SHAPE_SPR={blob:'blob',goblin:'goblin',orc:'orc'};
+function enemySpr(e){ var n=SHAPE_SPR[e.shape]; return (n&&sprReady(n))?n:null; }
+
 // 大剣の描画：ローカル原点＝柄頭側、+x 方向へ刃が伸びる。呼び出し側で回転・移動する。
 function drawGSword(len){
   // 柄
@@ -4044,26 +4109,44 @@ function drawPlayer(){
     ctx.globalAlpha=1;
   }
   if(SELCH==='knight'){
-    // 騎士キャラ：立ち絵＋大剣。上下反転せず fl で左右のみ反転。
+    // 騎士キャラ：立ち絵（画像）＋大剣（画像）。上下反転せず fl で左右のみ反転。
     var fl=Math.cos(P.face)<0?-1:1;
     var bob=P.moving?Math.sin(time*11)*1.2:0;          // 歩行の上下ゆれ
     var swinging=swingT>0;
+    var pt=P.hurt>0?'#ff9db3':null, pa=P.hurt>0?0.55:0;
+    var haveKnight=sprReady('knight'), haveSword=sprReady('sword');
     ctx.save(); ctx.translate(0,bob); ctx.scale(fl,1);
-    drawKnight(P.hurt>0);
-    // 大剣：通常は肩に斜めに担ぎ、攻撃時は振り下ろす（同じローカル空間なので左右反転に追従）
-    ctx.save(); ctx.translate(0,-4);
+    // 大剣の角度：肩担ぎ or 振り
+    var sw=P.r*3.2, rot;
     if(swinging){
       var u=1-swingT/SWDUR;                            // 0→1 の振り進行
-      var sweep=u<0.28?-(u/0.28)*0.6:(u-0.28)/0.72*3.1;// ゆっくり振りかぶってから振り抜く
-      var a=-0.6+sweep;
-      ctx.save(); ctx.globalAlpha=0.28*(1-u); ctx.fillStyle='#e8e2ff';   // 残像スウッシュ
-      ctx.beginPath(); ctx.arc(0,0,36,a-0.95,a); ctx.arc(0,0,11,a,a-0.95,true); ctx.closePath(); ctx.fill();
-      ctx.globalAlpha=1; ctx.restore();
-      ctx.rotate(a); drawGSword(32);
+      var sweep=u<0.28?-(u/0.28)*0.5:(u-0.28)/0.72*2.9;// ゆっくり振りかぶってから振り抜く
+      rot=-0.5+sweep;
     }else{
-      ctx.rotate(-0.6); drawGSword(30);                // 肩担ぎ
+      rot=-0.7;                                        // 肩に斜め担ぎ
     }
-    ctx.restore();
+    // 剣スプライト（原点＝柄頭。画像は刃が上向き）。blade[i]=角度と不透明度で1回描く（インライン）
+    var blade=[];
+    if(swinging) blade=[[rot-0.45,0.25],[rot,1]];       // 残像＋本体前で振る
+    else         blade=[[rot,1]];                       // 担ぎ（肩の後ろ）
+    // 描画順：担ぎ時は剣→本体、振り時は本体→剣
+    if(!swinging){
+      for(var bi=0;bi<blade.length;bi++){
+        ctx.save(); ctx.translate(P.r*0.35,-P.r*0.15); ctx.rotate(blade[bi][0]); ctx.globalAlpha=blade[bi][1];
+        if(haveSword){ ctx.imageSmoothingEnabled=false; ctx.drawImage(SPR.sword,-sw/2,-sw,sw,sw); ctx.imageSmoothingEnabled=true; }
+        else{ ctx.rotate(-1.57); drawGSword(28); }
+        ctx.restore();
+      }
+    }
+    if(!haveKnight) drawKnight(P.hurt>0); else drawSpr('knight',P.r*3.4,P.r*3.4,pt,pa);
+    if(swinging){
+      for(var bj=0;bj<blade.length;bj++){
+        ctx.save(); ctx.translate(P.r*0.35,-P.r*0.15); ctx.rotate(blade[bj][0]); ctx.globalAlpha=blade[bj][1];
+        if(haveSword){ ctx.imageSmoothingEnabled=false; ctx.drawImage(SPR.sword,-sw/2,-sw,sw,sw); ctx.imageSmoothingEnabled=true; }
+        else{ ctx.rotate(-1.57); drawGSword(28); }
+        ctx.restore();
+      }
+    }
     ctx.restore();
   }else{
     // その他のキャラ：従来の簡易表示（照準方向を向く丸い本体＋武器線）
@@ -4385,21 +4468,26 @@ function blobHop(e){
   return { air:air, dy:-air*e.r*0.30,
            sx:1+0.18*(1-air)-0.10*air, sy:1-0.18*(1-air)+0.10*air };
 }
+// スプライト描画時の大きさ(倍率)と接地補正(上方向オフセット)
+var SPRSZ={blob:{s:3.0,oy:0.35}, goblin:{s:3.2,oy:0.55}, orc:{s:3.0,oy:0.50}};
 function drawEnemy(e){
   ctx.save(); ctx.translate(e.x,e.y);
   var bh=blobHop(e), isBlob=!!bh;
   var slAir=bh?bh.air:0;
+  var hit=e.ht>0, R=e.r;
+  var sprN=enemySpr(e);                                  // 画像があればそれを使う
   ctx.fillStyle='rgba(0,0,0,.3)';
   ctx.beginPath(); ctx.ellipse(0,e.r*0.85,e.r*0.85*(1-slAir*0.3),e.r*0.32*(1-slAir*0.3),0,0,6.3); ctx.fill();
-  var hit=e.ht>0, R=e.r;
-  // エフェクトに埋もれないよう、まず暗い縁で敵の形を抜く（スライムは潰れ・跳ねに追従）
-  ctx.globalAlpha=.85; ctx.fillStyle='#0a0714';
-  if(isBlob){
-    ctx.beginPath(); ctx.ellipse(0,bh.dy,(R+3.5)*bh.sx,(R+3.5)*bh.sy,0,0,6.3); ctx.fill();
-  }else{
-    ctx.beginPath(); ctx.arc(0,0,R+3.5,0,6.3); ctx.fill();
+  // エフェクトに埋もれないよう、まず暗い縁で敵の形を抜く（手続き描画のときだけ。スプライトは自前で輪郭を持つ）
+  if(!sprN){
+    ctx.globalAlpha=.85; ctx.fillStyle='#0a0714';
+    if(isBlob){
+      ctx.beginPath(); ctx.ellipse(0,bh.dy,(R+3.5)*bh.sx,(R+3.5)*bh.sy,0,0,6.3); ctx.fill();
+    }else{
+      ctx.beginPath(); ctx.arc(0,0,R+3.5,0,6.3); ctx.fill();
+    }
+    ctx.globalAlpha=1;
   }
-  ctx.globalAlpha=1;
   var bodyCol=hit?'#ffffff':(e.frz>0?'#cfeeff':(e.slow>0?'#8fd4ff':e.col));
   ctx.fillStyle=bodyCol;
   ctx.strokeStyle=hit?'#ffffff':e.dark; ctx.lineWidth=2;
@@ -4411,7 +4499,17 @@ function drawEnemy(e){
   if(isBlob){
     ctx.save(); ctx.translate(0,bh.dy); ctx.scale(bh.sx,bh.sy);
   }
-  if(e.shape==='egg'){
+  if(sprN){
+    // ユーザー提供のドット絵で描画（被弾/凍結/鈍足は色被せで表現）
+    var z=SPRSZ[sprN], dw=R*z.s;
+    var tn=hit?'#ffffff':(e.frz>0?'#bfe8ff':(e.slow>0?'#7fc8ff':null));
+    var ta=hit?0.9:(e.frz>0?0.6:(e.slow>0?0.4:0));
+    ctx.save();
+    if(sprN!=='blob'&&P.x<e.x) ctx.scale(-1,1);          // 進行方向へ左右反転（対称なスライムは除く）
+    ctx.translate(0,-R*z.oy);
+    drawSpr(sprN,dw,dw,tn,ta);
+    ctx.restore();
+  }else if(e.shape==='egg'){
     // クモの卵：孵化が近いほど揺れる
     var hk=e.hatch!=null?Math.max(0,Math.min(1,1-e.hatch/6)):0;
     ctx.rotate(Math.sin(time*(6+hk*20))*0.06*hk);
@@ -4505,6 +4603,7 @@ function drawEnemyOutlines(){
   for(var i=0;i<enemies.length;i++){
     var e=enemies[i];
     if(e.dead) continue;
+    if(enemySpr(e)) continue;                            // スプライト敵は自前の輪郭を持つので描かない
     var bh=blobHop(e), oy=bh?bh.dy:0, ox=bh?bh.sx:1, oyy=bh?bh.sy:1;   // スライムは潰れ・跳ねに追従
     ctx.globalAlpha=e.boss?0.95:(e.elite?0.9:0.62);
     ctx.strokeStyle=e.ht>0?'#ffffff':(e.boss?'#ff4d6d':(e.elite?'#ffcc4d':'#0a0614'));
@@ -5659,6 +5758,10 @@ Array.prototype.forEach.call(document.querySelectorAll('#setshake button'),funct
 // 更新履歴：1つのお知らせ内で「バージョン見出し」ごとに変更点を並べる（新しい順）。
 // マージのたびに先頭へ新バージョンを追加し、VERSION も更新する。
 var UPDATES=[
+  {v:'α1.0.27', items:[
+    '手描きのドット絵を導入：騎士（＋担ぐ大剣）・スライム・ゴブリン・オークをそのまま反映しました。',
+    '大剣は肩に斜め担ぎ→攻撃で振り抜き。スライムは跳ねます。被弾/凍結/鈍足は色被せで表現。',
+    '背景の白は自動で透過処理。図鑑の立ち絵も同じドット絵に。']},
   {v:'α1.0.26', items:[
     '騎士の立ち絵は騎士キャラ専用に。聖女など他キャラは従来表示へ戻しました。',
     '大剣の振りをゆっくりに調整。',
@@ -5781,7 +5884,12 @@ function drawPortrait(cnv,id){
   g.save(); g.translate(cnv.width/2,cnv.height/2+cnv.height*0.05);
   var R=Math.min(cnv.width,cnv.height)*(t.boss?0.26:0.30);
   g.fillStyle='rgba(0,0,0,.25)'; g.beginPath(); g.ellipse(0,R*0.95,R*0.8,R*0.3,0,0,6.3); g.fill();
-  if(FOREST2[t.shape]) drawForestShape(t.shape,R,t.col,t.dark,0);
+  var sprN=SHAPE_SPR[t.shape];
+  if(sprN&&sprReady(sprN)){
+    g.save(); if(sprN!=='blob') g.translate(0,-R*0.35);
+    drawSpr(sprN,R*3.0,R*3.0,null,0);
+    g.restore();
+  }else if(FOREST2[t.shape]) drawForestShape(t.shape,R,t.col,t.dark,0);
   else drawS1Shape(t.shape,R,t.col,t.dark,0);
   g.restore();
   ctx=save;
