@@ -923,9 +923,9 @@ var BOSS={
   kervi:      { nm:'神鹿ケルビ',       res:0.92, key:'deer',    hp:30000,  r:46, spd:60, dmg:40, xp:1200, pts:16000,
                ai:'charge', range:560, acd:2.6, chspd:580, wind:0.9, chdur:1.0 },
   gmoth:      { nm:'ジャイアントモス', res:0.93, key:'moth',    hp:75000,  r:50, spd:48, dmg:42, xp:1600, pts:24000,
-               ai:'flutter', acd:3.4, bspd:200, bdmg:15 },
+               ai:'mothspray', acd:2.2, bspd:205, bdmg:15 },
   arachnid:   { nm:'アラクネイド',     res:0.94, key:'arachne', hp:140000, r:50, spd:58, dmg:44, xp:1900, pts:40000,
-               ai:'weaver', acd:2.8, wind:0.55, nbul:7, bspd:230, bdmg:16 },
+               ai:'arachnid', acd:2.0, nbul:20, bspd:220, bdmg:16 },
   eldertreant:{ nm:'エルダートレント', res:0.96, key:'wtreant', hp:260000, r:56, spd:34, dmg:50, xp:2400, pts:60000,
                ai:'slam', acd:3.4, wind:0.7, nbul:20, bspd:230, bdmg:20, last:1 }
 };
@@ -1487,7 +1487,7 @@ var VOLB=0.55; // BGM音量
 var TUTSEEN=0; // チュートリアルを一度でも見たか
 var RESPEC_AT=0; // 前回 永続強化を振り直した時刻（ms）
 var RESPEC_WEEK=7*24*3600*1000; // 振り直しのクールタイム（1週間）
-var VERSION='α1.0.16'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
+var VERSION='α1.0.17'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
 (function loadSave(){
   for(var i=0;i<UPG.length;i++) META[UPG[i].id]=0;
   try{
@@ -2738,6 +2738,17 @@ function makeEnemy(k){
     ph:Math.random()*6.28, elite:0, boss:0, dead:0, uid:(++UID) };
   enemies.push(e); return e;
 }
+// クモの卵：敵として置く（プレイヤーの攻撃で壊せる）。少し固め・接触ダメージなし・孵化で自爆クモ3体。
+function spawnEgg(x,y){
+  var scale=1+time/60*0.63;
+  var hp=Math.round(360*scale);
+  enemies.push({ k:'egg', nm:'クモの卵', x:x, y:y, r:18, hp:hp, mhp:hp, spd:0,
+    col:'#c8b0e0', dark:'#5a3a6a', xp:2, dmg:0, shape:'egg', pts:20, sv:0.06,
+    ai:'egg', hatch:6.0, sum:'spider', nsum:3, res:0.25, flat:0,
+    at:0, st:'', stT:0, vx:0, vy:0,
+    kb:0,kbx:0,kby:0,ht:0,slow:0,el:0,elT:0,rcd:0,frz:0,dotD:0,dotT:0,dotN:0,vuln:0,
+    ph:0, elite:0, boss:0, dead:0, uid:(++UID) });
+}
 // 死亡した敵はフレーム末にまとめて取り除く。
 // ループ中に splice すると添字がずれて enemies[j] が undefined になる。
 function sweepDead(){
@@ -2909,36 +2920,46 @@ function moveEnemies(dt){
           shake=Math.min(18,shake+6); sfx(90,.26,'square',.09,.4); noise(.2,.1); } }
       else if(e.at<=0&&d<640){ e.st='spiral'; e.stT=2.4; e.tick=0; e.sa=Math.atan2(dy,dx); }
     }
-    else if(e.ai==='flutter'){
-      // ジャイアントモス：3方向の渦をゆらゆら撒き続ける（弾幕だが放射slamとは別物）
-      if(e.st==='cast'){
+    else if(e.ai==='mothspray'){
+      // ジャイアントモス：5連の扇を向きを変えつつ撒き散らし続ける→クールタイム→また撒く
+      if(e.st==='spray'){
         e.stT-=dt; e.tick-=dt; moved=1;
-        if(e.tick<=0){ e.tick=0.08; e.sa=(e.sa||0)+0.5;
-          for(var ma=0;ma<3;ma++) eshoot(e,e.sa+ma/3*6.283,e.bspd,e.bdmg);
-          sfx(560,.03,'square',.025,1.1); }
+        if(e.tick<=0){ e.tick=0.14; e.sa=(e.sa||0)+1.15;
+          for(var mf=0;mf<5;mf++) eshoot(e,e.sa+(mf-2)*0.13,e.bspd,e.bdmg);   // 5×1 の扇
+          sfx(500,.03,'square',.026,1.1); }
         if(e.stT<=0){ e.st=''; e.at=e.acd; }
       }
-      else if(e.at<=0&&d<720){ e.st='cast'; e.stT=2.6; e.tick=0; e.sa=Math.random()*6.283; }
+      else if(e.at<=0&&d<760){ e.st='spray'; e.stT=3.0; e.tick=0; e.sa=Math.random()*6.283; }
     }
-    else if(e.ai==='weaver'){
-      // アラクネイド：狙い撃ちの扇状ショット、3回に1回は放射状の網（予告リングあり）。召喚はしない。
-      if(e.st==='cast'){
+    else if(e.ai==='arachnid'){
+      // アラクネイド：赤い予告→卵を設置→全方位弾幕×3 を繰り返す。卵は孵化で自爆クモを産む（壊せる）。
+      if(e.st==='eggwind'){
         e.stT-=dt; moved=1;
-        if(!e.fired&&e.stT<=e.wind-0.25){
-          e.fired=1;
-          if(e.radial){
-            for(var wr=0;wr<22;wr++) eshoot(e,wr/22*6.283+Math.random()*0.12,e.bspd*0.85,e.bdmg);
-            fx.push({k:'ring',x:e.x,y:e.y,r:0,to:130,t:0,life:.35,col:'#c89ce0'});
-            shake=Math.min(16,shake+5); sfx(120,.2,'square',.07,.5);
-          }else{
-            var wb=Math.atan2(dy,dx), wk=e.nbul;
-            for(var wf=0;wf<wk;wf++) eshoot(e,wb+(wf-(wk-1)/2)*0.15,e.bspd,e.bdmg);
-            sfx(300,.1,'sawtooth',.05,.6);
-          }
-        }
-        if(e.stT<=0){ e.st=''; e.at=e.acd; e.wcount=(e.wcount||0)+1; }
+        if(e.stT<=0){ spawnEgg(e.egx,e.egy); e.st='barrage'; e.bcount=0; e.stT=0.45; }
       }
-      else if(e.at<=0&&d<680){ e.st='cast'; e.stT=e.wind; e.fired=0; e.radial=(((e.wcount||0)%3)===2); }
+      else if(e.st==='barrage'){
+        e.stT-=dt; moved=1;
+        if(e.stT<=0){
+          for(var ab=0;ab<e.nbul;ab++) eshoot(e,ab/e.nbul*6.283+Math.random()*0.1,e.bspd,e.bdmg);
+          fx.push({k:'ring',x:e.x,y:e.y,r:0,to:120,t:0,life:.35,col:'#c89ce0'});
+          shake=Math.min(16,shake+4); sfx(120,.18,'square',.06,.5);
+          e.bcount++;
+          if(e.bcount>=3){ e.st=''; e.at=e.acd; } else e.stT=0.55;
+        }
+      }
+      else if(e.at<=0&&d<720){ e.st='eggwind'; e.stT=0.9; e.egx=P.x; e.egy=P.y; }
+    }
+    else if(e.ai==='egg'){
+      // クモの卵：動かず、時間で孵化して自爆クモを3体産む。孵化前に壊せば湧かない。
+      moved=1;
+      e.hatch-=dt;
+      if(e.hatch<=0){
+        for(var eg=0;eg<e.nsum;eg++){ var an=Math.random()*6.283, o=makeEnemy(e.sum);
+          o.x=e.x+Math.cos(an)*24; o.y=e.y+Math.sin(an)*24; }
+        fx.push({k:'ring',x:e.x,y:e.y,r:0,to:70,t:0,life:.3,col:'#c89ce0'});
+        sfx(260,.18,'square',.06,1.4);
+        e.dead=1; continue;
+      }
     }
     else if(e.ai==='dash'){
       // スウォーム：出現時に決めた方向へ直進。追尾せず画面外で消滅。
@@ -2962,16 +2983,16 @@ function moveEnemies(dt){
     if(e.vuln>0) e.vuln-=dt;
 
     // --- プレイヤーへの接触 ---
-    if(d<e.r+P.r&&P.hurt<=0&&P.inv<=0&&!P.god){
+    if(e.dmg>0&&d<e.r+P.r&&P.hurt<=0&&P.inv<=0&&!P.god){
       P.hp-=e.dmg*(1-0.04*M('armor'))*(1-0.03*(P.p.bulwark||0)); P.hurt=0.55; shake=Math.min(16,shake+5);
       sfx(140,.16,'square',.09,.5);
       if(P.hp<=0){ P.hp=0; die(); return; }
     }
-    // --- 敵同士の押し出し ---
-    if(!e.boss){
+    // --- 敵同士の押し出し ---（卵は動かさない）
+    if(!e.boss&&e.ai!=='egg'){
       for(var j=i-1;j>=0&&j>i-14;j--){
         var o=enemies[j];
-        if(o.dead||o.boss) continue;
+        if(o.dead||o.boss||o.ai==='egg') continue;
         var ox=e.x-o.x, oy=e.y-o.y, od=Math.hypot(ox,oy);
         var mn=e.r+o.r;
         if(od>0&&od<mn){
@@ -3058,7 +3079,7 @@ function kill(e){
     if(e.elite){
       chests.push({x:e.x,y:e.y,t:0});
       flash=Math.max(flash,.45); shake=Math.min(20,shake+9); hitStop=Math.max(hitStop,.09);
-    }else if(Math.random()<(ETYPE[e.k].sv||0)*(1+0.15*M('luck')+0.10*(P.p.greed||0))){
+    }else if(Math.random()<(((ETYPE[e.k]?ETYPE[e.k].sv:e.sv)||0)*(1+0.15*M('luck')+0.10*(P.p.greed||0)))){
       coins.push({x:e.x,y:e.y,vx:(Math.random()-.5)*90,vy:(Math.random()-.5)*90,pull:0,sp:0});
     }
   }
@@ -4106,12 +4127,28 @@ function drawEnemy(e){
   // スライムキングの弾幕予告：プルプル！と潰れて震える
   var wob=(e.st==='wind'&&e.bkey==='slimeking')?(1+Math.sin(time*32)*0.13):0;
   if(wob) ctx.save(), ctx.scale(wob,2-wob);
-  if(FOREST2[e.shape]){
+  if(e.shape==='egg'){
+    // クモの卵：孵化が近いほど揺れる
+    var hk=e.hatch!=null?Math.max(0,Math.min(1,1-e.hatch/6)):0;
+    ctx.rotate(Math.sin(time*(6+hk*20))*0.06*hk);
+    ctx.fillStyle=bodyCol;
+    ctx.beginPath(); ctx.ellipse(0,0,R*0.82,R,0,0,6.3); ctx.fill(); ctx.stroke();
+    ctx.fillStyle=hit?'#ffffff':e.dark;
+    ctx.beginPath(); ctx.arc(-R*0.22,-R*0.12,R*0.17,0,6.3); ctx.fill();
+    ctx.beginPath(); ctx.arc(R*0.24,R*0.22,R*0.14,0,6.3); ctx.fill();
+    ctx.beginPath(); ctx.arc(R*0.05,-R*0.5,R*0.1,0,6.3); ctx.fill();
+  }else if(FOREST2[e.shape]){
     drawForestShape(e.shape,R,bodyCol,hit?'#ffffff':e.dark,time);
   }else{
     drawS1Shape(e.shape,R,bodyCol,hit?'#ffffff':e.dark,time);
   }
   if(wob) ctx.restore();
+  // 卵のHPバー（壊せることが分かるように）
+  if(e.shape==='egg'){
+    var bw=R*2.4;
+    ctx.fillStyle='#000'; ctx.fillRect(-bw/2,-R-14,bw,5);
+    ctx.fillStyle='#c89ce0'; ctx.fillRect(-bw/2,-R-14,bw*Math.max(0,e.hp/e.mhp),5);
+  }
 
   // 突進の予告：溜め中はプレイヤー方向へ、実際の突進距離ぶんの赤いラインを伸ばす
   if(e.st==='wind'&&e.chspd>0){
@@ -4139,10 +4176,15 @@ function drawEnemy(e){
     ctx.beginPath(); ctx.moveTo(0,0); ctx.arc(0,0,R+72,-0.95,0.95); ctx.closePath(); ctx.fill();
     ctx.globalAlpha=1; ctx.restore();
   }
-  // アラクネイドの網（放射）予告：詠唱中は紫の警告リング
-  if(e.st==='cast'&&e.radial&&!e.fired){
-    ctx.strokeStyle='#c89ce0'; ctx.globalAlpha=0.5+0.3*Math.sin(time*24); ctx.lineWidth=3;
-    ctx.beginPath(); ctx.arc(0,0,R+12+Math.sin(time*20)*4,0,6.3); ctx.stroke(); ctx.globalAlpha=1;
+  // アラクネイドの卵設置予告：設置地点に赤い警告リング
+  if(e.st==='eggwind'){
+    var gx=e.egx-e.x, gy=e.egy-e.y;
+    ctx.save();
+    ctx.globalAlpha=0.15+0.15*Math.sin(time*22); ctx.fillStyle='#ff4d6d';
+    ctx.beginPath(); ctx.arc(gx,gy,32,0,6.3); ctx.fill();
+    ctx.globalAlpha=0.4+0.35*Math.sin(time*22); ctx.strokeStyle='#ff4d6d'; ctx.lineWidth=3;
+    ctx.beginPath(); ctx.arc(gx,gy,32,0,6.3); ctx.stroke();
+    ctx.globalAlpha=1; ctx.restore();
   }
 
   // 射撃の予告：狙い澄まし中はリング
@@ -5328,6 +5370,9 @@ Array.prototype.forEach.call(document.querySelectorAll('#setshake button'),funct
 // 更新履歴：1つのお知らせ内で「バージョン見出し」ごとに変更点を並べる（新しい順）。
 // マージのたびに先頭へ新バージョンを追加し、VERSION も更新する。
 var UPDATES=[
+  {v:'α1.0.17', items:[
+    'ジャイアントモス：5連の扇弾幕を向きを変えながら撒き散らし続ける→クールタイム→また撒く、の動作に変更。',
+    'アラクネイド：赤い予告のあとに卵を設置→全方位弾幕×3を繰り返すように。卵は時間で孵化して自爆スパイダーを3体産みますが、孵化前に攻撃で壊せます（少し固め）。']},
   {v:'α1.0.16', items:[
     '永続強化に「振り直し」を追加。使った銀貨・金貨を全額返してすべてリセットできます（週1回・2段階確認。次回まではボタンに残り日数を表示）。']},
   {v:'α1.0.15', items:[
