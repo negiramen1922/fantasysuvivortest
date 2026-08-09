@@ -10,6 +10,10 @@
 - リザルト画面と設定画面に `VERSION` を表示。
 - お知らせ（`UPDATES` 配列）は**1枠内でバージョン見出しごとに変更点を掲載**（新しい順）。マージ時は `UPDATES` 先頭に新バージョンを追加し `VERSION` を一致させる。
 
+## ver.α1.0.33
+- UI アイコンをドット絵化。`WSPR={slash:greatsword,scythe,dynamite,chakram,fire:fireball,ice:icejav,rock:rockball}` と `wIcon(id)`（スプライトがあれば `<img class="wspr" src="assets/…">`、無ければ絵文字 `WEAPONS[id].glyph`）を新設。CSS `img.wspr{width/height:1.15em;image-rendering:pixelated;vertical-align:middle}`。
+- 差し替え箇所：レベルアップ選択肢の pool（`new`/`ax`/`lb` の glyph を `wIcon(id)` に）、装備スロット HUD（`rebuildSlots` の `.ic`）、武器熟練の一覧行（`.ug`）と特性選択カード（`.glyph`）、宝箱の候補セル（`.cg`）。キャラ立ち絵・パッシブの絵文字は据え置き。
+
 ## ver.α1.0.32
 - スプライト追加：`spirit/scythe/dynamite/chakram/fireball/icejav/rockball`（`assets/`）。汎用ヘルパ `drawSprRot(name,cx,cy,angle,size,alpha)` を新設。
 - スピリット：`SHAPE_SPR.spirit`、`SPRSZ.spirit`。`drawEnemy` で上下に漂う（`translate(0,sin(time*3.5)*R*0.22)`）。

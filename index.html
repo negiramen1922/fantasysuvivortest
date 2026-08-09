@@ -384,6 +384,7 @@ canvas{display:block;width:100%;height:100%;touch-action:none}
 .card:hover,.card:focus-visible{transform:translateY(-6px);border-color:var(--arc);outline:none;
   box-shadow:0 8px 0 rgba(0,0,0,.5),0 0 22px rgba(86,224,255,.25)}
 .card .glyph{font-size:34px;line-height:1}
+img.wspr{width:1.15em;height:1.15em;object-fit:contain;image-rendering:pixelated;vertical-align:middle;display:inline-block}
 .card .nm{font-size:19px;color:#fff}
 .card .tag{font-size:11px;color:var(--ash);border:1px solid var(--line);padding:1px 8px}
 .card .tx{font-size:13px;color:var(--ash);line-height:1.65}
@@ -1602,7 +1603,7 @@ function figInfo(id){
   if(BOSS[id]){ var B=BOSS[id], tt=ETYPE[B.key]||{}; return {nm:B.nm,shape:tt.shape,col:tt.col,dark:tt.dark,desc:BDEX[id]||'',boss:true}; }
   var t=ETYPE[id]||{}; return {nm:t.nm,shape:t.shape,col:t.col,dark:t.dark,desc:DEX[id]||'',boss:false};
 }
-var VERSION='α1.0.32'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
+var VERSION='α1.0.33'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
 (function loadSave(){
   for(var i=0;i<UPG.length;i++) META[UPG[i].id]=0;
   try{
@@ -3611,7 +3612,7 @@ function buildBoard(){
     c.style.width=cell+'px'; c.style.height=cell+'px';
     c.style.left=(rc[1]*stp)+'px'; c.style.top=(rc[0]*stp)+'px';
     var it=chCands[i];
-    c.innerHTML=it?('<div class="cg">'+WEAPONS[it.id].glyph+'</div><div class="cn">'+AXN[it.ax]+'</div>')
+    c.innerHTML=it?('<div class="cg">'+wIcon(it.id)+'</div><div class="cn">'+AXN[it.ax]+'</div>')
                   :'<div class="cg">🪙</div><div class="cn">金貨</div>';
     chRing.appendChild(c); chCells.push(c);
   }
@@ -3788,14 +3789,14 @@ function rollChoices(){
       if(slots>=6) continue;
       var CATLBL={melee:'近接',mid:'中射程',long:'長射程'};
       var rc=CATLBL[WCLASS[id]]?('　［'+CATLBL[WCLASS[id]]+'］'):'';
-      pool.push({id:id,kind:'new',nm:W_.nm,glyph:W_.glyph,tag:W_.tag,tx:W_.tx+rc,lvtx:'NEW'});
+      pool.push({id:id,kind:'new',nm:W_.nm,glyph:wIcon(id),tag:W_.tag,tx:W_.tx+rc,lvtx:'NEW'});
       continue;
     }
     if(lv>=W_.max) continue;
     // 所持済み：伸ばせる軸ごとに1枚ずつ候補を作る
     for(var ax in WAX[id]){
       if(axLeft(id,ax)<=0) continue;
-      pool.push({id:id,kind:'ax',ax:ax,nm:W_.nm+' ・ '+AXN[ax],glyph:W_.glyph,
+      pool.push({id:id,kind:'ax',ax:ax,nm:W_.nm+' ・ '+AXN[ax],glyph:wIcon(id),
         tag:W_.tag,tx:AXT[ax],
         lvtx:(lv+1>=10&&AWK[id]&&!AW(id)?'★ 覚醒：'+AWK[id]:
               'Lv '+lv+' → '+(lv+1)+'　'+AXN[ax]+' '+AX(id,ax)+'/'+WAX[id][ax]),
@@ -3833,7 +3834,7 @@ function lbPool(){
     for(var k in LBN){
       if(!lbOK(id,k)) continue;
       out.push({id:id,kind:'lb',ax:k,gold:1,
-        nm:WEAPONS[id].nm+' ・ 限界突破',glyph:WEAPONS[id].glyph,tag:'限界突破',
+        nm:WEAPONS[id].nm+' ・ 限界突破',glyph:wIcon(id),tag:'限界突破',
         tx:LBT[k],lvtx:LBN[k]+'  +'+LB(id,k)+(LBCAP[k]?' / '+LBCAP[k]:'')});
     }
   }
@@ -4064,6 +4065,9 @@ function drawSprRot(name,cx,cy,angle,size,alpha){
   ctx.imageSmoothingEnabled=false; ctx.drawImage(SPR[name],-size/2,-size/2,size,size); ctx.imageSmoothingEnabled=true;
   ctx.restore(); return true;
 }
+// UI（武器熟練・選択肢・スロット）用の武器アイコン。スプライトがある武器は画像、無ければ絵文字。
+var WSPR={slash:'greatsword',scythe:'scythe',dynamite:'dynamite',chakram:'chakram',fire:'fireball',ice:'icejav',rock:'rockball'};
+function wIcon(id){ return WSPR[id]?('<img class="wspr" src="assets/'+WSPR[id]+'.png" alt="">'):(WEAPONS[id]?WEAPONS[id].glyph:''); }
 // 敵の形→スプライト名（未ロード時は null で手続き描画にフォールバック）
 var SHAPE_SPR={blob:'blob',goblin:'goblin',orc:'orc',bat:'bat',spirit:'spirit'};
 // 棍棒持ち（素体＋棍棒レイヤーで攻撃時に棍棒を振る）。値＝棍棒レイヤーの握り位置（フレーム比 0..1）
@@ -5074,7 +5078,7 @@ function rebuildSlots(){
     var d=document.createElement('div');
     d.className='slot'+(AW(id)?' evo':'');
     d.innerHTML='<div class="sring"></div><div class="sin">'+
-      '<div class="ic">'+WEAPONS[id].glyph+'</div>'+
+      '<div class="ic">'+wIcon(id)+'</div>'+
       '<div class="lv">'+P.w[id]+'</div></div>';
     rW.appendChild(d);
     slotRefs.push({el:d,key:id});
@@ -5295,7 +5299,7 @@ function renderMast(){
       else if(i<tier) trs.push('<span style="color:var(--gold)">未選択</span>');
       else trs.push('<span class="no">???</span>');
     }
-    row.innerHTML='<div class="ug">'+WEAPONS[w].glyph+'</div>'+
+    row.innerHTML='<div class="ug">'+wIcon(w)+'</div>'+
       '<div class="wmb">'+
         '<div class="wmn">'+WEAPONS[w].nm+
           '<span>'+WCAT[w]+'　'+fmt(x)+(nx?' / '+fmt(nx):' — MAX')+'</span>'+
@@ -5323,7 +5327,7 @@ function openTraitPick(w){
   opts.forEach(function(o){
     var d=document.createElement('div');
     d.className='card gold'; d.tabIndex=0;
-    d.innerHTML='<div class="glyph">'+WEAPONS[w].glyph+'</div>'+
+    d.innerHTML='<div class="glyph">'+wIcon(w)+'</div>'+
       '<div class="body"><div class="nm">'+o.nm+'</div>'+
       '<div class="tx">'+o.tx+'</div></div>';
     d.onclick=function(){ takeTrait(w,o.id); };
@@ -5818,6 +5822,9 @@ Array.prototype.forEach.call(document.querySelectorAll('#setshake button'),funct
 // 更新履歴：1つのお知らせ内で「バージョン見出し」ごとに変更点を並べる（新しい順）。
 // マージのたびに先頭へ新バージョンを追加し、VERSION も更新する。
 var UPDATES=[
+  {v:'α1.0.33', items:[
+    '武器熟練・レベルアップの選択肢・装備スロットの武器アイコンをドット絵に差し替え（大剣・鎌・チャクラム・ダイナマイト・ファイヤーボール・アイスジャベリン・ロックボール）。',
+    '未対応の武器はこれまで通り絵文字アイコンです。']},
   {v:'α1.0.32', items:[
     'スピリットのドット絵を追加（ふわふわ漂う）。',
     '鎌・ダイナマイト・チャクラム・ファイヤーボール・アイスジャベリン・ロックボールの見た目をドット絵に差し替え。']},
