@@ -1601,7 +1601,7 @@ function figInfo(id){
   if(BOSS[id]){ var B=BOSS[id], tt=ETYPE[B.key]||{}; return {nm:B.nm,shape:tt.shape,col:tt.col,dark:tt.dark,desc:BDEX[id]||'',boss:true}; }
   var t=ETYPE[id]||{}; return {nm:t.nm,shape:t.shape,col:t.col,dark:t.dark,desc:DEX[id]||'',boss:false};
 }
-var VERSION='α1.0.23'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
+var VERSION='α1.0.24'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
 (function loadSave(){
   for(var i=0;i<UPG.length;i++) META[UPG[i].id]=0;
   try{
@@ -3112,7 +3112,7 @@ function moveEnemies(dt){
           var baseA=-Math.PI/2+e.rootI*(Math.PI/4);      // 上から時計回り
           var wake=(7-e.rootI)*0.22+0.6;                 // 8方向すべてがほぼ同時に動き出す
           var mvS=175;
-          for(var seg=1;seg<=20;seg++){ var rr=e.r+8+seg*12;   // 密度2倍（本数2倍・間隔半分）
+          for(var seg=1;seg<=32;seg++){ var rr=e.r+8+seg*12;   // 密度2倍＋根を長く
             var mvA=Math.random()*6.283;                       // 1粒ずつバラバラの方向へ動き出す
             eplace(e.x+Math.cos(baseA)*rr,e.y+Math.sin(baseA)*rr,e.bdmg,wake,Math.cos(mvA)*mvS,Math.sin(mvA)*mvS,7,(e.boss?e.bkey:e.k)); }
           fx.push({k:'ring',x:e.x,y:e.y,r:0,to:e.r+40,t:0,life:.2,col:'#8fd06a'});
@@ -3124,7 +3124,8 @@ function moveEnemies(dt){
       else if(e.st==='rootwait'){ moved=1; e.stT-=dt; if(e.stT<=0){ e.st='giant'; e.gc=0; e.stT=0.15; } }
       else if(e.st==='giant'){ moved=1; e.stT-=dt;
         if(e.stT<=0){
-          for(var gi=0;gi<14;gi++) eshoot(e,gi/14*6.283+Math.random()*0.03,135,e.bdmg*1.3,16);   // 巨大丸弾幕
+          var goff=(e.gc%2)*(Math.PI/14);   // 大弾幕は1発ごとに半分ずらして交互に
+          for(var gi=0;gi<14;gi++) eshoot(e,gi/14*6.283+goff,135,e.bdmg*1.3,16);   // 巨大丸弾幕
           fx.push({k:'ring',x:e.x,y:e.y,r:0,to:150,t:0,life:.4,col:'#b7e08a'});
           shake=Math.min(18,shake+6); sfx(80,.26,'square',.09,.4); noise(.2,.1);
           e.gc++;
@@ -5558,6 +5559,9 @@ Array.prototype.forEach.call(document.querySelectorAll('#setshake button'),funct
 // 更新履歴：1つのお知らせ内で「バージョン見出し」ごとに変更点を並べる（新しい順）。
 // マージのたびに先頭へ新バージョンを追加し、VERSION も更新する。
 var UPDATES=[
+  {v:'α1.0.24', items:[
+    'エルダートレントの木の根をさらに長く伸びるように。',
+    '大弾幕（巨大丸弾）を1回ごとに半分ずらして交互に撃つように。']},
   {v:'α1.0.23', items:[
     'スウォームナット（羽虫の群れ）の密度と発生頻度をアップ。',
     '群れが来る前に、来る方向の画面端へ ⚠ の軽い警告矢印が出るようにしました。']},
