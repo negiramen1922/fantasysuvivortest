@@ -890,7 +890,7 @@ var ETYPE={
   spirit:  { nm:'スピリット',         res:0.00, hp:20,  spd:88,  r:10, col:'#eaffe0', dark:'#7bbf5a', xp:1, dmg:6,  shape:'spirit',  pts:8,   sv:0.035 },
   bird:    { nm:'フォレストトード',   res:0.05, hp:55,  spd:66,  r:14, col:'#b98a5e', dark:'#4c3320', xp:2, dmg:10, shape:'bird',    pts:14,  sv:0.06 },
   myconid: { nm:'マイコニド',         res:0.08, hp:46,  spd:42,  r:13, col:'#c85a4a', dark:'#5a241c', xp:2, dmg:9,  shape:'myconid', pts:12,  sv:0.05 },
-  bee:     { nm:'キラービー',         res:0.00, hp:24,  spd:140, r:9,  col:'#e8c24a', dark:'#5a4410', xp:1, dmg:7,  shape:'bee',     pts:10,  sv:0.035, ai:'fly' },
+  bee:     { nm:'キラービー',         res:0.00, hp:34,  spd:188, r:14, col:'#e8c24a', dark:'#5a4410', xp:1, dmg:9,  shape:'bee',     pts:10,  sv:0.035, ai:'fly' },
   panther: { nm:'ブラックパンサー',   res:0.15, hp:95,  spd:155, r:13, col:'#3b3550', dark:'#161320', xp:3, dmg:14, shape:'panther', pts:28,  sv:0.08 },
   dryad:   { nm:'ドライアド',         res:0.12, hp:70,  spd:58,  r:13, col:'#7fae5c', dark:'#35521f', xp:3, dmg:10, shape:'dryad',   pts:28,  sv:0.10,
              ai:'shoot', range:340, acd:2.6, bspd:210, bdmg:12 },
@@ -921,13 +921,13 @@ var BOSS={
                ai:'fenrir', acd:4.0, chspd:600, chdur:1.0, wind:0.8, nbul:20, bspd:210, bdmg:16, last:1 },
   // ===== ステージ2（森）ボス =====
   kervi:      { nm:'神鹿ケルビ',       res:0.92, key:'deer',    hp:30000,  r:46, spd:60, dmg:40, xp:1200, pts:16000,
-               ai:'charge', range:560, acd:2.6, chspd:580, wind:0.9, chdur:1.0 },
+               ai:'kervi', acd:2.4, chspd:560, chdur:0.9, wind:0.9, nbul:18, bspd:205, bdmg:15 },
   gmoth:      { nm:'ジャイアントモス', res:0.93, key:'moth',    hp:75000,  r:50, spd:48, dmg:42, xp:1600, pts:24000,
                ai:'mothspray', acd:2.2, bspd:205, bdmg:15 },
   arachnid:   { nm:'アラクネイド',     res:0.94, key:'arachne', hp:140000, r:50, spd:58, dmg:44, xp:1900, pts:40000,
                ai:'arachnid', acd:2.0, nbul:20, bspd:220, bdmg:16 },
   eldertreant:{ nm:'エルダートレント', res:0.96, key:'wtreant', hp:260000, r:56, spd:34, dmg:50, xp:2400, pts:60000,
-               ai:'slam', acd:3.4, wind:0.7, nbul:20, bspd:230, bdmg:20, last:1 }
+               ai:'treant', acd:2.5, bdmg:15, last:1 }
 };
 var BOSS_AT=[[300,'greatboar'],[600,'slimeking'],[900,'goblinking'],[1200,'fenrir']];
 
@@ -1487,7 +1487,7 @@ var VOLB=0.55; // BGM音量
 var TUTSEEN=0; // チュートリアルを一度でも見たか
 var RESPEC_AT=0; // 前回 永続強化を振り直した時刻（ms）
 var RESPEC_WEEK=7*24*3600*1000; // 振り直しのクールタイム（1週間）
-var VERSION='α1.0.17'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
+var VERSION='α1.0.18'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
 (function loadSave(){
   for(var i=0;i<UPG.length;i++) META[UPG[i].id]=0;
   try{
@@ -2754,9 +2754,13 @@ function spawnEgg(x,y){
 function sweepDead(){
   for(var i=enemies.length-1;i>=0;i--) if(enemies[i].dead) enemies.splice(i,1);
 }
-function eshoot(e,ang,spd,dmg){
+function eshoot(e,ang,spd,dmg,r){
   ebul.push({x:e.x,y:e.y,vx:Math.cos(ang)*spd,vy:Math.sin(ang)*spd,
-             r:6,dmg:dmg,life:3.2,t:0});
+             r:r||6,dmg:dmg,life:3.2,t:0});
+}
+// 設置弾：hold 秒その場に留まり、その後 (vx,vy) で動き出す（トレントの根攻撃用）
+function eplace(x,y,dmg,hold,vx,vy,r){
+  ebul.push({x:x,y:y,vx:0,vy:0,r:r||6,dmg:dmg,life:hold+2.8,t:0,hold:hold,mvx:vx,mvy:vy});
 }
 function moveEnemies(dt){
   var DESP=Math.max(1300,Math.hypot(W,H)*1.2);   // これ以上離れた雑魚は消滅（VS風・端末/難易度対策）
@@ -2961,6 +2965,50 @@ function moveEnemies(dt){
         e.dead=1; continue;
       }
     }
+    else if(e.ai==='kervi'){
+      // 神鹿ケルビ：予告つき突進×3（追尾は弱め＝予告開始時に方向を固定）。各突進終わりに全方位弾幕→3回後は静止クールタイム
+      if(e.st==='wind'){ e.stT-=dt; moved=1;
+        if(e.stT<=0){ e.st='dash'; e.stT=e.chdur; e.vx=Math.cos(e.aimA)*e.chspd; e.vy=Math.sin(e.aimA)*e.chspd; sfx(150,.16,'sawtooth',.06,.6); } }
+      else if(e.st==='dash'){ e.stT-=dt; moved=1; e.x+=e.vx*dt; e.y+=e.vy*dt;
+        if(e.stT<=0){
+          for(var kb2=0;kb2<e.nbul;kb2++) eshoot(e,kb2/e.nbul*6.283+Math.random()*0.1,e.bspd,e.bdmg);
+          fx.push({k:'ring',x:e.x,y:e.y,r:0,to:120,t:0,life:.35,col:'#ffe0a0'});
+          shake=Math.min(16,shake+5); sfx(110,.2,'square',.06,.5);
+          e.combo--;
+          if(e.combo>0){ e.st='wind'; e.stT=e.wind; e.aimA=Math.atan2(dy,dx); }
+          else{ e.st='rest'; e.stT=2.2; } } }
+      else if(e.st==='rest'){ e.stT-=dt; moved=1; if(e.stT<=0){ e.st=''; e.at=e.acd; } }
+      else if(e.at<=0&&d<760){ e.st='wind'; e.stT=e.wind; e.combo=3; e.aimA=Math.atan2(dy,dx); }
+    }
+    else if(e.ai==='treant'){
+      // エルダートレント：根攻撃（上から時計回りに8方向へ高密度の設置弾→一斉に各方向へ動き出す）→掃けた頃に巨大丸弾幕×3
+      if(e.st==='roots'){
+        moved=1; e.tick-=dt;
+        if(e.tick<=0&&e.rootI<8){
+          var baseA=-Math.PI/2+e.rootI*(Math.PI/4);      // 上から時計回り
+          var wake=(7-e.rootI)*0.22+0.6;                 // 8方向すべてがほぼ同時に動き出す
+          var mvA=Math.random()*6.283, mvS=175;          // このラインが動き出す方向
+          for(var seg=1;seg<=10;seg++){ var rr=e.r+8+seg*24;
+            eplace(e.x+Math.cos(baseA)*rr,e.y+Math.sin(baseA)*rr,e.bdmg,wake,Math.cos(mvA)*mvS,Math.sin(mvA)*mvS,7); }
+          fx.push({k:'ring',x:e.x,y:e.y,r:0,to:e.r+40,t:0,life:.2,col:'#8fd06a'});
+          sfx(180,.06,'square',.04,0.7);
+          e.rootI++; e.tick=0.22;
+          if(e.rootI>=8){ e.st='rootwait'; e.stT=3.0; }
+        }
+      }
+      else if(e.st==='rootwait'){ moved=1; e.stT-=dt; if(e.stT<=0){ e.st='giant'; e.gc=0; e.stT=0.15; } }
+      else if(e.st==='giant'){ moved=1; e.stT-=dt;
+        if(e.stT<=0){
+          for(var gi=0;gi<14;gi++) eshoot(e,gi/14*6.283+Math.random()*0.03,135,e.bdmg*1.3,16);   // 巨大丸弾幕
+          fx.push({k:'ring',x:e.x,y:e.y,r:0,to:150,t:0,life:.4,col:'#b7e08a'});
+          shake=Math.min(18,shake+6); sfx(80,.26,'square',.09,.4); noise(.2,.1);
+          e.gc++;
+          if(e.gc>=3){ e.st='rest'; e.stT=1.4; } else e.stT=0.7;
+        }
+      }
+      else if(e.st==='rest'){ moved=1; e.stT-=dt; if(e.stT<=0){ e.st=''; e.at=e.acd; } }
+      else if(e.at<=0&&d<900){ e.st='roots'; e.rootI=0; e.tick=0; }
+    }
     else if(e.ai==='dash'){
       // スウォーム：出現時に決めた方向へ直進。追尾せず画面外で消滅。
       e.x+=e.vx*dt; e.y+=e.vy*dt; moved=1;
@@ -3007,6 +3055,7 @@ function moveEbul(dt){
   var arm=(1-0.04*M('armor'))*(1-0.03*(P.p.bulwark||0));
   for(var i=ebul.length-1;i>=0;i--){
     var b=ebul[i];
+    if(b.hold>0){ b.hold-=dt; if(b.hold<=0){ b.vx=b.mvx; b.vy=b.mvy; } }   // 設置弾：待機後に動き出す
     b.x+=b.vx*dt; b.y+=b.vy*dt; b.life-=dt; b.t+=dt;
     if(b.life<=0){ ebul.splice(i,1); continue; }
     if(P.hurt<=0&&P.inv<=0&&!P.god&&Math.hypot(P.x-b.x,P.y-b.y)<P.r+b.r){
@@ -4152,7 +4201,8 @@ function drawEnemy(e){
 
   // 突進の予告：溜め中はプレイヤー方向へ、実際の突進距離ぶんの赤いラインを伸ばす
   if(e.st==='wind'&&e.chspd>0){
-    var ta=Math.atan2(P.y-e.y,P.x-e.x);
+    // ケルビは予告開始時に方向固定（追尾弱め）なのでその向きを表示
+    var ta=(e.ai==='kervi'&&e.aimA!=null)?e.aimA:Math.atan2(P.y-e.y,P.x-e.x);
     var dl=((e.chspd||0)*(e.chdur||0))||R*6.5;   // 突進の到達距離＝警告線の長さ
     ctx.save(); ctx.rotate(ta);
     ctx.globalAlpha=0.28+0.24*Math.sin(time*20); ctx.fillStyle='#ff4d4d';
@@ -5370,6 +5420,10 @@ Array.prototype.forEach.call(document.querySelectorAll('#setshake button'),funct
 // 更新履歴：1つのお知らせ内で「バージョン見出し」ごとに変更点を並べる（新しい順）。
 // マージのたびに先頭へ新バージョンを追加し、VERSION も更新する。
 var UPDATES=[
+  {v:'α1.0.18', items:[
+    '神鹿ケルビ：予告つき突進×3（追尾は弱め）に変更。各突進の終わりに全方位弾幕、3回突進後は動かないクールタイム（攻撃チャンス）。',
+    'エルダートレント：木の根攻撃（上から時計回りに8方向へ高密度の設置弾→一斉に各方向へ動き出す）→掃けた頃に巨大な丸弾幕を円形に3連射、を繰り返すように。',
+    'キラービーを大きく＆高速化（ウルフ並みの足）。']},
   {v:'α1.0.17', items:[
     'ジャイアントモス：5連の扇弾幕を向きを変えながら撒き散らし続ける→クールタイム→また撒く、の動作に変更。',
     'アラクネイド：赤い予告のあとに卵を設置→全方位弾幕×3を繰り返すように。卵は時間で孵化して自爆スパイダーを3体産みますが、孵化前に攻撃で壊せます（少し固め）。']},
