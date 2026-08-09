@@ -1602,7 +1602,7 @@ function figInfo(id){
   if(BOSS[id]){ var B=BOSS[id], tt=ETYPE[B.key]||{}; return {nm:B.nm,shape:tt.shape,col:tt.col,dark:tt.dark,desc:BDEX[id]||'',boss:true}; }
   var t=ETYPE[id]||{}; return {nm:t.nm,shape:t.shape,col:t.col,dark:t.dark,desc:DEX[id]||'',boss:false};
 }
-var VERSION='α1.0.31'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
+var VERSION='α1.0.32'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
 (function loadSave(){
   for(var i=0;i<UPG.length;i++) META[UPG[i].id]=0;
   try{
@@ -3995,7 +3995,14 @@ var SPRDATA={
   orcClub:'assets/orc_club.png',
   hog:'assets/hog.png',
   hog_boss:'assets/hog_boss.png',
-  bat:'assets/bat.png'
+  bat:'assets/bat.png',
+  spirit:'assets/spirit.png',
+  scythe:'assets/scythe.png',
+  dynamite:'assets/dynamite.png',
+  chakram:'assets/chakram.png',
+  fireball:'assets/fireball.png',
+  icejav:'assets/icejav.png',
+  rockball:'assets/rockball.png'
 };
 var SPR={}, SPRT={}, SPRRDY={};
 // 端に接する白（不透明な白背景）だけをフラッドフィルで透過に。内部の白ハイライトは残す。
@@ -4049,8 +4056,16 @@ function drawSpr(n,dw,dh,tint,alpha){
   ctx.imageSmoothingEnabled=false; ctx.drawImage(src,-dw/2,-dh/2,dw,dh); ctx.imageSmoothingEnabled=true;
   return true;
 }
+// (cx,cy) 中心に angle 回転して size 四方で描画（武器の弾など。tint なし）。成功で true。
+function drawSprRot(name,cx,cy,angle,size,alpha){
+  if(!sprReady(name)) return false;
+  ctx.save(); ctx.translate(cx,cy); ctx.rotate(angle);
+  if(alpha!=null) ctx.globalAlpha=alpha;
+  ctx.imageSmoothingEnabled=false; ctx.drawImage(SPR[name],-size/2,-size/2,size,size); ctx.imageSmoothingEnabled=true;
+  ctx.restore(); return true;
+}
 // 敵の形→スプライト名（未ロード時は null で手続き描画にフォールバック）
-var SHAPE_SPR={blob:'blob',goblin:'goblin',orc:'orc',bat:'bat'};
+var SHAPE_SPR={blob:'blob',goblin:'goblin',orc:'orc',bat:'bat',spirit:'spirit'};
 // 棍棒持ち（素体＋棍棒レイヤーで攻撃時に棍棒を振る）。値＝棍棒レイヤーの握り位置（フレーム比 0..1）
 var CLUBBER={goblin:[0.34,0.77], orc:[0.31,0.67]};
 function enemySpr(e){
@@ -4481,7 +4496,7 @@ function blobHop(e){
 }
 // スプライト描画時の大きさ(倍率)と接地補正(上方向オフセット)
 var SPRSZ={blob:{s:3.0,oy:0.35}, goblin:{s:3.2,oy:0.55}, orc:{s:3.0,oy:0.50},
-  hog:{s:3.2,oy:0.30}, hog_boss:{s:2.7,oy:0.28}, bat:{s:3.6,oy:0.10}};
+  hog:{s:3.2,oy:0.30}, hog_boss:{s:2.7,oy:0.28}, bat:{s:3.6,oy:0.10}, spirit:{s:3.4,oy:0.10}};
 function drawEnemy(e){
   ctx.save(); ctx.translate(e.x,e.y);
   var bh=blobHop(e), isBlob=!!bh;
@@ -4522,6 +4537,8 @@ function drawEnemy(e){
     if(sprN==='bat'){                                    // パタパタ：ふわふわ上下＋羽ばたき（横に伸縮）
       ctx.translate(0,Math.sin(time*7+e.ph)*R*0.16);
       ctx.scale(0.94+Math.sin(time*18+e.ph)*0.18,1);
+    }else if(sprN==='spirit'){                           // 妖精：ふわふわ漂う
+      ctx.translate(0,Math.sin(time*3.5+e.ph)*R*0.22);
     }
     var piv=CLUBBER[sprN];
     if(piv&&sprReady(sprN+'Bare')&&sprReady(sprN+'Club')){
@@ -4663,6 +4680,11 @@ function drawChakGuide(c){
   ctx.restore();
 }
 function drawChak(c){
+  if(sprReady('chakram')){
+    ctx.save(); ctx.translate(c.x,c.y); ctx.globalAlpha=0.30*(c.back?0.75:1);
+    ctx.fillStyle='#9fd4ff'; ctx.beginPath(); ctx.arc(0,0,15,0,6.3); ctx.fill(); ctx.restore();
+    drawSprRot('chakram',c.x,c.y,c.spin,34,c.back?0.8:1); return;
+  }
   ctx.save();
   ctx.translate(c.x,c.y); ctx.rotate(c.spin);
   ctx.globalAlpha=0.30;
@@ -4696,6 +4718,7 @@ function drawFlame(lv){
   }
 }
 function drawScy(c){
+  if(sprReady('scythe')){ drawSprRot('scythe',c.x,c.y,c.spin,46,c.back?0.72:1); return; }
   ctx.save(); ctx.translate(c.x,c.y); ctx.rotate(c.spin);
   ctx.globalAlpha=c.back?0.72:1;
   ctx.strokeStyle='#cfd7e8'; ctx.lineWidth=3.5; ctx.lineCap='round';
@@ -4708,7 +4731,9 @@ function drawBomb(b){
   ctx.save();
   ctx.globalAlpha=.3; ctx.fillStyle='#000';
   ctx.beginPath(); ctx.ellipse(b.x,b.y,9,4,0,0,6.3); ctx.fill();
-  ctx.globalAlpha=1;
+  ctx.globalAlpha=1; ctx.restore();
+  if(sprReady('dynamite')){ drawSprRot('dynamite',b.x,b.y-(b.h||0),b.spin,30); return; }
+  ctx.save();
   ctx.translate(b.x,b.y-(b.h||0)); ctx.rotate(b.spin);
   ctx.fillStyle='#c0392b'; ctx.fillRect(-6,-9,12,18);
   ctx.strokeStyle='#f7d774'; ctx.lineWidth=2;
@@ -4721,7 +4746,9 @@ function drawRock(k){
   ctx.save(); ctx.translate(k.x,k.y);
   ctx.globalAlpha=.3; ctx.fillStyle='#000';
   ctx.beginPath(); ctx.ellipse(0,k.r*0.55,k.r*0.9,k.r*0.3,0,0,6.3); ctx.fill();
-  ctx.globalAlpha=1; ctx.rotate(k.spin);
+  ctx.globalAlpha=1; ctx.restore();
+  if(sprReady('rockball')){ drawSprRot('rockball',k.x,k.y,k.spin,k.r*2.7); return; }
+  ctx.save(); ctx.translate(k.x,k.y); ctx.rotate(k.spin);
   ctx.fillStyle='#7d6c58'; ctx.beginPath(); ctx.arc(0,0,k.r,0,6.3); ctx.fill();
   ctx.strokeStyle='#4c4133'; ctx.lineWidth=3; ctx.stroke();
   ctx.fillStyle='#63543f';
@@ -4799,6 +4826,8 @@ function drawQuake(f){
   ctx.globalAlpha=1; ctx.restore();
 }
 function drawShot(s){
+  if(s.src==='fire'&&sprReady('fireball')){ drawSprRot('fireball',s.x,s.y,Math.atan2(s.vy,s.vx)+Math.PI/2,(s.r||8)*3.6); return; }
+  if(s.src==='ice'&&sprReady('icejav')){ drawSprRot('icejav',s.x,s.y,(s.ang||0)+Math.PI/2,(s.r||7)*3.8); return; }
   ctx.save(); ctx.translate(s.x,s.y);
   if(s.kind==='pellet'){
     ctx.fillStyle=s.col; ctx.beginPath(); ctx.arc(0,0,s.r,0,6.3); ctx.fill();
@@ -5789,6 +5818,9 @@ Array.prototype.forEach.call(document.querySelectorAll('#setshake button'),funct
 // 更新履歴：1つのお知らせ内で「バージョン見出し」ごとに変更点を並べる（新しい順）。
 // マージのたびに先頭へ新バージョンを追加し、VERSION も更新する。
 var UPDATES=[
+  {v:'α1.0.32', items:[
+    'スピリットのドット絵を追加（ふわふわ漂う）。',
+    '鎌・ダイナマイト・チャクラム・ファイヤーボール・アイスジャベリン・ロックボールの見た目をドット絵に差し替え。']},
   {v:'α1.0.31', items:[
     'ベルを弱体化：発動間隔 1.35→1.7秒、ダメージ 14→11。',
     'アイスブリザードを弱体化：発動間隔 0.85→1.1秒、ダメージ 6→5（鈍足はそのまま）。']},

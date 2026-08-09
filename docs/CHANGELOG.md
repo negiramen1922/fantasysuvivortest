@@ -10,6 +10,11 @@
 - リザルト画面と設定画面に `VERSION` を表示。
 - お知らせ（`UPDATES` 配列）は**1枠内でバージョン見出しごとに変更点を掲載**（新しい順）。マージ時は `UPDATES` 先頭に新バージョンを追加し `VERSION` を一致させる。
 
+## ver.α1.0.32
+- スプライト追加：`spirit/scythe/dynamite/chakram/fireball/icejav/rockball`（`assets/`）。汎用ヘルパ `drawSprRot(name,cx,cy,angle,size,alpha)` を新設。
+- スピリット：`SHAPE_SPR.spirit`、`SPRSZ.spirit`。`drawEnemy` で上下に漂う（`translate(0,sin(time*3.5)*R*0.22)`）。
+- 武器の弾を差し替え（未ロード時は各 draw 関数の従来描画にフォールバック）。`drawChak`＝チャクラム（回転＋薄いグロー）、`drawScy`＝鎌（回転・戻りは半透明）、`drawBomb`＝ダイナマイト（影＋放物線の高さ`b.h`＋回転）、`drawRock`＝ロックボール（影＋回転、`k.r*2.7`）。`drawShot` 冒頭で `src==='fire'`→ファイヤーボール（進行方向に核が先行するよう `atan2(vy,vx)+π/2`）、`src==='ice'`→アイスジャベリン（`ang+π/2` で穂先が進行方向）。
+
 ## ver.α1.0.31
 - 全方位系の弱体化。ベル：発動間隔 `1.35→1.70`（`update` の ready 引数）、基礎ダメージ `14→11`（`doBell`）。半径190・往復・数軸は据え置き。アイスブリザード：発動間隔 `0.85→1.10`、基礎ダメージ `6→5`（`doBlizzard`）。鈍足量は据え置き（CC価値は維持）。
 
