@@ -147,6 +147,13 @@ canvas{display:block;width:100%;height:100%;touch-action:none}
 .figchip b{color:#7be08a;font-weight:normal}
 .figchip:not(.off):hover{border-color:var(--arc);color:#fff}
 .figchip.off{opacity:.55;cursor:default}
+.dexrow.tap{cursor:pointer;border-radius:8px}
+.dexrow.tap:hover{background:rgba(46,34,92,.35)}
+.figmini{margin-top:4px;font-size:12px;color:#b9b0e0;display:flex;gap:12px;flex-wrap:wrap;align-items:center}
+.figmini .av{color:var(--gold)}
+.figmini .z{opacity:.35}
+#figdet{position:absolute;inset:0;display:none;align-items:center;justify-content:center;background:rgba(6,4,16,.84);z-index:9}
+#figdet.on{display:flex}
 .dexhead{color:var(--gold);font-size:13px;letter-spacing:3px;margin:10px 0 2px;padding-left:2px}
 .dexrow.lock .dnm{color:#6b5f9c}
 #dexcard{position:absolute;inset:0;display:none;align-items:center;justify-content:center;background:rgba(6,4,16,.82);z-index:8}
@@ -597,6 +604,19 @@ img.wspr{width:1.15em;height:1.15em;object-fit:contain;image-rendering:pixelated
       <div class="dexname" id="dexcname"></div>
       <div class="dexdesc" id="dexcdesc"></div>
       <button class="btn" id="dexcont" style="margin-top:12px">つづける</button>
+    </div>
+  </div>
+
+  <!-- 図鑑：詳細（枠タップで開く） -->
+  <div id="figdet">
+    <div class="dexbox">
+      <canvas id="fdpc" width="120" height="120"></canvas>
+      <div class="dexname" id="fdname"></div>
+      <div id="fdmeta" style="color:var(--gold);font-size:12px;margin-top:4px"></div>
+      <div class="dexdesc" id="fddesc"></div>
+      <div class="figrow" id="fdchips" style="justify-content:center;margin-top:14px"></div>
+      <div id="fdhint" style="font-size:10px;color:#8a7fc0;margin-top:10px"></div>
+      <button class="btn sub2" id="fdclose" style="margin-top:14px">閉じる</button>
     </div>
   </div>
 
@@ -1598,6 +1618,7 @@ function allocFig(id,type){
   if(!BSEL[id]) BSEL[id]={x:0,d:0,t:0};
   BSEL[id][type]=(BSEL[id][type]||0)+1;
   saveGame(); renderDex();
+  if(curFigId===id&&figDetEl&&figDetEl.classList.contains('on')) openFigDetail(id);   // 詳細も更新
   sfx(920,.1,'triangle',.06);
 }
 // ボスの図鑑説明
@@ -1617,7 +1638,7 @@ function figInfo(id){
   if(BOSS[id]){ var B=BOSS[id], tt=ETYPE[B.key]||{}; return {nm:B.nm,shape:tt.shape,col:tt.col,dark:tt.dark,desc:BDEX[id]||'',boss:true}; }
   var t=ETYPE[id]||{}; return {nm:t.nm,shape:t.shape,col:t.col,dark:t.dark,desc:DEX[id]||'',boss:false};
 }
-var VERSION='α1.0.38'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
+var VERSION='α1.0.39'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
 (function loadSave(){
   for(var i=0;i<UPG.length;i++) META[UPG[i].id]=0;
   try{
@@ -5860,6 +5881,8 @@ Array.prototype.forEach.call(document.querySelectorAll('#setshake button'),funct
 // 更新履歴：1つのお知らせ内で「バージョン見出し」ごとに変更点を並べる（新しい順）。
 // マージのたびに先頭へ新バージョンを追加し、VERSION も更新する。
 var UPDATES=[
+  {v:'α1.0.39', items:[
+    '図鑑の割り振り内容をアイコン表示に。モンスターの枠をタップすると詳細（立ち絵・説明・割り振り）が開くようにしました。']},
   {v:'α1.0.38', items:[
     '図鑑の強化を1ポイント1%に変更。1体につき最大10ポイントまで割り振れるように。',
     '被ダメ軽減でドライアド等のダメージが0になる不具合を修正（最低でも90%は通るように）。',
@@ -6055,20 +6078,14 @@ function dexRowEl(id,draws){
   var info=document.createElement('div'); info.className='di';
   if(got){
     var n=BKILL[id]||0, sel=BSEL[id]||{x:0,d:0,t:0}, pts=figPts(id);
-    var can=pts>0, dis=can?'':' disabled', off=can?'':' off', plus=can?' ＋':'';
-    var chips=[['x','経験値+1%',sel.x||0],['d','与ダメ+1%',sel.d||0],['t','被ダメ-1%',sel.t||0]], cstr='';
-    for(var ci=0;ci<3;ci++){
-      cstr+='<button class="figchip'+off+'" data-id="'+id+'" data-ty="'+chips[ci][0]+'"'+dis+'>'+
-            chips[ci][1]+' <b>'+chips[ci][2]+'</b>'+plus+'</button>';
-    }
-    var hint=boss
-      ? ('次のポイントまで あと '+((figLv(id)+1)*BOSS_KILL_PER-n)+' 体（'+BOSS_KILL_PER+'体ごと）')
-      : ('次のポイントまで あと '+fmt((figLv(id)+1)*ZAKO_SCORE_PER-(BSCORE[id]||0))+' スコア（'+fmt(ZAKO_SCORE_PER)+'ごと）');
-    info.innerHTML='<div class="dnm">'+(boss?'👑':'')+inf.nm+'<span class="dk">討伐 '+fmt(n)+'</span>'+
-        (pts>0?'<span class="dpt">強化ポイント '+pts+'</span>':'')+'</div>'+
-      '<div class="dtx">'+(inf.desc||'')+'</div>'+
-      '<div class="figrow">'+cstr+'</div>'+
-      '<div class="dbon">'+hint+'</div>';
+    // 割り振り内容をアイコンで表示（枠タップで詳細を開く）
+    var parts=[['📖',sel.x||0],['⚔️',sel.d||0],['🛡️',sel.t||0]], mini='';
+    for(var mi=0;mi<3;mi++) mini+='<span class="'+(parts[mi][1]>0?'':'z')+'">'+parts[mi][0]+parts[mi][1]+'</span>';
+    if(pts>0) mini+='<span class="av">＋'+pts+' 割り振り可</span>';
+    info.innerHTML='<div class="dnm">'+(boss?'👑':'')+inf.nm+'<span class="dk">討伐 '+fmt(n)+'</span></div>'+
+      '<div class="figmini">'+mini+'</div>';
+    row.classList.add('tap');
+    row.onclick=function(){ openFigDetail(id); };
   }else{
     info.innerHTML='<div class="dnm">'+(boss?'👑':'')+'？？？</div><div class="dtx">まだ出会っていない</div>';
   }
@@ -6076,6 +6093,28 @@ function dexRowEl(id,draws){
   if(got) draws.push([cv2,id]);
   return row;
 }
+// 図鑑：詳細（割り振り編集）
+var curFigId=null, figDetEl=document.getElementById('figdet');
+function openFigDetail(id){
+  if(!BSEEN[id]) return;
+  curFigId=id;
+  var inf=figInfo(id), boss=isBossKey(id), n=BKILL[id]||0, sel=BSEL[id]||{x:0,d:0,t:0}, pts=figPts(id);
+  document.getElementById('fdname').innerHTML=(boss?'👑':'')+inf.nm;
+  document.getElementById('fdmeta').textContent='討伐 '+fmt(n)+' ／ 割り振り可能 '+pts+' pt（1体 最大'+FIG_CAP+'）';
+  document.getElementById('fddesc').textContent=inf.desc||'';
+  var can=pts>0, dis=can?'':' disabled', off=can?'':' off', plus=can?' ＋':'';
+  var chips=[['x','📖 経験値+1%',sel.x||0],['d','⚔️ 与ダメ+1%',sel.d||0],['t','🛡️ 被ダメ-1%',sel.t||0]], cstr='';
+  for(var ci=0;ci<3;ci++) cstr+='<button class="figchip'+off+'" data-ty="'+chips[ci][0]+'"'+dis+'>'+chips[ci][1]+' <b>'+chips[ci][2]+'</b>'+plus+'</button>';
+  var box=document.getElementById('fdchips'); box.innerHTML=cstr;
+  Array.prototype.forEach.call(box.querySelectorAll('.figchip[data-ty]'),function(b){ b.onclick=function(){ allocFig(id,b.getAttribute('data-ty')); }; });
+  var hint=boss?('次のポイントまで あと '+((figLv(id)+1)*BOSS_KILL_PER-n)+' 体（'+BOSS_KILL_PER+'体ごと）')
+               :('次のポイントまで あと '+fmt((figLv(id)+1)*ZAKO_SCORE_PER-(BSCORE[id]||0))+' スコア（'+fmt(ZAKO_SCORE_PER)+'ごと）');
+  if(figLv(id)>=FIG_CAP) hint='上限（'+FIG_CAP+'pt）まで解放済み';
+  document.getElementById('fdhint').textContent=hint;
+  drawPortrait(document.getElementById('fdpc'),id);
+  figDetEl.classList.add('on');
+}
+document.getElementById('fdclose').onclick=function(){ figDetEl.classList.remove('on'); };
 function renderDex(){
   var all=DEXLIST.concat(BOSSDEX), seen=0;
   for(var s=0;s<all.length;s++) if(BSEEN[all[s]]) seen++;
@@ -6085,9 +6124,6 @@ function renderDex(){
   for(var i=0;i<DEXLIST.length;i++) L.appendChild(dexRowEl(DEXLIST[i],draws));
   var hb=document.createElement('div'); hb.className='dexhead'; hb.textContent='ボス'; L.appendChild(hb);
   for(var j=0;j<BOSSDEX.length;j++) L.appendChild(dexRowEl(BOSSDEX[j],draws));
-  Array.prototype.forEach.call(L.querySelectorAll('.figchip[data-id]'),function(b){
-    b.onclick=function(){ allocFig(b.getAttribute('data-id'),b.getAttribute('data-ty')); };
-  });
   for(var q=0;q<draws.length;q++) drawPortrait(draws[q][0],draws[q][1]);
 }
 document.getElementById('dexbtn').onclick=function(){ audio(); renderDex(); dexEl.classList.add('on'); };
