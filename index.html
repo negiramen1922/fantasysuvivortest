@@ -127,9 +127,27 @@ canvas{display:block;width:100%;height:100%;touch-action:none}
 #pstat b{color:#fff;font-weight:normal}
 #pstat .el{color:var(--gold)}
 
-#shop,#mast,#ban,#settings,#news,#tutorial{position:absolute;inset:0;display:none;align-items:center;justify-content:center;
+#shop,#mast,#ban,#settings,#news,#tutorial,#dex{position:absolute;inset:0;display:none;align-items:center;justify-content:center;
   background:rgba(6,4,16,.95);padding:14px;z-index:6}
-#shop.on,#mast.on,#ban.on,#settings.on,#news.on,#tutorial.on{display:flex}
+#shop.on,#mast.on,#ban.on,#settings.on,#news.on,#tutorial.on,#dex.on{display:flex}
+#dexlist{width:100%;max-width:520px;margin:0 auto;flex:1;min-height:0;overflow-y:auto}
+.dexrow{display:flex;gap:11px;align-items:center;padding:9px 4px;border-bottom:1px solid var(--line)}
+.dexrow canvas{flex:none;width:52px;height:52px;background:rgba(20,14,45,.6);border:1px solid var(--line);border-radius:8px}
+.dexrow.lock canvas{filter:brightness(0);opacity:.5}
+.dexrow .di{flex:1;min-width:0;text-align:left}
+.dexrow .dnm{color:#e9e2ff;font-size:14px}
+.dexrow .dk{color:var(--gold);font-size:11px;margin-left:8px}
+.dexrow .dtx{color:#a99fce;font-size:11px;line-height:1.5;margin-top:2px}
+.dexrow .dbon{font-size:10px;margin-top:3px;color:#6b5f9c}
+.dexrow .dbon b{color:#7be08a;font-weight:normal}
+.dexrow.lock .dnm{color:#6b5f9c}
+#dexcard{position:absolute;inset:0;display:none;align-items:center;justify-content:center;background:rgba(6,4,16,.82);z-index:8}
+#dexcard.on{display:flex}
+.dexbox{background:rgba(18,12,38,.98);border:2px solid var(--arc);border-radius:14px;padding:20px 24px;max-width:340px;text-align:center;box-shadow:0 0 30px rgba(90,120,255,.25)}
+.dexbox .dexnew{color:var(--gold);font-size:12px;letter-spacing:4px}
+.dexbox canvas{display:block;margin:8px auto 6px}
+.dexbox .dexname{color:#fff;font-size:22px;letter-spacing:2px}
+.dexbox .dexdesc{color:#cfc9e8;font-size:13px;line-height:1.7;margin-top:8px}
 #tutlist{width:100%;max-width:460px;margin:0 auto;flex:1;min-height:0;overflow-y:auto;text-align:left}
 .tutstep{display:flex;gap:11px;padding:11px 4px;border-bottom:1px solid var(--line)}
 .tutstep .tn{flex:none;width:26px;height:26px;border-radius:50%;border:2px solid var(--arc);
@@ -486,6 +504,7 @@ canvas{display:block;width:100%;height:100%;touch-action:none}
     <!-- ホーム -->
     <div id="homeview" class="vview">
       <div id="homehead">
+        <button id="dexbtn" class="hicon" aria-label="図鑑">📖</button>
         <button id="tutbtn" class="hicon" aria-label="遊びかた">❓</button>
         <button id="newsbtn" class="hicon" aria-label="お知らせ">✉</button>
         <button id="setbtn" class="hicon" aria-label="設定">⚙</button>
@@ -558,6 +577,26 @@ canvas{display:block;width:100%;height:100%;touch-action:none}
         <div class="tutgoal">⏱ 5分ごとにボスが出現。<br>まずは <b>草原（ステージ1）のボス撃破</b> を目標に！</div>
       </div>
       <button class="btn" id="tutclose" style="margin-top:0">とじる</button>
+    </div>
+  </div>
+
+  <!-- 図鑑：初遭遇カード（ラン中に割り込み表示） -->
+  <div id="dexcard">
+    <div class="dexbox">
+      <div class="dexnew">NEW ENEMY</div>
+      <canvas id="dexpc" width="130" height="130"></canvas>
+      <div class="dexname" id="dexcname"></div>
+      <div class="dexdesc" id="dexcdesc"></div>
+      <button class="btn" id="dexcont" style="margin-top:12px">つづける</button>
+    </div>
+  </div>
+
+  <!-- 図鑑：一覧 -->
+  <div id="dex">
+    <div class="shopbox">
+      <div class="shophead"><div class="title">図鑑</div><div id="dexprog" style="font-size:12px;color:var(--ash)"></div></div>
+      <div id="dexlist"></div>
+      <button class="btn sub2" id="dexclose" style="margin-top:0">閉じる</button>
     </div>
   </div>
 
@@ -905,6 +944,33 @@ var ETYPE={
   arachne: { nm:'蜘蛛女王', res:0.9, hp:100, spd:58, r:20, col:'#7a3a7a', dark:'#2a1030', xp:1, dmg:10, shape:'spider', pts:10, sv:0 },
   wtreant: { nm:'古樹',   res:0.9, hp:100, spd:34, r:20, col:'#6e5636', dark:'#332512', xp:1, dmg:10, shape:'treant', pts:10, sv:0 }
 };
+// 図鑑：説明文と、図鑑に載せる敵の並び順
+var DEX={
+  slime:'最弱の魔物。数で押してくる。倒しても分裂はしない普通種。',
+  goblin:'こん棒を持つ小鬼。素早くはないが群れると厄介。',
+  bat:'夜を舞うコウモリ。ふらふらと速く、まっすぐ来ない。',
+  boar:'助走をつけて直進突進する猪。予告線の外へ避けよう。',
+  wolf:'俊足の狼。真正面から一気に距離を詰めてくる。',
+  orc:'厚い筋肉の重量級。遅いが打たれ強く一撃が重い。',
+  rider:'狼に跨る騎乗ゴブリン。速さと硬さを兼ね備える。',
+  harpy:'空を裂く鳥人。最速クラスで振り切りにくい。',
+  ogre:'巨躯の鬼。動きは鈍重だが体力と攻撃力は随一。',
+  turtle:'岩の甲羅で身を守る亀。軽い攻撃は弾かれる。',
+  slimeM:'スライムキングの分裂体（中）。さらに小さく割れる。',
+  slimeS:'分裂の果ての小スライム。脆いが数が多い。',
+  spirit:'森の妖精。ふわふわ漂う最弱の森の住人。',
+  bird:'森の飛べない鳥。見た目のわりに体力がある。',
+  myconid:'胞子を撒くキノコ人。遅いがしぶとい。',
+  bee:'凶暴な蜂。大きく育ち、狼のように速く突っ込む。',
+  panther:'漆黒の豹。音もなく高速で肉薄する。',
+  dryad:'樹の精。距離を取って種を撃ってくる遠距離型。',
+  mantis:'大鎌の蟷螂。速さと高い一撃を併せ持つ。',
+  spider:'爆裂蜘蛛。近づくと導火し、自爆して巻き込む。',
+  beetle:'装甲の兜虫。重装甲で軽い攻撃を通しにくい。',
+  gnat:'羽虫の群れ。まっすぐ突進して画面外へ抜けていく。'
+};
+var DEXLIST=['slime','goblin','bat','boar','wolf','orc','rider','harpy','ogre','turtle','slimeM','slimeS',
+  'spirit','bird','myconid','bee','panther','dryad','mantis','spider','beetle','gnat'];
 
 // ステージ1のボス。5分ごとに1体、30分のフェンリルがラストボス。
 var BOSS={
@@ -1487,7 +1553,15 @@ var VOLB=0.55; // BGM音量
 var TUTSEEN=0; // チュートリアルを一度でも見たか
 var RESPEC_AT=0; // 前回 永続強化を振り直した時刻（ms）
 var RESPEC_WEEK=7*24*3600*1000; // 振り直しのクールタイム（1週間）
-var VERSION='α1.0.18'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
+var BKILL={}; // 敵種別の累計討伐数（図鑑・永続）
+var BSEEN={}; // 図鑑で発見済みの敵（初遭遇カードを出したか）
+var dexQueue=[]; // 初遭遇カードの表示待ち
+// 図鑑ボーナス（討伐数で段階的に強くなる：30/100/300討伐）
+function bkTier(id){ var n=BKILL[id]||0; return n>=300?3:(n>=100?2:(n>=30?1:0)); }
+function dexXpMul(id){ return 1+(bkTier(id)>=1?0.15:0); }   // 落とす経験値 +15%
+function dexDealMul(id){ return 1+(bkTier(id)>=2?0.10:0); } // 与ダメージ +10%
+function dexTakeMul(id){ return 1-(bkTier(id)>=3?0.12:0); } // 被ダメージ −12%
+var VERSION='α1.0.19'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
 (function loadSave(){
   for(var i=0;i<UPG.length;i++) META[UPG[i].id]=0;
   try{
@@ -1512,11 +1586,13 @@ var VERSION='α1.0.18'; // マージのたびに末尾を増やす（お知ら�
       if(o.tut) TUTSEEN=1;
       if(o.perf) PERF=1; if(o.dps) SHOWDPS=1; if(o.dpm) SHOWDPM=1;
       if(typeof o.rsp==='number') RESPEC_AT=o.rsp;
+      if(o.bk) for(var bkk in o.bk){ if(typeof o.bk[bkk]==='number') BKILL[bkk]=o.bk[bkk]; }
+      if(o.bs) for(var bsk=0;bsk<o.bs.length;bsk++) BSEEN[o.bs[bsk]]=1;
     }
   }catch(e){}
 })();
 function saveGame(){
-  try{ localStorage.setItem('bsv_save',JSON.stringify({m:META,w:WALLET,wx:WX,sel:SEL,best:best,shk:SHK,volm:VOLM,vols:VOLS,volb:VOLB,unl:UNL,ach:ACH,ch:SELCH,stg:STGCLEAR,ban:Object.keys(BAN).filter(function(k){return BAN[k];}),tut:TUTSEEN,perf:PERF,dps:SHOWDPS,dpm:SHOWDPM,rsp:RESPEC_AT})); }catch(e){}
+  try{ localStorage.setItem('bsv_save',JSON.stringify({m:META,w:WALLET,wx:WX,sel:SEL,best:best,shk:SHK,volm:VOLM,vols:VOLS,volb:VOLB,unl:UNL,ach:ACH,ch:SELCH,stg:STGCLEAR,ban:Object.keys(BAN).filter(function(k){return BAN[k];}),tut:TUTSEEN,perf:PERF,dps:SHOWDPS,dpm:SHOWDPM,rsp:RESPEC_AT,bk:BKILL,bs:Object.keys(BSEEN).filter(function(k){return BSEEN[k];})})); }catch(e){}
 }
 function M(id){ return META[id]||0; }
 
@@ -1547,6 +1623,7 @@ function reset(){
   gat.t=0; gat.mag=-1; gat.rl=0;
   whirlA=0; marks=[1140]; reacts=0; crits=0; rdep=0; rtok=8; pending=0;
   dpsVal=0; dpmVal=0; dmgSec=0; dmgRing=[]; dmgRingI=0; dpsClock=1;
+  dexQueue.length=0;
   score=0; silver=0; gold=0; magFx=0; chakSpin=0; wxRun={}; lastCd={}; coolMax={}; WDMG={};
   slotSig='';
   cool={};
@@ -1619,6 +1696,7 @@ function frame(t){
   try{
     var dt=Math.min(0.05,(t-last)/1000)||0; last=t;
     if(state==='playing') update(dt);
+    if(state==='playing'&&dexQueue.length) openDexNext();   // 初遭遇カードを割り込み表示
     else if(state==='levelup') stepFx(dt);
     else if(state==='chest'){ stepFx(dt); chestAnim(dt); }
     render();
@@ -2736,7 +2814,10 @@ function makeEnemy(k){
     boom:t.boom||0, boomR:t.boomR||0, boomDmg:(t.boomDmg||0)*dscale, life:0,
     kb:0, kbx:0, kby:0, ht:0, slow:0, el:0, elT:0, rcd:0, frz:0, dotD:0, dotT:0, dotN:0, vuln:0,
     ph:Math.random()*6.28, elite:0, boss:0, dead:0, uid:(++UID) };
-  enemies.push(e); return e;
+  enemies.push(e);
+  // 図鑑：初めて出会う種類ならカード表示待ちに積む
+  if(DEX[k]&&!BSEEN[k]){ BSEEN[k]=1; dexQueue.push(k); }
+  return e;
 }
 // クモの卵：敵として置く（プレイヤーの攻撃で壊せる）。少し固め・接触ダメージなし・孵化で自爆クモ3体。
 function spawnEgg(x,y){
@@ -2756,11 +2837,11 @@ function sweepDead(){
 }
 function eshoot(e,ang,spd,dmg,r){
   ebul.push({x:e.x,y:e.y,vx:Math.cos(ang)*spd,vy:Math.sin(ang)*spd,
-             r:r||6,dmg:dmg,life:3.2,t:0});
+             r:r||6,dmg:dmg,life:3.2,t:0,bk:e.k});
 }
 // 設置弾：hold 秒その場に留まり、その後 (vx,vy) で動き出す（トレントの根攻撃用）
-function eplace(x,y,dmg,hold,vx,vy,r){
-  ebul.push({x:x,y:y,vx:0,vy:0,r:r||6,dmg:dmg,life:hold+2.8,t:0,hold:hold,mvx:vx,mvy:vy});
+function eplace(x,y,dmg,hold,vx,vy,r,bk){
+  ebul.push({x:x,y:y,vx:0,vy:0,r:r||6,dmg:dmg,life:hold+2.8,t:0,hold:hold,mvx:vx,mvy:vy,bk:bk});
 }
 function moveEnemies(dt){
   var DESP=Math.max(1300,Math.hypot(W,H)*1.2);   // これ以上離れた雑魚は消滅（VS風・端末/難易度対策）
@@ -2789,7 +2870,7 @@ function moveEnemies(dt){
       if(e.elT>0){ e.elT-=dt; if(e.elT<=0) e.el=0; }
       if(e.rcd>0) e.rcd-=dt;
       if(d<e.r+P.r&&P.hurt<=0&&P.inv<=0&&!P.god){
-        P.hp-=e.dmg*(1-0.04*M('armor'))*(1-0.03*(P.p.bulwark||0)); P.hurt=0.55; shake=Math.min(16,shake+5);
+        P.hp-=e.dmg*(1-0.04*M('armor'))*(1-0.03*(P.p.bulwark||0))*dexTakeMul(e.k); P.hurt=0.55; shake=Math.min(16,shake+5);
         sfx(140,.16,'square',.09,.5);
         if(P.hp<=0){ P.hp=0; die(); return; }
       }
@@ -2891,7 +2972,7 @@ function moveEnemies(dt){
           fx.push({k:'slash',x:e.x+dx/d*(e.r+20),y:e.y+dy/d*(e.r+20),a:Math.atan2(dy,dx),arc:1.9,rad:e.r+66,t:0,life:.2,col:'#ffd08a'});
           sfx(300,.09,'square',.06,0.65);
           if(d<e.r+96&&P.hurt<=0&&P.inv<=0&&!P.god){
-            P.hp-=e.dmg*(1-0.04*M('armor'))*(1-0.03*(P.p.bulwark||0)); P.hurt=0.55; shake=Math.min(16,shake+5);
+            P.hp-=e.dmg*(1-0.04*M('armor'))*(1-0.03*(P.p.bulwark||0))*dexTakeMul(e.k); P.hurt=0.55; shake=Math.min(16,shake+5);
             if(P.hp<=0){ P.hp=0; die(); return; }
           }
         }
@@ -2989,7 +3070,7 @@ function moveEnemies(dt){
           var wake=(7-e.rootI)*0.22+0.6;                 // 8方向すべてがほぼ同時に動き出す
           var mvA=Math.random()*6.283, mvS=175;          // このラインが動き出す方向
           for(var seg=1;seg<=10;seg++){ var rr=e.r+8+seg*24;
-            eplace(e.x+Math.cos(baseA)*rr,e.y+Math.sin(baseA)*rr,e.bdmg,wake,Math.cos(mvA)*mvS,Math.sin(mvA)*mvS,7); }
+            eplace(e.x+Math.cos(baseA)*rr,e.y+Math.sin(baseA)*rr,e.bdmg,wake,Math.cos(mvA)*mvS,Math.sin(mvA)*mvS,7,e.k); }
           fx.push({k:'ring',x:e.x,y:e.y,r:0,to:e.r+40,t:0,life:.2,col:'#8fd06a'});
           sfx(180,.06,'square',.04,0.7);
           e.rootI++; e.tick=0.22;
@@ -3032,7 +3113,7 @@ function moveEnemies(dt){
 
     // --- プレイヤーへの接触 ---
     if(e.dmg>0&&d<e.r+P.r&&P.hurt<=0&&P.inv<=0&&!P.god){
-      P.hp-=e.dmg*(1-0.04*M('armor'))*(1-0.03*(P.p.bulwark||0)); P.hurt=0.55; shake=Math.min(16,shake+5);
+      P.hp-=e.dmg*(1-0.04*M('armor'))*(1-0.03*(P.p.bulwark||0))*dexTakeMul(e.k); P.hurt=0.55; shake=Math.min(16,shake+5);
       sfx(140,.16,'square',.09,.5);
       if(P.hp<=0){ P.hp=0; die(); return; }
     }
@@ -3059,7 +3140,7 @@ function moveEbul(dt){
     b.x+=b.vx*dt; b.y+=b.vy*dt; b.life-=dt; b.t+=dt;
     if(b.life<=0){ ebul.splice(i,1); continue; }
     if(P.hurt<=0&&P.inv<=0&&!P.god&&Math.hypot(P.x-b.x,P.y-b.y)<P.r+b.r){
-      P.hp-=b.dmg*arm; P.hurt=0.55; shake=Math.min(16,shake+5);
+      P.hp-=b.dmg*arm*(b.bk?dexTakeMul(b.bk):1); P.hurt=0.55; shake=Math.min(16,shake+5);
       sfx(160,.15,'square',.085,.5);
       ebul.splice(i,1);
       if(P.hp<=0){ P.hp=0; die(); return; }
@@ -3071,6 +3152,7 @@ function hurt(e,dmg,nx,ny,el){
   var crit=Math.random()<CRITC();
   if(crit) crits++;
   var d=crit?dmg*CRITD():dmg;
+  if(e.k) d*=dexDealMul(e.k);              // 図鑑ボーナス：その敵への与ダメージ+
   if(P.nodmg) d=0;                         // テスト：判定は走るが敵は死なない
   if(e.vuln>0) d*=1.2;                     // 深淵の手：被ダメージ上昇
   if(e.flat) d=Math.max(d*0.25,d-e.flat);   // 甲羅：軽い攻撃ほど通らない
@@ -3086,6 +3168,7 @@ function hurt(e,dmg,nx,ny,el){
 function kill(e){
   if(e.dead) return;
   e.dead=1; kills++;
+  if(e.k&&DEX[e.k]) BKILL[e.k]=(BKILL[e.k]||0)+1;   // 図鑑：累計討伐数
   score+=e.boss?e.pts:(e.elite?PTS_ELITE:e.pts);
   var np=e.boss?60:(e.elite?26:7);
   for(var k=0;k<np;k++){
@@ -3097,6 +3180,7 @@ function kill(e){
   // ボスの e.xp は「合計値」。粒に割って落とす。
   var val=e.boss?Math.max(1,Math.round(e.xp/n)):
           (e.elite?Math.max(4,Math.round((24+time*0.33)/6)):e.xp);
+  if(!e.boss) val=Math.max(1,Math.round(val*dexXpMul(e.k)));   // 図鑑ボーナス：落とす経験値+
   for(var g=0;g<n;g++){
     gems.push({x:e.x+(Math.random()-.5)*40,y:e.y+(Math.random()-.5)*40,
       vx:(Math.random()-.5)*70,vy:(Math.random()-.5)*70,val:val,pull:0,sp:0});
@@ -3146,7 +3230,7 @@ function spiderBoom(e){
   shake=Math.min(18,shake+7); sfx(70,.3,'sawtooth',.09,.4); noise(.25,.1);
   var dd=Math.hypot(P.x-e.x,P.y-e.y);
   if(dd<R+P.r&&P.hurt<=0&&P.inv<=0&&!P.god){
-    P.hp-=(e.boomDmg||e.dmg*2)*(1-0.04*M('armor'))*(1-0.03*(P.p.bulwark||0)); P.hurt=0.55;
+    P.hp-=(e.boomDmg||e.dmg*2)*(1-0.04*M('armor'))*(1-0.03*(P.p.bulwark||0))*dexTakeMul(e.k); P.hurt=0.55;
     if(P.hp<=0){ P.hp=0; die(); }
   }
 }
@@ -5351,7 +5435,7 @@ function startRun(n){
   audio();
   if(n!=null) curStage=n;
   document.getElementById('veil').classList.add('hide');
-  ['paused','shop','mast','ban','settings','news','bosswrap','chest','test','chr'].forEach(function(id){
+  ['paused','shop','mast','ban','settings','news','bosswrap','chest','test','chr','dex','dexcard','tutorial'].forEach(function(id){
     var e=document.getElementById(id); if(e) e.classList.remove('on');
   });
   document.getElementById('res').innerHTML='';
@@ -5420,6 +5504,9 @@ Array.prototype.forEach.call(document.querySelectorAll('#setshake button'),funct
 // 更新履歴：1つのお知らせ内で「バージョン見出し」ごとに変更点を並べる（新しい順）。
 // マージのたびに先頭へ新バージョンを追加し、VERSION も更新する。
 var UPDATES=[
+  {v:'α1.0.19', items:[
+    '図鑑（モンスター図鑑）を追加。ラン中に初めて出会う敵が出ると一度停止し、立ち絵と説明のカードが表示され、図鑑に登録されます（ホーム右上の📖から閲覧）。',
+    '図鑑は討伐数で強化：討伐30でその敵の落とす経験値+15%、100で与ダメージ+10%、300で被ダメージ−12%（その敵に対して）。']},
   {v:'α1.0.18', items:[
     '神鹿ケルビ：予告つき突進×3（追尾は弱め）に変更。各突進の終わりに全方位弾幕、3回突進後は動かないクールタイム（攻撃チャンス）。',
     'エルダートレント：木の根攻撃（上から時計回りに8方向へ高密度の設置弾→一斉に各方向へ動き出す）→掃けた頃に巨大な丸弾幕を円形に3連射、を繰り返すように。',
@@ -5507,6 +5594,65 @@ document.getElementById('tutclose').onclick=function(){
   tutEl.classList.remove('on');
   if(!TUTSEEN){ TUTSEEN=1; saveGame(); }   // 初回は閉じたら既読に
 };
+
+/* ============ 図鑑（モンスター）============ */
+// 敵の立ち絵を指定キャンバスへ描く（shape 関数はグローバル ctx を使うので一時差し替え）
+function drawPortrait(cnv,id){
+  var t=ETYPE[id]; if(!t||!cnv) return;
+  var g=cnv.getContext('2d'), save=ctx;
+  g.clearRect(0,0,cnv.width,cnv.height);
+  ctx=g;
+  g.save(); g.translate(cnv.width/2,cnv.height/2+cnv.height*0.05);
+  var R=Math.min(cnv.width,cnv.height)*0.30;
+  g.fillStyle='rgba(0,0,0,.25)'; g.beginPath(); g.ellipse(0,R*0.95,R*0.8,R*0.3,0,0,6.3); g.fill();
+  if(FOREST2[t.shape]) drawForestShape(t.shape,R,t.col,t.dark,0);
+  else drawS1Shape(t.shape,R,t.col,t.dark,0);
+  g.restore();
+  ctx=save;
+}
+var dexCardEl=document.getElementById('dexcard'), dexEl=document.getElementById('dex');
+function openDexCard(id){
+  var t=ETYPE[id]; if(!t){ return; }
+  state='dexcard';
+  document.getElementById('dexcname').textContent=t.nm;
+  document.getElementById('dexcdesc').textContent=DEX[id]||'';
+  drawPortrait(document.getElementById('dexpc'),id);
+  dexCardEl.classList.add('on');
+  sfx(660,.12,'triangle',.06,1.3);
+}
+function openDexNext(){ if(dexQueue.length) openDexCard(dexQueue.shift()); }
+document.getElementById('dexcont').onclick=function(){
+  dexCardEl.classList.remove('on');
+  if(dexQueue.length){ openDexNext(); return; }
+  state='playing'; last=performance.now(); saveGame();
+};
+// 図鑑一覧
+function renderDex(){
+  var seen=0; for(var s=0;s<DEXLIST.length;s++) if(BSEEN[DEXLIST[s]]) seen++;
+  document.getElementById('dexprog').textContent=seen+' / '+DEXLIST.length;
+  var L=document.getElementById('dexlist'); L.innerHTML='';
+  for(var i=0;i<DEXLIST.length;i++){
+    var id=DEXLIST[i], t=ETYPE[id], got=!!BSEEN[id];
+    var row=document.createElement('div'); row.className='dexrow'+(got?'':' lock');
+    var cv2=document.createElement('canvas'); cv2.width=52; cv2.height=52;
+    var info=document.createElement('div'); info.className='di';
+    if(got){
+      var n=BKILL[id]||0, tier=bkTier(id);
+      var bon='討伐 '+fmt(n)+'　'+
+        '経験値 <b>'+(tier>=1?'+15%':'—')+'</b>／与ダメ <b>'+(tier>=2?'+10%':'—')+'</b>／被ダメ <b>'+(tier>=3?'−12%':'—')+'</b>';
+      var nextTh=tier>=3?null:(tier>=2?300:(tier>=1?100:30));
+      info.innerHTML='<div class="dnm">'+t.nm+'<span class="dk">Lv'+tier+'</span></div>'+
+        '<div class="dtx">'+(DEX[id]||'')+'</div>'+
+        '<div class="dbon">'+bon+(nextTh?('　次: 討伐'+nextTh):'')+'</div>';
+    }else{
+      info.innerHTML='<div class="dnm">？？？</div><div class="dtx">まだ出会っていない</div>';
+    }
+    row.appendChild(cv2); row.appendChild(info); L.appendChild(row);
+    if(got) drawPortrait(cv2,id);
+  }
+}
+document.getElementById('dexbtn').onclick=function(){ audio(); renderDex(); dexEl.classList.add('on'); };
+document.getElementById('dexclose').onclick=function(){ dexEl.classList.remove('on'); };
 
 VOLLEY={bow:doBow,fire:doFire,ice:doIce,holy:doHoly,rock:doRock,musket:doMusket,dynamite:doDyna};
 resize();
