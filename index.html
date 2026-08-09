@@ -1601,7 +1601,7 @@ function figInfo(id){
   if(BOSS[id]){ var B=BOSS[id], tt=ETYPE[B.key]||{}; return {nm:B.nm,shape:tt.shape,col:tt.col,dark:tt.dark,desc:BDEX[id]||'',boss:true}; }
   var t=ETYPE[id]||{}; return {nm:t.nm,shape:t.shape,col:t.col,dark:t.dark,desc:DEX[id]||'',boss:false};
 }
-var VERSION='α1.0.21'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
+var VERSION='α1.0.22'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
 (function loadSave(){
   for(var i=0;i<UPG.length;i++) META[UPG[i].id]=0;
   try{
@@ -3111,8 +3111,9 @@ function moveEnemies(dt){
         if(e.tick<=0&&e.rootI<8){
           var baseA=-Math.PI/2+e.rootI*(Math.PI/4);      // 上から時計回り
           var wake=(7-e.rootI)*0.22+0.6;                 // 8方向すべてがほぼ同時に動き出す
-          var mvA=Math.random()*6.283, mvS=175;          // このラインが動き出す方向
-          for(var seg=1;seg<=10;seg++){ var rr=e.r+8+seg*24;
+          var mvS=175;
+          for(var seg=1;seg<=20;seg++){ var rr=e.r+8+seg*12;   // 密度2倍（本数2倍・間隔半分）
+            var mvA=Math.random()*6.283;                       // 1粒ずつバラバラの方向へ動き出す
             eplace(e.x+Math.cos(baseA)*rr,e.y+Math.sin(baseA)*rr,e.bdmg,wake,Math.cos(mvA)*mvS,Math.sin(mvA)*mvS,7,(e.boss?e.bkey:e.k)); }
           fx.push({k:'ring',x:e.x,y:e.y,r:0,to:e.r+40,t:0,life:.2,col:'#8fd06a'});
           sfx(180,.06,'square',.04,0.7);
@@ -5549,6 +5550,8 @@ Array.prototype.forEach.call(document.querySelectorAll('#setshake button'),funct
 // 更新履歴：1つのお知らせ内で「バージョン見出し」ごとに変更点を並べる（新しい順）。
 // マージのたびに先頭へ新バージョンを追加し、VERSION も更新する。
 var UPDATES=[
+  {v:'α1.0.22', items:[
+    'エルダートレントの木の根攻撃を、根を構成する弾1粒ずつがバラバラの方向へ動くように変更。根の弾密度も2倍にしました。']},
   {v:'α1.0.21', items:[
     '図鑑の強化ポイントを「討伐数」から「スコア」ベースに変更。ザコは累計スコア10,000ごとに1ポイント（≒4〜5ラン）。',
     'ボスも図鑑に追加。ボスは5回討伐で1ポイント。',
