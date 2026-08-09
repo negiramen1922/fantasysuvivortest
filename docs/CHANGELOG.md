@@ -10,6 +10,9 @@
 - リザルト画面と設定画面に `VERSION` を表示。
 - お知らせ（`UPDATES` 配列）は**1枠内でバージョン見出しごとに変更点を掲載**（新しい順）。マージ時は `UPDATES` 先頭に新バージョンを追加し `VERSION` を一致させる。
 
+## ver.α1.0.36
+- ステージ1のオーガをサイクロプスに置き換え。`ETYPE.ogre` を nm='サイクロプス'・青系カラーに変更（キー `ogre`・shape `ogre`・ステータスは据え置きで既存の湧き表と互換）。ドット絵（`assets/cyclops*.png`）を追加し `SHAPE_SPR.ogre='cyclops'`、`CLUBBER.cyclops=[0.34,0.75]`（骨の棍棒を攻撃時に振る＝素体＋棍棒レイヤー方式）、`SPRSZ.cyclops`。図鑑テキストも更新。画像未ロード時は従来の 'ogre' 手続き描画にフォールバック。
+
 ## ver.α1.0.35
 - ステージ2に重量級ザコ「トレント」（`ETYPE.treant`：res0.62 / hp600 / flat5 / spd36 / shape 'treant'）を追加。`WAVE2` に 15:30(t=930) の枠を新設して登場、18:00(t=1080) 混成にも追加。`DEX`/`DEXLIST` にも登録（図鑑・初遭遇カード対応）。カメ/ビートルと同じ「ダメカ枠」。
 - レベルアップ割り込み時の1フレーム進行を修正。`update` 内で `moveGems`→`gainXp`→`openLevelUp()` により state が 'levelup' に変わっても、同フレームの残り（`spawn`/`moveEbul`/`checkBoss` など）が実行されてカードの裏で被弾・増援していた。`moveGems` 直後に `if(state!=='playing'){ sweepDead(); stepFx(dt); syncHud(); return; }` を追加して残処理を停止。
