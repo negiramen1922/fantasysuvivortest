@@ -1601,7 +1601,7 @@ function figInfo(id){
   if(BOSS[id]){ var B=BOSS[id], tt=ETYPE[B.key]||{}; return {nm:B.nm,shape:tt.shape,col:tt.col,dark:tt.dark,desc:BDEX[id]||'',boss:true}; }
   var t=ETYPE[id]||{}; return {nm:t.nm,shape:t.shape,col:t.col,dark:t.dark,desc:DEX[id]||'',boss:false};
 }
-var VERSION='α1.0.22'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
+var VERSION='α1.0.23'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
 (function loadSave(){
   for(var i=0;i<UPG.length;i++) META[UPG[i].id]=0;
   try{
@@ -1661,7 +1661,7 @@ function reset(){
       rr:5+M('reroll'), sk:5+M('skipn') };
   enemies=[]; gems=[]; shots=[]; fx=[]; dmgs=[]; parts=[]; bolts=[]; chests=[]; coins=[]; chaks=[]; scys=[]; bombs=[]; rocks=[]; holes=[]; ebul=[]; quakes=[]; dhits=[]; vacs=[]; vacT=40; bells=[]; swords=[]; zones=[]; volley=[]; relics=placeRelics();
   boss=null; bossN=0; lasers=[];
-  time=0; kills=0; spawnT=0; eliteT=55; swarmT=3; shake=0; hitStop=0; flash=0; chain=0; chainT=0;
+  time=0; kills=0; spawnT=0; eliteT=55; swarmT=3; swarmWarnT=0; shake=0; hitStop=0; flash=0; chain=0; chainT=0;
   gat.t=0; gat.mag=-1; gat.rl=0;
   whirlA=0; marks=[1140]; reacts=0; crits=0; rdep=0; rtok=8; pending=0;
   dpsVal=0; dpmVal=0; dmgSec=0; dmgRing=[]; dmgRingI=0; dpsClock=1;
@@ -3281,26 +3281,32 @@ function spiderBoom(e){
   }
 }
 // スウォーム：画面外の一辺から20〜30体が出現し、出現時のプレイヤー位置へ突進して通り抜ける
-var swarmT=0;
+var swarmT=0, swarmWarnT=0, swarmWarnA=0;
 function swarmTick(dt){
   var stg=STAGES[curStage];
   if(!stg||!stg.swarm||boss) return;
   if(time<(stg.swarmStart||0)) return;              // スウォームの開始時刻（森は6:00）
+  if(swarmWarnT>0){                                 // 予告中：時間が来たらその方向から出現
+    swarmWarnT-=dt;
+    if(swarmWarnT<=0&&enemies.length<cap()*0.9) spawnSwarm(swarmWarnA);
+    return;
+  }
   swarmT-=dt;
   if(swarmT<=0){
-    swarmT=16+Math.random()*8;
-    if(enemies.length<cap()*0.9) spawnSwarm();
+    swarmT=10+Math.random()*6;                      // 発生頻度アップ（16〜24 → 10〜16秒）
+    swarmWarnA=Math.random()*6.283; swarmWarnT=1.3; // 画面端に警告矢印を出してから来る
+    sfx(520,.12,'triangle',.03,1.5);
   }
 }
-function spawnSwarm(){
-  var n=20+Math.floor(Math.random()*11);
-  var a=Math.random()*6.283;
+function spawnSwarm(a){
+  var n=32+Math.floor(Math.random()*15);            // 密度アップ（20〜30 → 32〜46体）
+  if(a==null) a=Math.random()*6.283;
   var cx=P.x+Math.cos(a)*760, cy=P.y+Math.sin(a)*760;
   var dx=P.x-cx, dy=P.y-cy, dd=Math.hypot(dx,dy)||1;
   var vx=dx/dd, vy=dy/dd, px=-vy, py=vx;
   for(var i=0;i<n;i++){
     var e=makeEnemy('gnat');
-    var side=(Math.random()-0.5)*260, along=Math.random()*220;
+    var side=(Math.random()-0.5)*230, along=Math.random()*200;
     e.x=cx+px*side-vx*along; e.y=cy+py*side-vy*along;
     var sp=e.spd*(0.9+Math.random()*0.2);
     e.vx=vx*sp; e.vy=vy*sp; e.life=9;
@@ -4698,6 +4704,8 @@ function drawRelicMarkers(){
   if(chests) for(var c=0;c<chests.length;c++) edgeMarker(chests[c].x,chests[c].y,'\u{1F381}','#ffcc4d',0);
   // 画面外のボス（大きめ・赤）
   if(boss&&!boss.dead) edgeMarker(boss.x,boss.y,'☠','#ff4d6d',1);
+  // スウォーム到来の予告（来る方向の画面端に軽い警告）
+  if(swarmWarnT>0) edgeMarker(P.x+Math.cos(swarmWarnA)*2000,P.y+Math.sin(swarmWarnA)*2000,'⚠','#ffcf5a',0);
   ctx.globalAlpha=1; ctx.restore();
 }
 function drawGem(g){
@@ -5550,6 +5558,9 @@ Array.prototype.forEach.call(document.querySelectorAll('#setshake button'),funct
 // 更新履歴：1つのお知らせ内で「バージョン見出し」ごとに変更点を並べる（新しい順）。
 // マージのたびに先頭へ新バージョンを追加し、VERSION も更新する。
 var UPDATES=[
+  {v:'α1.0.23', items:[
+    'スウォームナット（羽虫の群れ）の密度と発生頻度をアップ。',
+    '群れが来る前に、来る方向の画面端へ ⚠ の軽い警告矢印が出るようにしました。']},
   {v:'α1.0.22', items:[
     'エルダートレントの木の根攻撃を、根を構成する弾1粒ずつがバラバラの方向へ動くように変更。根の弾密度も2倍にしました。']},
   {v:'α1.0.21', items:[
