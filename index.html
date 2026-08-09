@@ -1602,7 +1602,7 @@ function figInfo(id){
   if(BOSS[id]){ var B=BOSS[id], tt=ETYPE[B.key]||{}; return {nm:B.nm,shape:tt.shape,col:tt.col,dark:tt.dark,desc:BDEX[id]||'',boss:true}; }
   var t=ETYPE[id]||{}; return {nm:t.nm,shape:t.shape,col:t.col,dark:t.dark,desc:DEX[id]||'',boss:false};
 }
-var VERSION='α1.0.29'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
+var VERSION='α1.0.30'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
 (function loadSave(){
   for(var i=0;i<UPG.length;i++) META[UPG[i].id]=0;
   try{
@@ -4519,6 +4519,10 @@ function drawEnemy(e){
     ctx.save();
     if(sprN!=='blob'&&P.x<e.x) ctx.scale(-1,1);          // 進行方向へ左右反転（対称なスライムは除く）
     ctx.translate(0,-R*z.oy);
+    if(sprN==='bat'){                                    // パタパタ：ふわふわ上下＋羽ばたき（横に伸縮）
+      ctx.translate(0,Math.sin(time*7+e.ph)*R*0.16);
+      ctx.scale(0.94+Math.sin(time*18+e.ph)*0.18,1);
+    }
     var piv=CLUBBER[sprN];
     if(piv&&sprReady(sprN+'Bare')&&sprReady(sprN+'Club')){
       // 素体＋棍棒。プレイヤーに近いと棍棒を振り上げ→振り下ろす
@@ -5785,6 +5789,9 @@ Array.prototype.forEach.call(document.querySelectorAll('#setshake button'),funct
 // 更新履歴：1つのお知らせ内で「バージョン見出し」ごとに変更点を並べる（新しい順）。
 // マージのたびに先頭へ新バージョンを追加し、VERSION も更新する。
 var UPDATES=[
+  {v:'α1.0.30', items:[
+    'コウモリが羽ばたく（パタパタ）ように。',
+    '図鑑のボア／グレーターボアの立ち絵をホグのドット絵に差し替え（ボスは目に傷）。']},
   {v:'α1.0.29', items:[
     'コウモリのドット絵を追加。',
     'ゴブリンとオークが接近時に棍棒を振り上げ→振り下ろすように（素体＋棍棒の2枚で表現）。']},
@@ -5918,7 +5925,7 @@ function drawPortrait(cnv,id){
   g.save(); g.translate(cnv.width/2,cnv.height/2+cnv.height*0.05);
   var R=Math.min(cnv.width,cnv.height)*(t.boss?0.26:0.30);
   g.fillStyle='rgba(0,0,0,.25)'; g.beginPath(); g.ellipse(0,R*0.95,R*0.8,R*0.3,0,0,6.3); g.fill();
-  var sprN=SHAPE_SPR[t.shape];
+  var sprN=(t.shape==='boar')?(t.boss?'hog_boss':'hog'):SHAPE_SPR[t.shape];
   if(sprN&&sprReady(sprN)){
     g.save(); if(sprN!=='blob') g.translate(0,-R*0.35);
     drawSpr(sprN,R*3.0,R*3.0,null,0);
