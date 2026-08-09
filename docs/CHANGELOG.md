@@ -10,6 +10,9 @@
 - リザルト画面と設定画面に `VERSION` を表示。
 - お知らせ（`UPDATES` 配列）は**1枠内でバージョン見出しごとに変更点を掲載**（新しい順）。マージ時は `UPDATES` 先頭に新バージョンを追加し `VERSION` を一致させる。
 
+## ver.α1.0.34
+- エルダートレントの根攻撃を「本体→外へ1段ずつ設置（ババババ）→全段同時発進（ぶわあ）」に変更。従来は1方向ぶん全長(32粒)を一気に設置していたため、線上に立つと即死していた。新方式は `e.rootI` をリング段数(0..31)とし、1tick(`DT=0.05`)ごとに8方向×1粒を半径 `e.r+8+seg*12` に設置。各弾の待機を `hold=(SEGS-rootI)*DT+0.5` にすることで内側ほど長く待ち、全弾が同時刻に発進する。発進後は従来どおり1粒ずつランダム方向へ。根攻撃開始時に緑のリング予兆を追加。設置完了後 `rootwait` 3.0秒→巨大弾幕×3 は据え置き。
+
 ## ver.α1.0.33
 - UI アイコンをドット絵化。`WSPR={slash:greatsword,scythe,dynamite,chakram,fire:fireball,ice:icejav,rock:rockball}` と `wIcon(id)`（スプライトがあれば `<img class="wspr" src="assets/…">`、無ければ絵文字 `WEAPONS[id].glyph`）を新設。CSS `img.wspr{width/height:1.15em;image-rendering:pixelated;vertical-align:middle}`。
 - 差し替え箇所：レベルアップ選択肢の pool（`new`/`ax`/`lb` の glyph を `wIcon(id)` に）、装備スロット HUD（`rebuildSlots` の `.ic`）、武器熟練の一覧行（`.ug`）と特性選択カード（`.glyph`）、宝箱の候補セル（`.cg`）。キャラ立ち絵・パッシブの絵文字は据え置き。

@@ -1603,7 +1603,7 @@ function figInfo(id){
   if(BOSS[id]){ var B=BOSS[id], tt=ETYPE[B.key]||{}; return {nm:B.nm,shape:tt.shape,col:tt.col,dark:tt.dark,desc:BDEX[id]||'',boss:true}; }
   var t=ETYPE[id]||{}; return {nm:t.nm,shape:t.shape,col:t.col,dark:t.dark,desc:DEX[id]||'',boss:false};
 }
-var VERSION='α1.0.33'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
+var VERSION='α1.0.34'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
 (function loadSave(){
   for(var i=0;i<UPG.length;i++) META[UPG[i].id]=0;
   try{
@@ -3112,18 +3112,20 @@ function moveEnemies(dt){
     else if(e.ai==='treant'){
       // エルダートレント：根攻撃（上から時計回りに8方向へ高密度の設置弾→一斉に各方向へ動き出す）→掃けた頃に巨大丸弾幕×3
       if(e.st==='roots'){
+        // 本体から外へ向かって「ババババ」と1段ずつ設置→内側ほど長く待機させ全弾を一斉に動かす
         moved=1; e.tick-=dt;
-        if(e.tick<=0&&e.rootI<8){
-          var baseA=-Math.PI/2+e.rootI*(Math.PI/4);      // 上から時計回り
-          var wake=(7-e.rootI)*0.22+0.6;                 // 8方向すべてがほぼ同時に動き出す
-          var mvS=175;
-          for(var seg=1;seg<=32;seg++){ var rr=e.r+8+seg*12;   // 密度2倍＋根を長く
-            var mvA=Math.random()*6.283;                       // 1粒ずつバラバラの方向へ動き出す
-            eplace(e.x+Math.cos(baseA)*rr,e.y+Math.sin(baseA)*rr,e.bdmg,wake,Math.cos(mvA)*mvS,Math.sin(mvA)*mvS,7,(e.boss?e.bkey:e.k)); }
-          fx.push({k:'ring',x:e.x,y:e.y,r:0,to:e.r+40,t:0,life:.2,col:'#8fd06a'});
-          sfx(180,.06,'square',.04,0.7);
-          e.rootI++; e.tick=0.22;
-          if(e.rootI>=8){ e.st='rootwait'; e.stT=3.0; }
+        var SEGS=32, DT=0.05, mvS=175;
+        if(e.tick<=0&&e.rootI<SEGS){
+          var seg=e.rootI+1, rr=e.r+8+seg*12;
+          var hold=(SEGS-e.rootI)*DT+0.5;                 // 設置が進むほど短い待機＝全段が同時刻に動き出す
+          for(var di=0;di<8;di++){                          // 8方向へ同時に根を伸ばす
+            var baseA=-Math.PI/2+di*(Math.PI/4);
+            var mvA=Math.random()*6.283;                   // 1粒ずつバラバラの方向へ動き出す
+            eplace(e.x+Math.cos(baseA)*rr,e.y+Math.sin(baseA)*rr,e.bdmg,hold,Math.cos(mvA)*mvS,Math.sin(mvA)*mvS,7,(e.boss?e.bkey:e.k));
+          }
+          if(e.rootI%2===0) sfx(150+seg*5,.035,'square',.03,0.6);   // ババババ…
+          e.rootI++; e.tick=DT;
+          if(e.rootI>=SEGS){ e.st='rootwait'; e.stT=3.0; }
         }
       }
       else if(e.st==='rootwait'){ moved=1; e.stT-=dt; if(e.stT<=0){ e.st='giant'; e.gc=0; e.stT=0.15; } }
@@ -3138,7 +3140,8 @@ function moveEnemies(dt){
         }
       }
       else if(e.st==='rest'){ moved=1; e.stT-=dt; if(e.stT<=0){ e.st=''; e.at=e.acd; } }
-      else if(e.at<=0&&d<900){ e.st='roots'; e.rootI=0; e.tick=0; }
+      else if(e.at<=0&&d<900){ e.st='roots'; e.rootI=0; e.tick=0;
+        fx.push({k:'ring',x:e.x,y:e.y,r:0,to:e.r+30,t:0,life:.3,col:'#8fd06a'}); }   // 根攻撃の予兆
     }
     else if(e.ai==='dash'){
       // スウォーム：出現時に決めた方向へ直進。追尾せず画面外で消滅。
@@ -5822,6 +5825,9 @@ Array.prototype.forEach.call(document.querySelectorAll('#setshake button'),funct
 // 更新履歴：1つのお知らせ内で「バージョン見出し」ごとに変更点を並べる（新しい順）。
 // マージのたびに先頭へ新バージョンを追加し、VERSION も更新する。
 var UPDATES=[
+  {v:'α1.0.34', items:[
+    'エルダートレントの木の根攻撃を、本体から外へ向かって順番に設置されるように変更（いきなり全長が出て即死する挙動を修正）。',
+    '設置し終えた弾は全段が一斉に動き出します。']},
   {v:'α1.0.33', items:[
     '武器熟練・レベルアップの選択肢・装備スロットの武器アイコンをドット絵に差し替え（大剣・鎌・チャクラム・ダイナマイト・ファイヤーボール・アイスジャベリン・ロックボール）。',
     '未対応の武器はこれまで通り絵文字アイコンです。']},
