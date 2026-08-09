@@ -10,6 +10,12 @@
 - リザルト画面と設定画面に `VERSION` を表示。
 - お知らせ（`UPDATES` 配列）は**1枠内でバージョン見出しごとに変更点を掲載**（新しい順）。マージ時は `UPDATES` 先頭に新バージョンを追加し `VERSION` を一致させる。
 
+## ver.α1.0.37
+- ドット絵追加：`wolf/turtle/harpy`（ザコ）と `slimeking/fenrir`（ボス専用絵）、`goat`。`assets/` に格納。
+- `SHAPE_SPR` に wolf/turtle/harpy を追加。`enemySpr` にボス分岐を追加：`e.boss&&bkey==='slimeking'→'slimeking'`、`==='fenrir'→'fenrir'`（両者はザコ形状 blob/wolf を流用するボスなので個別指定）。`SPRSZ` に6種を追加。ハーピーは羽ばたき（横伸縮＋浮遊）。
+- ゴブリンライダー→ヒルゴート：`ETYPE.rider` を nm='ヒルゴート'・白系カラーに変更（キー `rider`・shape `rider` は据え置きで湧き表互換）、`SHAPE_SPR.rider='goat'`、図鑑テキスト更新。
+- スライムキングは blob 形状のため従来のぷにぷに（blobHop）も継承。未ロード時は各手続き描画にフォールバック。
+
 ## ver.α1.0.36
 - ステージ1のオーガをサイクロプスに置き換え。`ETYPE.ogre` を nm='サイクロプス'・青系カラーに変更（キー `ogre`・shape `ogre`・ステータスは据え置きで既存の湧き表と互換）。ドット絵（`assets/cyclops*.png`）を追加し `SHAPE_SPR.ogre='cyclops'`、`CLUBBER.cyclops=[0.34,0.75]`（骨の棍棒を攻撃時に振る＝素体＋棍棒レイヤー方式）、`SPRSZ.cyclops`。図鑑テキストも更新。画像未ロード時は従来の 'ogre' 手続き描画にフォールバック。
 
