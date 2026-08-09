@@ -605,7 +605,10 @@ img.wspr{width:1.15em;height:1.15em;object-fit:contain;image-rendering:pixelated
     <div class="shopbox">
       <div class="shophead"><div class="title">図鑑</div><div id="dexprog" style="font-size:12px;color:var(--ash)"></div></div>
       <div id="dexlist"></div>
-      <button class="btn sub2" id="dexclose" style="margin-top:0">閉じる</button>
+      <div style="display:flex;gap:8px">
+        <button class="btn sub2" id="dexreset" style="flex:1;margin-top:0">割り振りリセット</button>
+        <button class="btn sub2" id="dexclose" style="flex:1;margin-top:0">閉じる</button>
+      </div>
     </div>
   </div>
 
@@ -664,7 +667,10 @@ img.wspr{width:1.15em;height:1.15em;object-fit:contain;image-rendering:pixelated
         <div id="mastnote" style="font-size:12px;color:var(--ash)"></div>
       </div>
       <div id="mastlist"></div>
-      <button class="btn sub2" id="mastclose" style="margin-top:0">閉じる</button>
+      <div style="display:flex;gap:8px">
+        <button class="btn sub2" id="mastreset" style="flex:1;margin-top:0">特性リセット</button>
+        <button class="btn sub2" id="mastclose" style="margin-top:0;flex:1">閉じる</button>
+      </div>
     </div>
   </div>
 
@@ -1575,13 +1581,18 @@ var ZAKO_SCORE_PER=10000; // ザコ：この累計スコアごとに強化ポイ
 var BOSS_KILL_PER=5;      // ボス：この討伐数ごとに強化ポイント1
 // 図鑑：ポイントが貯まり、3種のうち好きに割り振る（熟練度と同じ発想・各+5%/-5%）
 function isBossKey(id){ return !!BOSS[id]; }
+var FIG_CAP=10;   // 1キャラ（モンスター）ごとに割り振れる上限ポイント
 function figKey(e){ return e.boss?e.bkey:e.k; }
 function figLv(id){ return isBossKey(id)?Math.floor((BKILL[id]||0)/BOSS_KILL_PER):Math.floor((BSCORE[id]||0)/ZAKO_SCORE_PER); }
 function figUsed(id){ var s=BSEL[id]; return s?((s.x||0)+(s.d||0)+(s.t||0)):0; }
-function figPts(id){ return figLv(id)-figUsed(id); }
-function dexXpMul(id){ return 1+0.05*((BSEL[id]&&BSEL[id].x)||0); }   // 落とす経験値 +5%/pt
-function dexDealMul(id){ return 1+0.05*((BSEL[id]&&BSEL[id].d)||0); } // 与ダメージ +5%/pt
-function dexTakeMul(id){ return 1-0.05*((BSEL[id]&&BSEL[id].t)||0); } // 被ダメージ −5%/pt
+function figCap(id){ return Math.min(figLv(id),FIG_CAP); }               // 稼いだ分と上限の小さい方
+function figPts(id){ return figCap(id)-figUsed(id); }
+function dexXpMul(id){ return 1+0.01*Math.min(FIG_CAP,(BSEL[id]&&BSEL[id].x)||0); }   // 落とす経験値 +1%/pt
+function dexDealMul(id){ return 1+0.01*Math.min(FIG_CAP,(BSEL[id]&&BSEL[id].d)||0); } // 与ダメージ +1%/pt
+// 被ダメージ −1%/pt。上限10ptでも最大−10%。古いセーブ等で過剰でも0.9未満にしない（被ダメ0バグ防止）
+function dexTakeMul(id){ return Math.max(0.9,1-0.01*Math.min(FIG_CAP,(BSEL[id]&&BSEL[id].t)||0)); }
+function resetFig(){ BSEL={}; saveGame(); }   // 図鑑の割り振りを全リセット（稼いだポイントは保持）
+function resetMast(){ SEL={}; saveGame(); }   // 武器熟練の特性選択をリセット（熟練度は保持）
 function allocFig(id,type){
   if(figPts(id)<=0) return;
   if(!BSEL[id]) BSEL[id]={x:0,d:0,t:0};
@@ -1606,7 +1617,7 @@ function figInfo(id){
   if(BOSS[id]){ var B=BOSS[id], tt=ETYPE[B.key]||{}; return {nm:B.nm,shape:tt.shape,col:tt.col,dark:tt.dark,desc:BDEX[id]||'',boss:true}; }
   var t=ETYPE[id]||{}; return {nm:t.nm,shape:t.shape,col:t.col,dark:t.dark,desc:DEX[id]||'',boss:false};
 }
-var VERSION='α1.0.37'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
+var VERSION='α1.0.38'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
 (function loadSave(){
   for(var i=0;i<UPG.length;i++) META[UPG[i].id]=0;
   try{
@@ -5370,6 +5381,7 @@ function takeTrait(w,id){
 }
 document.getElementById('mastbtn').onclick=function(){ audio(); renderMast(); mastEl.classList.add('on'); };
 document.getElementById('mastclose').onclick=function(){ mastEl.classList.remove('on'); syncTitle(); };
+document.getElementById('mastreset').onclick=function(){ if(window.confirm('武器熟練の特性選択をリセットしますか？（熟練度は保持され、特性を選び直せます）')){ resetMast(); renderMast(); syncTitle(); } };
 
 /* ============ 排他（武器BAN）============ */
 var banEl=document.getElementById('ban');
@@ -5848,6 +5860,10 @@ Array.prototype.forEach.call(document.querySelectorAll('#setshake button'),funct
 // 更新履歴：1つのお知らせ内で「バージョン見出し」ごとに変更点を並べる（新しい順）。
 // マージのたびに先頭へ新バージョンを追加し、VERSION も更新する。
 var UPDATES=[
+  {v:'α1.0.38', items:[
+    '図鑑の強化を1ポイント1%に変更。1体につき最大10ポイントまで割り振れるように。',
+    '被ダメ軽減でドライアド等のダメージが0になる不具合を修正（最低でも90%は通るように）。',
+    '図鑑（割り振り）と武器熟練（特性）にリセットボタンを追加。']},
   {v:'α1.0.37', items:[
     'スライムキング・ウルフ・フェンリル・ハーピー・リクガメのドット絵を追加（差し替え）。',
     'ゴブリンライダーを「ヒルゴート」（ヤギ）に置き換え。']},
@@ -6040,7 +6056,7 @@ function dexRowEl(id,draws){
   if(got){
     var n=BKILL[id]||0, sel=BSEL[id]||{x:0,d:0,t:0}, pts=figPts(id);
     var can=pts>0, dis=can?'':' disabled', off=can?'':' off', plus=can?' ＋':'';
-    var chips=[['x','経験値+5%',sel.x||0],['d','与ダメ+5%',sel.d||0],['t','被ダメ-5%',sel.t||0]], cstr='';
+    var chips=[['x','経験値+1%',sel.x||0],['d','与ダメ+1%',sel.d||0],['t','被ダメ-1%',sel.t||0]], cstr='';
     for(var ci=0;ci<3;ci++){
       cstr+='<button class="figchip'+off+'" data-id="'+id+'" data-ty="'+chips[ci][0]+'"'+dis+'>'+
             chips[ci][1]+' <b>'+chips[ci][2]+'</b>'+plus+'</button>';
@@ -6076,6 +6092,7 @@ function renderDex(){
 }
 document.getElementById('dexbtn').onclick=function(){ audio(); renderDex(); dexEl.classList.add('on'); };
 document.getElementById('dexclose').onclick=function(){ dexEl.classList.remove('on'); };
+document.getElementById('dexreset').onclick=function(){ if(window.confirm('図鑑の強化割り振りを全てリセットしますか？（討伐数・稼いだポイントは保持されます）')){ resetFig(); renderDex(); } };
 
 VOLLEY={bow:doBow,fire:doFire,ice:doIce,holy:doHoly,rock:doRock,musket:doMusket,dynamite:doDyna};
 resize();
