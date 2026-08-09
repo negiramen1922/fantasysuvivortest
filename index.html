@@ -140,6 +140,13 @@ canvas{display:block;width:100%;height:100%;touch-action:none}
 .dexrow .dtx{color:#a99fce;font-size:11px;line-height:1.5;margin-top:2px}
 .dexrow .dbon{font-size:10px;margin-top:3px;color:#6b5f9c}
 .dexrow .dbon b{color:#7be08a;font-weight:normal}
+.dexrow .dpt{color:var(--gold);font-size:11px;margin-left:8px}
+.figrow{display:flex;gap:6px;flex-wrap:wrap;margin-top:4px}
+.figchip{background:rgba(30,22,60,.9);border:1px solid var(--line);color:#cfc9e8;font-family:inherit;
+  font-size:11px;padding:3px 8px;border-radius:12px;cursor:pointer;transition:.12s}
+.figchip b{color:#7be08a;font-weight:normal}
+.figchip:not(.off):hover{border-color:var(--arc);color:#fff}
+.figchip.off{opacity:.55;cursor:default}
 .dexrow.lock .dnm{color:#6b5f9c}
 #dexcard{position:absolute;inset:0;display:none;align-items:center;justify-content:center;background:rgba(6,4,16,.82);z-index:8}
 #dexcard.on{display:flex}
@@ -1555,13 +1562,24 @@ var RESPEC_AT=0; // 前回 永続強化を振り直した時刻（ms）
 var RESPEC_WEEK=7*24*3600*1000; // 振り直しのクールタイム（1週間）
 var BKILL={}; // 敵種別の累計討伐数（図鑑・永続）
 var BSEEN={}; // 図鑑で発見済みの敵（初遭遇カードを出したか）
+var BSEL={};  // 敵種別の強化割り振り {id:{x,d,t}}（経験値/与ダメ/被ダメ）
 var dexQueue=[]; // 初遭遇カードの表示待ち
-// 図鑑ボーナス（討伐数で段階的に強くなる：30/100/300討伐）
-function bkTier(id){ var n=BKILL[id]||0; return n>=300?3:(n>=100?2:(n>=30?1:0)); }
-function dexXpMul(id){ return 1+(bkTier(id)>=1?0.15:0); }   // 落とす経験値 +15%
-function dexDealMul(id){ return 1+(bkTier(id)>=2?0.10:0); } // 与ダメージ +10%
-function dexTakeMul(id){ return 1-(bkTier(id)>=3?0.12:0); } // 被ダメージ −12%
-var VERSION='α1.0.19'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
+var BKILL_PER=2500; // これだけ討伐するごとに強化ポイント1（≒4〜5ランで1回）
+// 図鑑：討伐数で「強化ポイント」が貯まり、3種のうち好きに割り振る（熟練度と同じ発想・各+5%/-5%）
+function figLv(id){ return Math.floor((BKILL[id]||0)/BKILL_PER); }
+function figUsed(id){ var s=BSEL[id]; return s?((s.x||0)+(s.d||0)+(s.t||0)):0; }
+function figPts(id){ return figLv(id)-figUsed(id); }
+function dexXpMul(id){ return 1+0.05*((BSEL[id]&&BSEL[id].x)||0); }   // 落とす経験値 +5%/pt
+function dexDealMul(id){ return 1+0.05*((BSEL[id]&&BSEL[id].d)||0); } // 与ダメージ +5%/pt
+function dexTakeMul(id){ return 1-0.05*((BSEL[id]&&BSEL[id].t)||0); } // 被ダメージ −5%/pt
+function allocFig(id,type){
+  if(figPts(id)<=0) return;
+  if(!BSEL[id]) BSEL[id]={x:0,d:0,t:0};
+  BSEL[id][type]=(BSEL[id][type]||0)+1;
+  saveGame(); renderDex();
+  sfx(920,.1,'triangle',.06);
+}
+var VERSION='α1.0.20'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
 (function loadSave(){
   for(var i=0;i<UPG.length;i++) META[UPG[i].id]=0;
   try{
@@ -1588,11 +1606,12 @@ var VERSION='α1.0.19'; // マージのたびに末尾を増やす（お知ら�
       if(typeof o.rsp==='number') RESPEC_AT=o.rsp;
       if(o.bk) for(var bkk in o.bk){ if(typeof o.bk[bkk]==='number') BKILL[bkk]=o.bk[bkk]; }
       if(o.bs) for(var bsk=0;bsk<o.bs.length;bsk++) BSEEN[o.bs[bsk]]=1;
+      if(o.bsel) for(var bse in o.bsel){ var v=o.bsel[bse]; if(v) BSEL[bse]={x:v.x|0,d:v.d|0,t:v.t|0}; }
     }
   }catch(e){}
 })();
 function saveGame(){
-  try{ localStorage.setItem('bsv_save',JSON.stringify({m:META,w:WALLET,wx:WX,sel:SEL,best:best,shk:SHK,volm:VOLM,vols:VOLS,volb:VOLB,unl:UNL,ach:ACH,ch:SELCH,stg:STGCLEAR,ban:Object.keys(BAN).filter(function(k){return BAN[k];}),tut:TUTSEEN,perf:PERF,dps:SHOWDPS,dpm:SHOWDPM,rsp:RESPEC_AT,bk:BKILL,bs:Object.keys(BSEEN).filter(function(k){return BSEEN[k];})})); }catch(e){}
+  try{ localStorage.setItem('bsv_save',JSON.stringify({m:META,w:WALLET,wx:WX,sel:SEL,best:best,shk:SHK,volm:VOLM,vols:VOLS,volb:VOLB,unl:UNL,ach:ACH,ch:SELCH,stg:STGCLEAR,ban:Object.keys(BAN).filter(function(k){return BAN[k];}),tut:TUTSEEN,perf:PERF,dps:SHOWDPS,dpm:SHOWDPM,rsp:RESPEC_AT,bk:BKILL,bs:Object.keys(BSEEN).filter(function(k){return BSEEN[k];}),bsel:BSEL})); }catch(e){}
 }
 function M(id){ return META[id]||0; }
 
@@ -5504,6 +5523,8 @@ Array.prototype.forEach.call(document.querySelectorAll('#setshake button'),funct
 // 更新履歴：1つのお知らせ内で「バージョン見出し」ごとに変更点を並べる（新しい順）。
 // マージのたびに先頭へ新バージョンを追加し、VERSION も更新する。
 var UPDATES=[
+  {v:'α1.0.20', items:[
+    '図鑑の強化を割り振り式に変更。討伐2500ごとに「強化ポイント」が1貯まり（＝約4〜5ランで1回）、経験値+5%／与ダメ+5%／被ダメ-5% の3つから好きに割り振れます（熟練度と同じ感覚）。']},
   {v:'α1.0.19', items:[
     '図鑑（モンスター図鑑）を追加。ラン中に初めて出会う敵が出ると一度停止し、立ち絵と説明のカードが表示され、図鑑に登録されます（ホーム右上の📖から閲覧）。',
     '図鑑は討伐数で強化：討伐30でその敵の落とす経験値+15%、100で与ダメージ+10%、300で被ダメージ−12%（その敵に対して）。']},
@@ -5626,30 +5647,40 @@ document.getElementById('dexcont').onclick=function(){
   if(dexQueue.length){ openDexNext(); return; }
   state='playing'; last=performance.now(); saveGame();
 };
-// 図鑑一覧
+// 図鑑一覧（討伐でポイントが貯まり、3種のうち好きに割り振る）
 function renderDex(){
   var seen=0; for(var s=0;s<DEXLIST.length;s++) if(BSEEN[DEXLIST[s]]) seen++;
   document.getElementById('dexprog').textContent=seen+' / '+DEXLIST.length;
-  var L=document.getElementById('dexlist'); L.innerHTML='';
+  var L=document.getElementById('dexlist'); L.innerHTML=''; var draws=[];
   for(var i=0;i<DEXLIST.length;i++){
     var id=DEXLIST[i], t=ETYPE[id], got=!!BSEEN[id];
     var row=document.createElement('div'); row.className='dexrow'+(got?'':' lock');
     var cv2=document.createElement('canvas'); cv2.width=52; cv2.height=52;
     var info=document.createElement('div'); info.className='di';
     if(got){
-      var n=BKILL[id]||0, tier=bkTier(id);
-      var bon='討伐 '+fmt(n)+'　'+
-        '経験値 <b>'+(tier>=1?'+15%':'—')+'</b>／与ダメ <b>'+(tier>=2?'+10%':'—')+'</b>／被ダメ <b>'+(tier>=3?'−12%':'—')+'</b>';
-      var nextTh=tier>=3?null:(tier>=2?300:(tier>=1?100:30));
-      info.innerHTML='<div class="dnm">'+t.nm+'<span class="dk">Lv'+tier+'</span></div>'+
+      var n=BKILL[id]||0, sel=BSEL[id]||{x:0,d:0,t:0}, pts=figPts(id);
+      var nextN=(figLv(id)+1)*BKILL_PER;
+      var can=pts>0, dis=can?'':' disabled', off=can?'':' off', plus=can?' ＋':'';
+      var chips=[['x','経験値+5%',sel.x||0],['d','与ダメ+5%',sel.d||0],['t','被ダメ-5%',sel.t||0]], cstr='';
+      for(var ci=0;ci<3;ci++){
+        cstr+='<button class="figchip'+off+'" data-id="'+id+'" data-ty="'+chips[ci][0]+'"'+dis+'>'+
+              chips[ci][1]+' <b>'+chips[ci][2]+'</b>'+plus+'</button>';
+      }
+      info.innerHTML='<div class="dnm">'+t.nm+'<span class="dk">討伐 '+fmt(n)+'</span>'+
+          (pts>0?'<span class="dpt">強化ポイント '+pts+'</span>':'')+'</div>'+
         '<div class="dtx">'+(DEX[id]||'')+'</div>'+
-        '<div class="dbon">'+bon+(nextTh?('　次: 討伐'+nextTh):'')+'</div>';
+        '<div class="figrow">'+cstr+'</div>'+
+        '<div class="dbon">次のポイントまで 討伐 '+fmt(nextN)+'（'+BKILL_PER+'ごと）</div>';
     }else{
       info.innerHTML='<div class="dnm">？？？</div><div class="dtx">まだ出会っていない</div>';
     }
     row.appendChild(cv2); row.appendChild(info); L.appendChild(row);
-    if(got) drawPortrait(cv2,id);
+    if(got) draws.push([cv2,id]);
   }
+  Array.prototype.forEach.call(L.querySelectorAll('.figchip[data-id]'),function(b){
+    b.onclick=function(){ allocFig(b.getAttribute('data-id'),b.getAttribute('data-ty')); };
+  });
+  for(var q=0;q<draws.length;q++) drawPortrait(draws[q][0],draws[q][1]);
 }
 document.getElementById('dexbtn').onclick=function(){ audio(); renderDex(); dexEl.classList.add('on'); };
 document.getElementById('dexclose').onclick=function(){ dexEl.classList.remove('on'); };
