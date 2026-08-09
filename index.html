@@ -1602,7 +1602,7 @@ function figInfo(id){
   if(BOSS[id]){ var B=BOSS[id], tt=ETYPE[B.key]||{}; return {nm:B.nm,shape:tt.shape,col:tt.col,dark:tt.dark,desc:BDEX[id]||'',boss:true}; }
   var t=ETYPE[id]||{}; return {nm:t.nm,shape:t.shape,col:t.col,dark:t.dark,desc:DEX[id]||'',boss:false};
 }
-var VERSION='α1.0.28'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
+var VERSION='α1.0.29'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
 (function loadSave(){
   for(var i=0;i<UPG.length;i++) META[UPG[i].id]=0;
   try{
@@ -3994,7 +3994,8 @@ var SPRDATA={
   orcBare:'assets/orc_bare.png',
   orcClub:'assets/orc_club.png',
   hog:'assets/hog.png',
-  hog_boss:'assets/hog_boss.png'
+  hog_boss:'assets/hog_boss.png',
+  bat:'assets/bat.png'
 };
 var SPR={}, SPRT={}, SPRRDY={};
 // 端に接する白（不透明な白背景）だけをフラッドフィルで透過に。内部の白ハイライトは残す。
@@ -4049,7 +4050,9 @@ function drawSpr(n,dw,dh,tint,alpha){
   return true;
 }
 // 敵の形→スプライト名（未ロード時は null で手続き描画にフォールバック）
-var SHAPE_SPR={blob:'blob',goblin:'goblin',orc:'orc'};
+var SHAPE_SPR={blob:'blob',goblin:'goblin',orc:'orc',bat:'bat'};
+// 棍棒持ち（素体＋棍棒レイヤーで攻撃時に棍棒を振る）。値＝棍棒レイヤーの握り位置（フレーム比 0..1）
+var CLUBBER={goblin:[0.34,0.77], orc:[0.31,0.67]};
 function enemySpr(e){
   if(e.shape==='boar'){ var h=e.boss?'hog_boss':'hog'; return sprReady(h)?h:null; }
   var n=SHAPE_SPR[e.shape]; return (n&&sprReady(n))?n:null;
@@ -4478,7 +4481,7 @@ function blobHop(e){
 }
 // スプライト描画時の大きさ(倍率)と接地補正(上方向オフセット)
 var SPRSZ={blob:{s:3.0,oy:0.35}, goblin:{s:3.2,oy:0.55}, orc:{s:3.0,oy:0.50},
-  hog:{s:3.2,oy:0.30}, hog_boss:{s:2.7,oy:0.28}};
+  hog:{s:3.2,oy:0.30}, hog_boss:{s:2.7,oy:0.28}, bat:{s:3.6,oy:0.10}};
 function drawEnemy(e){
   ctx.save(); ctx.translate(e.x,e.y);
   var bh=blobHop(e), isBlob=!!bh;
@@ -4516,7 +4519,22 @@ function drawEnemy(e){
     ctx.save();
     if(sprN!=='blob'&&P.x<e.x) ctx.scale(-1,1);          // 進行方向へ左右反転（対称なスライムは除く）
     ctx.translate(0,-R*z.oy);
-    drawSpr(sprN,dw,dw,tn,ta);
+    var piv=CLUBBER[sprN];
+    if(piv&&sprReady(sprN+'Bare')&&sprReady(sprN+'Club')){
+      // 素体＋棍棒。プレイヤーに近いと棍棒を振り上げ→振り下ろす
+      drawSpr(sprN+'Bare',dw,dw,tn,ta);
+      var dd=Math.hypot(P.x-e.x,P.y-e.y), ca=0;
+      if(dd<e.r+P.r+26){                                 // 攻撃間合い＝棍棒スイング
+        var ph=(time*2.4+e.ph)%1;
+        ca=ph<0.6?(0.2-(ph/0.6)*1.1):(-0.9+((ph-0.6)/0.4)*1.3);
+      }
+      var pvx=(piv[0]-0.5)*dw, pvy=(piv[1]-0.5)*dw;
+      ctx.save(); ctx.translate(pvx,pvy); ctx.rotate(ca); ctx.translate(-pvx,-pvy);
+      drawSpr(sprN+'Club',dw,dw,tn,ta);
+      ctx.restore();
+    }else{
+      drawSpr(sprN,dw,dw,tn,ta);
+    }
     ctx.restore();
   }else if(e.shape==='egg'){
     // クモの卵：孵化が近いほど揺れる
@@ -5767,6 +5785,9 @@ Array.prototype.forEach.call(document.querySelectorAll('#setshake button'),funct
 // 更新履歴：1つのお知らせ内で「バージョン見出し」ごとに変更点を並べる（新しい順）。
 // マージのたびに先頭へ新バージョンを追加し、VERSION も更新する。
 var UPDATES=[
+  {v:'α1.0.29', items:[
+    'コウモリのドット絵を追加。',
+    'ゴブリンとオークが接近時に棍棒を振り上げ→振り下ろすように（素体＋棍棒の2枚で表現）。']},
   {v:'α1.0.28', items:[
     '大剣の担ぎ・振りの向きを左右反転しました。',
     'ボア＝通常ホグ／グレーターボア＝ボスホグ（目に傷）のドット絵を追加。',
