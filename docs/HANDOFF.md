@@ -108,8 +108,8 @@
 
 | | |
 |---|---|
-| 実体 | `index.html` 単一ファイル（約176KB / 4,182行、うちJS 3,693行） |
-| 依存 | なし（Canvas 2D + WebAudio + DOM のみ。フォントのみGoogle Fontsから取得） |
+| 実体 | `index.html`（本体）＋ `assets/*.png`（キャラ立ち絵のドット絵。α1.0.28〜） |
+| 依存 | 外部ライブラリなし（Canvas 2D + WebAudio + DOM のみ。フォントのみGoogle Fonts）。画像は `assets/` から相対パスで読み込む（GitHub Pages 同一オリジン）。未ロード時は手続き描画にフォールバック |
 | 動作確認 | PC Chrome 60fps / Android Chrome 60fps（最大負荷でも維持） |
 | ステージ | ステージ1（草原）・ステージ2（森）の2種。いずれも20分 |
 

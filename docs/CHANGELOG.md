@@ -10,6 +10,12 @@
 - リザルト画面と設定画面に `VERSION` を表示。
 - お知らせ（`UPDATES` 配列）は**1枠内でバージョン見出しごとに変更点を掲載**（新しい順）。マージ時は `UPDATES` 先頭に新バージョンを追加し `VERSION` を一致させる。
 
+## ver.α1.0.28
+- スプライトを **`assets/` フォルダから読み込み**に変更（`SPRDATA` を data URI → 相対パス `assets/*.png`）。元画像は透過処理済みで `assets/` に格納。`keyWhite` は `try/catch` で `getImageData` 不可（file:// のタイント等）を握りつぶし元画像を使用（Pages は同一オリジンで実行時透過も可）。単一ファイル方針から `index.html`＋`assets/` 構成へ。
+- ボア/グレーターボアのドット絵（ホグ）を追加。`enemySpr` で `shape==='boar'` のとき `e.boss?'hog_boss':'hog'`（通常＝`hog`／ボス＝目に傷の`hog_boss`）。`SPRSZ` に `hog`/`hog_boss` を追加。
+- 大剣の担ぎ・振りの向きを反転：担ぎ `rot=-0.7→0.7`、振り `rot=-0.5+sweep→0.5-sweep`、残像 `rot-0.45→rot+0.45`。
+- リポジトリ直下の `dotpict_*.png`（元アップロード）を削除し `assets/` に集約（透過処理済み・命名整理）。
+
 ## ver.α1.0.27
 - ユーザー提供のドット絵（64×64 PNG）を base64 で `index.html` に内蔵（単一ファイル維持）。リポジトリ直下の `dotpict_*.png` が元画像。
   - マッピング：騎士=`knight`（プレイヤー立ち絵）／大剣=`sword`（担ぎ・振り）／スライム=`blob`（青・跳ね）／ゴブリン=`goblin`（棍棒持ち）／オーク=`orc`（棍棒持ち）。予備として素体・棍棒単体（`*Bare`/`*Club`）も内蔵（現状未使用）。
