@@ -1058,6 +1058,7 @@ var state='title';
 var P, enemies, gems, shots, fx, dmgs, parts, bolts, chests, coins, chaks, scys, bombs, rocks, holes;
 var time, kills, spawnT, eliteT, shake, hitStop, flash, chain, chainT, choices;
 var whirlA, marks, reacts, crits, rdep, rtok, pending, score, silver, gold, magFx, chakSpin, swingT, swingDir;
+var SWDUR=0.42;   // 大剣の振りの長さ（秒）。大きいほどゆっくり
 var ebul, boss, bossN, quakes, dhits, vacs, vacT, bells, swords, zones, volley, relics;
 var lasers;
 
@@ -1601,7 +1602,7 @@ function figInfo(id){
   if(BOSS[id]){ var B=BOSS[id], tt=ETYPE[B.key]||{}; return {nm:B.nm,shape:tt.shape,col:tt.col,dark:tt.dark,desc:BDEX[id]||'',boss:true}; }
   var t=ETYPE[id]||{}; return {nm:t.nm,shape:t.shape,col:t.col,dark:t.dark,desc:DEX[id]||'',boss:false};
 }
-var VERSION='α1.0.25'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
+var VERSION='α1.0.26'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
 (function loadSave(){
   for(var i=0;i<UPG.length;i++) META[UPG[i].id]=0;
   try{
@@ -2078,7 +2079,7 @@ function doSlash(){
   var dmg=22*DMG('slash')*pw('slash');
   var n=arcHit(r2,arc,dmg,null);
   fx.push({k:'slash',x:P.x,y:P.y,a:P.face,arc:arc,rad:r2,t:0,life:.18,col:'#dcd6ff'});
-  swingT=0.26;   // 立ち絵の大剣を振り下ろすアニメを起動
+  swingT=SWDUR;   // 立ち絵の大剣を振り下ろすアニメを起動
   swingDir=(swingDir>0?-1:1);   // 左右交互に薙ぎ払う
   // 覚醒「飛翔斬撃」：そこまでに伸ばした範囲に応じた大きさの斬撃が飛ぶ
   if(AW('slash')){
@@ -4042,25 +4043,37 @@ function drawPlayer(){
     ctx.beginPath(); ctx.arc(0,0,P.r+9,0,6.3); ctx.stroke();
     ctx.globalAlpha=1;
   }
-  var fl=Math.cos(P.face)<0?-1:1;                    // 進行方向に合わせ左右反転
-  var bob=P.moving?Math.sin(time*11)*1.2:0;          // 歩行の上下ゆれ
-  var swinging=swingT>0;
-  ctx.save(); ctx.translate(0,bob); ctx.scale(fl,1);
-  drawKnight(P.hurt>0);
-  // 大剣：通常は肩に斜めに担ぎ、攻撃時は振り下ろす（同じローカル空間で描くので左右反転に追従）
-  ctx.save(); ctx.translate(0,-4);
-  if(swinging){
-    var u=1-swingT/0.26;                             // 0→1 の振り進行
-    var sweep=u<0.2?-(u/0.2)*0.6:(u-0.2)/0.8*3.1;    // 少し振りかぶってから一気に振り抜く
-    var a=-0.6+sweep;
-    ctx.save(); ctx.globalAlpha=0.28*(1-u); ctx.fillStyle='#e8e2ff';   // 残像スウッシュ
-    ctx.beginPath(); ctx.arc(0,0,36,a-0.95,a); ctx.arc(0,0,11,a,a-0.95,true); ctx.closePath(); ctx.fill();
-    ctx.globalAlpha=1; ctx.restore();
-    ctx.rotate(a); drawGSword(32);
+  if(SELCH==='knight'){
+    // 騎士キャラ：立ち絵＋大剣。上下反転せず fl で左右のみ反転。
+    var fl=Math.cos(P.face)<0?-1:1;
+    var bob=P.moving?Math.sin(time*11)*1.2:0;          // 歩行の上下ゆれ
+    var swinging=swingT>0;
+    ctx.save(); ctx.translate(0,bob); ctx.scale(fl,1);
+    drawKnight(P.hurt>0);
+    // 大剣：通常は肩に斜めに担ぎ、攻撃時は振り下ろす（同じローカル空間なので左右反転に追従）
+    ctx.save(); ctx.translate(0,-4);
+    if(swinging){
+      var u=1-swingT/SWDUR;                            // 0→1 の振り進行
+      var sweep=u<0.28?-(u/0.28)*0.6:(u-0.28)/0.72*3.1;// ゆっくり振りかぶってから振り抜く
+      var a=-0.6+sweep;
+      ctx.save(); ctx.globalAlpha=0.28*(1-u); ctx.fillStyle='#e8e2ff';   // 残像スウッシュ
+      ctx.beginPath(); ctx.arc(0,0,36,a-0.95,a); ctx.arc(0,0,11,a,a-0.95,true); ctx.closePath(); ctx.fill();
+      ctx.globalAlpha=1; ctx.restore();
+      ctx.rotate(a); drawGSword(32);
+    }else{
+      ctx.rotate(-0.6); drawGSword(30);                // 肩担ぎ
+    }
+    ctx.restore();
+    ctx.restore();
   }else{
-    ctx.rotate(-0.6); drawGSword(30);                // 肩担ぎ
+    // その他のキャラ：従来の簡易表示（照準方向を向く丸い本体＋武器線）
+    ctx.rotate(P.face);
+    ctx.fillStyle=P.hurt>0?'#ff9db3':'#f2ecff';
+    ctx.beginPath(); ctx.arc(0,0,P.r,0,6.3); ctx.fill();
+    ctx.fillStyle='#4a3d8f'; ctx.fillRect(-3,-P.r-4,6,7);
+    ctx.strokeStyle='#ffd870'; ctx.lineWidth=3; ctx.lineCap='round';
+    ctx.beginPath(); ctx.moveTo(6,0); ctx.lineTo(24,0); ctx.stroke();
   }
-  ctx.restore();
   ctx.restore();
 }
 // ステージ2（森）の手続き描画。ctx は敵中心へ translate 済み。col/dark は被弾・凍結を反映済み。
@@ -4364,19 +4377,25 @@ function drawS1Shape(s,R,col,dark,t){
     ctx.lineWidth=2;
   }
 }
+// スライム（blob）のぽよんぽよん量を算出（描画パス間で一致させるため純関数）。
+// 接地(air=0)で横広・低く、跳ね上がる(air=1)ほど細く縦長になり、body を dy だけ持ち上げる。
+function blobHop(e){
+  if(e.shape!=='blob'||e.frz>0||e.st==='wind') return null;
+  var air=Math.abs(Math.sin(time*4.2+e.ph));
+  return { air:air, dy:-air*e.r*0.30,
+           sx:1+0.18*(1-air)-0.10*air, sy:1-0.18*(1-air)+0.10*air };
+}
 function drawEnemy(e){
   ctx.save(); ctx.translate(e.x,e.y);
-  // スライム（blob）は接地で横に潰れ、跳ね上がるほど縦長になる＝ぽよんぽよん
-  var isBlob=(e.shape==='blob'&&e.frz<=0&&e.st!=='wind');
-  var slAir=isBlob?Math.abs(Math.sin(time*4.2+e.ph)):0;   // 0=接地, 1=空中
+  var bh=blobHop(e), isBlob=!!bh;
+  var slAir=bh?bh.air:0;
   ctx.fillStyle='rgba(0,0,0,.3)';
   ctx.beginPath(); ctx.ellipse(0,e.r*0.85,e.r*0.85*(1-slAir*0.3),e.r*0.32*(1-slAir*0.3),0,0,6.3); ctx.fill();
   var hit=e.ht>0, R=e.r;
   // エフェクトに埋もれないよう、まず暗い縁で敵の形を抜く（スライムは潰れ・跳ねに追従）
   ctx.globalAlpha=.85; ctx.fillStyle='#0a0714';
   if(isBlob){
-    var osx=1+0.20*(1-slAir)-0.12*slAir, osy=1-0.20*(1-slAir)+0.12*slAir;
-    ctx.beginPath(); ctx.ellipse(0,-slAir*R*0.34,(R+3.5)*osx,(R+3.5)*osy,0,0,6.3); ctx.fill();
+    ctx.beginPath(); ctx.ellipse(0,bh.dy,(R+3.5)*bh.sx,(R+3.5)*bh.sy,0,0,6.3); ctx.fill();
   }else{
     ctx.beginPath(); ctx.arc(0,0,R+3.5,0,6.3); ctx.fill();
   }
@@ -4390,8 +4409,7 @@ function drawEnemy(e){
   if(wob) ctx.save(), ctx.scale(wob,2-wob);
   // ぽよんぽよん：接地で横広・低く、空中で細く・縦長に。合わせて跳ね上げる
   if(isBlob){
-    var sx=1+0.20*(1-slAir)-0.12*slAir, sy=1-0.20*(1-slAir)+0.12*slAir;
-    ctx.save(); ctx.translate(0,-slAir*R*0.34); ctx.scale(sx,sy);
+    ctx.save(); ctx.translate(0,bh.dy); ctx.scale(bh.sx,bh.sy);
   }
   if(e.shape==='egg'){
     // クモの卵：孵化が近いほど揺れる
@@ -4487,12 +4505,13 @@ function drawEnemyOutlines(){
   for(var i=0;i<enemies.length;i++){
     var e=enemies[i];
     if(e.dead) continue;
+    var bh=blobHop(e), oy=bh?bh.dy:0, ox=bh?bh.sx:1, oyy=bh?bh.sy:1;   // スライムは潰れ・跳ねに追従
     ctx.globalAlpha=e.boss?0.95:(e.elite?0.9:0.62);
     ctx.strokeStyle=e.ht>0?'#ffffff':(e.boss?'#ff4d6d':(e.elite?'#ffcc4d':'#0a0614'));
-    ctx.beginPath(); ctx.arc(e.x,e.y,e.r+1,0,6.3); ctx.stroke();
+    ctx.beginPath(); ctx.ellipse(e.x,e.y+oy,(e.r+1)*ox,(e.r+1)*oyy,0,0,6.3); ctx.stroke();
     ctx.globalAlpha=e.boss?0.9:0.5;
     ctx.strokeStyle=e.col;
-    ctx.beginPath(); ctx.arc(e.x,e.y,e.r+3.5,0,6.3); ctx.stroke();
+    ctx.beginPath(); ctx.ellipse(e.x,e.y+oy,(e.r+3.5)*ox,(e.r+3.5)*oyy,0,0,6.3); ctx.stroke();
   }
   ctx.globalAlpha=1; ctx.restore();
 }
@@ -5640,6 +5659,10 @@ Array.prototype.forEach.call(document.querySelectorAll('#setshake button'),funct
 // 更新履歴：1つのお知らせ内で「バージョン見出し」ごとに変更点を並べる（新しい順）。
 // マージのたびに先頭へ新バージョンを追加し、VERSION も更新する。
 var UPDATES=[
+  {v:'α1.0.26', items:[
+    '騎士の立ち絵は騎士キャラ専用に。聖女など他キャラは従来表示へ戻しました。',
+    '大剣の振りをゆっくりに調整。',
+    'スライムの跳ねで暗い縁が置き去りになり「緑の輪」が浮く不具合を修正（縁も一緒に潰れ・跳ねるように）。']},
   {v:'α1.0.25', items:[
     'プレイヤーを騎士の立ち絵に一新。大剣を斜めに肩へ担ぎ、攻撃時に振り抜くアニメを追加。',
     'スライムがぽよんぽよん跳ねるように（接地で横に潰れ、跳ね上がると縦長に伸びる）。']},
