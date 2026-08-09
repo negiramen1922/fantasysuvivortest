@@ -947,6 +947,7 @@ var ETYPE={
              boom:1, boomR:96, boomDmg:30 },
   beetle:  { nm:'グレータービートル', res:0.65, hp:260, spd:40,  r:20, col:'#5a4632', dark:'#241a10', xp:6, dmg:20, shape:'beetle',  pts:64,  sv:0.15, flat:4 },
   gnat:    { nm:'スウォームナット',   res:0.00, hp:12,  spd:200, r:7,  col:'#8a7a52', dark:'#3a3020', xp:1, dmg:6,  shape:'gnat',    pts:4,   sv:0.02,  ai:'dash' },
+  treant:  { nm:'トレント',           res:0.62, hp:600, spd:36,  r:23, col:'#6e8a4a', dark:'#33421f', xp:8, dmg:24, shape:'treant',  pts:78,  sv:0.16, flat:5 },
   // ボス専用の見た目（ウェーブには出ない）
   deer:    { nm:'神鹿',   res:0.9, hp:100, spd:60, r:20, col:'#c8b48a', dark:'#5a4a2c', xp:1, dmg:10, shape:'deer',   pts:10, sv:0 },
   moth:    { nm:'蛾',     res:0.9, hp:100, spd:44, r:20, col:'#8a6ab0', dark:'#3a2a50', xp:1, dmg:10, shape:'moth',   pts:10, sv:0 },
@@ -976,10 +977,11 @@ var DEX={
   mantis:'大鎌の蟷螂。速さと高い一撃を併せ持つ。',
   spider:'爆裂蜘蛛。近づくと導火し、自爆して巻き込む。',
   beetle:'装甲の兜虫。重装甲で軽い攻撃を通しにくい。',
-  gnat:'羽虫の群れ。まっすぐ突進して画面外へ抜けていく。'
+  gnat:'羽虫の群れ。まっすぐ突進して画面外へ抜けていく。',
+  treant:'歩き出した古木。非常に硬く、生半可な攻撃は通らない重量級。'
 };
 var DEXLIST=['slime','goblin','bat','boar','wolf','orc','rider','harpy','ogre','turtle','slimeM','slimeS',
-  'spirit','bird','myconid','bee','panther','dryad','mantis','spider','beetle','gnat'];
+  'spirit','bird','myconid','bee','panther','dryad','mantis','spider','beetle','gnat','treant'];
 
 // ステージ1のボス。5分ごとに1体、30分のフェンリルがラストボス。
 var BOSS={
@@ -1034,7 +1036,8 @@ var WAVE2=[
   { t:720,  mix:[['myconid',0.15],['panther',0.40],['dryad',0.68],['spider',1.00]] },            // 12:00 スパイダー
   { t:780,  mix:[['panther',0.18],['dryad',0.40],['spider',0.70],['mantis',1.00]] },             // 13:00 マンティス
   { t:900,  mix:[['panther',0.15],['dryad',0.33],['spider',0.58],['mantis',0.80],['beetle',1.00]] }, // 15:00 ビートル
-  { t:1080, mix:[['panther',0.12],['dryad',0.25],['spider',0.50],['mantis',0.75],['beetle',1.00]] }  // 18:00 終盤混成
+  { t:930,  mix:[['panther',0.12],['dryad',0.26],['spider',0.48],['mantis',0.68],['beetle',0.86],['treant',1.00]] }, // 15:30 トレント（重量級）登場
+  { t:1080, mix:[['dryad',0.20],['spider',0.42],['mantis',0.62],['beetle',0.84],['treant',1.00]] }  // 18:00 終盤混成
 ];
 // ステージ2のボス（HPは hpMul 倍で出す）。締めは森の主フェンリル。
 var BOSS_AT2=[[300,'kervi'],[600,'gmoth'],[900,'arachnid'],[1200,'eldertreant']];
@@ -1603,7 +1606,7 @@ function figInfo(id){
   if(BOSS[id]){ var B=BOSS[id], tt=ETYPE[B.key]||{}; return {nm:B.nm,shape:tt.shape,col:tt.col,dark:tt.dark,desc:BDEX[id]||'',boss:true}; }
   var t=ETYPE[id]||{}; return {nm:t.nm,shape:t.shape,col:t.col,dark:t.dark,desc:DEX[id]||'',boss:false};
 }
-var VERSION='α1.0.34'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
+var VERSION='α1.0.35'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
 (function loadSave(){
   for(var i=0;i<UPG.length;i++) META[UPG[i].id]=0;
   try{
@@ -1787,6 +1790,9 @@ function update(dt){
   vacT-=dt;
   if(vacT<=0&&vacs.length<2){ vacT=46+Math.random()*16; spawnVac(); }
   moveGems(dt);
+  // 経験値取得でレベルアップ等が開いたら、このフレームの残り（湧き・敵弾・ボス判定）は止める
+  // （カードが出た裏で世界が進んで理不尽に被弾/増援するのを防ぐ）
+  if(state!=='playing'){ sweepDead(); stepFx(dt); syncHud(); return; }
   movePickups(dt);
   sweepDead();
   if(magFx>0) magFx-=dt;
@@ -5825,6 +5831,9 @@ Array.prototype.forEach.call(document.querySelectorAll('#setshake button'),funct
 // 更新履歴：1つのお知らせ内で「バージョン見出し」ごとに変更点を並べる（新しい順）。
 // マージのたびに先頭へ新バージョンを追加し、VERSION も更新する。
 var UPDATES=[
+  {v:'α1.0.35', items:[
+    'ステージ2に重量級「トレント」を追加（15:30ごろから出現。硬く軽い攻撃を弾くダメカ枠）。',
+    'レベルアップの選択が出た裏でゲームが1フレーム進んで理不尽に被弾・増援する不具合を修正。']},
   {v:'α1.0.34', items:[
     'エルダートレントの木の根攻撃を、本体から外へ向かって順番に設置されるように変更（いきなり全長が出て即死する挙動を修正）。',
     '設置し終えた弾は全段が一斉に動き出します。']},
