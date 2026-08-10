@@ -1022,7 +1022,7 @@ var ETYPE={
   bee:     { nm:'キラービー',         res:0.00, hp:50,  spd:188, r:14, col:'#e8c24a', dark:'#5a4410', xp:1, dmg:15, shape:'bee',     pts:10,  sv:0.035, ai:'fly' },
   panther: { nm:'ブラックパンサー',   res:0.15, hp:95,  spd:155, r:13, col:'#3b3550', dark:'#161320', xp:3, dmg:14, shape:'panther', pts:28,  sv:0.08 },
   dryad:   { nm:'ドライアド',         res:0.12, hp:70,  spd:58,  r:13, col:'#7fae5c', dark:'#35521f', xp:3, dmg:10, shape:'dryad',   pts:28,  sv:0.10,
-             ai:'shoot', range:340, acd:2.6, bspd:210, bdmg:12 },
+             ai:'shoot', range:340, acd:4.0, bspd:210, bdmg:12 },
   mantis:  { nm:'グレーターマンティス', res:0.40, hp:150, spd:120, r:15, col:'#6fbf4a', dark:'#2c5a1c', xp:4, dmg:26, shape:'mantis', pts:46,  sv:0.13 },
   spider:  { nm:'ブラストスパイダー', res:0.10, hp:120, spd:100, r:12, col:'#8a3a3a', dark:'#3a1414', xp:3, dmg:12, shape:'spider',  pts:30,  sv:0.09,
              boom:1, boomR:96, boomDmg:30 },
@@ -1039,7 +1039,7 @@ var ETYPE={
   ghoul:    { nm:'グール',               res:0.10, hp:130, spd:110, r:14, col:'#9ab07a', dark:'#3d4a26', xp:3, dmg:18, shape:'ghoul',    pts:30, sv:0.09, ai:'burrow' },
   lich:     { nm:'リッチ',               res:0.15, hp:160, spd:44,  r:14, col:'#b48ad0', dark:'#3f2a58', xp:5, dmg:12, shape:'lich',     pts:52, sv:0.14, ai:'buff', cap:4 },
   shieldman:{ nm:'盾の戦士',             res:0.15, hp:120, spd:70,  r:14, col:'#c0c4cc', dark:'#4a4e58', xp:4, dmg:20, shape:'shieldman',pts:44, sv:0.12, shield:180 },
-  sarcher:  { nm:'スケルトンアーチャー', res:0.10, hp:80,  spd:60,  r:12, col:'#d8d0b0', dark:'#5c5238', xp:3, dmg:12, shape:'sarcher',  pts:30, sv:0.10, ai:'shoot', range:360, acd:2.4, bspd:240, bdmg:16 },
+  sarcher:  { nm:'スケルトンアーチャー', res:0.10, hp:80,  spd:60,  r:12, col:'#d8d0b0', dark:'#5c5238', xp:3, dmg:12, shape:'sarcher',  pts:30, sv:0.10, ai:'shoot', range:360, acd:3.6, bspd:240, bdmg:16 },
   necro:    { nm:'ネクロマンサー',       res:0.20, hp:200, spd:46,  r:14, col:'#7a5aa0', dark:'#2a1a42', xp:6, dmg:10, shape:'necro',    pts:56, sv:0.15, ai:'summon', sum:'skeleton', nsum:2, acd:5.0, cap:3 },
   dullahan: { nm:'デュラハン',           res:0.40, hp:260, spd:60,  r:17, col:'#4a5a6a', dark:'#1a2530', xp:6, dmg:26, shape:'dullahan', pts:60, sv:0.15, ai:'charge', range:340, acd:3.0, chspd:500, wind:0.6, chdur:1.15 },
   boomer:   { nm:'ブーマー',             res:0.10, hp:300, spd:60,  r:19, col:'#8a9a5a', dark:'#3a4520', xp:6, dmg:14, shape:'boomer',   pts:56, sv:0.15, boom:1, boomR:110, boomDmg:40, puddle:1, cap:3 },
@@ -1822,7 +1822,7 @@ function figInfo(id){
   if(BOSS[id]){ var B=BOSS[id], tt=ETYPE[B.key]||{}; return {nm:B.nm,shape:tt.shape,col:tt.col,dark:tt.dark,desc:BDEX[id]||'',boss:true}; }
   var t=ETYPE[id]||{}; return {nm:t.nm,shape:t.shape,col:t.col,dark:t.dark,desc:DEX[id]||'',boss:false};
 }
-var VERSION='α1.0.69'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
+var VERSION='α1.0.70'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
 function applySave(o){
   for(var i=0;i<UPG.length;i++) META[UPG[i].id]=0;
   try{
@@ -4552,7 +4552,6 @@ function render(){
 
   // ---- 前景：実体のあるものだけを敵より上に描く ----
   for(i=0;i<shots.length;i++) drawShot(shots[i]);
-  for(i=0;i<ebul.length;i++) drawEbul(ebul[i]);
   for(i=0;i<lasers.length;i++) drawLaser(lasers[i]);
   drawInferno();
   for(i=0;i<chaks.length;i++) drawChak(chaks[i]);
@@ -4572,6 +4571,8 @@ function render(){
     else if(f.k==='hand') drawHand(f);
     else if(f.k==='pillar') drawPillar(f); }
   for(i=0;i<bolts.length;i++) drawChain(bolts[i]);
+  // 敵弾は自機エフェクトより最前面に描く：何が当たるか常に見えるように（弾幕の視認性対策）
+  for(i=0;i<ebul.length;i++) drawEbul(ebul[i]);
   drawEnemyOutlines();
   for(i=0;i<dmgs.length;i++) drawDmg(dmgs[i]);
 
@@ -5464,6 +5465,9 @@ function drawEbul(b){
   ctx.globalAlpha=.35; ctx.fillStyle=g;
   ctx.beginPath(); ctx.arc(0,0,b.r*2,0,6.3); ctx.fill();
   ctx.globalAlpha=1;
+  // 暗い縁取り：自機の派手なエフェクトに重なっても敵弾がはっきり見えるように
+  ctx.lineWidth=2.4; ctx.strokeStyle='rgba(8,3,14,0.9)';
+  ctx.beginPath(); ctx.arc(0,0,b.r+1,0,6.3); ctx.stroke();
   ctx.fillStyle=mid; ctx.beginPath(); ctx.arc(0,0,b.r,0,6.3); ctx.fill();
   ctx.fillStyle=core; ctx.beginPath(); ctx.arc(0,0,b.r*0.5,0,6.3); ctx.fill();
   ctx.restore();
@@ -6699,6 +6703,9 @@ Array.prototype.forEach.call(document.querySelectorAll('#setshake button'),funct
 // 更新履歴：1つのお知らせ内で「バージョン見出し」ごとに変更点を並べる（新しい順）。
 // マージのたびに先頭へ新バージョンを追加し、VERSION も更新する。
 var UPDATES=[
+  {v:'α1.0.70', items:[
+    '敵弾の視認性を改善：敵弾を自機のエフェクトより前面に描画し、暗い縁取りを追加。派手な弾幕の中でも「当たる弾」が見やすくなりました。',
+    'ステージ2/3のザコ遠距離敵の弾を軽減：ドライアド・スケルトンアーチャーの発射間隔を延ばし、弾幕が濃すぎないよう調整しました。']},
   {v:'α1.0.69', items:[
     'インフェルノビームをオーバーヒート式に変更：撃ち続けると右下の武器枠に赤い熱ゲージがたまり、満タンで一時停止（枠が赤く点滅→ゲージが下がる）。冷めたら再照射。',
     '持続軸を「熱容量アップ＋冷却速度アップ」に変更（オーバーヒートしにくく・早く冷める）。頻度軸はこれまで通りダメージの発生間隔です。',
