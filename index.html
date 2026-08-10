@@ -1021,7 +1021,7 @@ var ETYPE={
   myconid: { nm:'マイコニド',         res:0.08, hp:100, spd:42,  r:13, col:'#c85a4a', dark:'#5a241c', xp:2, dmg:9,  shape:'myconid', pts:12,  sv:0.05 },
   bee:     { nm:'キラービー',         res:0.00, hp:50,  spd:188, r:14, col:'#e8c24a', dark:'#5a4410', xp:1, dmg:15, shape:'bee',     pts:10,  sv:0.035, ai:'fly' },
   panther: { nm:'ブラックパンサー',   res:0.15, hp:95,  spd:155, r:13, col:'#3b3550', dark:'#161320', xp:3, dmg:14, shape:'panther', pts:28,  sv:0.08 },
-  dryad:   { nm:'ドライアド',         res:0.12, hp:70,  spd:58,  r:13, col:'#7fae5c', dark:'#35521f', xp:3, dmg:10, shape:'dryad',   pts:28,  sv:0.10,
+  dryad:   { nm:'マンイーター',       res:0.12, hp:70,  spd:58,  r:13, col:'#9d6ec2', dark:'#3a2450', xp:3, dmg:10, shape:'dryad',   pts:28,  sv:0.10,
              ai:'shoot', range:340, acd:4.0, bspd:210, bdmg:12 },
   mantis:  { nm:'グレーターマンティス', res:0.40, hp:150, spd:120, r:15, col:'#6fbf4a', dark:'#2c5a1c', xp:4, dmg:26, shape:'mantis', pts:46,  sv:0.13 },
   spider:  { nm:'ブラストスパイダー', res:0.10, hp:120, spd:100, r:12, col:'#8a3a3a', dark:'#3a1414', xp:3, dmg:12, shape:'spider',  pts:30,  sv:0.09,
@@ -1070,7 +1070,7 @@ var DEX={
   myconid:'胞子を撒くキノコ人。遅いがしぶとい。',
   bee:'凶暴な蜂。大きく育ち、狼のように速く突っ込む。',
   panther:'漆黒の豹。音もなく高速で肉薄する。',
-  dryad:'樹の精。距離を取って種を撃ってくる遠距離型。',
+  dryad:'人食い植物。地に根を張り、距離を取って種を撃ってくる遠距離型。',
   mantis:'大鎌の蟷螂。速さと高い一撃を併せ持つ。',
   spider:'爆裂蜘蛛。近づくと導火し、自爆して巻き込む。',
   beetle:'装甲の兜虫。重装甲で軽い攻撃を通しにくい。',
@@ -1100,7 +1100,7 @@ var MTAG={
   boar:['ビースト'], wolf:['ビースト'], turtle:['ビースト'], bird:['ビースト'], panther:['ビースト'],
   harpy:['ビースト','飛行'], bat:['ファントム','飛行'],
   ogre:['巨人'],
-  spirit:['精霊','飛行'], dryad:['精霊','植物'], myconid:['植物'], treant:['植物'], healtree:['植物'],
+  spirit:['精霊','飛行'], dryad:['植物'], myconid:['植物'], treant:['植物'], healtree:['植物'],
   bee:['昆虫','飛行'], mantis:['昆虫'], spider:['昆虫'], beetle:['昆虫'], gnat:['昆虫','飛行'], egg:['昆虫'],
   skeleton:['アンデッド'], mummy:['アンデッド'], ghoul:['アンデッド'], lich:['アンデッド'],
   shieldman:['アンデッド'], sarcher:['アンデッド'], necro:['アンデッド'], dullahan:['アンデッド'], boomer:['アンデッド'],
@@ -1170,7 +1170,7 @@ var WAVE2=[
   { t:180,  mix:[['spirit',0.30],['bird',0.65],['bee',1.00]] },                                  // 3:00 ビー
   { t:330,  mix:[['spirit',0.15],['bird',0.40],['bee',0.70],['myconid',1.00]] },                 // 5:30 マイコニド(ボスあと)
   { t:480,  mix:[['bird',0.18],['bee',0.42],['myconid',0.70],['panther',1.00]] },                // 8:00 パンサー
-  { t:630,  mix:[['bee',0.15],['myconid',0.37],['panther',0.67],['dryad',1.00]] },               // 10:30 ドライアド(ボスあと)
+  { t:630,  mix:[['bee',0.15],['myconid',0.37],['panther',0.67],['dryad',1.00]] },               // 10:30 マンイーター(ボスあと)
   { t:720,  mix:[['myconid',0.15],['panther',0.40],['dryad',0.68],['spider',1.00]] },            // 12:00 スパイダー
   { t:780,  mix:[['panther',0.18],['dryad',0.40],['spider',0.70],['mantis',1.00]] },             // 13:00 マンティス
   { t:900,  mix:[['panther',0.15],['dryad',0.33],['spider',0.58],['mantis',0.80],['beetle',1.00]] }, // 15:00 ビートル
@@ -1822,7 +1822,7 @@ function figInfo(id){
   if(BOSS[id]){ var B=BOSS[id], tt=ETYPE[B.key]||{}; return {nm:B.nm,shape:tt.shape,col:tt.col,dark:tt.dark,desc:BDEX[id]||'',boss:true}; }
   var t=ETYPE[id]||{}; return {nm:t.nm,shape:t.shape,col:t.col,dark:t.dark,desc:DEX[id]||'',boss:false};
 }
-var VERSION='α1.0.70'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
+var VERSION='α1.0.71'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
 function applySave(o){
   for(var i=0;i<UPG.length;i++) META[UPG[i].id]=0;
   try{
@@ -4638,7 +4638,14 @@ var SPRDATA={
   chakram:'assets/chakram.png',
   fireball:'assets/fireball.png',
   icejav:'assets/icejav.png',
-  rockball:'assets/rockball.png'
+  rockball:'assets/rockball.png',
+  bird:'assets/bird.png',
+  myconid:'assets/myconid.png',
+  bee:'assets/bee.png',
+  spider:'assets/spider.png',
+  beetle:'assets/beetle.png',
+  maneater:'assets/maneater.png',
+  goblinking:'assets/goblinking.png'
 };
 var SPR={}, SPRT={}, SPRRDY={};
 // 端に接する白（不透明な白背景）だけをフラッドフィルで透過に。内部の白ハイライトは残す。
@@ -4710,13 +4717,15 @@ var WSPR={slash:'greatsword',scythe:'scythe',dynamite:'dynamite',chakram:'chakra
 function wIcon(id){ return WSPR[id]?('<img class="wspr" src="assets/'+WSPR[id]+'.png" alt="">'):(WEAPONS[id]?WEAPONS[id].glyph:''); }
 // 敵の形→スプライト名（未ロード時は null で手続き描画にフォールバック）
 var SHAPE_SPR={blob:'blob',goblin:'goblin',orc:'orc',bat:'bat',spirit:'spirit',ogre:'cyclops',
-  wolf:'wolf',turtle:'turtle',harpy:'harpy',rider:'goat'};
+  wolf:'wolf',turtle:'turtle',harpy:'harpy',rider:'goat',
+  bird:'bird',myconid:'myconid',bee:'bee',spider:'spider',beetle:'beetle',dryad:'maneater'};
 // 棍棒持ち（素体＋棍棒レイヤーで攻撃時に棍棒を振る）。値＝棍棒レイヤーの握り位置（フレーム比 0..1）
 var CLUBBER={goblin:[0.34,0.77], orc:[0.31,0.67], cyclops:[0.34,0.75]};
 function enemySpr(e){
   if(e.shape==='boar'){ var h=e.boss?'hog_boss':'hog'; return sprReady(h)?h:null; }
   if(e.boss&&e.bkey==='slimeking') return sprReady('slimeking')?'slimeking':null;   // ボス専用絵
   if(e.boss&&e.bkey==='fenrir') return sprReady('fenrir')?'fenrir':null;
+  if(e.boss&&e.bkey==='goblinking') return sprReady('goblinking')?'goblinking':null;   // ボス専用絵（王冠つき）
   var n=SHAPE_SPR[e.shape]; return (n&&sprReady(n))?n:null;
 }
 
@@ -5149,7 +5158,9 @@ function blobHop(e){
 var SPRSZ={blob:{s:3.0,oy:0.35}, goblin:{s:3.2,oy:0.55}, orc:{s:3.0,oy:0.50},
   hog:{s:3.2,oy:0.30}, hog_boss:{s:2.7,oy:0.28}, bat:{s:3.6,oy:0.10}, spirit:{s:3.4,oy:0.10},
   cyclops:{s:2.9,oy:0.50}, wolf:{s:3.3,oy:0.35}, fenrir:{s:2.7,oy:0.35}, turtle:{s:3.0,oy:0.35},
-  goat:{s:3.1,oy:0.45}, harpy:{s:4.4,oy:0.15}, slimeking:{s:2.7,oy:0.28}};
+  goat:{s:3.1,oy:0.45}, harpy:{s:4.4,oy:0.15}, slimeking:{s:2.7,oy:0.28},
+  bird:{s:3.0,oy:0.30}, myconid:{s:3.1,oy:0.40}, bee:{s:3.2,oy:0.15}, spider:{s:3.2,oy:0.25},
+  beetle:{s:2.8,oy:0.30}, maneater:{s:3.2,oy:0.42}, goblinking:{s:2.7,oy:0.42}};
 // 毒の沼（ブーマー）：緑の沼＋泡。消える直前にフェード。
 function drawPuddle(q){
   var a=Math.min(1,q.life/1.2)*0.55;
@@ -6703,6 +6714,9 @@ Array.prototype.forEach.call(document.querySelectorAll('#setshake button'),funct
 // 更新履歴：1つのお知らせ内で「バージョン見出し」ごとに変更点を並べる（新しい順）。
 // マージのたびに先頭へ新バージョンを追加し、VERSION も更新する。
 var UPDATES=[
+  {v:'α1.0.71', items:[
+    'モンスターの立ち絵を追加：フォレストトード・マイコニド・キラービー・ブラストスパイダー・グレータービートル、そしてボスのゴブリンキング。',
+    'ドライアドを「マンイーター」（人食い植物）に改名し、立ち絵を差し替えました。種を撃つ遠距離の役割はそのままです。']},
   {v:'α1.0.70', items:[
     '敵弾の視認性を改善：敵弾を自機のエフェクトより前面に描画し、暗い縁取りを追加。派手な弾幕の中でも「当たる弾」が見やすくなりました。',
     'ステージ2/3のザコ遠距離敵の弾を軽減：ドライアド・スケルトンアーチャーの発射間隔を延ばし、弾幕が濃すぎないよう調整しました。']},
@@ -6948,7 +6962,8 @@ function drawPortrait(cnv,id){
   g.save(); g.translate(cnv.width/2,cnv.height/2+cnv.height*0.05);
   var R=Math.min(cnv.width,cnv.height)*(t.boss?0.26:0.30);
   g.fillStyle='rgba(0,0,0,.25)'; g.beginPath(); g.ellipse(0,R*0.95,R*0.8,R*0.3,0,0,6.3); g.fill();
-  var sprN=(t.shape==='boar')?(t.boss?'hog_boss':'hog'):SHAPE_SPR[t.shape];
+  // ボス専用の立ち絵があればそれを優先（スライムキング／フェンリル／ゴブリンキング等）
+  var sprN=(t.shape==='boar')?(t.boss?'hog_boss':'hog'):((t.boss&&SPRDATA[id]&&sprReady(id))?id:SHAPE_SPR[t.shape]);
   if(sprN&&sprReady(sprN)){
     g.save(); if(sprN!=='blob') g.translate(0,-R*0.35);
     drawSpr(sprN,R*3.0,R*3.0,null,0);

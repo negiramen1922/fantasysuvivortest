@@ -10,6 +10,14 @@
 - リザルト画面と設定画面に `VERSION` を表示。
 - お知らせ（`UPDATES` 配列）は**1枠内でバージョン見出しごとに変更点を掲載**（新しい順）。マージ時は `UPDATES` 先頭に新バージョンを追加し `VERSION` を一致させる。
 
+## ver.α1.0.71
+- モンスターの立ち絵（ドット絵）を追加。ユーザー提供画像を `assets/` に配置し透過処理（keyWhite 相当のエッジ白フラッドフィルをオフラインで焼き込み）。
+  - 新規スプライト：`bird`(フォレストトード)・`myconid`・`bee`(キラービー)・`spider`(ブラストスパイダー)・`beetle`(グレータービートル)・`goblinking`(ボス)・`maneater`。
+  - `SPRDATA`／`SHAPE_SPR`（`bird/myconid/bee/spider/beetle` と `dryad→maneater`）／`SPRSZ` に登録。`enemySpr` にボス `goblinking` の専用絵分岐を追加。
+  - 図鑑の立ち絵（`drawPortrait`）もボス専用絵を優先するよう変更（スライムキング／フェンリル／ゴブリンキングが正しい絵に）。
+- ドライアドを「マンイーター」に改名（内部キーは `dryad` のまま／セーブ互換維持）。`nm`・`DEX`・色を人食い植物に、`MTAG` を `['植物']` に変更。ai・弾（種）はそのまま。
+- 検証：`?dev` でステージ2の森モンスターとステージ1ゴブリンキングを撮影し、透過・配置・エラーなしを確認。
+
 ## ver.α1.0.70
 - 敵弾の視認性改善（弾幕対策）。
   - **描画順**：敵弾（`ebul`）の描画を自機の武器エフェクト（laser/inferno/chak/scy/bomb/sword/flame/parts/fx/chain）より後＝最前面に移動（`drawEnemyOutlines` の直前）。何が当たるか常に見えるように。
