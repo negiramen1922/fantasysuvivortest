@@ -10,6 +10,12 @@
 - リザルト画面と設定画面に `VERSION` を表示。
 - お知らせ（`UPDATES` 配列）は**1枠内でバージョン見出しごとに変更点を掲載**（新しい順）。マージ時は `UPDATES` 先頭に新バージョンを追加し `VERSION` を一致させる。
 
+## ver.α1.0.73
+- ヘカトンケイルの回転ビームの理不尽を修正（`hecaton` AI）。
+  - 従来は `beamA`（ビーム角）を **laserwind→laser 遷移時**に `atan2(dy,dx)` で再照準していたため、予告（`laserwind`）が描く角度と実際の発射角度が一致せず、予告を回避しても初弾が必中していた。
+  - 修正：`beamA`/`beamSweep`/`beamDir` を **laserwind に入る時点**（fistseq→laserwind、laser→laserwind の両方）で確定し、発射時には再照準しないように変更。予告線＝実際の発射位置になった。
+  - 検証：ステージ3・15:00 のヘカトン戦を連写し、赤い予告→黄ビームが同じ放射角で出ること・エラーなしを確認。
+
 ## ver.α1.0.72
 - モンスターの立ち絵を追加（`assets/` に透過焼き込み）。`panther`・`mantis`・`treant`・`eldertreant`(ボス)。
   - `SPRDATA`／`SHAPE_SPR`(`panther/mantis/treant`)／`SPRSZ` に登録。`enemySpr` にボス `eldertreant` の専用絵分岐を追加（図鑑もボス絵優先で対応済み）。
