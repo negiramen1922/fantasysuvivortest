@@ -10,6 +10,14 @@
 - リザルト画面と設定画面に `VERSION` を表示。
 - お知らせ（`UPDATES` 配列）は**1枠内でバージョン見出しごとに変更点を掲載**（新しい順）。マージ時は `UPDATES` 先頭に新バージョンを追加し `VERSION` を一致させる。
 
+## ver.α1.0.40
+- Firebase連携（Google認証・クラウドセーブ・GA4解析）を追加。すべて未設定/未ロード時は no-op でローカル動作を維持。詳細手順は `docs/FIREBASE.md`。
+  - SDK は gstatic CDN の compat 版を `<head>` 直前で読み込み、構成は `firebase-config.js`（`window.FIREBASE_CONFIG`）。apiKey 空なら無効。
+  - セーブ入出力を関数化：`applySave(o)`（旧loadSave本体）・`saveObj()`。`saveGame` 末尾で `cloudPush()`（デバウンス1.5s）。
+  - 認証：ホームに「Googleでログイン/ログアウト」。`onAuthStateChanged`→`onLogin`でFirestore `saves/{uid}` を取得。ローカルと差異があれば競合選択モーダル `#syncsel`（`progLabel`表示）、選択で `applyCloud`＋`cloudPushNow`。
+  - 解析：`fbLog`。起動`game_open`、`finish()` で `run_end`（stage/won/time/level/score/kills/weapons）＋使用武器ごとに `weapon_used`。武器使用率＝weapon_used/run_end。
+  - Firestoreルール（自分のuidのみ read/write）とドメイン承認は docs 参照。
+
 ## ver.α1.0.39
 - 図鑑UI刷新：一覧は割り振り内容をアイコン（📖経験値/⚔️与ダメ/🛡️被ダメ＋数）で表示し、枠タップで詳細モーダル `#figdet`（立ち絵・説明・討伐/pt・割り振りチップ・次ptヒント）を開く方式に。`openFigDetail(id)` を新設、`dexRowEl` はチップを廃してアイコン＋`row.onclick`、`allocFig` は詳細も再描画。
 

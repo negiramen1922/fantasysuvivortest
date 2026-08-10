@@ -534,6 +534,10 @@ img.wspr{width:1.15em;height:1.15em;object-fit:contain;image-rendering:pixelated
         <button class="btn sub2" id="chrbtn">キャラクター</button>
         <button class="btn sub2" id="banbtn">排他</button>
       </div>
+      <div id="fbrow" style="margin-top:14px;display:none;flex-direction:column;align-items:center;gap:6px">
+        <button class="btn sub2" id="fbbtn" style="margin-top:0">Googleでログイン</button>
+        <div id="fbstat" style="font-size:11px;color:var(--ash)"></div>
+      </div>
     </div>
     <!-- ステージ選択 -->
     <div id="stageview" class="vview">
@@ -597,6 +601,19 @@ img.wspr{width:1.15em;height:1.15em;object-fit:contain;image-rendering:pixelated
   </div>
 
   <!-- 図鑑：初遭遇カード（ラン中に割り込み表示） -->
+  <!-- クラウドセーブの競合選択 -->
+  <div id="syncsel" style="position:absolute;inset:0;display:none;align-items:center;justify-content:center;background:rgba(6,4,16,.86);z-index:10">
+    <div class="dexbox" style="max-width:380px">
+      <div class="dexname" style="font-size:20px">セーブデータの選択</div>
+      <div class="dexdesc">この端末（ローカル）とクラウドで進行度が違います。どちらを使いますか？</div>
+      <div style="display:flex;flex-direction:column;gap:10px;margin-top:14px">
+        <button class="btn sub2" id="synclocal" style="margin-top:0">この端末のデータを使う<br><span id="syncllab" style="font-size:11px;color:var(--ash)"></span></button>
+        <button class="btn sub2" id="synccloud" style="margin-top:0">クラウドのデータを使う<br><span id="synclab" style="font-size:11px;color:var(--ash)"></span></button>
+      </div>
+      <div style="font-size:10px;color:#8a7fc0;margin-top:10px">※選んだ方が両方の端末に反映されます</div>
+    </div>
+  </div>
+
   <div id="dexcard">
     <div class="dexbox">
       <div class="dexnew">NEW ENEMY</div>
@@ -705,6 +722,13 @@ img.wspr{width:1.15em;height:1.15em;object-fit:contain;image-rendering:pixelated
     </div>
   </div>
 </div>
+
+<!-- Firebase（Google認証・クラウドセーブ・解析）。未設定/未ロードならゲームはローカルのみで通常動作 -->
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-analytics-compat.js"></script>
+<script src="firebase-config.js"></script>
 
 <script>
 (function(){
@@ -1638,11 +1662,10 @@ function figInfo(id){
   if(BOSS[id]){ var B=BOSS[id], tt=ETYPE[B.key]||{}; return {nm:B.nm,shape:tt.shape,col:tt.col,dark:tt.dark,desc:BDEX[id]||'',boss:true}; }
   var t=ETYPE[id]||{}; return {nm:t.nm,shape:t.shape,col:t.col,dark:t.dark,desc:DEX[id]||'',boss:false};
 }
-var VERSION='α1.0.39'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
-(function loadSave(){
+var VERSION='α1.0.40'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
+function applySave(o){
   for(var i=0;i<UPG.length;i++) META[UPG[i].id]=0;
   try{
-    var o=JSON.parse(localStorage.getItem('bsv_save')||'null');
     if(o){
       if(o.m) for(var k in META){ if(typeof o.m[k]==='number') META[k]=Math.min(umax(k),Math.max(0,o.m[k]|0)); }
       if(o.w){ WALLET.silver=o.w.silver|0; WALLET.gold=o.w.gold|0; }
@@ -1669,9 +1692,14 @@ var VERSION='α1.0.39'; // マージのたびに末尾を増やす（お知ら�
       if(o.bsel) for(var bse in o.bsel){ var v=o.bsel[bse]; if(v) BSEL[bse]={x:v.x|0,d:v.d|0,t:v.t|0}; }
     }
   }catch(e){}
-})();
+}
+(function loadSave(){ try{ applySave(JSON.parse(localStorage.getItem('bsv_save')||'null')); }catch(e){ applySave(null); } })();
+function saveObj(){
+  return {m:META,w:WALLET,wx:WX,sel:SEL,best:best,shk:SHK,volm:VOLM,vols:VOLS,volb:VOLB,unl:UNL,ach:ACH,ch:SELCH,stg:STGCLEAR,ban:Object.keys(BAN).filter(function(k){return BAN[k];}),tut:TUTSEEN,perf:PERF,dps:SHOWDPS,dpm:SHOWDPM,rsp:RESPEC_AT,bk:BKILL,bsc:BSCORE,bs:Object.keys(BSEEN).filter(function(k){return BSEEN[k];}),bsel:BSEL};
+}
 function saveGame(){
-  try{ localStorage.setItem('bsv_save',JSON.stringify({m:META,w:WALLET,wx:WX,sel:SEL,best:best,shk:SHK,volm:VOLM,vols:VOLS,volb:VOLB,unl:UNL,ach:ACH,ch:SELCH,stg:STGCLEAR,ban:Object.keys(BAN).filter(function(k){return BAN[k];}),tut:TUTSEEN,perf:PERF,dps:SHOWDPS,dpm:SHOWDPM,rsp:RESPEC_AT,bk:BKILL,bsc:BSCORE,bs:Object.keys(BSEEN).filter(function(k){return BSEEN[k];}),bsel:BSEL})); }catch(e){}
+  try{ localStorage.setItem('bsv_save',JSON.stringify(saveObj())); }catch(e){}
+  if(typeof cloudPush==='function') cloudPush();   // ログイン中ならクラウドへ（デバウンス）
 }
 function M(id){ return META[id]||0; }
 
@@ -5770,6 +5798,12 @@ function finish(won){
     if(WEAPONS[wk]) wtxt.push(WEAPONS[wk].nm+' +'+fmt(wxRun[wk]));
   }
   saveGame();
+  // 解析：ラン終了時にまとめて記録（使用武器＝使用率の分母/分子）
+  if(typeof fbLog==='function'){
+    var wlist=Object.keys(P.w).filter(function(w){return WEAPONS[w];});
+    fbLog('run_end',{stage:curStage,won:won?1:0,time_sec:Math.floor(time),level:P.lv,score:score,kills:kills,weapon_count:wlist.length,weapons:wlist.join(',')});
+    wlist.forEach(function(w){ fbLog('weapon_used',{weapon:w,name:WEAPONS[w].nm,stage:curStage}); });
+  }
   // 構成：ラン中メニューと同じく縦並び＋アイコン
   var comp=''; for(var id in P.w){
     comp+='<div class="wrow"><span class="wg">'+WEAPONS[id].glyph+'</span>'+WEAPONS[id].nm+
@@ -5881,6 +5915,10 @@ Array.prototype.forEach.call(document.querySelectorAll('#setshake button'),funct
 // 更新履歴：1つのお知らせ内で「バージョン見出し」ごとに変更点を並べる（新しい順）。
 // マージのたびに先頭へ新バージョンを追加し、VERSION も更新する。
 var UPDATES=[
+  {v:'α1.0.40', items:[
+    'Firebase連携を追加：Googleログインで別端末とセーブを共有（クラウドセーブ）。',
+    'ログイン時に進行度が違う場合はローカル/クラウドを選べます。',
+    'アクセス数・武器使用率などの解析イベントを記録（要Firebase設定）。']},
   {v:'α1.0.39', items:[
     '図鑑の割り振り内容をアイコン表示に。モンスターの枠をタップすると詳細（立ち絵・説明・割り振り）が開くようにしました。']},
   {v:'α1.0.38', items:[
@@ -6130,11 +6168,82 @@ document.getElementById('dexbtn').onclick=function(){ audio(); renderDex(); dexE
 document.getElementById('dexclose').onclick=function(){ dexEl.classList.remove('on'); };
 document.getElementById('dexreset').onclick=function(){ if(window.confirm('図鑑の強化割り振りを全てリセットしますか？（討伐数・稼いだポイントは保持されます）')){ resetFig(); renderDex(); } };
 
+/* ============ Firebase：Google認証 / クラウドセーブ / 解析 ============ */
+// 未設定・未ロード・オフライン時は全て no-op。ゲームはローカルのみで通常動作する。
+var FB=null, fbDB=null, fbAnalytics=null, FBUSER=null, cloudTimer=null, syncPend=null;
+function fbReady(){ return !!(window.firebase && window.FIREBASE_CONFIG && window.FIREBASE_CONFIG.apiKey); }
+function fbLog(name,params){ if(fbAnalytics){ try{ fbAnalytics.logEvent(name,params||{}); }catch(e){} } }
+// セーブの進行度スコア（競合表示・比較用）
+function progScore(o){ if(!o) return 0;
+  var s=(o.best|0)+((o.w&&((o.w.gold|0)*5+(o.w.silver|0)))||0);
+  if(o.m) for(var k in o.m){ s+=(o.m[k]|0)*300; }
+  if(o.bk) for(var b in o.bk){ s+=(o.bk[b]|0)*20; }
+  if(o.bsc) for(var c in o.bsc){ s+=Math.floor((o.bsc[c]|0)/1000); }
+  if(o.unl) for(var u in o.unl){ if(o.unl[u]) s+=2000; }
+  if(o.stg) for(var g in o.stg){ if(o.stg[g]) s+=5000; }
+  return s;
+}
+function progLabel(o){ if(!o) return 'データなし';
+  var g=(o.w&&o.w.gold|0)||0, best=o.best|0, chars=o.unl?Object.keys(o.unl).filter(function(k){return o.unl[k];}).length:0;
+  return 'ベスト'+best+' / 金貨'+g+' / 解放'+chars+'体'; }
+function fbInit(){
+  updateAuthUI();
+  if(!fbReady()) return;
+  try{
+    firebase.initializeApp(window.FIREBASE_CONFIG);
+    FB=firebase.auth(); fbDB=firebase.firestore();
+    if(window.FIREBASE_CONFIG.measurementId && firebase.analytics){ try{ fbAnalytics=firebase.analytics(); }catch(e){} }
+    fbLog('game_open',{v:VERSION});
+    FB.onAuthStateChanged(function(u){ FBUSER=u; updateAuthUI(); if(u) onLogin(); });
+  }catch(e){ console.warn('Firebase init failed',e); }
+}
+function fbLogin(){ if(!fbReady()||!FB) return; var p=new firebase.auth.GoogleAuthProvider(); FB.signInWithPopup(p).catch(function(e){ console.warn('login',e); }); }
+function fbLogout(){ if(FB) FB.signOut(); }
+function updateAuthUI(){
+  var row=document.getElementById('fbrow'), btn=document.getElementById('fbbtn'), st=document.getElementById('fbstat');
+  if(!row) return;
+  if(!fbReady()){ row.style.display='none'; return; }
+  row.style.display='flex';
+  if(FBUSER){ btn.textContent='ログアウト'; st.textContent=(FBUSER.displayName||FBUSER.email||'ログイン中')+' でクラウド同期中'; }
+  else{ btn.textContent='Googleでログイン'; st.textContent='ログインで別端末とデータ共有'; }
+}
+function onLogin(){
+  if(!fbDB||!FBUSER) return;
+  fbDB.collection('saves').doc(FBUSER.uid).get().then(function(d){
+    var cloud=(d.exists?d.data():null);
+    var cloudStr=(cloud&&cloud.save)?cloud.save:null;
+    var localStr=null; try{ localStr=localStorage.getItem('bsv_save'); }catch(e){}
+    if(!cloudStr){ cloudPushNow(); return; }                 // クラウド未作成：ローカルを上げる
+    if(!localStr||localStr===cloudStr){ applyCloud(cloudStr); return; }
+    openSyncChooser(localStr,cloudStr);                      // 競合：選ばせる
+  }).catch(function(e){ console.warn('cloud get',e); });
+}
+function applyCloud(str){ try{ localStorage.setItem('bsv_save',str); applySave(JSON.parse(str)); syncTitle(); updateAuthUI(); }catch(e){} }
+function cloudPushNow(){
+  if(!fbDB||!FBUSER) return;
+  var str=null; try{ str=localStorage.getItem('bsv_save'); }catch(e){}
+  if(!str) return;
+  var prog=0; try{ prog=progScore(JSON.parse(str)); }catch(e){}
+  fbDB.collection('saves').doc(FBUSER.uid).set({ save:str, prog:prog, ts:firebase.firestore.FieldValue.serverTimestamp() }).catch(function(e){ console.warn('cloud set',e); });
+}
+function cloudPush(){ if(!fbDB||!FBUSER) return; if(cloudTimer) clearTimeout(cloudTimer); cloudTimer=setTimeout(cloudPushNow,1500); }
+function openSyncChooser(localStr,cloudStr){
+  var lo=null,co=null; try{ lo=JSON.parse(localStr); }catch(e){} try{ co=JSON.parse(cloudStr); }catch(e){}
+  document.getElementById('syncllab').textContent=progLabel(lo);
+  document.getElementById('synclab').textContent=progLabel(co);
+  syncPend={l:localStr,c:cloudStr};
+  document.getElementById('syncsel').style.display='flex';
+}
+document.getElementById('fbbtn').onclick=function(){ audio(); if(FBUSER) fbLogout(); else fbLogin(); };
+document.getElementById('synclocal').onclick=function(){ document.getElementById('syncsel').style.display='none'; if(syncPend){ applyCloud(syncPend.l); cloudPushNow(); } };
+document.getElementById('synccloud').onclick=function(){ document.getElementById('syncsel').style.display='none'; if(syncPend){ applyCloud(syncPend.c); } };
+
 VOLLEY={bow:doBow,fire:doFire,ice:doIce,holy:doHoly,rock:doRock,musket:doMusket,dynamite:doDyna};
 resize();
 reset();
 syncTitle();
 showView('home');
+fbInit();
 })();
 </script>
 </body>
