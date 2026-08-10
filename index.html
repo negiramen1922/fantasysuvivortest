@@ -642,6 +642,7 @@ img.wspr{width:1.15em;height:1.15em;object-fit:contain;image-rendering:pixelated
       <canvas id="fdpc" width="120" height="120"></canvas>
       <div class="dexname" id="fdname"></div>
       <div id="fdmeta" style="color:var(--gold);font-size:12px;margin-top:4px"></div>
+      <div id="fdtags" style="display:flex;flex-wrap:wrap;gap:4px;justify-content:center;margin-top:6px"></div>
       <div class="dexdesc" id="fddesc"></div>
       <div class="figrow" id="fdchips" style="justify-content:center;margin-top:14px"></div>
       <div id="fdhint" style="font-size:10px;color:#8a7fc0;margin-top:10px"></div>
@@ -1086,6 +1087,24 @@ var DEX={
 var DEXLIST=['slime','goblin','bat','boar','wolf','orc','rider','harpy','ogre','turtle','slimeM','slimeS',
   'spirit','bird','myconid','bee','panther','dryad','mantis','spider','beetle','gnat','treant',
   'skeleton','mummy','wraith','fly','shadow','gargoyle','ghoul','lich','shieldman','sarcher','necro','dullahan','boomer'];
+// モンスターの種族タグ（ナイトメアの属性強化カード等の土台）。ザコ＝ETYPEキー、ボス＝BOSSキー。
+var MTAG={
+  slime:['スライム'], slimeM:['スライム'], slimeS:['スライム'],
+  goblin:['亜人'], orc:['亜人'], rider:['亜人'], archer:['亜人'],
+  boar:['ビースト'], wolf:['ビースト'], turtle:['ビースト'], bird:['ビースト'], panther:['ビースト'],
+  harpy:['ビースト','飛行'], bat:['ファントム','飛行'],
+  ogre:['巨人'],
+  spirit:['精霊','飛行'], dryad:['精霊','植物'], myconid:['植物'], treant:['植物'], healtree:['植物'],
+  bee:['昆虫','飛行'], mantis:['昆虫'], spider:['昆虫'], beetle:['昆虫'], gnat:['昆虫','飛行'], egg:['昆虫'],
+  skeleton:['アンデッド'], mummy:['アンデッド'], ghoul:['アンデッド'], lich:['アンデッド'],
+  shieldman:['アンデッド'], sarcher:['アンデッド'], necro:['アンデッド'], dullahan:['アンデッド'], boomer:['アンデッド'],
+  wraith:['アンデッド','ファントム'], shadow:['ファントム'], gargoyle:['アンデッド','飛行'],
+  bigslime:['スライム'], slimeking:['スライム'],
+  greatboar:['ビースト'], fenrir:['ビースト'],
+  champion:['亜人'], goblinking:['亜人'],
+  kervi:['精霊','ビースト'], gmoth:['昆虫','飛行'], arachnid:['昆虫'], eldertreant:['植物'],
+  gravekeeper:['アンデッド'], skeletonking:['アンデッド'], hecaton:['巨人','アンデッド'], skeledragon:['竜','アンデッド']
+};
 
 // ステージ1のボス。5分ごとに1体、30分のフェンリルがラストボス。
 var BOSS={
@@ -1478,6 +1497,26 @@ var WCAT={ slash:'剣技', scythe:'剣技', chakram:'剣技', bow:'射撃', dyna
            fire:'炎', flame:'炎', inferno:'炎', ice:'氷', thunder:'雷', chain:'雷',
            quake:'土', rock:'土', voidh:'闇', dhand:'闇', holy:'光', aura:'光',
            bell:'音', chainsaw:'剣技', musket:'射撃', blizzard:'氷', laser:'光', gatling:'射撃' };
+// 武器タグ（間合い・手段・属性）。ナイトメアの属性強化カード等の土台。
+var WTAG={
+  slash:['近接','斬撃','物理'], chainsaw:['近接','斬撃','物理'],
+  scythe:['中距離','斬撃','物理'], chakram:['自己','斬撃','物理'],
+  bow:['遠距離','射撃','物理'], gatling:['遠距離','射撃','物理'], musket:['中距離','射撃','物理'],
+  dynamite:['中距離','爆発','物理'],
+  quake:['中距離','打撃','土'], rock:['遠距離','打撃','土'],
+  bell:['自己','打撃','物理'],
+  fire:['遠距離','炎'], flame:['自己','炎'], inferno:['遠距離','ビーム','炎'],
+  ice:['遠距離','氷'], blizzard:['自己','氷'],
+  thunder:['遠距離','雷'], chain:['遠距離','雷'],
+  holy:['遠距離','光'], aura:['自己','設置','光'], laser:['自己','ビーム','光'],
+  voidh:['自己','闇'], dhand:['中距離','闇']
+};
+function tagChips(arr){
+  if(!arr||!arr.length) return '';
+  var s='';
+  for(var i=0;i<arr.length;i++) s+='<span style="display:inline-block;font-size:9px;padding:1px 6px;margin:1px 2px;border-radius:8px;background:#2a2350;color:#c9c0e6;border:1px solid #4a3f7a">'+arr[i]+'</span>';
+  return s;
+}
 var SPILL_SAME=0.10, SPILL_OTHER=0.05;
 // 一度でも使った武器＝解放済みとみなす
 function wOpened(id){ return ((WX[id]||0)+(wxRun[id]||0))>0; }
@@ -1772,7 +1811,7 @@ function figInfo(id){
   if(BOSS[id]){ var B=BOSS[id], tt=ETYPE[B.key]||{}; return {nm:B.nm,shape:tt.shape,col:tt.col,dark:tt.dark,desc:BDEX[id]||'',boss:true}; }
   var t=ETYPE[id]||{}; return {nm:t.nm,shape:t.shape,col:t.col,dark:t.dark,desc:DEX[id]||'',boss:false};
 }
-var VERSION='α1.0.64'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
+var VERSION='α1.0.65'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
 function applySave(o){
   for(var i=0;i<UPG.length;i++) META[UPG[i].id]=0;
   try{
@@ -6018,6 +6057,7 @@ function renderMast(){
           (left?'<span class="badge">選択可</span>':'')+
           (open?'':'<span class="badge" style="background:#3b2d6b;color:#a99fd0">未使用</span>')+
         '</div>'+
+        '<div style="margin:3px 0">'+tagChips(WTAG[w])+'</div>'+
         '<div class="wbar"><div style="width:'+pct+'%"></div></div>'+
         '<div class="wtr">'+trs.join('　/　')+
           (AWK[w]?'<br><span style="color:var(--gold)">覚醒 Lv10：'+AWK[w]+'</span> <span class="no">'+AWT[w]+'</span>':'')+'</div>'+
@@ -6584,6 +6624,8 @@ Array.prototype.forEach.call(document.querySelectorAll('#setshake button'),funct
 // 更新履歴：1つのお知らせ内で「バージョン見出し」ごとに変更点を並べる（新しい順）。
 // マージのたびに先頭へ新バージョンを追加し、VERSION も更新する。
 var UPDATES=[
+  {v:'α1.0.65', items:[
+    '武器・モンスターにタグ（間合い/手段/属性・種族）を追加。武器熟練リストと図鑑の詳細にタグを表示します。今後の裏ステージ（属性強化）の土台です。']},
   {v:'α1.0.64', items:[
     'コンティニューは1ランにつき最大3回までにしました。',
     'リザルトにコンティニュー回数を表示するようにしました。']},
@@ -6873,6 +6915,7 @@ function openFigDetail(id){
   document.getElementById('fdname').innerHTML=(boss?'👑':'')+inf.nm;
   document.getElementById('fdmeta').textContent='討伐 '+fmt(n)+' ／ 割り振り可能 '+pts+' pt（1体 最大'+FIG_CAP+'）';
   document.getElementById('fddesc').textContent=inf.desc||'';
+  document.getElementById('fdtags').innerHTML=tagChips(MTAG[id]);
   var can=pts>0, dis=can?'':' disabled', off=can?'':' off', plus=can?' ＋':'';
   var chips=[['x','📖 経験値+1%',sel.x||0],['d','⚔️ 与ダメ+1%',sel.d||0],['t','🛡️ 被ダメ-1%',sel.t||0]], cstr='';
   for(var ci=0;ci<3;ci++) cstr+='<button class="figchip'+off+'" data-ty="'+chips[ci][0]+'"'+dis+'>'+chips[ci][1]+' <b>'+chips[ci][2]+'</b>'+plus+'</button>';
