@@ -108,6 +108,11 @@ canvas{display:block;width:100%;height:100%;touch-action:none}
 .slot.eq .sring{background:#1c4a55}
 .slot.eq{box-shadow:0 0 8px rgba(127,230,255,.35)}
 .slot.eq .lv{color:#7fe6ff}
+/* インフェルノビームの熱ゲージ：右下の武器枠が赤く埋まっていく。オーバーヒートで減っていく */
+.hring{position:absolute;inset:0;border-radius:50%;pointer-events:none;
+  background:conic-gradient(from -90deg, #ff3b1f var(--h,0%), transparent 0)}
+.slot.inf.over{box-shadow:0 0 14px rgba(255,60,30,.9);animation:infpulse .5s infinite alternate}
+@keyframes infpulse{from{filter:none}to{filter:brightness(1.5)}}
 
 #banner{position:absolute;left:0;right:0;top:31%;text-align:center;font-size:40px;
   color:var(--gold);letter-spacing:9px;opacity:0;
@@ -931,7 +936,7 @@ var WEAPONS={
   fire:{ nm:'ファイヤーボール', glyph:'\u{1F525}', tag:'炎', max:10,
     tx:'最寄りの敵へ火球を放つ。当たると爆発し、貫通しながら数が増えていく。' },
   inferno:{ nm:'インフェルノビーム', glyph:'☄', tag:'炎', max:10,
-    tx:'最寄りの敵へ灼熱のビームを照射し続ける。同じ敵に当て続けるほど、じわじわ火力が上がっていく。' },
+    tx:'ロックした敵へ灼熱のビームを照射し続ける（倒すか射程外まで維持）。当て続けるほど火力が上がるが、熱がたまり満タンでオーバーヒート＝一時停止。持続軸で熱容量と冷却が上がる。' },
   flame:{ nm:'焔輪', glyph:'\u{1F7E0}', tag:'炎', max:10,
     tx:'火の玉が周囲を巡る。触れた敵を焼き続ける。' },
   ice:{ nm:'アイスジャベリン', glyph:'\u2744', tag:'氷', max:10,
@@ -1511,7 +1516,7 @@ var WTAG={
   dynamite:['中距離','爆発','物理'],
   quake:['中距離','打撃','土'], rock:['遠距離','打撃','土'],
   bell:['自己','打撃','物理'],
-  fire:['遠距離','炎'], flame:['自己','炎'], inferno:['遠距離','ビーム','炎'],
+  fire:['遠距離','炎'], flame:['自己','炎'], inferno:['中距離','ビーム','炎'],
   ice:['遠距離','氷'], blizzard:['自己','氷'],
   thunder:['遠距離','雷'], chain:['遠距離','雷'],
   holy:['遠距離','光'], aura:['自己','設置','光'], laser:['自己','ビーム','光'],
@@ -1545,7 +1550,7 @@ function wgain(id,hits){
 // 軸ごとに上限があり、上限の合計は取得可能な点数(7)より多いので必ず取捨選択になる。
 var AXN={ dmg:'攻撃力', area:'範囲', rate:'頻度', count:'数', dur:'持続',
           pierce:'貫通', slow:'鈍足', chain:'連鎖', split:'拡散', burst:'連射', ammo:'弾数', range:'射程' };
-var AXT={ dmg:'ダメージ +45%', area:'範囲 +18%', rate:'間隔 −15%', count:'発生数 +1', dur:'効果の持続が伸びる（鈍足の時間／延焼／火力の伸び）',
+var AXT={ dmg:'ダメージ +45%', area:'範囲 +18%', rate:'間隔 −15%', count:'発生数 +1', dur:'効果の持続が伸びる（鈍足の時間／延焼／インフェルノの熱容量・冷却速度UP）',
           pierce:'貫通 +2', slow:'鈍足の持続 +1.0秒', chain:'連鎖 +2', split:'拡散 +2',
           burst:'同じ方向へ続けて撃つ回数 +1', ammo:'装填数が増える', range:'届く距離・飛距離 +20%' };
 // 物理は会心で殲滅、魔法は元素反応で連鎖させる
@@ -1663,7 +1668,7 @@ function SPL(w){ return AX(w,'split')*2+TR(w,'split'); }
 // 基本射程は「おおむね画面内」に収める（射程軸を伸ばすと画面外まで届く）。
 var WRNG={
   scythe:{base:380,cat:'中'},
-  dhand:{base:300,cat:'中'}, dynamite:{base:360,cat:'中'}, quake:{base:400,cat:'中'}, musket:{base:320,cat:'中'}, inferno:{base:460,cat:'中'},
+  dhand:{base:300,cat:'中'}, dynamite:{base:360,cat:'中'}, quake:{base:400,cat:'中'}, musket:{base:320,cat:'中'}, inferno:{base:360,cat:'中'},
   chain:{base:460,cat:'長'}, thunder:{base:460,cat:'長'},
   fire:{base:520,cat:'長'}, ice:{base:520,cat:'長'}, bow:{base:560,cat:'長'},
   holy:{base:520,cat:'長'}, rock:{base:540,cat:'長'}, gatling:{base:560,cat:'長'} };
@@ -1817,7 +1822,7 @@ function figInfo(id){
   if(BOSS[id]){ var B=BOSS[id], tt=ETYPE[B.key]||{}; return {nm:B.nm,shape:tt.shape,col:tt.col,dark:tt.dark,desc:BDEX[id]||'',boss:true}; }
   var t=ETYPE[id]||{}; return {nm:t.nm,shape:t.shape,col:t.col,dark:t.dark,desc:DEX[id]||'',boss:false};
 }
-var VERSION='α1.0.68'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
+var VERSION='α1.0.69'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
 function applySave(o){
   for(var i=0;i<UPG.length;i++) META[UPG[i].id]=0;
   try{
@@ -1889,7 +1894,7 @@ function reset(){
   dpsVal=0; dpmVal=0; dmgSec=0; dmgRing=[]; dmgRingI=0; dpsClock=1;
   dexQueue.length=0;
   score=0; silver=0; gold=0; magFx=0; chakSpin=0; wxRun={}; lastCd={}; coolMax={}; WDMG={};
-  KILLER=null; INF={tgt:0,ramp:0,tick:0,on:false,ex:0,ey:0,extra:[]};
+  KILLER=null; INF={tgt:0,ramp:0,tick:0,on:false,ex:0,ey:0,extra:[],heat:0,over:false};
   contUsed=0; contFlag=0;
   slotSig='';
   cool={};
@@ -2247,11 +2252,22 @@ function drawLaser(L){
   ctx.fillStyle='#ffffff'; ctx.fillRect(0,-L.w*0.55,L.len,L.w*1.1);
   ctx.globalAlpha=1; ctx.restore();
 }
-// インフェルノビーム：最寄りの敵へ照射し続け、同じ敵に当て続けるほど火力が上がる（ramp）。数軸で追加ビーム、持続軸でランプ上限UP。
-var INF={tgt:0, ramp:0, tick:0, on:false, ex:0, ey:0, extra:[]};
+// インフェルノビーム：最寄りの敵へ照射し続け、同じ敵に当て続けるほど火力が上がる（ramp）。数軸で追加ビーム。
+// オーバーヒート式：撃つほど熱がたまり、満タンで強制冷却（ビーム停止）。持続軸で熱容量アップ＋冷却速度アップ。
+var INF={tgt:0, ramp:0, tick:0, on:false, ex:0, ey:0, extra:[], heat:0, over:false};
 function infernoTick(dt){
   var rng=RNG('inferno'), extra=Math.round(CNT('inferno'));       // 数軸：追加ビーム本数
   var keep=TF('inferno','rampkeep')||AW('inferno');
+  var coolRate=0.5*(1+0.3*DURV('inferno'));                       // 冷却速度（持続軸で上昇）
+  // オーバーヒート中：ビーム停止。熱ゲージが0に戻るまで撃てない。
+  if(INF.over){
+    INF.on=false; INF.extra=[];
+    INF.heat=Math.max(0,INF.heat-dt*coolRate);
+    INF.ramp=Math.max(0,INF.ramp-(keep?dt*0.6:dt*2.5));
+    if(INF.heat<=0) INF.over=false;
+    if(INF.ramp<=0) INF.tgt=0;
+    return;
+  }
   // ロック中の敵がまだ有効（生存＆射程内）なら維持。倒れる/射程外になるまでターゲットを変えない。
   var e=null;
   if(INF.tgt){
@@ -2263,12 +2279,16 @@ function infernoTick(dt){
     var dx2=e2.x-P.x, dy2=e2.y-P.y, dd2=dx2*dx2+dy2*dy2; if(dd2<rng*rng) cand.push({e:e2,d:dd2}); }
   cand.sort(function(a,b){ return a.d-b.d; });
   if(!e){                                                         // ロック対象が倒れた/射程外→最寄りを新規ロック
-    if(!cand.length){ INF.on=false; INF.extra=[]; INF.ramp=Math.max(0,INF.ramp-(keep?dt*0.6:dt*2.5)); if(INF.ramp<=0) INF.tgt=0; return; }
+    if(!cand.length){ INF.on=false; INF.extra=[]; INF.heat=Math.max(0,INF.heat-dt*coolRate); INF.ramp=Math.max(0,INF.ramp-(keep?dt*0.6:dt*2.5)); if(INF.ramp<=0) INF.tgt=0; return; }
     e=cand[0].e; INF.tgt=e.uid; INF.ramp=keep?INF.ramp:0;         // 新ロックで火力リセット（維持特性は引き継ぎ）
   }
+  // 発熱：照射中は熱がたまり、満タンでオーバーヒート（強制冷却へ）。持続軸で発熱を緩やかに（＝熱容量アップ）。
+  var heatUp=0.34/(1+0.25*DURV('inferno'));
+  INF.heat=Math.min(1,INF.heat+dt*heatUp);
+  if(INF.heat>=1){ INF.over=true; INF.on=false; INF.extra=[]; return; }
   INF.on=true; INF.ex=e.x; INF.ey=e.y;
   var rate=TF('inferno','rampfast')?1.5:1.0;
-  var cap=(TF('inferno','rampcap')?3.5:2.5)+(AW('inferno')?1:0)+0.6*DURV('inferno');   // 持続軸でランプ上限UP
+  var cap=(TF('inferno','rampcap')?3.5:2.5)+(AW('inferno')?1:0);   // ランプ上限（持続軸は熱容量へ移行）
   INF.ramp=Math.min(cap,INF.ramp+dt*rate);                        // ロック継続中は火力上昇
   var mul=1+INF.ramp;
   var ex=[];                                                      // 追加ビーム：ロック対象以外の最寄り
@@ -2277,7 +2297,7 @@ function infernoTick(dt){
   INF.tick-=dt;
   if(INF.tick<=0){ INF.tick=0.12*RATE('inferno');
     SRC='inferno';
-    var base=20*DMG('inferno')*pw('inferno'), burnT=1.0+0.4*DURV('inferno');
+    var base=24*DMG('inferno')*pw('inferno'), burnT=1.0+0.4*DURV('inferno');
     var dx=e.x-P.x, dy=e.y-P.y, dd=Math.hypot(dx,dy)||1;
     hurt(e, base*mul*0.12, dx/dd, dy/dd, 'fire');
     if(AW('inferno')){ e.dotD=Math.max(e.dotD,base*mul*0.25); e.dotT=Math.max(e.dotT,burnT); e.dotC='#ff7a2f'; }
@@ -5849,12 +5869,12 @@ function rebuildSlots(){
   // 武器段（クールダウンのリングを回すのは武器だけ）
   for(id in P.w){
     var d=document.createElement('div');
-    d.className='slot'+(AW(id)?' evo':'');
-    d.innerHTML='<div class="sring"></div><div class="sin">'+
+    d.className='slot'+(AW(id)?' evo':'')+(id==='inferno'?' inf':'');
+    d.innerHTML='<div class="sring"></div>'+(id==='inferno'?'<div class="hring"></div>':'')+'<div class="sin">'+
       '<div class="ic">'+wIcon(id)+'</div>'+
       '<div class="lv">'+P.w[id]+'</div></div>';
     rW.appendChild(d);
-    slotRefs.push({el:d,key:id});
+    slotRefs.push({el:d,key:id,hr:(id==='inferno'?d.querySelector('.hring'):null)});
   }
 }
 function updateSlotRings(){
@@ -5862,6 +5882,10 @@ function updateSlotRings(){
     var r=slotRefs[i], mx=coolMax[r.key], c=cool[r.key];
     var p=(!mx||c==null||c<=0)?1:Math.max(0,Math.min(1,1-c/mx));
     r.el.style.setProperty('--p',(p*100).toFixed(1)+'%');
+    if(r.hr){   // インフェルノ：熱ゲージ（0→1で赤く埋まる。オーバーヒート中は減っていく）
+      r.hr.style.setProperty('--h',(Math.max(0,Math.min(1,INF.heat))*100).toFixed(1)+'%');
+      if(INF.over) r.el.classList.add('over'); else r.el.classList.remove('over');
+    }
   }
 }
 function syncHud(){
@@ -6675,6 +6699,10 @@ Array.prototype.forEach.call(document.querySelectorAll('#setshake button'),funct
 // 更新履歴：1つのお知らせ内で「バージョン見出し」ごとに変更点を並べる（新しい順）。
 // マージのたびに先頭へ新バージョンを追加し、VERSION も更新する。
 var UPDATES=[
+  {v:'α1.0.69', items:[
+    'インフェルノビームをオーバーヒート式に変更：撃ち続けると右下の武器枠に赤い熱ゲージがたまり、満タンで一時停止（枠が赤く点滅→ゲージが下がる）。冷めたら再照射。',
+    '持続軸を「熱容量アップ＋冷却速度アップ」に変更（オーバーヒートしにくく・早く冷める）。頻度軸はこれまで通りダメージの発生間隔です。',
+    '射程を中距離に調整。オーバーヒートで火力が落ちるぶん、1発のダメージを少し引き上げました。']},
   {v:'α1.0.68', items:[
     'インフェルノビーム調整：一度ロックした敵は倒すか射程外に出るまでターゲットを変えないように。攻撃でノックバックが出ないように変更しました。']},
   {v:'α1.0.67', items:[
