@@ -5,11 +5,11 @@
  * 手順の詳細は docs/FIREBASE.md を参照。
  */
 window.FIREBASE_CONFIG = {
-  apiKey: "",
-  authDomain: "",
-  projectId: "",
-  storageBucket: "",
-  messagingSenderId: "",
-  appId: "",
-  measurementId: ""
+  apiKey: "AIzaSyB2EHPC8g4nC-HsWA6FvoHyHaNNc_L040M",
+  authDomain: "brave-survivor-6a9e9.firebaseapp.com",
+  projectId: "brave-survivor-6a9e9",
+  storageBucket: "brave-survivor-6a9e9.firebasestorage.app",
+  messagingSenderId: "864703778153",
+  appId: "1:864703778153:web:0221ead665b07b7261c1f8",
+  measurementId: "G-JWFHEG2D2S"
 };
