@@ -295,6 +295,9 @@ canvas{display:block;width:100%;height:100%;touch-action:none}
   background:rgba(6,4,16,.9);z-index:6;padding:16px}
 #chest.on{display:flex}
 .cbox{display:flex;flex-direction:column;align-items:center;gap:12px}
+#revive{position:absolute;inset:0;display:none;align-items:center;justify-content:center;
+  background:rgba(6,4,16,.9);z-index:9;padding:16px}
+#revive.on{display:flex}
 #chring{position:relative;width:284px;height:284px}
 #cctr{position:absolute;display:flex;flex-direction:column;align-items:center;
   justify-content:center;gap:2px;border:1px solid var(--line);background:rgba(20,14,45,.6)}
@@ -689,6 +692,16 @@ img.wspr{width:1.15em;height:1.15em;object-fit:contain;image-rendering:pixelated
       <div id="cres"></div>
       <div id="chint" class="hint">タップ / <span class="key">Space</span> でスキップ</div>
       <button class="btn" id="chestok">受け取る</button>
+    </div>
+  </div>
+
+  <div id="revive">
+    <div class="cbox">
+      <div style="font-size:26px;color:#ffcc4d;letter-spacing:2px">力尽きた…</div>
+      <div style="font-size:13px;color:#c9c0e6">金貨を払って その場で復活できます</div>
+      <div id="revinfo" style="font-size:12px;color:#8a80b0;text-align:center"></div>
+      <button class="btn" id="revbtn">金貨で続ける</button>
+      <button class="btn sub2" id="revgiveup" style="margin-top:0">あきらめる（リザルトへ）</button>
     </div>
   </div>
 
@@ -1759,7 +1772,7 @@ function figInfo(id){
   if(BOSS[id]){ var B=BOSS[id], tt=ETYPE[B.key]||{}; return {nm:B.nm,shape:tt.shape,col:tt.col,dark:tt.dark,desc:BDEX[id]||'',boss:true}; }
   var t=ETYPE[id]||{}; return {nm:t.nm,shape:t.shape,col:t.col,dark:t.dark,desc:DEX[id]||'',boss:false};
 }
-var VERSION='α1.0.62'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
+var VERSION='α1.0.63'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
 function applySave(o){
   for(var i=0;i<UPG.length;i++) META[UPG[i].id]=0;
   try{
@@ -1830,6 +1843,7 @@ function reset(){
   dexQueue.length=0;
   score=0; silver=0; gold=0; magFx=0; chakSpin=0; wxRun={}; lastCd={}; coolMax={}; WDMG={};
   KILLER=null; INF={tgt:0,ramp:0,tick:0,on:false,ex:0,ey:0,extra:[]};
+  contUsed=0; contFlag=0;
   slotSig='';
   cool={};
   syncHud();
@@ -6346,7 +6360,36 @@ function banner(txt){
 }
 var KILLER=null;   // 直近の致命傷の発生源 {k:図鑑キー, nm:表示名}
 function setKiller(e){ if(e) KILLER={k:figKey(e),nm:e.nm}; }
-function die(){ finish(false); }
+var contUsed=0, contFlag=0;                       // このランのコンティニュー回数／使用フラグ
+function reviveCost(){ return 10*Math.pow(2,contUsed); }   // 倍々：10→20→40…
+function die(){
+  var cost=reviveCost();
+  if(gold+WALLET.gold>=cost) openRevive(cost);    // 金貨があれば復活の提案
+  else finish(false);
+}
+function openRevive(cost){
+  state='revive'; playBGM(null);
+  document.getElementById('revinfo').textContent='復活費用：金貨 '+cost+'（所持 '+(gold+WALLET.gold)+'）　※復活のたびに費用は倍になります';
+  document.getElementById('revbtn').textContent='金貨 '+cost+' で続ける';
+  document.getElementById('revive').classList.add('on');
+}
+function doRevive(){
+  var cost=reviveCost();
+  if(gold+WALLET.gold<cost) return;
+  var fromRun=Math.min(gold,cost); gold-=fromRun; WALLET.gold-=(cost-fromRun);   // ラン内金貨→所持金貨の順で支払い
+  contUsed++; contFlag=1;
+  P.hp=Math.round(P.max*0.6); P.hurt=0; P.inv=3.0;                               // 60%回復＋3秒無敵
+  ebul.length=0;                                                                  // 敵弾を全消し
+  for(var i=0;i<enemies.length;i++){ var e=enemies[i]; if(!e.boss&&Math.hypot(e.x-P.x,e.y-P.y)<340) e.dead=1; }  // 周囲の雑魚を一掃
+  flash=Math.max(flash,.6); shake=Math.min(20,shake+10);
+  fx.push({k:'ring',x:P.x,y:P.y,r:0,to:340,t:0,life:.5,col:'#ffd27a'});
+  sfx(880,.3,'triangle',.08,.5);
+  document.getElementById('revive').classList.remove('on');
+  saveGame();
+  state='playing'; last=performance.now(); syncHud();
+  playBGM(boss&&!boss.dead?('s'+curStage+'b'):('s'+curStage));
+}
+function giveUp(){ document.getElementById('revive').classList.remove('on'); finish(false); }
 // リザルト：武器別の与ダメージ内訳（多い順・バー＋割合＋実数）
 function damageBreakdownHtml(){
   var arr=[], tot=0, k;
@@ -6418,7 +6461,7 @@ function finish(won){
   // 解析：ラン終了時にまとめて記録（使用武器＝使用率の分母/分子）
   if(typeof fbLog==='function'){
     var wlist=Object.keys(P.w).filter(function(w){return WEAPONS[w];});
-    fbLog('run_end',{stage:curStage,won:won?1:0,time_sec:Math.floor(time),level:P.lv,score:score,kills:kills,weapon_count:wlist.length,weapons:wlist.join(','),killed_by:killK,killed_by_name:killN,wave:waveIdx,boss_reached:bossN});
+    fbLog('run_end',{stage:curStage,won:won?1:0,time_sec:Math.floor(time),level:P.lv,score:score,kills:kills,weapon_count:wlist.length,weapons:wlist.join(','),killed_by:killK,killed_by_name:killN,wave:waveIdx,boss_reached:bossN,continues:contUsed,continued:contFlag});
     wlist.forEach(function(w){ fbLog('weapon_used',{weapon:w,name:WEAPONS[w].nm,stage:curStage,won:won?1:0}); });
   }
   // 構成：ラン中メニューと同じく縦並び＋アイコン
@@ -6500,6 +6543,8 @@ document.getElementById('startbtn').onclick=function(){ audio(); showView('stage
 document.getElementById('stageback').onclick=function(){ showView('home'); };
 document.getElementById('againbtn').onclick=function(){ startRun(curStage); };
 document.getElementById('homebtn').onclick=function(){ showView('home'); };
+document.getElementById('revbtn').onclick=function(){ audio(); doRevive(); };
+document.getElementById('revgiveup').onclick=function(){ audio(); giveUp(); };
 
 /* ============ 設定（ホーム右上の歯車）============ */
 var setEl=document.getElementById('settings');
@@ -6537,6 +6582,9 @@ Array.prototype.forEach.call(document.querySelectorAll('#setshake button'),funct
 // 更新履歴：1つのお知らせ内で「バージョン見出し」ごとに変更点を並べる（新しい順）。
 // マージのたびに先頭へ新バージョンを追加し、VERSION も更新する。
 var UPDATES=[
+  {v:'α1.0.63', items:[
+    '力尽きたとき、金貨を払ってその場で復活（コンティニュー）できるようになりました。費用は10→20→40…と倍増。復活で60%回復＋数秒無敵＋周囲を一掃します。',
+    '※将来のオンラインランキングは「コンティニューなし」のランのみ対象の予定です。']},
   {v:'α1.0.62', items:[
     '強化軸に「持続」を追加。効果の持続時間（氷の鈍足時間・延焼・インフェルノの火力の伸び）を強化できます。',
     'インフェルノビームの強化軸を調整：「数」（ビーム本数）と「持続」を追加、「範囲」を廃止。氷の鈍足強化は「持続」軸に統一しました。']},

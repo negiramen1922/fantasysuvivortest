@@ -10,6 +10,14 @@
 - リザルト画面と設定画面に `VERSION` を表示。
 - お知らせ（`UPDATES` 配列）は**1枠内でバージョン見出しごとに変更点を掲載**（新しい順）。マージ時は `UPDATES` 先頭に新バージョンを追加し `VERSION` を一致させる。
 
+## ver.α1.0.63
+- コンティニュー（復活）機能を追加。敗北時に金貨でその場復活。
+  - `die()` は復活可能（`gold+WALLET.gold>=reviveCost()`）なら `#revive` モーダルを表示、不可なら従来どおり `finish(false)`。
+  - 価格：`reviveCost()=10*2^contUsed`（倍々）。支払いはラン内金貨→所持金貨の順。`state='revive'` でループ一時停止。
+  - `doRevive()`：HP60%回復・3秒無敵・敵弾全消し・半径340の雑魚一掃・リング/フラッシュ演出→`state='playing'` 再開。`saveGame()` で所持金貨の減少を保存。`giveUp()` はリザルトへ。
+  - ランキング対策：`contUsed`/`contFlag` を reset で初期化し、`run_end` に `continues`/`continued` を記録（将来のランキングはコンティニューなし限定）。
+  - 将来：1日1回無料／広告視聴で無料 などは `reviveCost` 周りに差し込み可能な設計。
+
 ## ver.α1.0.62
 - 新強化軸「持続(dur)」を追加（AXN/AXT）。`DURV(w)=AX(dur)+TR(dur)+AX(slow)+TR(slow)`（旧鈍足軸/特性も加算＝後方互換）。
   - 氷/ブリザードの WAX を `slow:3`→`dur:3` に変更。鈍足時間の式を `SLW`→`DURV` に（`slow:2.0+DURV('ice')`、`1.5+DURV('blizzard')`）。既存の鈍足特性はそのまま加算。
