@@ -993,18 +993,18 @@ var ETYPE={
   slimeM:  { nm:'中スライム',         res:0.10, hp:150, spd:56,  r:20, col:'#6ee08a', dark:'#245c35', xp:4, dmg:14, shape:'blob',   pts:34,  sv:0.10 },
   slimeS:  { nm:'小スライム',         res:0.00, hp:48,  spd:70,  r:12, col:'#9ff0b2', dark:'#2f6b42', xp:2, dmg:9,  shape:'blob',   pts:12,  sv:0.05 },
   // ===== ステージ2（森）モンスター =====
-  spirit:  { nm:'スピリット',         res:0.00, hp:20,  spd:88,  r:10, col:'#eaffe0', dark:'#7bbf5a', xp:1, dmg:6,  shape:'spirit',  pts:8,   sv:0.035 },
-  bird:    { nm:'フォレストトード',   res:0.05, hp:55,  spd:66,  r:14, col:'#b98a5e', dark:'#4c3320', xp:2, dmg:10, shape:'bird',    pts:14,  sv:0.06 },
-  myconid: { nm:'マイコニド',         res:0.08, hp:46,  spd:42,  r:13, col:'#c85a4a', dark:'#5a241c', xp:2, dmg:9,  shape:'myconid', pts:12,  sv:0.05 },
-  bee:     { nm:'キラービー',         res:0.00, hp:34,  spd:188, r:14, col:'#e8c24a', dark:'#5a4410', xp:1, dmg:9,  shape:'bee',     pts:10,  sv:0.035, ai:'fly' },
+  spirit:  { nm:'スピリット',         res:0.00, hp:40,  spd:88,  r:10, col:'#eaffe0', dark:'#7bbf5a', xp:1, dmg:10, shape:'spirit',  pts:8,   sv:0.035 },
+  bird:    { nm:'フォレストトード',   res:0.05, hp:70,  spd:66,  r:14, col:'#b98a5e', dark:'#4c3320', xp:2, dmg:10, shape:'bird',    pts:14,  sv:0.06 },
+  myconid: { nm:'マイコニド',         res:0.08, hp:100, spd:42,  r:13, col:'#c85a4a', dark:'#5a241c', xp:2, dmg:9,  shape:'myconid', pts:12,  sv:0.05 },
+  bee:     { nm:'キラービー',         res:0.00, hp:50,  spd:188, r:14, col:'#e8c24a', dark:'#5a4410', xp:1, dmg:15, shape:'bee',     pts:10,  sv:0.035, ai:'fly' },
   panther: { nm:'ブラックパンサー',   res:0.15, hp:95,  spd:155, r:13, col:'#3b3550', dark:'#161320', xp:3, dmg:14, shape:'panther', pts:28,  sv:0.08 },
   dryad:   { nm:'ドライアド',         res:0.12, hp:70,  spd:58,  r:13, col:'#7fae5c', dark:'#35521f', xp:3, dmg:10, shape:'dryad',   pts:28,  sv:0.10,
              ai:'shoot', range:340, acd:2.6, bspd:210, bdmg:12 },
   mantis:  { nm:'グレーターマンティス', res:0.40, hp:150, spd:120, r:15, col:'#6fbf4a', dark:'#2c5a1c', xp:4, dmg:26, shape:'mantis', pts:46,  sv:0.13 },
-  spider:  { nm:'ブラストスパイダー', res:0.10, hp:60,  spd:100, r:12, col:'#8a3a3a', dark:'#3a1414', xp:3, dmg:12, shape:'spider',  pts:30,  sv:0.09,
+  spider:  { nm:'ブラストスパイダー', res:0.10, hp:120, spd:100, r:12, col:'#8a3a3a', dark:'#3a1414', xp:3, dmg:12, shape:'spider',  pts:30,  sv:0.09,
              boom:1, boomR:96, boomDmg:30 },
   beetle:  { nm:'グレータービートル', res:0.65, hp:260, spd:40,  r:20, col:'#5a4632', dark:'#241a10', xp:6, dmg:20, shape:'beetle',  pts:64,  sv:0.15, flat:4 },
-  gnat:    { nm:'スウォームナット',   res:0.00, hp:12,  spd:200, r:7,  col:'#8a7a52', dark:'#3a3020', xp:1, dmg:6,  shape:'gnat',    pts:4,   sv:0.02,  ai:'dash' },
+  gnat:    { nm:'スウォームナット',   res:0.00, hp:20,  spd:200, r:7,  col:'#8a7a52', dark:'#3a3020', xp:1, dmg:6,  shape:'gnat',    pts:4,   sv:0.02,  ai:'dash' },
   treant:  { nm:'トレント',           res:0.62, hp:600, spd:36,  r:23, col:'#6e8a4a', dark:'#33421f', xp:8, dmg:24, shape:'treant',  pts:78,  sv:0.16, flat:5 },
   // ボス専用の見た目（ウェーブには出ない）
   deer:    { nm:'神鹿',   res:0.9, hp:100, spd:60, r:20, col:'#c8b48a', dark:'#5a4a2c', xp:1, dmg:10, shape:'deer',   pts:10, sv:0 },
@@ -1670,7 +1670,7 @@ function figInfo(id){
   if(BOSS[id]){ var B=BOSS[id], tt=ETYPE[B.key]||{}; return {nm:B.nm,shape:tt.shape,col:tt.col,dark:tt.dark,desc:BDEX[id]||'',boss:true}; }
   var t=ETYPE[id]||{}; return {nm:t.nm,shape:t.shape,col:t.col,dark:t.dark,desc:DEX[id]||'',boss:false};
 }
-var VERSION='α1.0.43'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
+var VERSION='α1.0.44'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
 function applySave(o){
   for(var i=0;i<UPG.length;i++) META[UPG[i].id]=0;
   try{
@@ -1968,7 +1968,7 @@ function runWeapons(dt){
   if(P.w.chain   &&ready('chain',   1.45*RATE('chain'),dt))    doChain();
   if(P.w.quake   &&ready('quake',   2.30*RATE('quake'),dt))    doQuake();
   if(P.w.rock    &&ready('rock',    2.30*RATE('rock'),dt)){    doRock(); queueVolley('rock',0.20); }
-  if(P.w.bell    &&ready('bell',    1.70*RATE('bell'),dt))     doBell();
+  if(P.w.bell    &&ready('bell',    2.00*RATE('bell'),dt))     doBell();
   if(P.w.dhand   &&ready('dhand',   1.15*RATE('dhand'),dt))    doDhand();
   if(P.w.voidh   &&ready('voidh',   3.20*RATE('voidh'),dt))    doVoid();
   if(P.w.holy    &&ready('holy',    1.20*RATE('holy'),dt)){    doHoly(); queueVolley('holy',0.11); }
@@ -2022,7 +2022,7 @@ function doMusket(){
 // アイスブリザード：自身を中心に吹雪をまとう
 function doBlizzard(){
   SRC='blizzard';
-  var rad=78*AREA('blizzard'), dmg=5*DMG('blizzard')*pw('blizzard');
+  var rad=78*AREA('blizzard'), dmg=7*DMG('blizzard')*pw('blizzard');
   var sl=1.5+SLW('blizzard'), n=0;
   for(var i=enemies.length-1;i>=0;i--){
     var e=enemies[i];
@@ -2597,7 +2597,7 @@ function moveRocks(dt){
 
 // ベル：音の波紋が自分を中心に広がる。通り過ぎた敵を1度ずつ打つ。
 function doBell(){
-  var n=1+CNT('bell'), mx=190*AREA('bell'), dmg=11*DMG('bell')*pw('bell');
+  var n=1+CNT('bell'), mx=190*AREA('bell'), dmg=7*DMG('bell')*pw('bell');
   for(var i=0;i<n;i++)
     bells.push({ x:P.x, y:P.y, r:0, pr:0, max:mx, dmg:dmg, t:-i*0.18, hit:[] });
   sfx(1568,.32,'sine',.055,.42);
@@ -5935,6 +5935,9 @@ Array.prototype.forEach.call(document.querySelectorAll('#setshake button'),funct
 // 更新履歴：1つのお知らせ内で「バージョン見出し」ごとに変更点を並べる（新しい順）。
 // マージのたびに先頭へ新バージョンを追加し、VERSION も更新する。
 var UPDATES=[
+  {v:'α1.0.44', items:[
+    'バランス調整：森の一部モンスター（スピリット/キラービー/トード/マイコニド/スパイダー/羽虫）を強化。',
+    'ベルを弱体化（威力・頻度ダウン）、アイスブリザードの威力を微増。']},
   {v:'α1.0.43', items:[
     '敗北時のリザルトに「死因」を表示するようにしました。',
     'プレイ状況の解析項目を拡充（開始/死因/レベルアップ選択/武器勝率/到達ウェーブ）。バランス調整に活用します。']},
