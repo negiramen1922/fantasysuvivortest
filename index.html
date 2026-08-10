@@ -1095,7 +1095,7 @@ var BOSS={
   gravekeeper:{ nm:'墓守',             res:0.92, key:'skeleton', hp:40000,  r:46, spd:56, dmg:42, xp:1300, pts:16000,
                ai:'gravekeeper', acd:2.2, nbul:18, bspd:250, bdmg:18 },
   skeletonking:{ nm:'スケルトンキング', res:0.94, key:'skeleton', hp:90000,  r:48, spd:60, dmg:46, xp:1700, pts:24000,
-               ai:'slam', acd:3.4, wind:0.8, nbul:20, bspd:250, bdmg:18 },
+               ai:'sking', acd:2.6, wind:0.8, nbul:20, bspd:250, bdmg:18 },
   hecaton:    { nm:'ヘカトンケイル',   res:0.95, key:'mummy',    hp:175000, r:54, spd:44, dmg:48, xp:2000, pts:40000,
                ai:'slam', acd:3.2, wind:0.8, nbul:24, bspd:240, bdmg:18 },
   skeledragon:{ nm:'スケルトンドラゴン', res:0.96, key:'gargoyle', hp:340000, r:56, spd:100, dmg:54, xp:2600, pts:70000,
@@ -1733,7 +1733,7 @@ function figInfo(id){
   if(BOSS[id]){ var B=BOSS[id], tt=ETYPE[B.key]||{}; return {nm:B.nm,shape:tt.shape,col:tt.col,dark:tt.dark,desc:BDEX[id]||'',boss:true}; }
   var t=ETYPE[id]||{}; return {nm:t.nm,shape:t.shape,col:t.col,dark:t.dark,desc:DEX[id]||'',boss:false};
 }
-var VERSION='α1.0.48'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
+var VERSION='α1.0.49'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
 function applySave(o){
   for(var i=0;i<UPG.length;i++) META[UPG[i].id]=0;
   try{
@@ -3222,6 +3222,51 @@ function moveEnemies(dt){
         e.st='boomerang'; e.stT=1.7; e.gt=0; e.gx=e.x; e.gy=e.y;
         var ga=Math.atan2(dy,dx); e.gvx=Math.cos(ga)*560; e.gvy=Math.sin(ga)*560;
         sfx(300,.14,'square',.06,0.8);
+      }
+    }
+    else if(e.ai==='sking'){
+      // スケルトンキング：骨弾ノヴァ／配下召喚／剣を担いだ突進コンボ を巡回
+      if(e.st==='nova'){
+        e.btick-=dt; moved=1;
+        if(e.btick<=0){ e.btick=0.36;
+          var noff=e.bc*0.21+Math.random()*0.1;
+          for(var sk=0;sk<e.nbul;sk++) eshoot(e,sk/e.nbul*6.283+noff,e.bspd,e.bdmg);
+          fx.push({k:'ring',x:e.x,y:e.y,r:0,to:130,t:0,life:.32,col:'#dfeaff'});
+          shake=Math.min(18,shake+5); sfx(150,.18,'square',.06,1.3);
+          e.bc++; if(e.bc>=3){ e.st=''; e.at=e.acd; }
+        }
+      }
+      else if(e.st==='summon'){
+        e.stT-=dt; moved=1;
+        if(e.stT<=0){
+          for(var sm=0;sm<3;sm++){ var san=Math.random()*6.283, so=makeEnemy('skeleton'); so.x=e.x+Math.cos(san)*(e.r+40); so.y=e.y+Math.sin(san)*(e.r+40); }
+          var shn=Math.random()*6.283, sho=makeEnemy('shieldman'); sho.x=e.x+Math.cos(shn)*(e.r+46); sho.y=e.y+Math.sin(shn)*(e.r+46);
+          fx.push({k:'ring',x:e.x,y:e.y,r:0,to:110,t:0,life:.36,col:'#a8e06a'});
+          sfx(280,.24,'square',.06,1.7); e.st=''; e.at=e.acd;
+        }
+      }
+      else if(e.st==='swwind'){        // 突進コンボの予備動作（赤い扇の予告）
+        e.stT-=dt; moved=1; e.x+=dx/d*e.spd*0.6*dt; e.y+=dy/d*e.spd*0.6*dt;
+        if(e.stT<=0){ e.st='swing'; e.stT=0.22; e.swung=0; }
+      }
+      else if(e.st==='swing'){         // 踏み込み斬り
+        e.stT-=dt; moved=1; e.x+=dx/d*e.spd*2.6*dt; e.y+=dy/d*e.spd*2.6*dt;
+        if(!e.swung){ e.swung=1;
+          fx.push({k:'slash',x:e.x+dx/d*(e.r+22),y:e.y+dy/d*(e.r+22),a:Math.atan2(dy,dx),arc:1.9,rad:e.r+74,t:0,life:.2,col:'#dfeaff'});
+          sfx(300,.09,'square',.06,0.65);
+          if(d<e.r+104&&P.hurt<=0&&P.inv<=0&&!P.god){
+            P.hp-=e.dmg*(1-0.04*M('armor'))*(1-0.03*(P.p.bulwark||0))*dexTakeMul(figKey(e)); P.hurt=0.55; shake=Math.min(16,shake+6);
+            if(P.hp<=0){ P.hp=0; setKiller(e); die(); return; }
+          }
+        }
+        if(e.stT<=0){ e.combo--; if(e.combo>0){ e.st='swwind'; e.stT=0.3; } else { e.st=''; e.at=e.acd; } }
+      }
+      else if(e.at<=0&&d<720){
+        e.seq=(e.seq==null?0:e.seq+1);
+        var pick=e.seq%3;                // ノヴァ→召喚→突進コンボ を巡回
+        if(pick===0){ e.st='nova'; e.bc=0; e.btick=0; sfx(120,.16,'square',.06,0.9); }
+        else if(pick===1){ e.st='summon'; e.stT=0.5; sfx(200,.14,'square',.05,1.1); }
+        else { e.st='swwind'; e.combo=3; e.stT=0.34; e.swung=0; }
       }
     }
     else if(e.ai==='fenrir'){
@@ -6164,6 +6209,8 @@ Array.prototype.forEach.call(document.querySelectorAll('#setshake button'),funct
 // 更新履歴：1つのお知らせ内で「バージョン見出し」ごとに変更点を並べる（新しい順）。
 // マージのたびに先頭へ新バージョンを追加し、VERSION も更新する。
 var UPDATES=[
+  {v:'α1.0.49', items:[
+    'ステージ3 ボス2「スケルトンキング」の本来の動きを実装：骨弾ノヴァ→配下召喚（盾の戦士など）→剣を担いだ突進コンボ を巡回。']},
   {v:'α1.0.48', items:[
     'ステージ3 ボス1「墓守」の本来の動きを実装：十字の墓をブーメラン投げ→地面に突き刺し→全方位弾幕×3。']},
   {v:'α1.0.47', items:[
