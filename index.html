@@ -1733,7 +1733,7 @@ function figInfo(id){
   if(BOSS[id]){ var B=BOSS[id], tt=ETYPE[B.key]||{}; return {nm:B.nm,shape:tt.shape,col:tt.col,dark:tt.dark,desc:BDEX[id]||'',boss:true}; }
   var t=ETYPE[id]||{}; return {nm:t.nm,shape:t.shape,col:t.col,dark:t.dark,desc:DEX[id]||'',boss:false};
 }
-var VERSION='α1.0.51'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
+var VERSION='α1.0.52'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
 function applySave(o){
   for(var i=0;i<UPG.length;i++) META[UPG[i].id]=0;
   try{
@@ -2032,7 +2032,7 @@ function runWeapons(dt){
   if(P.w.chain   &&ready('chain',   1.45*RATE('chain'),dt))    doChain();
   if(P.w.quake   &&ready('quake',   2.30*RATE('quake'),dt))    doQuake();
   if(P.w.rock    &&ready('rock',    2.30*RATE('rock'),dt)){    doRock(); queueVolley('rock',0.20); }
-  if(P.w.bell    &&ready('bell',    2.00*RATE('bell'),dt))     doBell();
+  if(P.w.bell    &&ready('bell',    3.00*RATE('bell'),dt))     doBell();
   if(P.w.dhand   &&ready('dhand',   1.15*RATE('dhand'),dt))    doDhand();
   if(P.w.voidh   &&ready('voidh',   3.20*RATE('voidh'),dt))    doVoid();
   if(P.w.holy    &&ready('holy',    1.20*RATE('holy'),dt)){    doHoly(); queueVolley('holy',0.11); }
@@ -2661,7 +2661,7 @@ function moveRocks(dt){
 
 // ベル：音の波紋が自分を中心に広がる。通り過ぎた敵を1度ずつ打つ。
 function doBell(){
-  var n=1+CNT('bell'), mx=190*AREA('bell'), dmg=7*DMG('bell')*pw('bell');
+  var n=1+CNT('bell'), mx=155*AREA('bell'), dmg=7*DMG('bell')*pw('bell');
   for(var i=0;i<n;i++)
     bells.push({ x:P.x, y:P.y, r:0, pr:0, max:mx, dmg:dmg, t:-i*0.18, hit:[] });
   sfx(1568,.32,'sine',.055,.42);
@@ -6300,6 +6300,8 @@ Array.prototype.forEach.call(document.querySelectorAll('#setshake button'),funct
 // 更新履歴：1つのお知らせ内で「バージョン見出し」ごとに変更点を並べる（新しい順）。
 // マージのたびに先頭へ新バージョンを追加し、VERSION も更新する。
 var UPDATES=[
+  {v:'α1.0.52', items:[
+    'ベルをさらに弱体化：発生間隔 2.0→3.0秒、最大範囲を縮小（覚醒の往復＋範囲拡大で画面全体をカバーする問題への対応）。']},
   {v:'α1.0.51', items:[
     'ステージ3 ラストボス「スケルトンドラゴン」の本来の動きを実装：滞空突進→扇＋全方位の混成弾幕→極太ブレス。これでステージ3のボス4体がすべて本来の動きになりました。']},
   {v:'α1.0.50', items:[
