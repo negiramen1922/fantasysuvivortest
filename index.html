@@ -1735,7 +1735,7 @@ function figInfo(id){
   if(BOSS[id]){ var B=BOSS[id], tt=ETYPE[B.key]||{}; return {nm:B.nm,shape:tt.shape,col:tt.col,dark:tt.dark,desc:BDEX[id]||'',boss:true}; }
   var t=ETYPE[id]||{}; return {nm:t.nm,shape:t.shape,col:t.col,dark:t.dark,desc:DEX[id]||'',boss:false};
 }
-var VERSION='α1.0.56'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
+var VERSION='α1.0.57'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
 function applySave(o){
   for(var i=0;i<UPG.length;i++) META[UPG[i].id]=0;
   try{
@@ -2956,7 +2956,7 @@ function checkBoss(){
 }
 function spawnBoss(key){
   var B=BOSS[key], t=ETYPE[B.key];
-  var scale=1+time/60*0.63, dscale=1+time/60*0.16;   // 攻撃力の伸びを緩和（ワンパン対策）
+  var scale=1+time/60*0.63, dscale=1+time/60*0.13;   // 攻撃力の伸びを緩和（ワンパン対策）
   var a=Math.random()*6.283, dist=Math.hypot(W,H)/2+90;
   var bhp=B.hp*bossHpMul;
   var e={ k:B.key, bkey:key, boss:1, last:B.last||0,
@@ -2998,7 +2998,7 @@ function makeEnemy(k){
   }
   var a=Math.random()*Math.PI*2;
   var dist=Math.hypot(W,H)/2+60+Math.random()*120;
-  var scale=1+time/60*0.63, dscale=1+time/60*0.16;   // 攻撃力の伸びを緩和（ワンパン対策）
+  var scale=1+time/60*0.63, dscale=1+time/60*0.13;   // 攻撃力の伸びを緩和（ワンパン対策）
   var e={ k:k, nm:t.nm, x:P.x+Math.cos(a)*dist, y:P.y+Math.sin(a)*dist,
     hp:t.hp*scale, mhp:t.hp*scale, spd:t.spd*(0.9+Math.random()*0.25), r:t.r,
     col:t.col, dark:t.dark, xp:t.xp, dmg:t.dmg*dscale, shape:t.shape, pts:t.pts,
@@ -3275,14 +3275,16 @@ function moveEnemies(dt){
         e.stT-=dt; moved=1;
         if(e.stT<=0){ e.st='kdash'; e.stT=e.chdur||0.85; e.vx=Math.cos(e.aimA)*(e.chspd||560); e.vy=Math.sin(e.aimA)*(e.chspd||560); sfx(150,.16,'sawtooth',.05,.6); }
       }
-      else if(e.st==='kdash'){         // 3連続突進
+      else if(e.st==='kdash'){         // 3連続突進（突進のたびに全方位弾幕）
         e.stT-=dt; moved=1; e.x+=e.vx*dt; e.y+=e.vy*dt;
-        if(e.stT<=0){ e.dashN--;
+        if(e.stT<=0){
+          for(var kk=0;kk<e.nbul;kk++) eshoot(e,kk/e.nbul*6.283+Math.random()*0.15,e.bspd,e.bdmg);   // 各突進後に全方位弾幕
+          fx.push({k:'ring',x:e.x,y:e.y,r:0,to:140,t:0,life:.35,col:'#dfeaff'});
+          shake=Math.min(20,shake+8); sfx(140,.18,'square',.06,1.2);
+          e.dashN--;
           if(e.dashN>0){ e.st='kcwind'; e.stT=0.30; e.aimA=Math.atan2(dy,dx); }
-          else{                        // 3連突進のあと：自身から全方位弾幕＋墓落下の警告
-            for(var kk=0;kk<e.nbul;kk++) eshoot(e,kk/e.nbul*6.283+Math.random()*0.15,e.bspd,e.bdmg);
-            fx.push({k:'ring',x:e.x,y:e.y,r:0,to:150,t:0,life:.4,col:'#dfeaff'});
-            shake=Math.min(24,shake+14); sfx(90,.3,'sawtooth',.1,.4); noise(.3,.12);
+          else{                        // 3連突進のあと：墓落下の警告
+            sfx(90,.3,'sawtooth',.1,.4); noise(.3,.12);
             e.graves=[]; for(var gv=0;gv<5;gv++){ var gva=Math.random()*6.283, gvd=Math.random()*220; e.graves.push({x:P.x+Math.cos(gva)*gvd, y:P.y+Math.sin(gva)*gvd, t:0.85}); }
             e.st='kgrave';
           }
@@ -3344,7 +3346,7 @@ function moveEnemies(dt){
       }
       else if(e.st==='laser'){                           // 8方向ビーム（回転・プレイヤー狙い）
         moved=1; e.stT-=dt;
-        e.beamSweep+=e.beamDir*1.5*dt;
+        e.beamSweep+=e.beamDir*0.7*dt;                 // 回転を遅く（避けやすく）
         if(!P.god&&P.hurt<=0&&P.inv<=0){
           var pa=Math.atan2(P.y-e.y,P.x-e.x);
           for(var lz=0;lz<8;lz++){ var la=e.beamA+e.beamSweep+lz*(6.283/8);
@@ -3368,7 +3370,9 @@ function moveEnemies(dt){
       if(e.st==='cwind'){ e.stT-=dt; moved=1;
         if(e.stT<=0){ e.st='dash'; e.stT=e.chdur; e.vx=dx/d*e.chspd; e.vy=dy/d*e.chspd; sfx(150,.16,'sawtooth',.06,.6); } }
       else if(e.st==='dash'){ e.stT-=dt; moved=1; e.x+=e.vx*dt; e.y+=e.vy*dt;
-        if(e.stT<=0){ e.st='mix'; e.mtick=0; e.mc=0; } }
+        if(e.stT<=0){ e.dashN--;
+          if(e.dashN>0){ e.st='cwind'; e.stT=e.wind*0.6; }   // 2連続突進
+          else{ e.st='mix'; e.mtick=0; e.mc=0; } } }
       else if(e.st==='mix'){
         e.mtick-=dt; moved=1;
         if(e.mtick<=0){ e.mtick=0.5;
@@ -3389,14 +3393,14 @@ function moveEnemies(dt){
         // 根本から太い直線ビーム：ビーム線への垂直距離で判定
         var brel=Math.atan2(P.y-e.y,P.x-e.x)-e.beamA; brel=Math.atan2(Math.sin(brel),Math.cos(brel));
         var balong=d*Math.cos(brel), bperp=Math.abs(d*Math.sin(brel));
-        if(!P.god&&P.hurt<=0&&P.inv<=0&&balong>-e.r&&balong<1700&&bperp<78){
+        if(!P.god&&P.hurt<=0&&P.inv<=0&&balong>-e.r&&balong<1700&&bperp<117){
           P.hp-=e.dmg*(1-0.04*M('armor'))*(1-0.03*(P.p.bulwark||0))*dexTakeMul(figKey(e))*2.2*dt;
           shake=Math.min(20,shake+2);
           if(P.hp<=0){ P.hp=0; setKiller(e); die(); return; }
         }
         if(e.stT<=0){ e.st=''; e.at=e.acd; }
       }
-      else if(e.at<=0&&d<900){ e.st='cwind'; e.stT=e.wind; sfx(300,.14,'square',.06,0.8); }
+      else if(e.at<=0&&d<900){ e.st='cwind'; e.stT=e.wind; e.dashN=2; sfx(300,.14,'square',.06,0.8); }
     }
     else if(e.ai==='fenrir'){
       // フェンリル：2方向へ渦を描く弾幕（ﾊﾟﾊﾟﾊﾟ…）→突進→突進終わりに全方位弾幕
@@ -4973,7 +4977,7 @@ function blobHop(e){
 var SPRSZ={blob:{s:3.0,oy:0.35}, goblin:{s:3.2,oy:0.55}, orc:{s:3.0,oy:0.50},
   hog:{s:3.2,oy:0.30}, hog_boss:{s:2.7,oy:0.28}, bat:{s:3.6,oy:0.10}, spirit:{s:3.4,oy:0.10},
   cyclops:{s:2.9,oy:0.50}, wolf:{s:3.3,oy:0.35}, fenrir:{s:2.7,oy:0.35}, turtle:{s:3.0,oy:0.35},
-  goat:{s:3.1,oy:0.45}, harpy:{s:3.4,oy:0.15}, slimeking:{s:2.7,oy:0.28}};
+  goat:{s:3.1,oy:0.45}, harpy:{s:4.4,oy:0.15}, slimeking:{s:2.7,oy:0.28}};
 // 毒の沼（ブーマー）：緑の沼＋泡。消える直前にフェード。
 function drawPuddle(q){
   var a=Math.min(1,q.life/1.2)*0.55;
@@ -5166,14 +5170,14 @@ function drawEnemy(e){
     ctx.save(); ctx.rotate(ba2);
     if(e.st==='beamwind'){
       ctx.globalAlpha=0.20+0.14*Math.sin(time*26); ctx.fillStyle='#ff5a3a';
-      ctx.fillRect(0,-78,bL,156);                       // 予告：極太の範囲を薄く表示
+      ctx.fillRect(0,-117,bL,234);                      // 予告：極太の範囲を薄く表示
       ctx.globalAlpha=0.7; ctx.strokeStyle='#ffb08a'; ctx.lineWidth=2;
       ctx.beginPath(); ctx.moveTo(0,0); ctx.lineTo(bL,0); ctx.stroke();
       ctx.globalAlpha=1;
     }else{
-      ctx.globalAlpha=0.55; ctx.fillStyle='#ff8a2f'; ctx.fillRect(0,-78,bL,156);     // 外側
-      ctx.globalAlpha=0.9;  ctx.fillStyle='#ffd27a'; ctx.fillRect(0,-52,bL,104);     // 中間
-      ctx.globalAlpha=0.98; ctx.fillStyle='#fff2c0'; ctx.fillRect(0,-30,bL,60);      // 芯
+      ctx.globalAlpha=0.55; ctx.fillStyle='#ff8a2f'; ctx.fillRect(0,-117,bL,234);    // 外側
+      ctx.globalAlpha=0.9;  ctx.fillStyle='#ffd27a'; ctx.fillRect(0,-78,bL,156);     // 中間
+      ctx.globalAlpha=0.98; ctx.fillStyle='#fff2c0'; ctx.fillRect(0,-45,bL,90);      // 芯
       ctx.globalAlpha=1;
     }
     ctx.restore();
@@ -6457,6 +6461,12 @@ Array.prototype.forEach.call(document.querySelectorAll('#setshake button'),funct
 // 更新履歴：1つのお知らせ内で「バージョン見出し」ごとに変更点を並べる（新しい順）。
 // マージのたびに先頭へ新バージョンを追加し、VERSION も更新する。
 var UPDATES=[
+  {v:'α1.0.57', items:[
+    '敵の攻撃力の伸びをさらに緩和（ワンパン軽減）。',
+    'スケルトンキング：突進のたびに全方位弾幕を出すように。',
+    'ヘカトンケイル：ビームの回転を遅く（避けやすく）。',
+    'スケルトンドラゴン：突進を2連続に。ブレスを1.5倍太く。',
+    'ハーピーの見た目を大きくしました。']},
   {v:'α1.0.56', items:[
     'バランス調整：敵の攻撃力の時間による伸びを緩和しました（終盤の事故ワンパンを軽減）。']},
   {v:'α1.0.55', items:[
