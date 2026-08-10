@@ -915,6 +915,8 @@ var WEAPONS={
     tx:'放物線を描いて投げ、着弾地点で爆発する。' },
   fire:{ nm:'ファイヤーボール', glyph:'\u{1F525}', tag:'炎', max:10,
     tx:'最寄りの敵へ火球を放つ。当たると爆発し、貫通しながら数が増えていく。' },
+  inferno:{ nm:'インフェルノビーム', glyph:'☄', tag:'炎', max:10,
+    tx:'最寄りの敵へ灼熱のビームを照射し続ける。同じ敵に当て続けるほど、じわじわ火力が上がっていく。' },
   flame:{ nm:'焔輪', glyph:'\u{1F7E0}', tag:'炎', max:10,
     tx:'火の玉が周囲を巡る。触れた敵を焼き続ける。' },
   ice:{ nm:'アイスジャベリン', glyph:'\u2744', tag:'氷', max:10,
@@ -1375,6 +1377,17 @@ var WTRAIT={
      {id:'j3b',nm:'分光',tx:'光線 +1 本',ef:{count:1}},
      {id:'j3c',nm:'極光',tx:'光線の太さ +50%',ef:{area:.50}}]
   ],
+  inferno:[
+    [{id:'if1a',nm:'高熱',tx:'ダメージ +22%',ef:{dmg:.22}},
+     {id:'if1b',nm:'集束',tx:'ビームの太さ +22%',ef:{area:.22}},
+     {id:'if1c',nm:'加熱促進',tx:'火力の上がり方が速くなる',ef:{rampfast:1}}],
+    [{id:'if2a',nm:'超高熱',tx:'ダメージ +34%',ef:{dmg:.34}},
+     {id:'if2b',nm:'太束',tx:'ビームの太さ +35%',ef:{area:.35}},
+     {id:'if2c',nm:'過熱限界',tx:'火力の最大倍率が上がる',ef:{rampcap:1}}],
+    [{id:'if3a',nm:'獄炎',tx:'ダメージ +50%',ef:{dmg:.50}},
+     {id:'if3b',nm:'灼熱維持',tx:'標的を変えても火力が下がりにくい',ef:{rampkeep:1}},
+     {id:'if3c',nm:'極束',tx:'ビームの太さ +50%',ef:{area:.50}}]
+  ],
   bell:[
     [{id:'e1a',nm:'音圧',tx:'ダメージ +22%',ef:{dmg:.22}},
      {id:'e1b',nm:'広響',tx:'波紋の範囲 +22%',ef:{area:.22}},
@@ -1449,7 +1462,7 @@ function TR(wid,key){
 function TF(wid,key){ return TR(wid,key)>0; }
 // 武器の系統。同系統は波及が厚くなる
 var WCAT={ slash:'剣技', scythe:'剣技', chakram:'剣技', bow:'射撃', dynamite:'射撃',
-           fire:'炎', flame:'炎', ice:'氷', thunder:'雷', chain:'雷',
+           fire:'炎', flame:'炎', inferno:'炎', ice:'氷', thunder:'雷', chain:'雷',
            quake:'土', rock:'土', voidh:'闇', dhand:'闇', holy:'光', aura:'光',
            bell:'音', chainsaw:'剣技', musket:'射撃', blizzard:'氷', laser:'光', gatling:'射撃' };
 var SPILL_SAME=0.10, SPILL_OTHER=0.05;
@@ -1481,7 +1494,7 @@ var AXT={ dmg:'ダメージ +45%', area:'範囲 +18%', rate:'間隔 −15%', cou
 var WKIND={ slash:'phys', scythe:'phys', chakram:'phys', bow:'phys', dynamite:'phys',
             quake:'phys', rock:'phys', bell:'phys', chainsaw:'phys', musket:'phys',
             blizzard:'mag', laser:'mag',
-            fire:'mag', flame:'mag', ice:'mag', thunder:'mag', chain:'mag',
+            fire:'mag', flame:'mag', ice:'mag', thunder:'mag', chain:'mag', inferno:'mag',
             holy:'mag', aura:'mag', voidh:'mag', dhand:'mag', gatling:'phys' };
 var WAX={
   slash:   { dmg:5, area:4, rate:3 },
@@ -1505,16 +1518,17 @@ var WAX={
   musket:  { dmg:4, rate:3, burst:5, ammo:3, range:2 },
   blizzard:{ dmg:4, area:3, rate:3, slow:3 },
   laser:   { dmg:3, count:4, rate:3, area:3 },
+  inferno: { dmg:4, area:3, rate:3, range:3 },
   gatling: { dmg:5, rate:4, count:3, pierce:3, ammo:3, range:3 }
 };
 // Lv10 到達で覚醒。数値ではなく挙動が変わる。
-var AWK={ chainsaw:'暴走鋸', musket:'貫通弾', blizzard:'絶対氷結', laser:'追尾光線',
+var AWK={ chainsaw:'暴走鋸', musket:'貫通弾', blizzard:'絶対氷結', laser:'追尾光線', inferno:'業炎照射',
   slash:'飛翔斬撃', scythe:'死神の鎌', chakram:'二重円', bow:'貫き矢',
   dynamite:'連鎖爆破', bell:'共鳴', quake:'地割れ', rock:'巨岩',
   fire:'爆炎弾', flame:'業火輪', ice:'氷結槍', thunder:'落雷嵐',
   chain:'無限連鎖', holy:'聖裁', aura:'審判の剣', voidh:'特異点', dhand:'深淵の手',
   gatling:'双掃射' };
-var AWT={ chainsaw:'前方だけでなく全方位を削るようになる', musket:'弾が敵を貫通する',
+var AWT={ chainsaw:'前方だけでなく全方位を削るようになる', musket:'弾が敵を貫通する', inferno:'ビームが太く強くなり、当てている敵を延焼させ続ける',
   blizzard:'吹雪の中の敵をときどき凍結させる', laser:'光線が回転しながら残り続ける',
   slash:'斬撃が飛ぶようになる', scythe:'戻りの威力減衰がなくなる',
   chakram:'軌道が内外2重になり、内側は逆回転', bow:'貫通するたび威力が上がる（最大3倍）',
@@ -1570,7 +1584,7 @@ function lbOK(w,k){
 // 間合いによる火力補正：近接ほど高く、遠距離ほど低い（射程との住み分け）
 var WCLASS={ slash:'melee', chainsaw:'melee',
   chakram:'self', flame:'self', blizzard:'self', bell:'self', laser:'self', aura:'self', voidh:'self',
-  scythe:'mid', dhand:'mid', dynamite:'mid', quake:'mid', musket:'mid',
+  scythe:'mid', dhand:'mid', dynamite:'mid', quake:'mid', musket:'mid', inferno:'mid',
   fire:'long', ice:'long', bow:'long', holy:'long', thunder:'long', chain:'long', rock:'long', gatling:'long' };
 var CLMUL={ melee:1.15, self:1.0, mid:1.0, long:0.78 };
 function RCM(w){ return CLMUL[WCLASS[w]||'mid']; }
@@ -1589,7 +1603,7 @@ function SPL(w){ return AX(w,'split')*2+TR(w,'split'); }
 // 基本射程は「おおむね画面内」に収める（射程軸を伸ばすと画面外まで届く）。
 var WRNG={
   scythe:{base:380,cat:'中'},
-  dhand:{base:300,cat:'中'}, dynamite:{base:360,cat:'中'}, quake:{base:400,cat:'中'}, musket:{base:320,cat:'中'},
+  dhand:{base:300,cat:'中'}, dynamite:{base:360,cat:'中'}, quake:{base:400,cat:'中'}, musket:{base:320,cat:'中'}, inferno:{base:460,cat:'中'},
   chain:{base:460,cat:'長'}, thunder:{base:460,cat:'長'},
   fire:{base:520,cat:'長'}, ice:{base:520,cat:'長'}, bow:{base:560,cat:'長'},
   holy:{base:520,cat:'長'}, rock:{base:540,cat:'長'}, gatling:{base:560,cat:'長'} };
@@ -1743,7 +1757,7 @@ function figInfo(id){
   if(BOSS[id]){ var B=BOSS[id], tt=ETYPE[B.key]||{}; return {nm:B.nm,shape:tt.shape,col:tt.col,dark:tt.dark,desc:BDEX[id]||'',boss:true}; }
   var t=ETYPE[id]||{}; return {nm:t.nm,shape:t.shape,col:t.col,dark:t.dark,desc:DEX[id]||'',boss:false};
 }
-var VERSION='α1.0.60'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
+var VERSION='α1.0.61'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
 function applySave(o){
   for(var i=0;i<UPG.length;i++) META[UPG[i].id]=0;
   try{
@@ -1813,7 +1827,7 @@ function reset(){
   dpsVal=0; dpmVal=0; dmgSec=0; dmgRing=[]; dmgRingI=0; dpsClock=1;
   dexQueue.length=0;
   score=0; silver=0; gold=0; magFx=0; chakSpin=0; wxRun={}; lastCd={}; coolMax={}; WDMG={};
-  KILLER=null;
+  KILLER=null; INF={tgt:0,ramp:0,tick:0,on:false,ex:0,ey:0};
   slotSig='';
   cool={};
   syncHud();
@@ -2026,6 +2040,7 @@ function doGatling(dt){
 }
 function runWeapons(dt){
   if(P.w.gatling) doGatling(dt);
+  if(P.w.inferno) infernoTick(dt);
   if(P.w.chainsaw&&ready('chainsaw',0.20*RATE('chainsaw'),dt)) doChain2();
   if(P.w.musket  &&ready('musket',  1.50*RATE('musket'),dt)){  doMusket(); queueVolley('musket',0.13); }
   if(P.w.blizzard&&ready('blizzard',1.10*RATE('blizzard'),dt)) doBlizzard();
@@ -2167,6 +2182,41 @@ function drawLaser(L){
   ctx.fillStyle='#ffffff'; ctx.fillRect(0,-L.w*1.9,L.len,L.w*3.8);
   ctx.globalAlpha=(1-k)*0.95;
   ctx.fillStyle='#ffffff'; ctx.fillRect(0,-L.w*0.55,L.len,L.w*1.1);
+  ctx.globalAlpha=1; ctx.restore();
+}
+// インフェルノビーム：最寄りの敵へ照射し続け、同じ敵に当て続けるほど火力が上がる（ramp）。
+var INF={tgt:0, ramp:0, tick:0, on:false, ex:0, ey:0};
+function infernoTick(dt){
+  var e=nearest(P.x,P.y,RNG('inferno'));
+  var keep=TF('inferno','rampkeep')||AW('inferno');
+  if(!e){ INF.on=false; INF.ramp=Math.max(0,INF.ramp-(keep?dt*0.6:dt*2.5)); if(INF.ramp<=0) INF.tgt=0; return; }
+  INF.on=true; INF.ex=e.x; INF.ey=e.y;
+  var rate=TF('inferno','rampfast')?1.5:1.0;                       // ランプ上昇速度
+  var cap=(TF('inferno','rampcap')?3.5:2.5)+(AW('inferno')?1:0);   // ランプ最大（加算倍率）
+  if(e.uid===INF.tgt){ INF.ramp=Math.min(cap,INF.ramp+dt*rate); }
+  else{ INF.tgt=e.uid; INF.ramp=keep?Math.max(0,INF.ramp-dt*1.5):0; }
+  var mul=1+INF.ramp;                                              // 1.0 → (1+cap) 倍
+  INF.tick-=dt;
+  if(INF.tick<=0){ INF.tick=0.12*RATE('inferno');
+    SRC='inferno';
+    var dx=e.x-P.x, dy=e.y-P.y, dd=Math.hypot(dx,dy)||1;
+    hurt(e, 20*DMG('inferno')*pw('inferno')*mul*0.12, dx/dd, dy/dd, 'fire');
+    if(AW('inferno')){ e.dotD=Math.max(e.dotD,20*DMG('inferno')*pw('inferno')*mul*0.25); e.dotT=Math.max(e.dotT,1.0); e.dotC='#ff7a2f'; }
+    SRC=null; wgain('inferno',1);
+  }
+}
+function drawInferno(){
+  if(!P.w.inferno||!INF.on) return;
+  var w=(6+INF.ramp*4)*AREA('inferno'), g=Math.min(1,0.45+INF.ramp*0.2);
+  ctx.save();
+  ctx.globalAlpha=0.45*g; ctx.strokeStyle='#ff5a1f'; ctx.lineWidth=w*2;
+  ctx.beginPath(); ctx.moveTo(P.x,P.y); ctx.lineTo(INF.ex,INF.ey); ctx.stroke();
+  ctx.globalAlpha=0.85*g; ctx.strokeStyle='#ffb14d'; ctx.lineWidth=w;
+  ctx.beginPath(); ctx.moveTo(P.x,P.y); ctx.lineTo(INF.ex,INF.ey); ctx.stroke();
+  ctx.globalAlpha=1; ctx.strokeStyle='#fff2c0'; ctx.lineWidth=Math.max(2,w*0.4);
+  ctx.beginPath(); ctx.moveTo(P.x,P.y); ctx.lineTo(INF.ex,INF.ey); ctx.stroke();
+  ctx.globalAlpha=0.6*g; ctx.fillStyle='#ffcf8a';
+  ctx.beginPath(); ctx.arc(INF.ex,INF.ey,w*0.9,0,6.3); ctx.fill();
   ctx.globalAlpha=1; ctx.restore();
 }
 function drawSaw(f){
@@ -4397,6 +4447,7 @@ function render(){
   for(i=0;i<shots.length;i++) drawShot(shots[i]);
   for(i=0;i<ebul.length;i++) drawEbul(ebul[i]);
   for(i=0;i<lasers.length;i++) drawLaser(lasers[i]);
+  drawInferno();
   for(i=0;i<chaks.length;i++) drawChak(chaks[i]);
   for(i=0;i<scys.length;i++) drawScy(scys[i]);
   for(i=0;i<bombs.length;i++) drawBomb(bombs[i]);
@@ -6469,6 +6520,8 @@ Array.prototype.forEach.call(document.querySelectorAll('#setshake button'),funct
 // 更新履歴：1つのお知らせ内で「バージョン見出し」ごとに変更点を並べる（新しい順）。
 // マージのたびに先頭へ新バージョンを追加し、VERSION も更新する。
 var UPDATES=[
+  {v:'α1.0.61', items:[
+    '新武器「インフェルノビーム」を追加！最寄りの敵へビームを照射し続け、同じ敵に当て続けるほど火力が上がっていきます（覚醒で延焼＋極太化）。']},
   {v:'α1.0.60', items:[
     '設定に「完全リセット」を追加。すべてのデータを消して最初から遊び直せます（確認2回・ログイン中はクラウドセーブも削除）。']},
   {v:'α1.0.59', items:[

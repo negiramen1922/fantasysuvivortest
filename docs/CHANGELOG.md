@@ -10,6 +10,12 @@
 - リザルト画面と設定画面に `VERSION` を表示。
 - お知らせ（`UPDATES` 配列）は**1枠内でバージョン見出しごとに変更点を掲載**（新しい順）。マージ時は `UPDATES` 先頭に新バージョンを追加し `VERSION` を一致させる。
 
+## ver.α1.0.61
+- 新武器「インフェルノビーム」（inferno）を追加。最寄りの敵へ継続照射し、同一標的に当て続けるほど火力が上がる（ramp）。
+  - 実装：`runWeapons` で `infernoTick(dt)`（毎フレーム）。`INF{tgt,ramp,tick,on,ex,ey}` で標的と ramp を管理。標的が同じなら ramp を dt で加算（cap 2.5、覚醒/過熱限界で増）、標的が変わると 0（灼熱維持特性なら緩やかに減衰）。0.12*RATE ごとに `hurt(20*DMG*pw*(1+ramp)*0.12,'fire')`。`drawInferno()` で3層ビーム＋着弾グロウ（rampで太く）。
+  - テーブル：WEAPONS/WKIND(mag)/WCLASS(mid)/WRNG(460中)/WCAT(炎)/WAX(dmg,area,rate,range)/WTRAIT(3ティア：dmg/太さ/rampfast・rampcap・rampkeep)/AWK(業炎照射)・AWT（太く＋延焼）。reset で INF 初期化。
+  - 検証：ステージ1で装備→敵へビーム照射・着弾グロウ・エラーなしを確認。
+
 ## ver.α1.0.60
 - 設定に「完全リセット」ボタン（#hardreset）を追加。`hardReset()`：ログイン中はクラウドセーブ（saves/{uid}）を削除＋サインアウト→ localStorage 'bsv_save' 削除 → `location.reload()`。確認ダイアログ2回。
 
