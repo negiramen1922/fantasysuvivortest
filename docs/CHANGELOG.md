@@ -10,6 +10,9 @@
 - リザルト画面と設定画面に `VERSION` を表示。
 - お知らせ（`UPDATES` 配列）は**1枠内でバージョン見出しごとに変更点を掲載**（新しい順）。マージ時は `UPDATES` 先頭に新バージョンを追加し `VERSION` を一致させる。
 
+## ver.α1.0.42
+- GA4 の gtag.js グローバルサイトタグ（`G-JWFHEG2D2S`）を `<head>` に設置。GA4 側のタグ検出が通らなかったため。Firebase Analytics と同じ dataLayer/gtag を共有するので二重計測にはならない。カスタムイベント（game_open/run_end/weapon_used）は従来どおり Firebase Analytics 経由で送信。
+
 ## ver.α1.0.41
 - `firebase-config.js` に本番プロジェクト（brave-survivor-6a9e9）の Web 構成値を投入し、Firebase 連携を有効化。ゲーム内お知らせも更新。
   - go-live 側の必須設定（Authentication で Google 有効化・承認済みドメインに `negiramen1922.github.io` 追加・Firestore 作成＋`saves/{uid}` ルール）は Firebase コンソール側で要実施（詳細 `docs/FIREBASE.md`）。

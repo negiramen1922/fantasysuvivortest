@@ -5,6 +5,14 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
 <meta name="theme-color" content="#0b0818">
 <title>勇者サバイバー — プロトタイプ</title>
+<!-- Google tag (gtag.js) — GA4 タグ検出用。Firebase Analytics も同じ dataLayer/gtag を共有する。 -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-JWFHEG2D2S"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-JWFHEG2D2S');
+</script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=DotGothic16&display=swap" rel="stylesheet">
@@ -1662,7 +1670,7 @@ function figInfo(id){
   if(BOSS[id]){ var B=BOSS[id], tt=ETYPE[B.key]||{}; return {nm:B.nm,shape:tt.shape,col:tt.col,dark:tt.dark,desc:BDEX[id]||'',boss:true}; }
   var t=ETYPE[id]||{}; return {nm:t.nm,shape:t.shape,col:t.col,dark:t.dark,desc:DEX[id]||'',boss:false};
 }
-var VERSION='α1.0.41'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
+var VERSION='α1.0.42'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
 function applySave(o){
   for(var i=0;i<UPG.length;i++) META[UPG[i].id]=0;
   try{
@@ -5915,6 +5923,8 @@ Array.prototype.forEach.call(document.querySelectorAll('#setshake button'),funct
 // 更新履歴：1つのお知らせ内で「バージョン見出し」ごとに変更点を並べる（新しい順）。
 // マージのたびに先頭へ新バージョンを追加し、VERSION も更新する。
 var UPDATES=[
+  {v:'α1.0.42', items:[
+    'アクセス解析（GA4）のタグを設置。アクセス数や武器使用率の集計が有効になりました。']},
   {v:'α1.0.41', items:[
     'Firebase連携を有効化しました。ホーム画面のGoogleログインで別端末とセーブを共有できます。']},
   {v:'α1.0.40', items:[
