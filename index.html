@@ -1099,7 +1099,7 @@ var BOSS={
   hecaton:    { nm:'ヘカトンケイル',   res:0.95, key:'mummy',    hp:175000, r:54, spd:44, dmg:48, xp:2000, pts:40000,
                ai:'hecaton', acd:2.8, nbul:24, bspd:230, bdmg:18 },
   skeledragon:{ nm:'スケルトンドラゴン', res:0.96, key:'gargoyle', hp:340000, r:56, spd:100, dmg:54, xp:2600, pts:70000,
-               ai:'fenrir', acd:4.0, chspd:600, chdur:1.0, wind:0.8, nbul:22, bspd:220, bdmg:18, last:1 }
+               ai:'sdragon', acd:2.6, chspd:600, chdur:1.0, wind:0.8, nbul:22, bspd:220, bdmg:18, last:1 }
 };
 var BOSS_AT=[[300,'greatboar'],[600,'slimeking'],[900,'goblinking'],[1200,'fenrir']];
 
@@ -1733,7 +1733,7 @@ function figInfo(id){
   if(BOSS[id]){ var B=BOSS[id], tt=ETYPE[B.key]||{}; return {nm:B.nm,shape:tt.shape,col:tt.col,dark:tt.dark,desc:BDEX[id]||'',boss:true}; }
   var t=ETYPE[id]||{}; return {nm:t.nm,shape:t.shape,col:t.col,dark:t.dark,desc:DEX[id]||'',boss:false};
 }
-var VERSION='α1.0.50'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
+var VERSION='α1.0.51'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
 function applySave(o){
   for(var i=0;i<UPG.length;i++) META[UPG[i].id]=0;
   try{
@@ -3297,6 +3297,38 @@ function moveEnemies(dt){
           e.fists.push({x:P.x+Math.cos(fa)*fd, y:P.y+Math.sin(fa)*fd}); }
         sfx(120,.2,'square',.06,0.7);
       }
+    }
+    else if(e.ai==='sdragon'){
+      // スケルトンドラゴン：滞空突進 → 扇＋全方位の混成弾幕 → 極太ブレス
+      if(e.st==='cwind'){ e.stT-=dt; moved=1;
+        if(e.stT<=0){ e.st='dash'; e.stT=e.chdur; e.vx=dx/d*e.chspd; e.vy=dy/d*e.chspd; sfx(150,.16,'sawtooth',.06,.6); } }
+      else if(e.st==='dash'){ e.stT-=dt; moved=1; e.x+=e.vx*dt; e.y+=e.vy*dt;
+        if(e.stT<=0){ e.st='mix'; e.mtick=0; e.mc=0; } }
+      else if(e.st==='mix'){
+        e.mtick-=dt; moved=1;
+        if(e.mtick<=0){ e.mtick=0.5;
+          var ma=Math.atan2(dy,dx);
+          for(var mf=0;mf<5;mf++) eshoot(e,ma+(mf-2)*0.18,e.bspd,e.bdmg);        // 扇
+          for(var mo=0;mo<e.nbul;mo++) eshoot(e,mo/e.nbul*6.283+e.mc*0.2,e.bspd*0.8,e.bdmg);  // 全方位
+          fx.push({k:'ring',x:e.x,y:e.y,r:0,to:130,t:0,life:.3,col:'#cfeaff'});
+          shake=Math.min(18,shake+5); sfx(160,.16,'square',.06,1.3);
+          e.mc++; if(e.mc>=3){ e.st='beamwind'; e.stT=1.3; e.beamA=Math.atan2(dy,dx); }
+        }
+      }
+      else if(e.st==='beamwind'){ e.stT-=dt; moved=1;    // 極太ブレスの予告
+        if(e.stT<=0){ e.st='beam'; e.stT=1.1; shake=Math.min(24,shake+12); sfx(70,.5,'sawtooth',.11,.35); noise(.5,.14); }
+      }
+      else if(e.st==='beam'){
+        e.stT-=dt; moved=1;
+        var rel=Math.atan2(P.y-e.y,P.x-e.x)-e.beamA; rel=Math.atan2(Math.sin(rel),Math.cos(rel));
+        if(!P.god&&P.hurt<=0&&P.inv<=0&&Math.abs(rel)<0.28&&d<1500){
+          P.hp-=e.dmg*(1-0.04*M('armor'))*(1-0.03*(P.p.bulwark||0))*dexTakeMul(figKey(e))*2.2*dt;
+          shake=Math.min(20,shake+2);
+          if(P.hp<=0){ P.hp=0; setKiller(e); die(); return; }
+        }
+        if(e.stT<=0){ e.st=''; e.at=e.acd; }
+      }
+      else if(e.at<=0&&d<900){ e.st='cwind'; e.stT=e.wind; sfx(300,.14,'square',.06,0.8); }
     }
     else if(e.ai==='fenrir'){
       // フェンリル：2方向へ渦を描く弾幕（ﾊﾟﾊﾟﾊﾟ…）→突進→突進終わりに全方位弾幕
@@ -5013,6 +5045,24 @@ function drawEnemy(e){
     ctx.strokeStyle='#ffe27a'; ctx.globalAlpha=0.5+0.3*Math.sin(time*22); ctx.lineWidth=2;
     ctx.beginPath(); ctx.arc(0,0,R+7,0,6.3); ctx.stroke(); ctx.globalAlpha=1;
   }
+  // スケルトンドラゴン：極太ブレス（予告＝細い赤扇／発射＝極太の光の扇）
+  if(e.ai==='sdragon'&&(e.st==='beamwind'||e.st==='beam')){
+    var bL=1600, ba2=e.beamA||0, bhw=0.28;
+    if(e.st==='beamwind'){
+      ctx.globalAlpha=0.16+0.14*Math.sin(time*26); ctx.fillStyle='#ff5a3a';
+      ctx.beginPath(); ctx.moveTo(0,0); ctx.lineTo(Math.cos(ba2-bhw)*bL,Math.sin(ba2-bhw)*bL); ctx.lineTo(Math.cos(ba2+bhw)*bL,Math.sin(ba2+bhw)*bL); ctx.closePath(); ctx.fill();
+      ctx.globalAlpha=0.6; ctx.strokeStyle='#ffb08a'; ctx.lineWidth=2;
+      ctx.beginPath(); ctx.moveTo(0,0); ctx.lineTo(Math.cos(ba2)*bL,Math.sin(ba2)*bL); ctx.stroke();
+      ctx.globalAlpha=1;
+    }else{
+      ctx.globalAlpha=0.5; ctx.fillStyle='#ff8a2f';
+      ctx.beginPath(); ctx.moveTo(0,0); ctx.lineTo(Math.cos(ba2-bhw)*bL,Math.sin(ba2-bhw)*bL); ctx.lineTo(Math.cos(ba2+bhw)*bL,Math.sin(ba2+bhw)*bL); ctx.closePath(); ctx.fill();
+      ctx.globalAlpha=0.9; ctx.fillStyle='#fff2c0';
+      var iw=bhw*0.6;
+      ctx.beginPath(); ctx.moveTo(0,0); ctx.lineTo(Math.cos(ba2-iw)*bL,Math.sin(ba2-iw)*bL); ctx.lineTo(Math.cos(ba2+iw)*bL,Math.sin(ba2+iw)*bL); ctx.closePath(); ctx.fill();
+      ctx.globalAlpha=1;
+    }
+  }
   // ヘカトンケイル：拳の落下予告（着弾点に膨らむ円）
   if(e.ai==='hecaton'&&e.st==='fistwind'&&e.fists){
     var fpg=1-Math.max(0,e.stT)/1.0;
@@ -6250,6 +6300,8 @@ Array.prototype.forEach.call(document.querySelectorAll('#setshake button'),funct
 // 更新履歴：1つのお知らせ内で「バージョン見出し」ごとに変更点を並べる（新しい順）。
 // マージのたびに先頭へ新バージョンを追加し、VERSION も更新する。
 var UPDATES=[
+  {v:'α1.0.51', items:[
+    'ステージ3 ラストボス「スケルトンドラゴン」の本来の動きを実装：滞空突進→扇＋全方位の混成弾幕→極太ブレス。これでステージ3のボス4体がすべて本来の動きになりました。']},
   {v:'α1.0.50', items:[
     'ステージ3 ボス3「ヘカトンケイル」の本来の動きを実装：複数の拳を予告→同時に落下→各着弾点から全方位弾幕。']},
   {v:'α1.0.49', items:[
