@@ -1093,7 +1093,7 @@ var BOSS={
                ai:'treant', acd:2.5, bdmg:15, last:1 },
   // ===== ステージ3（王墓）ボス ※AIは仮（本実装はステップ3）=====
   gravekeeper:{ nm:'墓守',             res:0.92, key:'skeleton', hp:40000,  r:46, spd:56, dmg:42, xp:1300, pts:16000,
-               ai:'slam', acd:3.4, wind:0.7, nbul:16, bspd:250, bdmg:18 },
+               ai:'gravekeeper', acd:2.2, nbul:18, bspd:250, bdmg:18 },
   skeletonking:{ nm:'スケルトンキング', res:0.94, key:'skeleton', hp:90000,  r:48, spd:60, dmg:46, xp:1700, pts:24000,
                ai:'slam', acd:3.4, wind:0.8, nbul:20, bspd:250, bdmg:18 },
   hecaton:    { nm:'ヘカトンケイル',   res:0.95, key:'mummy',    hp:175000, r:54, spd:44, dmg:48, xp:2000, pts:40000,
@@ -1733,7 +1733,7 @@ function figInfo(id){
   if(BOSS[id]){ var B=BOSS[id], tt=ETYPE[B.key]||{}; return {nm:B.nm,shape:tt.shape,col:tt.col,dark:tt.dark,desc:BDEX[id]||'',boss:true}; }
   var t=ETYPE[id]||{}; return {nm:t.nm,shape:t.shape,col:t.col,dark:t.dark,desc:DEX[id]||'',boss:false};
 }
-var VERSION='α1.0.47'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
+var VERSION='α1.0.48'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
 function applySave(o){
   for(var i=0;i<UPG.length;i++) META[UPG[i].id]=0;
   try{
@@ -3188,6 +3188,41 @@ function moveEnemies(dt){
       else if(e.st==='dash'){ e.stT-=dt; moved=1; e.x+=e.vx*dt; e.y+=e.vy*dt;
         if(e.stT<=0){ e.st=''; e.at=e.acd; } }
       else if(e.at<=0&&d<600){ e.st='swwind'; e.combo=4; e.stT=0.32; e.swung=0; }
+    }
+    else if(e.ai==='gravekeeper'){
+      // 墓守：墓をブーメラン投げ（往復2ヒット）→地面に突き刺し→全方位弾幕×3
+      if(e.st==='boomerang'){
+        e.stT-=dt; e.gt+=dt; moved=1;
+        if(e.gt<0.8){ e.gx+=e.gvx*dt; e.gy+=e.gvy*dt; }        // 往路
+        else{ var rdx=e.x-e.gx, rdy=e.y-e.gy, rd=Math.hypot(rdx,rdy)||1; e.gx+=rdx/rd*560*dt; e.gy+=rdy/rd*560*dt; } // 復路（墓守へ戻る）
+        e.grot=(e.grot||0)+dt*14;
+        if(P.hurt<=0&&P.inv<=0&&!P.god&&Math.hypot(P.x-e.gx,P.y-e.gy)<P.r+22){
+          P.hp-=e.dmg*(1-0.04*M('armor'))*(1-0.03*(P.p.bulwark||0))*dexTakeMul(figKey(e)); P.hurt=0.55; shake=Math.min(16,shake+6);
+          sfx(150,.16,'square',.09,.5);
+          if(P.hp<=0){ P.hp=0; setKiller(e); die(); return; }
+        }
+        if(e.stT<=0){ e.st='stab'; e.stT=0.6; e.gx=e.x; e.gy=e.y+e.r*0.4; }
+      }
+      else if(e.st==='stab'){
+        e.stT-=dt; moved=1;                                     // 墓を地面に突き立てる予備動作（弾幕予告）
+        if(e.stT<=0){ e.st='barrage'; e.bc=0; e.btick=0; shake=Math.min(20,shake+8); sfx(90,.3,'sawtooth',.09,.4); noise(.25,.11); }
+      }
+      else if(e.st==='barrage'){
+        e.btick-=dt; moved=1;
+        if(e.btick<=0){ e.btick=0.42;
+          var off=(e.bc%2)*(3.14/e.nbul)+Math.random()*0.12;    // 交互にずらして密度感を出す
+          for(var gk=0;gk<e.nbul;gk++) eshoot(e,gk/e.nbul*6.283+off,e.bspd,e.bdmg);
+          fx.push({k:'ring',x:e.x,y:e.y,r:0,to:130,t:0,life:.34,col:'#c9b0ff'});
+          shake=Math.min(18,shake+5); sfx(140,.2,'square',.06,1.4);
+          e.bc++;
+          if(e.bc>=3){ e.st=''; e.at=e.acd; }
+        }
+      }
+      else if(e.at<=0&&d<720){
+        e.st='boomerang'; e.stT=1.7; e.gt=0; e.gx=e.x; e.gy=e.y;
+        var ga=Math.atan2(dy,dx); e.gvx=Math.cos(ga)*560; e.gvy=Math.sin(ga)*560;
+        sfx(300,.14,'square',.06,0.8);
+      }
     }
     else if(e.ai==='fenrir'){
       // フェンリル：2方向へ渦を描く弾幕（ﾊﾟﾊﾟﾊﾟ…）→突進→突進終わりに全方位弾幕
@@ -4904,6 +4939,20 @@ function drawEnemy(e){
     ctx.strokeStyle='#ffe27a'; ctx.globalAlpha=0.5+0.3*Math.sin(time*22); ctx.lineWidth=2;
     ctx.beginPath(); ctx.arc(0,0,R+7,0,6.3); ctx.stroke(); ctx.globalAlpha=1;
   }
+  // 墓守：投げている十字の墓／突き刺し予告
+  if(e.ai==='gravekeeper'&&(e.st==='boomerang'||e.st==='stab')){
+    var mgx=(e.gx||e.x)-e.x, mgy=(e.gy||e.y)-e.y;
+    ctx.save(); ctx.translate(mgx,mgy);
+    if(e.st==='boomerang') ctx.rotate(e.grot||0);
+    ctx.fillStyle='#b8b0a0'; ctx.strokeStyle='#4a463c'; ctx.lineWidth=3;
+    ctx.fillRect(-6,-4,12,26); ctx.strokeRect(-6,-4,12,26);   // 縦棒
+    ctx.fillRect(-14,2,28,10); ctx.strokeRect(-14,2,28,10);   // 横棒（十字）
+    ctx.restore();
+    if(e.st==='stab'){                                        // 突き刺し中は全方位の予告リング
+      ctx.strokeStyle='#c9b0ff'; ctx.globalAlpha=0.5+0.35*Math.sin(time*26); ctx.lineWidth=3;
+      ctx.beginPath(); ctx.arc(0,0,R+14+Math.sin(time*18)*4,0,6.3); ctx.stroke(); ctx.globalAlpha=1;
+    }
+  }
 
   if(e.el&&ELEM[e.el]){
     var ec=ELEM[e.el].col, pulse=0.6+Math.sin(time*12+e.ph)*0.4;
@@ -6115,6 +6164,8 @@ Array.prototype.forEach.call(document.querySelectorAll('#setshake button'),funct
 // 更新履歴：1つのお知らせ内で「バージョン見出し」ごとに変更点を並べる（新しい順）。
 // マージのたびに先頭へ新バージョンを追加し、VERSION も更新する。
 var UPDATES=[
+  {v:'α1.0.48', items:[
+    'ステージ3 ボス1「墓守」の本来の動きを実装：十字の墓をブーメラン投げ→地面に突き刺し→全方位弾幕×3。']},
   {v:'α1.0.47', items:[
     'ステージ3の敵に固有ギミックを追加：盾の戦士（盾を割るまで無傷）、グール（地面から出現）、リッチ（味方を強化・光の線で表示）、ネクロマンサー（召喚）、ブーマー（自爆＋毒の沼）。',
     'ステージの最後のボスを倒すと、ステージ選択に👑クリアバッジが付くようにしました。']},
