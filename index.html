@@ -1093,7 +1093,7 @@ var BOSS={
                ai:'treant', acd:2.5, bdmg:15, last:1 },
   // ===== ステージ3（王墓）ボス ※AIは仮（本実装はステップ3）=====
   gravekeeper:{ nm:'墓守',             res:0.92, key:'skeleton', hp:40000,  r:46, spd:56, dmg:42, xp:1300, pts:16000,
-               ai:'gravekeeper', acd:2.2, nbul:18, bspd:250, bdmg:18 },
+               ai:'gravekeeper', acd:2.2, nbul:18, bspd:250, bdmg:18, chspd:540, chdur:0.9 },
   skeletonking:{ nm:'スケルトンキング', res:0.94, key:'skeleton', hp:90000,  r:48, spd:60, dmg:46, xp:1700, pts:24000,
                ai:'sking', acd:2.6, wind:0.8, nbul:20, bspd:250, bdmg:18 },
   hecaton:    { nm:'ヘカトンケイル',   res:0.95, key:'mummy',    hp:175000, r:54, spd:44, dmg:48, xp:2000, pts:40000,
@@ -1733,7 +1733,7 @@ function figInfo(id){
   if(BOSS[id]){ var B=BOSS[id], tt=ETYPE[B.key]||{}; return {nm:B.nm,shape:tt.shape,col:tt.col,dark:tt.dark,desc:BDEX[id]||'',boss:true}; }
   var t=ETYPE[id]||{}; return {nm:t.nm,shape:t.shape,col:t.col,dark:t.dark,desc:DEX[id]||'',boss:false};
 }
-var VERSION='α1.0.52'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
+var VERSION='α1.0.53'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
 function applySave(o){
   for(var i=0;i<UPG.length;i++) META[UPG[i].id]=0;
   try{
@@ -3200,8 +3200,8 @@ function moveEnemies(dt){
         e.stT-=dt; e.gt+=dt; moved=1;
         if(e.gt<0.8){ e.gx+=e.gvx*dt; e.gy+=e.gvy*dt; }        // 往路
         else{ var rdx=e.x-e.gx, rdy=e.y-e.gy, rd=Math.hypot(rdx,rdy)||1; e.gx+=rdx/rd*560*dt; e.gy+=rdy/rd*560*dt; } // 復路（墓守へ戻る）
-        e.grot=(e.grot||0)+dt*14;
-        if(P.hurt<=0&&P.inv<=0&&!P.god&&Math.hypot(P.x-e.gx,P.y-e.gy)<P.r+22){
+        e.grot=(e.grot||0)+dt*3;                                // ゆっくり回転
+        if(P.hurt<=0&&P.inv<=0&&!P.god&&Math.hypot(P.x-e.gx,P.y-e.gy)<P.r+34){
           P.hp-=e.dmg*(1-0.04*M('armor'))*(1-0.03*(P.p.bulwark||0))*dexTakeMul(figKey(e)); P.hurt=0.55; shake=Math.min(16,shake+6);
           sfx(150,.16,'square',.09,.5);
           if(P.hp<=0){ P.hp=0; setKiller(e); die(); return; }
@@ -3220,8 +3220,16 @@ function moveEnemies(dt){
           fx.push({k:'ring',x:e.x,y:e.y,r:0,to:130,t:0,life:.34,col:'#c9b0ff'});
           shake=Math.min(18,shake+5); sfx(140,.2,'square',.06,1.4);
           e.bc++;
-          if(e.bc>=3){ e.st=''; e.at=e.acd; }
+          if(e.bc>=3){ e.st='gwind'; e.stT=0.85; e.guard=1; e.aimA=Math.atan2(dy,dx); sfx(240,.18,'square',.06,0.7); }
         }
+      }
+      else if(e.st==='gwind'){        // 弾幕後：十字架を盾に構える（正面を防御）＋突進予告（方向固定）
+        e.stT-=dt; moved=1;
+        if(e.stT<=0){ e.st='gdash'; e.stT=e.chdur||0.9; e.vx=Math.cos(e.aimA)*(e.chspd||540); e.vy=Math.sin(e.aimA)*(e.chspd||540); sfx(150,.16,'sawtooth',.06,.6); }
+      }
+      else if(e.st==='gdash'){        // 盾を構えたままケルビ式の突進を1回
+        e.stT-=dt; moved=1; e.x+=e.vx*dt; e.y+=e.vy*dt;
+        if(e.stT<=0){ e.st=''; e.guard=0; e.at=e.acd; }
       }
       else if(e.at<=0&&d<720){
         e.st='boomerang'; e.stT=1.7; e.gt=0; e.gx=e.x; e.gy=e.y;
@@ -3527,6 +3535,16 @@ function movePuddles(dt){
 }
 function hurt(e,dmg,nx,ny,el){
   if(e.dead) return;
+  // 墓守のガード：プレイヤー側（正面）からの攻撃を防ぐ。鎌など背後から当たる攻撃は通す。
+  if(e.guard){
+    var gfx=P.x-e.x, gfy=P.y-e.y, gdd=Math.hypot(gfx,gfy)||1; gfx/=gdd; gfy/=gdd;
+    if((nx||0)*gfx+(ny||0)*gfy < -0.3){   // ノックバック方向がプレイヤーの反対＝正面被弾＝ガード成立
+      e.ht=0.06;
+      fx.push({k:'ring',x:e.x+gfx*(e.r+8),y:e.y+gfy*(e.r+8),r:0,to:16,t:0,life:.16,col:'#ffffff'});
+      sfx(720,.05,'square',.03,1.6);
+      return;
+    }
+  }
   var crit=Math.random()<CRITC();
   if(crit) crits++;
   var d=crit?dmg*CRITD():dmg;
@@ -5003,9 +5021,9 @@ function drawEnemy(e){
   }
 
   // 突進の予告：溜め中はプレイヤー方向へ、実際の突進距離ぶんの赤いラインを伸ばす
-  if(e.st==='wind'&&e.chspd>0){
-    // ケルビは予告開始時に方向固定（追尾弱め）なのでその向きを表示
-    var ta=(e.ai==='kervi'&&e.aimA!=null)?e.aimA:Math.atan2(P.y-e.y,P.x-e.x);
+  if((e.st==='wind'||e.st==='gwind')&&e.chspd>0){
+    // ケルビ・墓守は予告開始時に方向固定なのでその向きを表示
+    var ta=((e.ai==='kervi'||e.ai==='gravekeeper')&&e.aimA!=null)?e.aimA:Math.atan2(P.y-e.y,P.x-e.x);
     var dl=((e.chspd||0)*(e.chdur||0))||R*6.5;   // 突進の到達距離＝警告線の長さ
     ctx.save(); ctx.rotate(ta);
     ctx.globalAlpha=0.28+0.24*Math.sin(time*20); ctx.fillStyle='#ff4d4d';
@@ -5075,18 +5093,31 @@ function drawEnemy(e){
       ctx.globalAlpha=1; ctx.restore();
     }
   }
-  // 墓守：投げている十字の墓／突き刺し予告
-  if(e.ai==='gravekeeper'&&(e.st==='boomerang'||e.st==='stab')){
-    var mgx=(e.gx||e.x)-e.x, mgy=(e.gy||e.y)-e.y;
-    ctx.save(); ctx.translate(mgx,mgy);
-    if(e.st==='boomerang') ctx.rotate(e.grot||0);
-    ctx.fillStyle='#b8b0a0'; ctx.strokeStyle='#4a463c'; ctx.lineWidth=3;
-    ctx.fillRect(-6,-4,12,26); ctx.strokeRect(-6,-4,12,26);   // 縦棒
-    ctx.fillRect(-14,2,28,10); ctx.strokeRect(-14,2,28,10);   // 横棒（十字）
-    ctx.restore();
-    if(e.st==='stab'){                                        // 突き刺し中は全方位の予告リング
-      ctx.strokeStyle='#c9b0ff'; ctx.globalAlpha=0.5+0.35*Math.sin(time*26); ctx.lineWidth=3;
-      ctx.beginPath(); ctx.arc(0,0,R+14+Math.sin(time*18)*4,0,6.3); ctx.stroke(); ctx.globalAlpha=1;
+  // 墓守：十字の墓（投擲＝ゆっくり回転で大きく／突き刺し／盾構え）
+  if(e.ai==='gravekeeper'){
+    if(e.st==='boomerang'||e.st==='stab'){
+      var mgx=(e.gx||e.x)-e.x, mgy=(e.gy||e.y)-e.y;
+      ctx.save(); ctx.translate(mgx,mgy);
+      if(e.st==='boomerang') ctx.rotate(e.grot||0);
+      ctx.fillStyle='#c2b9a6'; ctx.strokeStyle='#4a463c'; ctx.lineWidth=3;
+      ctx.fillRect(-10,-7,20,46); ctx.strokeRect(-10,-7,20,46);   // 縦棒（大きく）
+      ctx.fillRect(-24,3,48,16); ctx.strokeRect(-24,3,48,16);     // 横棒（大きく）
+      ctx.restore();
+      if(e.st==='stab'){
+        ctx.strokeStyle='#c9b0ff'; ctx.globalAlpha=0.5+0.35*Math.sin(time*26); ctx.lineWidth=3;
+        ctx.beginPath(); ctx.arc(0,0,R+14+Math.sin(time*18)*4,0,6.3); ctx.stroke(); ctx.globalAlpha=1;
+      }
+    }
+    else if(e.st==='gwind'||e.st==='gdash'){
+      // 盾として構える十字架（プレイヤー方向の前面）＋ガードの輝き
+      var ga=Math.atan2(P.y-e.y,P.x-e.x);
+      ctx.save(); ctx.translate(Math.cos(ga)*(R+16),Math.sin(ga)*(R+16)); ctx.rotate(ga+Math.PI/2);
+      ctx.globalAlpha=0.3+0.2*Math.sin(time*10); ctx.strokeStyle='#bfe0ff'; ctx.lineWidth=4;
+      ctx.beginPath(); ctx.arc(0,12,36,0,6.3); ctx.stroke(); ctx.globalAlpha=1;
+      ctx.fillStyle='#d4cbb6'; ctx.strokeStyle='#4a463c'; ctx.lineWidth=3;
+      ctx.fillRect(-11,-8,22,50); ctx.strokeRect(-11,-8,22,50);
+      ctx.fillRect(-26,4,52,17); ctx.strokeRect(-26,4,52,17);
+      ctx.restore();
     }
   }
 
@@ -6300,6 +6331,8 @@ Array.prototype.forEach.call(document.querySelectorAll('#setshake button'),funct
 // 更新履歴：1つのお知らせ内で「バージョン見出し」ごとに変更点を並べる（新しい順）。
 // マージのたびに先頭へ新バージョンを追加し、VERSION も更新する。
 var UPDATES=[
+  {v:'α1.0.53', items:[
+    '墓守を強化：十字架を大きく・ゆっくり回転させて投げるように。弾幕のあとは十字架を構えて盾になり（正面からの攻撃を防ぐ／鎌など背後からの攻撃は有効）、そのまま突進を1回してきます。']},
   {v:'α1.0.52', items:[
     'ベルをさらに弱体化：発生間隔 2.0→3.0秒、最大範囲を縮小（覚醒の往復＋範囲拡大で画面全体をカバーする問題への対応）。']},
   {v:'α1.0.51', items:[
