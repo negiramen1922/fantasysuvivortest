@@ -1817,7 +1817,7 @@ function figInfo(id){
   if(BOSS[id]){ var B=BOSS[id], tt=ETYPE[B.key]||{}; return {nm:B.nm,shape:tt.shape,col:tt.col,dark:tt.dark,desc:BDEX[id]||'',boss:true}; }
   var t=ETYPE[id]||{}; return {nm:t.nm,shape:t.shape,col:t.col,dark:t.dark,desc:DEX[id]||'',boss:false};
 }
-var VERSION='α1.0.67'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
+var VERSION='α1.0.68'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
 function applySave(o){
   for(var i=0;i<UPG.length;i++) META[UPG[i].id]=0;
   try{
@@ -2251,20 +2251,29 @@ function drawLaser(L){
 var INF={tgt:0, ramp:0, tick:0, on:false, ex:0, ey:0, extra:[]};
 function infernoTick(dt){
   var rng=RNG('inferno'), extra=Math.round(CNT('inferno'));       // 数軸：追加ビーム本数
-  var cand=[];
-  for(var i=0;i<enemies.length;i++){ var ce=enemies[i]; if(ce.dead) continue;
-    var cdx=ce.x-P.x, cdy=ce.y-P.y, cd=cdx*cdx+cdy*cdy; if(cd<rng*rng) cand.push({e:ce,d:cd}); }
-  cand.sort(function(a,b){ return a.d-b.d; });
   var keep=TF('inferno','rampkeep')||AW('inferno');
-  if(!cand.length){ INF.on=false; INF.extra=[]; INF.ramp=Math.max(0,INF.ramp-(keep?dt*0.6:dt*2.5)); if(INF.ramp<=0) INF.tgt=0; return; }
-  var e=cand[0].e;
+  // ロック中の敵がまだ有効（生存＆射程内）なら維持。倒れる/射程外になるまでターゲットを変えない。
+  var e=null;
+  if(INF.tgt){
+    for(var i=0;i<enemies.length;i++){ var ce=enemies[i];
+      if(!ce.dead&&ce.uid===INF.tgt){ if((ce.x-P.x)*(ce.x-P.x)+(ce.y-P.y)*(ce.y-P.y)<rng*rng) e=ce; break; } }
+  }
+  var cand=[];                                                    // 候補（追加ビーム用・新規ロック用）
+  for(var j=0;j<enemies.length;j++){ var e2=enemies[j]; if(e2.dead) continue;
+    var dx2=e2.x-P.x, dy2=e2.y-P.y, dd2=dx2*dx2+dy2*dy2; if(dd2<rng*rng) cand.push({e:e2,d:dd2}); }
+  cand.sort(function(a,b){ return a.d-b.d; });
+  if(!e){                                                         // ロック対象が倒れた/射程外→最寄りを新規ロック
+    if(!cand.length){ INF.on=false; INF.extra=[]; INF.ramp=Math.max(0,INF.ramp-(keep?dt*0.6:dt*2.5)); if(INF.ramp<=0) INF.tgt=0; return; }
+    e=cand[0].e; INF.tgt=e.uid; INF.ramp=keep?INF.ramp:0;         // 新ロックで火力リセット（維持特性は引き継ぎ）
+  }
   INF.on=true; INF.ex=e.x; INF.ey=e.y;
-  var rate=TF('inferno','rampfast')?1.5:1.0;                       // ランプ上昇速度
+  var rate=TF('inferno','rampfast')?1.5:1.0;
   var cap=(TF('inferno','rampcap')?3.5:2.5)+(AW('inferno')?1:0)+0.6*DURV('inferno');   // 持続軸でランプ上限UP
-  if(e.uid===INF.tgt){ INF.ramp=Math.min(cap,INF.ramp+dt*rate); }
-  else{ INF.tgt=e.uid; INF.ramp=keep?Math.max(0,INF.ramp-dt*1.5):0; }
+  INF.ramp=Math.min(cap,INF.ramp+dt*rate);                        // ロック継続中は火力上昇
   var mul=1+INF.ramp;
-  INF.extra=[]; for(var k=1;k<cand.length&&k<=extra;k++) INF.extra.push({x:cand[k].e.x,y:cand[k].e.y});
+  var ex=[];                                                      // 追加ビーム：ロック対象以外の最寄り
+  for(var k=0;k<cand.length&&ex.length<extra;k++){ if(cand[k].e.uid!==INF.tgt) ex.push(cand[k].e); }
+  INF.extra=[]; for(var m=0;m<ex.length;m++) INF.extra.push({x:ex[m].x,y:ex[m].y});
   INF.tick-=dt;
   if(INF.tick<=0){ INF.tick=0.12*RATE('inferno');
     SRC='inferno';
@@ -2272,11 +2281,11 @@ function infernoTick(dt){
     var dx=e.x-P.x, dy=e.y-P.y, dd=Math.hypot(dx,dy)||1;
     hurt(e, base*mul*0.12, dx/dd, dy/dd, 'fire');
     if(AW('inferno')){ e.dotD=Math.max(e.dotD,base*mul*0.25); e.dotT=Math.max(e.dotT,burnT); e.dotC='#ff7a2f'; }
-    for(var k2=1;k2<cand.length&&k2<=extra;k2++){ var oe=cand[k2].e, ox=oe.x-P.x, oy=oe.y-P.y, od=Math.hypot(ox,oy)||1;
-      hurt(oe, base*0.6*0.12, ox/od, oy/od, 'fire');                // 追加ビームはランプ無し・6割威力
+    for(var q=0;q<ex.length;q++){ var oe=ex[q], ox=oe.x-P.x, oy=oe.y-P.y, od=Math.hypot(ox,oy)||1;
+      hurt(oe, base*0.6*0.12, ox/od, oy/od, 'fire');              // 追加ビームはランプ無し・6割威力
       if(AW('inferno')){ oe.dotD=Math.max(oe.dotD,base*0.6*0.25); oe.dotT=Math.max(oe.dotT,burnT); oe.dotC='#ff7a2f'; }
     }
-    SRC=null; wgain('inferno',1+extra);
+    SRC=null; wgain('inferno',1+ex.length);
   }
 }
 function infBeam(tx,ty,w,g){
@@ -3784,7 +3793,7 @@ function hurt(e,dmg,nx,ny,el){
   if(e.shield>0){                            // 盾の戦士：割れるまで本体HPに通さない（この一撃も本体には行かない）
     e.shield-=d; if(e.shield<0) e.shield=0;
     e.ht=0.12; dmgSec+=d;
-    if(SRC!=='bell'&&SRC!=='aura'&&SRC!=='blizzard'){ e.kb=Math.max(e.kb,crit?4:2.2); e.kbx=nx||0; e.kby=ny||0; }
+    if(SRC!=='bell'&&SRC!=='aura'&&SRC!=='blizzard'&&SRC!=='inferno'){ e.kb=Math.max(e.kb,crit?4:2.2); e.kbx=nx||0; e.kby=ny||0; }
     if(SRC) WDMG[SRC]=(WDMG[SRC]||0)+d; else WDMG._react=(WDMG._react||0)+d;
     if(dmgs.length>110) dmgs.shift();
     dmgs.push({x:e.x,y:e.y-e.r-4,v:-52,t:0,life:.6,txt:Math.round(d),crit:crit,col:'#8fd4ff'});
@@ -3792,8 +3801,8 @@ function hurt(e,dmg,nx,ny,el){
     return;
   }
   e.hp-=d; e.ht=0.12; dmgSec+=d;   // DPS/DPM 集計
-  // ベル・ホーリージャッジ（十字架AoE）・アイスブリザードはノックバックさせない
-  if(SRC!=='bell'&&SRC!=='aura'&&SRC!=='blizzard'){ e.kb=Math.max(e.kb,crit?4:2.2); e.kbx=nx||0; e.kby=ny||0; }
+  // ベル・ホーリージャッジ（十字架AoE）・アイスブリザード・インフェルノビームはノックバックさせない
+  if(SRC!=='bell'&&SRC!=='aura'&&SRC!=='blizzard'&&SRC!=='inferno'){ e.kb=Math.max(e.kb,crit?4:2.2); e.kbx=nx||0; e.kby=ny||0; }
   if(SRC) WDMG[SRC]=(WDMG[SRC]||0)+d; else WDMG._react=(WDMG._react||0)+d;   // 与ダメージ集計
   if(dmgs.length>110) dmgs.shift();
   dmgs.push({x:e.x,y:e.y-e.r-4,v:-52,t:0,life:.65,txt:Math.round(d),crit:crit});
@@ -6666,6 +6675,8 @@ Array.prototype.forEach.call(document.querySelectorAll('#setshake button'),funct
 // 更新履歴：1つのお知らせ内で「バージョン見出し」ごとに変更点を並べる（新しい順）。
 // マージのたびに先頭へ新バージョンを追加し、VERSION も更新する。
 var UPDATES=[
+  {v:'α1.0.68', items:[
+    'インフェルノビーム調整：一度ロックした敵は倒すか射程外に出るまでターゲットを変えないように。攻撃でノックバックが出ないように変更しました。']},
   {v:'α1.0.67', items:[
     'ステージ選択画面を刷新：アイコン・フレーバー、ステージ別の最高スコア／到達ウェーブ、出現モンスターの発見バッジ（未発見は？）を表示。集めて埋めよう！']},
   {v:'α1.0.66', items:[
