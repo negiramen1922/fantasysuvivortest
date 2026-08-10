@@ -10,6 +10,13 @@
 - リザルト画面と設定画面に `VERSION` を表示。
 - お知らせ（`UPDATES` 配列）は**1枠内でバージョン見出しごとに変更点を掲載**（新しい順）。マージ時は `UPDATES` 先頭に新バージョンを追加し `VERSION` を一致させる。
 
+## ver.α1.0.62
+- 新強化軸「持続(dur)」を追加（AXN/AXT）。`DURV(w)=AX(dur)+TR(dur)+AX(slow)+TR(slow)`（旧鈍足軸/特性も加算＝後方互換）。
+  - 氷/ブリザードの WAX を `slow:3`→`dur:3` に変更。鈍足時間の式を `SLW`→`DURV` に（`slow:2.0+DURV('ice')`、`1.5+DURV('blizzard')`）。既存の鈍足特性はそのまま加算。
+  - インフェルノの WAX を `{dmg,area,rate,range}`→`{dmg,count:3,dur:3,rate,range}`（範囲廃止・数と持続を追加）。
+  - インフェルノ：数軸＝追加ビーム（最寄りから複数体へ、ランプ無し6割威力）。持続軸＝ランプ上限 +0.6/Lv、覚醒延焼の持続 +0.4秒/Lv。`INF.extra` で追加ビーム描画（`infBeam`）。
+  - 検証：ステージ1で装備し複数ビーム展開・エラーなしを確認。
+
 ## ver.α1.0.61
 - 新武器「インフェルノビーム」（inferno）を追加。最寄りの敵へ継続照射し、同一標的に当て続けるほど火力が上がる（ramp）。
   - 実装：`runWeapons` で `infernoTick(dt)`（毎フレーム）。`INF{tgt,ramp,tick,on,ex,ey}` で標的と ramp を管理。標的が同じなら ramp を dt で加算（cap 2.5、覚醒/過熱限界で増）、標的が変わると 0（灼熱維持特性なら緩やかに減衰）。0.12*RATE ごとに `hurt(20*DMG*pw*(1+ramp)*0.12,'fire')`。`drawInferno()` で3層ビーム＋着弾グロウ（rampで太く）。

@@ -1485,9 +1485,9 @@ function wgain(id,hits){
 /* ============ 武器の育成軸 ============ */
 // 1回の強化で必ずレベルが1上がり、選んだ軸に1点入る。
 // 軸ごとに上限があり、上限の合計は取得可能な点数(7)より多いので必ず取捨選択になる。
-var AXN={ dmg:'攻撃力', area:'範囲', rate:'頻度', count:'数',
+var AXN={ dmg:'攻撃力', area:'範囲', rate:'頻度', count:'数', dur:'持続',
           pierce:'貫通', slow:'鈍足', chain:'連鎖', split:'拡散', burst:'連射', ammo:'弾数', range:'射程' };
-var AXT={ dmg:'ダメージ +45%', area:'範囲 +18%', rate:'間隔 −15%', count:'発生数 +1',
+var AXT={ dmg:'ダメージ +45%', area:'範囲 +18%', rate:'間隔 −15%', count:'発生数 +1', dur:'効果の持続が伸びる（鈍足の時間／延焼／火力の伸び）',
           pierce:'貫通 +2', slow:'鈍足の持続 +1.0秒', chain:'連鎖 +2', split:'拡散 +2',
           burst:'同じ方向へ続けて撃つ回数 +1', ammo:'装填数が増える', range:'届く距離・飛距離 +20%' };
 // 物理は会心で殲滅、魔法は元素反応で連鎖させる
@@ -1506,7 +1506,7 @@ var WAX={
   rock:    { dmg:4, area:4, count:2, rate:3, burst:3, range:3 },
   fire:    { dmg:4, count:3, pierce:3, rate:3, burst:3, range:3 },
   flame:   { dmg:4, count:4, area:3, rate:3 },
-  ice:     { dmg:4, pierce:3, slow:3, count:3, rate:3, burst:3, range:3 },
+  ice:     { dmg:4, pierce:3, dur:3, count:3, rate:3, burst:3, range:3 },
   thunder: { dmg:4, count:4, area:3, rate:3, range:2 },
   chain:   { dmg:4, chain:4, count:3, rate:3, range:2 },
   holy:    { dmg:4, count:3, split:3, pierce:2, rate:3, burst:3, range:3 },
@@ -1516,9 +1516,9 @@ var WAX={
   bell:    { dmg:3, area:4, count:3, rate:3 },
   chainsaw:{ dmg:4, area:3, rate:3 },
   musket:  { dmg:4, rate:3, burst:5, ammo:3, range:2 },
-  blizzard:{ dmg:4, area:3, rate:3, slow:3 },
+  blizzard:{ dmg:4, area:3, rate:3, dur:3 },
   laser:   { dmg:3, count:4, rate:3, area:3 },
-  inferno: { dmg:4, area:3, rate:3, range:3 },
+  inferno: { dmg:4, count:3, dur:3, rate:3, range:3 },
   gatling: { dmg:5, rate:4, count:3, pierce:3, ammo:3, range:3 }
 };
 // Lv10 到達で覚醒。数値ではなく挙動が変わる。
@@ -1596,6 +1596,8 @@ function CNT(w){ return AX(w,'count')+TR(w,'count')+LB(w,'count'); }
 function BST(w){ return AX(w,'burst'); }
 function PRC(w){ return AX(w,'pierce')*2+TR(w,'pierce')+LB(w,'pierce'); }
 function SLW(w){ return AX(w,'slow')*1.0+TR(w,'slow'); }
+// 持続軸：効果の持続時間（鈍足の時間・延焼・ランプ上限など）。旧「鈍足」軸/特性の分も引き継いで加算。
+function DURV(w){ return AX(w,'dur')+TR(w,'dur')+AX(w,'slow')+TR(w,'slow'); }
 function AMMO(w){ return AX(w,'ammo'); }
 function CHN(w){ return AX(w,'chain')*2+TR(w,'chain'); }
 function SPL(w){ return AX(w,'split')*2+TR(w,'split'); }
@@ -1757,7 +1759,7 @@ function figInfo(id){
   if(BOSS[id]){ var B=BOSS[id], tt=ETYPE[B.key]||{}; return {nm:B.nm,shape:tt.shape,col:tt.col,dark:tt.dark,desc:BDEX[id]||'',boss:true}; }
   var t=ETYPE[id]||{}; return {nm:t.nm,shape:t.shape,col:t.col,dark:t.dark,desc:DEX[id]||'',boss:false};
 }
-var VERSION='α1.0.61'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
+var VERSION='α1.0.62'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
 function applySave(o){
   for(var i=0;i<UPG.length;i++) META[UPG[i].id]=0;
   try{
@@ -1827,7 +1829,7 @@ function reset(){
   dpsVal=0; dpmVal=0; dmgSec=0; dmgRing=[]; dmgRingI=0; dpsClock=1;
   dexQueue.length=0;
   score=0; silver=0; gold=0; magFx=0; chakSpin=0; wxRun={}; lastCd={}; coolMax={}; WDMG={};
-  KILLER=null; INF={tgt:0,ramp:0,tick:0,on:false,ex:0,ey:0};
+  KILLER=null; INF={tgt:0,ramp:0,tick:0,on:false,ex:0,ey:0,extra:[]};
   slotSig='';
   cool={};
   syncHud();
@@ -2112,7 +2114,7 @@ function doMusket(){
 function doBlizzard(){
   SRC='blizzard';
   var rad=78*AREA('blizzard'), dmg=7*DMG('blizzard')*pw('blizzard');
-  var sl=1.5+SLW('blizzard'), n=0;
+  var sl=1.5+DURV('blizzard'), n=0;
   for(var i=enemies.length-1;i>=0;i--){
     var e=enemies[i];
     if(e.dead) continue;
@@ -2184,39 +2186,54 @@ function drawLaser(L){
   ctx.fillStyle='#ffffff'; ctx.fillRect(0,-L.w*0.55,L.len,L.w*1.1);
   ctx.globalAlpha=1; ctx.restore();
 }
-// インフェルノビーム：最寄りの敵へ照射し続け、同じ敵に当て続けるほど火力が上がる（ramp）。
-var INF={tgt:0, ramp:0, tick:0, on:false, ex:0, ey:0};
+// インフェルノビーム：最寄りの敵へ照射し続け、同じ敵に当て続けるほど火力が上がる（ramp）。数軸で追加ビーム、持続軸でランプ上限UP。
+var INF={tgt:0, ramp:0, tick:0, on:false, ex:0, ey:0, extra:[]};
 function infernoTick(dt){
-  var e=nearest(P.x,P.y,RNG('inferno'));
+  var rng=RNG('inferno'), extra=Math.round(CNT('inferno'));       // 数軸：追加ビーム本数
+  var cand=[];
+  for(var i=0;i<enemies.length;i++){ var ce=enemies[i]; if(ce.dead) continue;
+    var cdx=ce.x-P.x, cdy=ce.y-P.y, cd=cdx*cdx+cdy*cdy; if(cd<rng*rng) cand.push({e:ce,d:cd}); }
+  cand.sort(function(a,b){ return a.d-b.d; });
   var keep=TF('inferno','rampkeep')||AW('inferno');
-  if(!e){ INF.on=false; INF.ramp=Math.max(0,INF.ramp-(keep?dt*0.6:dt*2.5)); if(INF.ramp<=0) INF.tgt=0; return; }
+  if(!cand.length){ INF.on=false; INF.extra=[]; INF.ramp=Math.max(0,INF.ramp-(keep?dt*0.6:dt*2.5)); if(INF.ramp<=0) INF.tgt=0; return; }
+  var e=cand[0].e;
   INF.on=true; INF.ex=e.x; INF.ey=e.y;
   var rate=TF('inferno','rampfast')?1.5:1.0;                       // ランプ上昇速度
-  var cap=(TF('inferno','rampcap')?3.5:2.5)+(AW('inferno')?1:0);   // ランプ最大（加算倍率）
+  var cap=(TF('inferno','rampcap')?3.5:2.5)+(AW('inferno')?1:0)+0.6*DURV('inferno');   // 持続軸でランプ上限UP
   if(e.uid===INF.tgt){ INF.ramp=Math.min(cap,INF.ramp+dt*rate); }
   else{ INF.tgt=e.uid; INF.ramp=keep?Math.max(0,INF.ramp-dt*1.5):0; }
-  var mul=1+INF.ramp;                                              // 1.0 → (1+cap) 倍
+  var mul=1+INF.ramp;
+  INF.extra=[]; for(var k=1;k<cand.length&&k<=extra;k++) INF.extra.push({x:cand[k].e.x,y:cand[k].e.y});
   INF.tick-=dt;
   if(INF.tick<=0){ INF.tick=0.12*RATE('inferno');
     SRC='inferno';
+    var base=20*DMG('inferno')*pw('inferno'), burnT=1.0+0.4*DURV('inferno');
     var dx=e.x-P.x, dy=e.y-P.y, dd=Math.hypot(dx,dy)||1;
-    hurt(e, 20*DMG('inferno')*pw('inferno')*mul*0.12, dx/dd, dy/dd, 'fire');
-    if(AW('inferno')){ e.dotD=Math.max(e.dotD,20*DMG('inferno')*pw('inferno')*mul*0.25); e.dotT=Math.max(e.dotT,1.0); e.dotC='#ff7a2f'; }
-    SRC=null; wgain('inferno',1);
+    hurt(e, base*mul*0.12, dx/dd, dy/dd, 'fire');
+    if(AW('inferno')){ e.dotD=Math.max(e.dotD,base*mul*0.25); e.dotT=Math.max(e.dotT,burnT); e.dotC='#ff7a2f'; }
+    for(var k2=1;k2<cand.length&&k2<=extra;k2++){ var oe=cand[k2].e, ox=oe.x-P.x, oy=oe.y-P.y, od=Math.hypot(ox,oy)||1;
+      hurt(oe, base*0.6*0.12, ox/od, oy/od, 'fire');                // 追加ビームはランプ無し・6割威力
+      if(AW('inferno')){ oe.dotD=Math.max(oe.dotD,base*0.6*0.25); oe.dotT=Math.max(oe.dotT,burnT); oe.dotC='#ff7a2f'; }
+    }
+    SRC=null; wgain('inferno',1+extra);
   }
+}
+function infBeam(tx,ty,w,g){
+  ctx.globalAlpha=0.45*g; ctx.strokeStyle='#ff5a1f'; ctx.lineWidth=w*2;
+  ctx.beginPath(); ctx.moveTo(P.x,P.y); ctx.lineTo(tx,ty); ctx.stroke();
+  ctx.globalAlpha=0.85*g; ctx.strokeStyle='#ffb14d'; ctx.lineWidth=w;
+  ctx.beginPath(); ctx.moveTo(P.x,P.y); ctx.lineTo(tx,ty); ctx.stroke();
+  ctx.globalAlpha=1; ctx.strokeStyle='#fff2c0'; ctx.lineWidth=Math.max(2,w*0.4);
+  ctx.beginPath(); ctx.moveTo(P.x,P.y); ctx.lineTo(tx,ty); ctx.stroke();
+  ctx.globalAlpha=0.6*g; ctx.fillStyle='#ffcf8a';
+  ctx.beginPath(); ctx.arc(tx,ty,w*0.9,0,6.3); ctx.fill();
 }
 function drawInferno(){
   if(!P.w.inferno||!INF.on) return;
   var w=(6+INF.ramp*4)*AREA('inferno'), g=Math.min(1,0.45+INF.ramp*0.2);
   ctx.save();
-  ctx.globalAlpha=0.45*g; ctx.strokeStyle='#ff5a1f'; ctx.lineWidth=w*2;
-  ctx.beginPath(); ctx.moveTo(P.x,P.y); ctx.lineTo(INF.ex,INF.ey); ctx.stroke();
-  ctx.globalAlpha=0.85*g; ctx.strokeStyle='#ffb14d'; ctx.lineWidth=w;
-  ctx.beginPath(); ctx.moveTo(P.x,P.y); ctx.lineTo(INF.ex,INF.ey); ctx.stroke();
-  ctx.globalAlpha=1; ctx.strokeStyle='#fff2c0'; ctx.lineWidth=Math.max(2,w*0.4);
-  ctx.beginPath(); ctx.moveTo(P.x,P.y); ctx.lineTo(INF.ex,INF.ey); ctx.stroke();
-  ctx.globalAlpha=0.6*g; ctx.fillStyle='#ffcf8a';
-  ctx.beginPath(); ctx.arc(INF.ex,INF.ey,w*0.9,0,6.3); ctx.fill();
+  for(var i=0;i<INF.extra.length;i++) infBeam(INF.extra[i].x,INF.extra[i].y,Math.max(3,w*0.6),0.7);  // 追加ビーム（細め）
+  infBeam(INF.ex,INF.ey,w,g);
   ctx.globalAlpha=1; ctx.restore();
 }
 function drawSaw(f){
@@ -2450,7 +2467,7 @@ function doIce(){
     var an=a+(i-(cnt-1)/2)*0.28;
     shots.push({x:P.x,y:P.y,vx:Math.cos(an)*640,vy:Math.sin(an)*640,r:7,
       src:'ice',kind:'icejav',ang:an,dmg:17*DMG('ice')*pw('ice'),pierce:3+PRC('ice'),life:RNG('ice')/640,
-      col:'#bff0ff',col2:'#3aa9e0',slow:2.0+SLW('ice'),el:'ice',hit:[]});
+      col:'#bff0ff',col2:'#3aa9e0',slow:2.0+DURV('ice'),el:'ice',hit:[]});
   }
   sfx(1240,.08,'sine',.05,.5);
   wgain('ice',cnt);
@@ -6520,6 +6537,9 @@ Array.prototype.forEach.call(document.querySelectorAll('#setshake button'),funct
 // 更新履歴：1つのお知らせ内で「バージョン見出し」ごとに変更点を並べる（新しい順）。
 // マージのたびに先頭へ新バージョンを追加し、VERSION も更新する。
 var UPDATES=[
+  {v:'α1.0.62', items:[
+    '強化軸に「持続」を追加。効果の持続時間（氷の鈍足時間・延焼・インフェルノの火力の伸び）を強化できます。',
+    'インフェルノビームの強化軸を調整：「数」（ビーム本数）と「持続」を追加、「範囲」を廃止。氷の鈍足強化は「持続」軸に統一しました。']},
   {v:'α1.0.61', items:[
     '新武器「インフェルノビーム」を追加！最寄りの敵へビームを照射し続け、同じ敵に当て続けるほど火力が上がっていきます（覚醒で延焼＋極太化）。']},
   {v:'α1.0.60', items:[
