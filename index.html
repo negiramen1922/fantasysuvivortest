@@ -1735,7 +1735,7 @@ function figInfo(id){
   if(BOSS[id]){ var B=BOSS[id], tt=ETYPE[B.key]||{}; return {nm:B.nm,shape:tt.shape,col:tt.col,dark:tt.dark,desc:BDEX[id]||'',boss:true}; }
   var t=ETYPE[id]||{}; return {nm:t.nm,shape:t.shape,col:t.col,dark:t.dark,desc:DEX[id]||'',boss:false};
 }
-var VERSION='α1.0.55'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
+var VERSION='α1.0.56'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
 function applySave(o){
   for(var i=0;i<UPG.length;i++) META[UPG[i].id]=0;
   try{
@@ -2956,7 +2956,7 @@ function checkBoss(){
 }
 function spawnBoss(key){
   var B=BOSS[key], t=ETYPE[B.key];
-  var scale=1+time/60*0.63, dscale=1+time/60*0.22;
+  var scale=1+time/60*0.63, dscale=1+time/60*0.16;   // 攻撃力の伸びを緩和（ワンパン対策）
   var a=Math.random()*6.283, dist=Math.hypot(W,H)/2+90;
   var bhp=B.hp*bossHpMul;
   var e={ k:B.key, bkey:key, boss:1, last:B.last||0,
@@ -2998,7 +2998,7 @@ function makeEnemy(k){
   }
   var a=Math.random()*Math.PI*2;
   var dist=Math.hypot(W,H)/2+60+Math.random()*120;
-  var scale=1+time/60*0.63, dscale=1+time/60*0.22;
+  var scale=1+time/60*0.63, dscale=1+time/60*0.16;   // 攻撃力の伸びを緩和（ワンパン対策）
   var e={ k:k, nm:t.nm, x:P.x+Math.cos(a)*dist, y:P.y+Math.sin(a)*dist,
     hp:t.hp*scale, mhp:t.hp*scale, spd:t.spd*(0.9+Math.random()*0.25), r:t.r,
     col:t.col, dark:t.dark, xp:t.xp, dmg:t.dmg*dscale, shape:t.shape, pts:t.pts,
@@ -6457,6 +6457,8 @@ Array.prototype.forEach.call(document.querySelectorAll('#setshake button'),funct
 // 更新履歴：1つのお知らせ内で「バージョン見出し」ごとに変更点を並べる（新しい順）。
 // マージのたびに先頭へ新バージョンを追加し、VERSION も更新する。
 var UPDATES=[
+  {v:'α1.0.56', items:[
+    'バランス調整：敵の攻撃力の時間による伸びを緩和しました（終盤の事故ワンパンを軽減）。']},
   {v:'α1.0.55', items:[
     'スケルトンドラゴン：ブレスを根本から極太に強化。ジャイアントモス風の扇弾幕（10×2）も追加、全方位弾幕の密度も1.5倍に。',
     'アラクネイド：卵を設置すると同時に、ランダムな方向へ白い大弾幕を放つように。',
