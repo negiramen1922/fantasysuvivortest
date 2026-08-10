@@ -1095,7 +1095,7 @@ var BOSS={
   gravekeeper:{ nm:'墓守',             res:0.92, key:'skeleton', hp:40000,  r:46, spd:56, dmg:42, xp:1300, pts:16000,
                ai:'gravekeeper', acd:2.2, nbul:18, bspd:250, bdmg:18, chspd:540, chdur:0.9 },
   skeletonking:{ nm:'スケルトンキング', res:0.94, key:'skeleton', hp:90000,  r:48, spd:60, dmg:46, xp:1700, pts:24000,
-               ai:'sking', acd:2.6, wind:0.8, nbul:20, bspd:250, bdmg:18 },
+               ai:'sking', acd:2.6, wind:0.8, nbul:20, bspd:250, bdmg:18, chspd:560, chdur:0.8 },
   hecaton:    { nm:'ヘカトンケイル',   res:0.95, key:'mummy',    hp:175000, r:54, spd:44, dmg:48, xp:2000, pts:40000,
                ai:'hecaton', acd:2.8, nbul:24, bspd:230, bdmg:18 },
   skeledragon:{ nm:'スケルトンドラゴン', res:0.96, key:'gargoyle', hp:340000, r:56, spd:100, dmg:54, xp:2600, pts:70000,
@@ -1733,7 +1733,7 @@ function figInfo(id){
   if(BOSS[id]){ var B=BOSS[id], tt=ETYPE[B.key]||{}; return {nm:B.nm,shape:tt.shape,col:tt.col,dark:tt.dark,desc:BDEX[id]||'',boss:true}; }
   var t=ETYPE[id]||{}; return {nm:t.nm,shape:t.shape,col:t.col,dark:t.dark,desc:DEX[id]||'',boss:false};
 }
-var VERSION='α1.0.53'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
+var VERSION='α1.0.54'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
 function applySave(o){
   for(var i=0;i<UPG.length;i++) META[UPG[i].id]=0;
   try{
@@ -3258,52 +3258,96 @@ function moveEnemies(dt){
           sfx(280,.24,'square',.06,1.7); e.st=''; e.at=e.acd;
         }
       }
-      else if(e.st==='swwind'){        // 突進コンボの予備動作（赤い扇の予告）
-        e.stT-=dt; moved=1; e.x+=dx/d*e.spd*0.6*dt; e.y+=dy/d*e.spd*0.6*dt;
-        if(e.stT<=0){ e.st='swing'; e.stT=0.22; e.swung=0; }
+      else if(e.st==='kcwind'){        // 突進の予告（方向固定・赤い線）
+        e.stT-=dt; moved=1;
+        if(e.stT<=0){ e.st='kdash'; e.stT=e.chdur||0.85; e.vx=Math.cos(e.aimA)*(e.chspd||560); e.vy=Math.sin(e.aimA)*(e.chspd||560); sfx(150,.16,'sawtooth',.05,.6); }
       }
-      else if(e.st==='swing'){         // 踏み込み斬り
-        e.stT-=dt; moved=1; e.x+=dx/d*e.spd*2.6*dt; e.y+=dy/d*e.spd*2.6*dt;
-        if(!e.swung){ e.swung=1;
-          fx.push({k:'slash',x:e.x+dx/d*(e.r+22),y:e.y+dy/d*(e.r+22),a:Math.atan2(dy,dx),arc:1.9,rad:e.r+74,t:0,life:.2,col:'#dfeaff'});
-          sfx(300,.09,'square',.06,0.65);
-          if(d<e.r+104&&P.hurt<=0&&P.inv<=0&&!P.god){
-            P.hp-=e.dmg*(1-0.04*M('armor'))*(1-0.03*(P.p.bulwark||0))*dexTakeMul(figKey(e)); P.hurt=0.55; shake=Math.min(16,shake+6);
-            if(P.hp<=0){ P.hp=0; setKiller(e); die(); return; }
+      else if(e.st==='kdash'){         // 3連続突進
+        e.stT-=dt; moved=1; e.x+=e.vx*dt; e.y+=e.vy*dt;
+        if(e.stT<=0){ e.dashN--;
+          if(e.dashN>0){ e.st='kcwind'; e.stT=0.30; e.aimA=Math.atan2(dy,dx); }
+          else{                        // 3連突進のあと：自身から全方位弾幕＋墓落下の警告
+            for(var kk=0;kk<e.nbul;kk++) eshoot(e,kk/e.nbul*6.283+Math.random()*0.15,e.bspd,e.bdmg);
+            fx.push({k:'ring',x:e.x,y:e.y,r:0,to:150,t:0,life:.4,col:'#dfeaff'});
+            shake=Math.min(24,shake+14); sfx(90,.3,'sawtooth',.1,.4); noise(.3,.12);
+            e.graves=[]; for(var gv=0;gv<5;gv++){ var gva=Math.random()*6.283, gvd=Math.random()*220; e.graves.push({x:P.x+Math.cos(gva)*gvd, y:P.y+Math.sin(gva)*gvd, t:0.85}); }
+            e.st='kgrave';
           }
         }
-        if(e.stT<=0){ e.combo--; if(e.combo>0){ e.st='swwind'; e.stT=0.3; } else { e.st=''; e.at=e.acd; } }
+      }
+      else if(e.st==='kgrave'){        // 警告→墓が落ちてくる（範囲ダメージ）
+        moved=1; var gallDone=true;
+        for(var gi=0;gi<e.graves.length;gi++){ var gp=e.graves[gi];
+          if(gp.t>0){ gallDone=false; gp.t-=dt;
+            if(gp.t<=0){
+              fx.push({k:'ring',x:gp.x,y:gp.y,r:0,to:72,t:0,life:.35,col:'#c9b0ff'});
+              shake=Math.min(18,shake+6); sfx(80,.2,'sawtooth',.09,.4);
+              if(!P.god&&P.hurt<=0&&P.inv<=0&&Math.hypot(P.x-gp.x,P.y-gp.y)<P.r+42){
+                P.hp-=e.dmg*(1-0.04*M('armor'))*(1-0.03*(P.p.bulwark||0))*dexTakeMul(figKey(e)); P.hurt=0.55; shake=Math.min(20,shake+8);
+                if(P.hp<=0){ P.hp=0; setKiller(e); die(); return; }
+              }
+            }
+          }
+        }
+        if(gallDone){ e.st=''; e.at=e.acd; }
       }
       else if(e.at<=0&&d<720){
         e.seq=(e.seq==null?0:e.seq+1);
-        var pick=e.seq%3;                // ノヴァ→召喚→突進コンボ を巡回
+        var pick=e.seq%3;                // ノヴァ→召喚→3連突進+墓 を巡回
         if(pick===0){ e.st='nova'; e.bc=0; e.btick=0; sfx(120,.16,'square',.06,0.9); }
         else if(pick===1){ e.st='summon'; e.stT=0.5; sfx(200,.14,'square',.05,1.1); }
-        else { e.st='swwind'; e.combo=3; e.stT=0.34; e.swung=0; }
+        else { e.st='kcwind'; e.dashN=3; e.stT=0.4; e.aimA=Math.atan2(dy,dx); }
       }
     }
     else if(e.ai==='hecaton'){
-      // ヘカトンケイル：複数の拳を予告→同時に落下（範囲ダメージ）→各着弾点から全方位弾幕
-      if(e.st==='fistwind'){
-        e.stT-=dt; moved=1;
-        if(e.stT<=0){
-          for(var fi=0;fi<e.fists.length;fi++){ var fp=e.fists[fi];
-            fx.push({k:'ring',x:fp.x,y:fp.y,r:0,to:e.fistR*1.7,t:0,life:.38,col:'#ffcaa0'});
-            for(var fb=0;fb<10;fb++) eshootAt(fp.x,fp.y,fb/10*6.283+Math.random()*0.2,e.bspd,e.bdmg,e.bkey);
+      // ヘカトンケイル：拳を1つずつ順番に10回落下（HP50%以下で加速）→ 8方向回転ビーム×4
+      if(e.st==='fistseq'){
+        moved=1;
+        e.fspawn-=dt;
+        if(e.fspawn<=0&&e.fc<10){                       // 次の拳を予約（順番にズレて）
+          e.fc++;
+          var fa=Math.random()*6.283, fd=Math.random()*220;
+          e.pf.push({x:P.x+Math.cos(fa)*fd, y:P.y+Math.sin(fa)*fd, t:0.55});
+          e.fspawn=(e.hp<=e.mhp*0.5)?0.20:0.40;         // HP50%以下で落下間隔を短縮
+          sfx(120,.1,'square',.05,0.7);
+        }
+        for(var pi=e.pf.length-1;pi>=0;pi--){ var fp=e.pf[pi]; fp.t-=dt;
+          if(fp.t<=0){                                   // 着弾：範囲ダメージ＋小さな全方位弾
+            fx.push({k:'ring',x:fp.x,y:fp.y,r:0,to:e.fistR*1.7,t:0,life:.35,col:'#ffcaa0'});
+            for(var fb=0;fb<8;fb++) eshootAt(fp.x,fp.y,fb/8*6.283+Math.random()*0.2,e.bspd,e.bdmg,e.bkey);
             if(!P.god&&P.hurt<=0&&P.inv<=0&&Math.hypot(P.x-fp.x,P.y-fp.y)<P.r+e.fistR){
               P.hp-=e.dmg*(1-0.04*M('armor'))*(1-0.03*(P.p.bulwark||0))*dexTakeMul(figKey(e)); P.hurt=0.55; shake=Math.min(22,shake+9);
               if(P.hp<=0){ P.hp=0; setKiller(e); die(); return; }
             }
+            shake=Math.min(18,shake+5); sfx(80,.18,'sawtooth',.09,.4);
+            e.pf.splice(pi,1);
           }
-          shake=Math.min(22,shake+10); sfx(80,.3,'sawtooth',.1,.4); noise(.3,.12);
-          e.st=''; e.at=e.acd;
         }
+        if(e.fc>=10&&e.pf.length===0){ e.st='laserwind'; e.stT=0.8; e.lv=0; }
+      }
+      else if(e.st==='laserwind'){                       // ビームの予告
+        moved=1; e.stT-=dt;
+        if(e.stT<=0){ e.st='laser'; e.stT=1.3; e.beamA=Math.atan2(dy,dx); e.beamSweep=0; e.beamDir=(e.lv%2===0)?1:-1; sfx(70,.4,'sawtooth',.1,.35); }
+      }
+      else if(e.st==='laser'){                           // 8方向ビーム（回転・プレイヤー狙い）
+        moved=1; e.stT-=dt;
+        e.beamSweep+=e.beamDir*1.5*dt;
+        if(!P.god&&P.hurt<=0&&P.inv<=0){
+          var pa=Math.atan2(P.y-e.y,P.x-e.x);
+          for(var lz=0;lz<8;lz++){ var la=e.beamA+e.beamSweep+lz*(6.283/8);
+            var rel=Math.atan2(Math.sin(pa-la),Math.cos(pa-la));
+            var along=d*Math.cos(rel), perp=Math.abs(d*Math.sin(rel));
+            if(along>0&&along<1500&&perp<18){
+              P.hp-=e.dmg*(1-0.04*M('armor'))*(1-0.03*(P.p.bulwark||0))*dexTakeMul(figKey(e))*1.6*dt; shake=Math.min(20,shake+2);
+              if(P.hp<=0){ P.hp=0; setKiller(e); die(); return; }
+              break;
+            }
+          }
+        }
+        if(e.stT<=0){ e.lv++; if(e.lv>=4){ e.st=''; e.at=e.acd; } else { e.st='laserwind'; e.stT=0.5; } }
       }
       else if(e.at<=0&&d<820){
-        e.st='fistwind'; e.stT=1.0; e.fistR=64; e.fists=[];
-        for(var nf=0;nf<5;nf++){ var fa=Math.random()*6.283, fd=Math.random()*200;
-          e.fists.push({x:P.x+Math.cos(fa)*fd, y:P.y+Math.sin(fa)*fd}); }
-        sfx(120,.2,'square',.06,0.7);
+        e.st='fistseq'; e.fc=0; e.fspawn=0; e.pf=[]; e.fistR=62; sfx(120,.2,'square',.06,0.7);
       }
     }
     else if(e.ai==='sdragon'){
@@ -5021,9 +5065,9 @@ function drawEnemy(e){
   }
 
   // 突進の予告：溜め中はプレイヤー方向へ、実際の突進距離ぶんの赤いラインを伸ばす
-  if((e.st==='wind'||e.st==='gwind')&&e.chspd>0){
-    // ケルビ・墓守は予告開始時に方向固定なのでその向きを表示
-    var ta=((e.ai==='kervi'||e.ai==='gravekeeper')&&e.aimA!=null)?e.aimA:Math.atan2(P.y-e.y,P.x-e.x);
+  if((e.st==='wind'||e.st==='gwind'||e.st==='kcwind')&&e.chspd>0){
+    // ケルビ・墓守・スケルトンキングは予告開始時に方向固定なのでその向きを表示
+    var ta=((e.ai==='kervi'||e.ai==='gravekeeper'||e.ai==='sking')&&e.aimA!=null)?e.aimA:Math.atan2(P.y-e.y,P.x-e.x);
     var dl=((e.chspd||0)*(e.chdur||0))||R*6.5;   // 突進の到達距離＝警告線の長さ
     ctx.save(); ctx.rotate(ta);
     ctx.globalAlpha=0.28+0.24*Math.sin(time*20); ctx.fillStyle='#ff4d4d';
@@ -5081,15 +5125,43 @@ function drawEnemy(e){
       ctx.globalAlpha=1;
     }
   }
-  // ヘカトンケイル：拳の落下予告（着弾点に膨らむ円）
-  if(e.ai==='hecaton'&&e.st==='fistwind'&&e.fists){
-    var fpg=1-Math.max(0,e.stT)/1.0;
-    for(var hf=0;hf<e.fists.length;hf++){ var hp=e.fists[hf];
+  // スケルトンキング：墓落下の警告＋降ってくる墓
+  if(e.ai==='sking'&&e.st==='kgrave'&&e.graves){
+    for(var kg=0;kg<e.graves.length;kg++){ var kp=e.graves[kg]; if(kp.t<=0) continue;
+      var kprog=1-kp.t/0.85;
+      ctx.save(); ctx.translate(kp.x-e.x,kp.y-e.y);
+      ctx.globalAlpha=0.16+0.14*Math.sin(time*18); ctx.fillStyle='#8a6ad0';
+      ctx.beginPath(); ctx.arc(0,0,44,0,6.3); ctx.fill();
+      ctx.globalAlpha=0.5+0.3*Math.sin(time*18); ctx.strokeStyle='#c9b0ff'; ctx.lineWidth=3;
+      ctx.beginPath(); ctx.arc(0,0,44*(0.3+kprog*0.7),0,6.3); ctx.stroke();
+      ctx.globalAlpha=0.9; ctx.fillStyle='#c2b9a6'; ctx.strokeStyle='#4a463c'; ctx.lineWidth=2;
+      var kdrop=-(1-kprog)*220;
+      ctx.fillRect(-6,kdrop-16,12,26); ctx.fillRect(-14,kdrop-4,28,10);
+      ctx.globalAlpha=1; ctx.restore();
+    }
+  }
+  // ヘカトンケイル：拳の順次落下予告（各拳ごとに収束円＋降ってくる拳）
+  if(e.ai==='hecaton'&&e.st==='fistseq'&&e.pf){
+    for(var hf=0;hf<e.pf.length;hf++){ var hp=e.pf[hf];
+      var hprog=1-Math.max(0,hp.t)/0.55;
       ctx.save(); ctx.translate(hp.x-e.x,hp.y-e.y);
-      ctx.globalAlpha=0.16+0.14*Math.sin(time*18); ctx.fillStyle='#ff8a4d';
+      ctx.globalAlpha=0.16+0.14*Math.sin(time*20); ctx.fillStyle='#ff8a4d';
       ctx.beginPath(); ctx.arc(0,0,e.fistR,0,6.3); ctx.fill();
-      ctx.globalAlpha=0.5+0.3*Math.sin(time*18); ctx.strokeStyle='#ffcaa0'; ctx.lineWidth=3;
-      ctx.beginPath(); ctx.arc(0,0,e.fistR*(0.3+fpg*0.7),0,6.3); ctx.stroke();   // 収束する内円＝着弾タイミング
+      ctx.globalAlpha=0.5+0.3*Math.sin(time*20); ctx.strokeStyle='#ffcaa0'; ctx.lineWidth=3;
+      ctx.beginPath(); ctx.arc(0,0,e.fistR*(0.25+hprog*0.75),0,6.3); ctx.stroke();
+      ctx.globalAlpha=0.9; ctx.fillStyle='#cfd6e0';
+      var fdrop=-(1-hprog)*260;
+      ctx.beginPath(); ctx.arc(0,fdrop,e.fistR*0.55,0,6.3); ctx.fill();
+      ctx.globalAlpha=1; ctx.restore();
+    }
+  }
+  // ヘカトンケイル：8方向回転ビーム（セイクリッドレーザー風）
+  if(e.ai==='hecaton'&&(e.st==='laserwind'||e.st==='laser')){
+    var lbA=(e.beamA||0)+(e.beamSweep||0), lbL=1500;
+    for(var lz=0;lz<8;lz++){
+      ctx.save(); ctx.rotate(lbA+lz*(6.283/8));
+      if(e.st==='laserwind'){ ctx.globalAlpha=0.4+0.2*Math.sin(time*24); ctx.fillStyle='#ff7a5a'; ctx.fillRect(0,-3,lbL,6); }
+      else{ ctx.globalAlpha=0.8; ctx.fillStyle='#ffd27a'; ctx.fillRect(0,-16,lbL,32); ctx.globalAlpha=0.95; ctx.fillStyle='#fff2c0'; ctx.fillRect(0,-7,lbL,14); }
       ctx.globalAlpha=1; ctx.restore();
     }
   }
@@ -6331,6 +6403,9 @@ Array.prototype.forEach.call(document.querySelectorAll('#setshake button'),funct
 // 更新履歴：1つのお知らせ内で「バージョン見出し」ごとに変更点を並べる（新しい順）。
 // マージのたびに先頭へ新バージョンを追加し、VERSION も更新する。
 var UPDATES=[
+  {v:'α1.0.54', items:[
+    'スケルトンキング：踏み込みを3連続突進に変更。突進後に自身から全方位弾幕＋予告のあと墓が落ちてきます。',
+    'ヘカトンケイル：拳を1つずつ順番に10回落下（HP50%以下で加速）。そのあと8方向に伸びる回転ビームを4回（右回り／左回りが交互）。']},
   {v:'α1.0.53', items:[
     '墓守を強化：十字架を大きく・ゆっくり回転させて投げるように。弾幕のあとは十字架を構えて盾になり（正面からの攻撃を防ぐ／鎌など背後からの攻撃は有効）、そのまま突進を1回してきます。']},
   {v:'α1.0.52', items:[
