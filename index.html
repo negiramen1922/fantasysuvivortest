@@ -1811,7 +1811,7 @@ function figInfo(id){
   if(BOSS[id]){ var B=BOSS[id], tt=ETYPE[B.key]||{}; return {nm:B.nm,shape:tt.shape,col:tt.col,dark:tt.dark,desc:BDEX[id]||'',boss:true}; }
   var t=ETYPE[id]||{}; return {nm:t.nm,shape:t.shape,col:t.col,dark:t.dark,desc:DEX[id]||'',boss:false};
 }
-var VERSION='α1.0.65'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
+var VERSION='α1.0.66'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
 function applySave(o){
   for(var i=0;i<UPG.length;i++) META[UPG[i].id]=0;
   try{
@@ -4606,7 +4606,8 @@ var SPR={}, SPRT={}, SPRRDY={};
 // 端に接する白（不透明な白背景）だけをフラッドフィルで透過に。内部の白ハイライトは残す。
 // Pages（同一オリジン）では実行時に効き、file:// 等で getImageData が使えない時は例外を握って
 // 元画像をそのまま使う（assets/ の画像は事前に透過処理済み）。
-function keyWhite(im){
+var FULLKEY={chakram:1};   // リング状：中央の閉じた白も抜くため中心からも flood する
+function keyWhite(im,name){
   try{
     var c=document.createElement('canvas'); c.width=im.naturalWidth||im.width; c.height=im.naturalHeight||im.height;
     var g=c.getContext('2d'); g.drawImage(im,0,0);
@@ -4615,6 +4616,10 @@ function keyWhite(im){
       var seen=new Uint8Array(Wd*Hd), stack=[], x, y;
       for(x=0;x<Wd;x++){ stack.push(x); stack.push(x+(Hd-1)*Wd); }
       for(y=0;y<Hd;y++){ stack.push(y*Wd); stack.push(Wd-1+y*Wd); }
+      if(FULLKEY[name]){   // 中心付近も種にして、囲まれた白（穴）を抜く
+        var ccx=Wd>>1, ccy=Hd>>1;
+        for(var oy=-2;oy<=2;oy++) for(var ox=-2;ox<=2;ox++){ var sx=ccx+ox, sy=ccy+oy; if(sx>=0&&sx<Wd&&sy>=0&&sy<Hd) stack.push(sx+sy*Wd); }
+      }
       while(stack.length){
         var idx=stack.pop();
         if(seen[idx]) continue; seen[idx]=1;
@@ -4634,7 +4639,7 @@ function keyWhite(im){
 }
 (function(){ for(var k in SPRDATA){ (function(name,uri){
   var im=new Image();
-  im.onload=function(){ SPR[name]=keyWhite(im); SPRRDY[name]=1; };
+  im.onload=function(){ SPR[name]=keyWhite(im,name); SPRRDY[name]=1; };
   im.src=uri;
 })(k,SPRDATA[k]); } })();
 function sprReady(n){ return !!SPRRDY[n]; }
@@ -6624,6 +6629,8 @@ Array.prototype.forEach.call(document.querySelectorAll('#setshake button'),funct
 // 更新履歴：1つのお知らせ内で「バージョン見出し」ごとに変更点を並べる（新しい順）。
 // マージのたびに先頭へ新バージョンを追加し、VERSION も更新する。
 var UPDATES=[
+  {v:'α1.0.66', items:[
+    'チャクラムの画像の中央（穴）が透過されない不具合を修正しました。']},
   {v:'α1.0.65', items:[
     '武器・モンスターにタグ（間合い/手段/属性・種族）を追加。武器熟練リストと図鑑の詳細にタグを表示します。今後の裏ステージ（属性強化）の土台です。']},
   {v:'α1.0.64', items:[
