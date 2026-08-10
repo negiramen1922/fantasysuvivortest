@@ -10,6 +10,15 @@
 - リザルト画面と設定画面に `VERSION` を表示。
 - お知らせ（`UPDATES` 配列）は**1枠内でバージョン見出しごとに変更点を掲載**（新しい順）。マージ時は `UPDATES` 先頭に新バージョンを追加し `VERSION` を一致させる。
 
+## ver.α1.0.43
+- 解析イベントを拡充（バランス調整用の5項目）。
+  - `run_start`（`startRun`）：ラン開始。`stage / character / char_name`。開始→完走比＝離脱率、ステージ別挑戦回数の分母に使う。
+  - 死因 `killed_by`：被弾死亡の各地点で `KILLER={k,nm}` を記録（`setKiller(e)`／敵弾は `b.bk` から `figInfo` で名前解決）。`finish()` の `run_end` に `killed_by`（図鑑キー）・`killed_by_name`（表示名）を追加。時間切れ敗北は `timeup`。
+  - **敗北リザルトに「死因：◯◯」を表示**（`res` の見出し直下、勝利時は非表示）。
+  - `levelup_pick`（`choose`）：レベルアップの選択を記録。`pick(kind:id:ax) / name / kind / level / stage`。武器の人気度・勝率相関に使う。
+  - `weapon_used` に `won` を追加：武器別の勝率が算出可能に。
+  - `run_end` に `wave`（到達したウェーブ段数＝`WAVE` の `t<=time` 数）と `boss_reached`（遭遇ボス数＝`bossN`）を追加。進行度分布用。
+
 ## ver.α1.0.42
 - GA4 の gtag.js グローバルサイトタグ（`G-JWFHEG2D2S`）を `<head>` に設置。GA4 側のタグ検出が通らなかったため。Firebase Analytics と同じ dataLayer/gtag を共有するので二重計測にはならない。カスタムイベント（game_open/run_end/weapon_used）は従来どおり Firebase Analytics 経由で送信。
 
