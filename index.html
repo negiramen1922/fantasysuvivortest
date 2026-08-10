@@ -253,10 +253,11 @@ canvas{display:block;width:100%;height:100%;touch-action:none}
 .ubuy:disabled{opacity:.3;cursor:default}
 #vbtns{display:flex;gap:10px;justify-content:center;flex-wrap:wrap}
 #vbtns .btn{margin-top:22px}
-#stagesel{margin-top:20px}
+#stagesel{margin-top:20px;display:flex;flex-direction:column;align-items:center;gap:10px}
 .stlabel{font-size:11px;color:var(--ash);letter-spacing:.14em;margin-bottom:8px}
 .strow{display:flex;gap:10px;justify-content:center;flex-wrap:wrap}
 .stbtn{display:flex;flex-direction:column;align-items:center;gap:2px;min-width:120px;
+  max-width:460px;width:100%;
   padding:9px 14px;cursor:pointer;background:transparent;color:var(--ash);
   border:2px solid var(--line);font-family:inherit}
 .stbtn b{font-size:15px;color:#fff}
@@ -1195,16 +1196,21 @@ var BOSS_AT3=[[300,'gravekeeper'],[600,'skeletonking'],[900,'hecaton'],[1200,'sk
 
 // ステージ定義。req をクリア済みで次ステージが解放される。
 var STAGES={
-  1:{ nm:'草原',   sub:'20:00・フェンリル', wave:WAVE,  bossAt:BOSS_AT,  hpMul:1.0, req:0,
+  1:{ nm:'草原',   sub:'20:00・フェンリル', icon:'🌿', flavor:'風わたる緑の草原。魔物は素朴だが、数と獣の突進に押し負けるな。締めは狼王フェンリル。',
+      wave:WAVE,  bossAt:BOSS_AT,  hpMul:1.0, req:0,
       ground:{ bg:'#150f2c', grid:'rgba(80,62,140,.28)', dot:'rgba(120,96,200,.14)' } },
-  2:{ nm:'森',     sub:'20:00・速く重い', wave:WAVE2, bossAt:BOSS_AT2, hpMul:1.0, req:1, swarm:1, swarmStart:360,
+  2:{ nm:'森',     sub:'20:00・速く重い', icon:'🌲', flavor:'鬱蒼とした深い森。素早い獣と重い甲虫、遠くから種を撃つ樹の精。視界の外から詰められる。',
+      wave:WAVE2, bossAt:BOSS_AT2, hpMul:1.0, req:1, swarm:1, swarmStart:360,
       ground:{ bg:'#0e1f14', grid:'rgba(70,120,74,.26)',  dot:'rgba(120,180,120,.15)' } },
-  3:{ nm:'古代の王墓', sub:'20:00・アンデッド・高難度', wave:WAVE3, bossAt:BOSS_AT3, hpMul:1.15, req:2, swarm:1, swarmStart:300, swarmK:'fly',
+  3:{ nm:'古代の王墓', sub:'20:00・アンデッド・高難度', icon:'⚰️', flavor:'死者の眠る古の王墓。地から這い出る屍、強化する術者、盾を構える不死の兵。最奥に竜の亡骸が待つ。',
+      wave:WAVE3, bossAt:BOSS_AT3, hpMul:1.15, req:2, swarm:1, swarmStart:300, swarmK:'fly',
       ground:{ bg:'#1c1710', grid:'rgba(150,120,70,.24)', dot:'rgba(200,170,110,.13)' } }
 };
 var ALLSTG=1;   // 開発中は全ステージ解放。製品化時は 0 に戻す
 var curStage=1, bossHpMul=1, curGround=STAGES[1].ground;
 var STGCLEAR={};
+var STGBEST={};   // ステージ別の最高スコア
+var STGWAVE={};   // ステージ別の到達ウェーブ最高
 var BAN={};   // 排他でBANした武器 id→1
 
 var PTS_ELITE=450, PTS_REACT=30, PTS_SEC=25, PTS_LV=200, PTS_CLEAR=50000;
@@ -1811,7 +1817,7 @@ function figInfo(id){
   if(BOSS[id]){ var B=BOSS[id], tt=ETYPE[B.key]||{}; return {nm:B.nm,shape:tt.shape,col:tt.col,dark:tt.dark,desc:BDEX[id]||'',boss:true}; }
   var t=ETYPE[id]||{}; return {nm:t.nm,shape:t.shape,col:t.col,dark:t.dark,desc:DEX[id]||'',boss:false};
 }
-var VERSION='α1.0.66'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
+var VERSION='α1.0.67'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
 function applySave(o){
   for(var i=0;i<UPG.length;i++) META[UPG[i].id]=0;
   try{
@@ -1830,6 +1836,8 @@ function applySave(o){
       if(ALLCHR) for(var u2 in CHARS) UNL[u2]=1;
       if(o.ach) for(var av in ACH) if(typeof o.ach[av]==='number') ACH[av]=o.ach[av];
       if(o.stg) for(var sg in STAGES) if(o.stg[sg]) STGCLEAR[sg]=1;
+      if(o.sgb) for(var sb in o.sgb) STGBEST[sb]=o.sgb[sb]|0;
+      if(o.sgw) for(var sw in o.sgw) STGWAVE[sw]=o.sgw[sw]|0;
       if(o.ban) for(var bi=0;bi<o.ban.length;bi++) if(WEAPONS[o.ban[bi]]) BAN[o.ban[bi]]=1;
       if(o.ch&&CHARS[o.ch]&&UNL[o.ch]) SELCH=o.ch;
       if(o.tut) TUTSEEN=1;
@@ -1844,7 +1852,7 @@ function applySave(o){
 }
 (function loadSave(){ try{ applySave(JSON.parse(localStorage.getItem('bsv_save')||'null')); }catch(e){ applySave(null); } })();
 function saveObj(){
-  return {m:META,w:WALLET,wx:WX,sel:SEL,best:best,shk:SHK,volm:VOLM,vols:VOLS,volb:VOLB,unl:UNL,ach:ACH,ch:SELCH,stg:STGCLEAR,ban:Object.keys(BAN).filter(function(k){return BAN[k];}),tut:TUTSEEN,perf:PERF,dps:SHOWDPS,dpm:SHOWDPM,rsp:RESPEC_AT,bk:BKILL,bsc:BSCORE,bs:Object.keys(BSEEN).filter(function(k){return BSEEN[k];}),bsel:BSEL};
+  return {m:META,w:WALLET,wx:WX,sel:SEL,best:best,shk:SHK,volm:VOLM,vols:VOLS,volb:VOLB,unl:UNL,ach:ACH,ch:SELCH,stg:STGCLEAR,sgb:STGBEST,sgw:STGWAVE,ban:Object.keys(BAN).filter(function(k){return BAN[k];}),tut:TUTSEEN,perf:PERF,dps:SHOWDPS,dpm:SHOWDPM,rsp:RESPEC_AT,bk:BKILL,bsc:BSCORE,bs:Object.keys(BSEEN).filter(function(k){return BSEEN[k];}),bsel:BSEL};
 }
 function saveGame(){
   try{ localStorage.setItem('bsv_save',JSON.stringify(saveObj())); }catch(e){}
@@ -6504,6 +6512,8 @@ function finish(won){
   var killK=won?'':(KILLER?KILLER.k:'timeup');
   var killN=won?'':(KILLER?KILLER.nm:'時間切れ');
   var waveIdx=0; for(var wi=0;wi<WAVE.length;wi++) if(time>=WAVE[wi].t) waveIdx++;
+  STGBEST[curStage]=Math.max(STGBEST[curStage]||0,score);       // ステージ別 最高スコア
+  STGWAVE[curStage]=Math.max(STGWAVE[curStage]||0,waveIdx);     // ステージ別 到達ウェーブ
   // 解析：ラン終了時にまとめて記録（使用武器＝使用率の分母/分子）
   if(typeof fbLog==='function'){
     var wlist=Object.keys(P.w).filter(function(w){return WEAPONS[w];});
@@ -6564,6 +6574,20 @@ function startRun(n){
   // 解析：ラン開始（開始→完走の比＝離脱率、ステージ別の挑戦回数の分母）
   if(typeof fbLog==='function') fbLog('run_start',{stage:curStage,character:SELCH,char_name:CH().nm});
 }
+// ステージに出現するモンスター（出現表＋スウォーム＝雑魚、bossAt＝ボス）を重複なく返す
+function stageMonsters(st){
+  var seen={}, zako=[], boss=[];
+  function addz(k){ if(k&&!seen[k]){ seen[k]=1; zako.push(k); } }
+  if(st.wave) for(var i=0;i<st.wave.length;i++){ var mx=st.wave[i].mix; for(var j=0;j<mx.length;j++) addz(mx[j][0]); }
+  if(st.swarmK) addz(st.swarmK);
+  if(st.bossAt) for(var b=0;b<st.bossAt.length;b++) boss.push(st.bossAt[b][1]);
+  return {zako:zako, boss:boss};
+}
+function stgChip(key){
+  var isb=isBossKey(key), nm=(figInfo(key)||{}).nm||key;
+  if(BSEEN[key]) return '<span style="display:inline-block;font-size:9px;padding:1px 5px;margin:1px;border-radius:6px;background:#2a2350;color:#d8d0f0;border:1px solid #4a3f7a">'+(isb?'👑':'')+nm+'</span>';
+  return '<span style="display:inline-block;font-size:9px;padding:1px 6px;margin:1px;border-radius:6px;background:#171327;color:#5a5278;border:1px solid #2e2748">？</span>';
+}
 function renderStageSelect(){
   document.getElementById('stagechar').innerHTML=
     '<span class="chg">'+CH().glyph+'</span>'+
@@ -6573,11 +6597,24 @@ function renderStageSelect(){
   var ns=Object.keys(STAGES).map(Number).sort(function(a,b){return a-b;}), h='';
   for(var i=0;i<ns.length;i++){
     var n=ns[i], st=STAGES[n], un=stageUnlocked(n), cl=STGCLEAR[n];
-    var head=un?((STGNUM[n-1]||n)+' '+st.nm):('🔒 '+st.nm);
+    if(!un){
+      h+='<button class="stbtn lock" data-stg="'+n+'" disabled><b>🔒 '+st.nm+'</b><span>前ステージのクリアで解放</span></button>';
+      continue;
+    }
+    var head=(st.icon?st.icon+' ':'')+(STGNUM[n-1]||n)+' '+st.nm;
     var badge=cl?'<span style="margin-left:6px;color:var(--gold);font-size:12px;font-weight:700">👑CLEAR</span>':'';
-    var note=un?(st.sub+'　▶ 出撃'):'前ステージのクリアで解放';
-    h+='<button class="stbtn'+(un?'':' lock')+(cl?' cleared':'')+'" data-stg="'+n+'"'+(un?'':' disabled')+'>'+
-       '<b>'+head+badge+'</b><span>'+note+'</span></button>';
+    // 最高記録
+    var rec=(STGBEST[n]>0)?('最高 '+fmt(STGBEST[n])+'　到達 Wave '+(STGWAVE[n]||0)):'記録なし';
+    // モンスター発見バッジ
+    var ms=stageMonsters(st), all=ms.zako.concat(ms.boss), found=0, chips='';
+    for(var q=0;q<all.length;q++){ if(BSEEN[all[q]]) found++; chips+=stgChip(all[q]); }
+    h+='<button class="stbtn'+(cl?' cleared':'')+'" data-stg="'+n+'">'+
+         '<b>'+head+badge+'</b>'+
+         '<span style="font-size:11px;color:#9a90c0;margin:2px 0">'+st.flavor+'</span>'+
+         '<span style="font-size:11px;color:var(--gold)">'+rec+'　／　モンスター発見 '+found+'/'+all.length+'</span>'+
+         '<span style="display:flex;flex-wrap:wrap;gap:2px;margin:3px 0 2px">'+chips+'</span>'+
+         '<span style="font-size:11px;color:#7fd4ff">'+st.sub+'　▶ 出撃</span>'+
+       '</button>';
   }
   el.innerHTML=h;
   el.onclick=function(ev){
@@ -6629,6 +6666,8 @@ Array.prototype.forEach.call(document.querySelectorAll('#setshake button'),funct
 // 更新履歴：1つのお知らせ内で「バージョン見出し」ごとに変更点を並べる（新しい順）。
 // マージのたびに先頭へ新バージョンを追加し、VERSION も更新する。
 var UPDATES=[
+  {v:'α1.0.67', items:[
+    'ステージ選択画面を刷新：アイコン・フレーバー、ステージ別の最高スコア／到達ウェーブ、出現モンスターの発見バッジ（未発見は？）を表示。集めて埋めよう！']},
   {v:'α1.0.66', items:[
     'チャクラムの画像の中央（穴）が透過されない不具合を修正しました。']},
   {v:'α1.0.65', items:[

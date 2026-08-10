@@ -10,6 +10,13 @@
 - リザルト画面と設定画面に `VERSION` を表示。
 - お知らせ（`UPDATES` 配列）は**1枠内でバージョン見出しごとに変更点を掲載**（新しい順）。マージ時は `UPDATES` 先頭に新バージョンを追加し `VERSION` を一致させる。
 
+## ver.α1.0.67
+- ステージ選択画面の充実。各ステージに `icon`/`flavor` を追加。カード型UI（縦並び、`#stagesel` を flex column、`.stbtn` に max-width）。
+  - ステージ別の**最高スコア/到達ウェーブ**を記録：`STGBEST`/`STGWAVE`（saveObj `sgb`/`sgw`・applySave 対応、finish で更新）。
+  - **出現モンスターの発見バッジ**：`stageMonsters(st)`（wave mix＋swarmK＝雑魚、bossAt＝ボス）＋`stgChip`（BSEEN=名前チップ／未発見=？）。発見数 X/Y 表示。
+  - クリア済み👑・フレーバー・sub・出撃導線をカードに集約。
+  - 検証：ステージ選択のスクショでカード表示・？バッジ・エラーなしを確認。
+
 ## ver.α1.0.66
 - チャクラムの中央（閉じた白＝穴）が透過されない不具合を修正。`keyWhite(im,name)` に名前を渡し、`FULLKEY={chakram:1}` のスプライトは中心付近も flood 種に追加して囲まれた白を抜く。
 
