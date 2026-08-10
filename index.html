@@ -1190,11 +1190,11 @@ var WAVE3=[
   { t:420,  mix:[['wraith',0.24],['sarcher',0.44],['mummy',0.64],['ghoul',0.82],['shieldman',1.00]] },          // 7:00 盾の戦士
   { t:510,  mix:[['wraith',0.18],['sarcher',0.36],['mummy',0.54],['ghoul',0.70],['shieldman',0.85],['shadow',1.00]] }, // 8:30 シャドウ
   { t:630,  mix:[['sarcher',0.16],['mummy',0.34],['ghoul',0.50],['shieldman',0.66],['shadow',0.84],['lich',1.00]] },   // 10:30 リッチ（ボス2後）
-  { t:720,  mix:[['mummy',0.18],['ghoul',0.36],['shieldman',0.52],['shadow',0.70],['lich',0.82],['dullahan',1.00]] },  // 12:00 デュラハン
-  { t:840,  mix:[['ghoul',0.16],['shieldman',0.32],['shadow',0.50],['lich',0.64],['dullahan',0.82],['necro',1.00]] },  // 14:00 ネクロマンサー
-  { t:930,  mix:[['shieldman',0.16],['shadow',0.34],['lich',0.48],['dullahan',0.66],['necro',0.82],['gargoyle',1.00]] },// 15:30 ガーゴイル（ボス3後）
-  { t:1020, mix:[['shadow',0.16],['lich',0.30],['dullahan',0.48],['necro',0.64],['gargoyle',0.82],['boomer',1.00]] },  // 17:00 ブーマー
-  { t:1110, mix:[['shadow',0.14],['mummy',0.28],['dullahan',0.46],['necro',0.62],['gargoyle',0.80],['boomer',1.00]] }  // 18:30 終盤混成
+  { t:720,  mix:[['mummy',0.20],['ghoul',0.40],['shieldman',0.58],['shadow',0.78],['lich',0.91],['dullahan',1.00]] },  // 12:00 デュラハン（出現を半減：0.18→0.09）
+  { t:840,  mix:[['ghoul',0.18],['shieldman',0.36],['shadow',0.56],['lich',0.71],['dullahan',0.80],['necro',1.00]] },  // 14:00 ネクロマンサー
+  { t:930,  mix:[['shieldman',0.18],['shadow',0.38],['lich',0.53],['dullahan',0.62],['necro',0.80],['gargoyle',1.00]] },// 15:30 ガーゴイル（ボス3後）
+  { t:1020, mix:[['shadow',0.18],['lich',0.33],['dullahan',0.42],['necro',0.60],['gargoyle',0.80],['boomer',1.00]] },  // 17:00 ブーマー
+  { t:1110, mix:[['shadow',0.16],['mummy',0.31],['dullahan',0.40],['necro',0.58],['gargoyle',0.78],['boomer',1.00]] }  // 18:30 終盤混成
 ];
 // ステージ3のボス。締めはスケルトンドラゴン。
 var BOSS_AT3=[[300,'gravekeeper'],[600,'skeletonking'],[900,'hecaton'],[1200,'skeledragon']];
@@ -1822,7 +1822,7 @@ function figInfo(id){
   if(BOSS[id]){ var B=BOSS[id], tt=ETYPE[B.key]||{}; return {nm:B.nm,shape:tt.shape,col:tt.col,dark:tt.dark,desc:BDEX[id]||'',boss:true}; }
   var t=ETYPE[id]||{}; return {nm:t.nm,shape:t.shape,col:t.col,dark:t.dark,desc:DEX[id]||'',boss:false};
 }
-var VERSION='α1.0.73'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
+var VERSION='α1.0.74'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
 function applySave(o){
   for(var i=0;i<UPG.length;i++) META[UPG[i].id]=0;
   try{
@@ -6722,6 +6722,8 @@ Array.prototype.forEach.call(document.querySelectorAll('#setshake button'),funct
 // 更新履歴：1つのお知らせ内で「バージョン見出し」ごとに変更点を並べる（新しい順）。
 // マージのたびに先頭へ新バージョンを追加し、VERSION も更新する。
 var UPDATES=[
+  {v:'α1.0.74', items:[
+    'ステージ3のデュラハンの出現量を約半分に減らしました（減った分は他のアンデッドに配分）。']},
   {v:'α1.0.73', items:[
     'ヘカトンケイルの回転ビームを修正：予告線と実際の発射方向がズレていて、予告と関係なく初弾が必中してしまう不具合を解消。予告どおりの位置に撃つようになりました。']},
   {v:'α1.0.72', items:[
