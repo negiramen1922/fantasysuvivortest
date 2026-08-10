@@ -1179,7 +1179,7 @@ var P, enemies, gems, shots, fx, dmgs, parts, bolts, chests, coins, chaks, scys,
 var time, kills, spawnT, eliteT, shake, hitStop, flash, chain, chainT, choices;
 var whirlA, marks, reacts, crits, rdep, rtok, pending, score, silver, gold, magFx, chakSpin, swingT, swingDir;
 var SWDUR=0.42;   // 大剣の振りの長さ（秒）。大きいほどゆっくり
-var ebul, boss, bossN, quakes, dhits, vacs, vacT, bells, swords, zones, volley, relics;
+var ebul, boss, bossN, quakes, dhits, vacs, vacT, bells, swords, zones, volley, relics, puddles;
 var lasers;
 
 /* ============ 武器熟練度・特性 ============ */
@@ -1733,7 +1733,7 @@ function figInfo(id){
   if(BOSS[id]){ var B=BOSS[id], tt=ETYPE[B.key]||{}; return {nm:B.nm,shape:tt.shape,col:tt.col,dark:tt.dark,desc:BDEX[id]||'',boss:true}; }
   var t=ETYPE[id]||{}; return {nm:t.nm,shape:t.shape,col:t.col,dark:t.dark,desc:DEX[id]||'',boss:false};
 }
-var VERSION='α1.0.46'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
+var VERSION='α1.0.47'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
 function applySave(o){
   for(var i=0;i<UPG.length;i++) META[UPG[i].id]=0;
   try{
@@ -1795,7 +1795,7 @@ function reset(){
       lv:1, xp:0, need:xpNeed(1), hurt:0, inv:0,
       w:w0, wa:wa0, aw:{}, lb:{}, p:{}, rel:{},
       rr:5+M('reroll'), sk:5+M('skipn') };
-  enemies=[]; gems=[]; shots=[]; fx=[]; dmgs=[]; parts=[]; bolts=[]; chests=[]; coins=[]; chaks=[]; scys=[]; bombs=[]; rocks=[]; holes=[]; ebul=[]; quakes=[]; dhits=[]; vacs=[]; vacT=40; bells=[]; swords=[]; zones=[]; volley=[]; relics=placeRelics();
+  enemies=[]; gems=[]; shots=[]; fx=[]; dmgs=[]; parts=[]; bolts=[]; chests=[]; coins=[]; chaks=[]; scys=[]; bombs=[]; rocks=[]; holes=[]; ebul=[]; quakes=[]; dhits=[]; vacs=[]; vacT=40; bells=[]; swords=[]; zones=[]; volley=[]; puddles=[]; relics=placeRelics();
   boss=null; bossN=0; lasers=[];
   time=0; kills=0; spawnT=0; eliteT=55; swarmT=3; swarmWarnT=0; shake=0; hitStop=0; flash=0; chain=0; chainT=0;
   gat.t=0; gat.mag=-1; gat.rl=0;
@@ -1932,6 +1932,7 @@ function update(dt){
   swarmTick(dt);
   checkBoss();
   moveEbul(dt);
+  movePuddles(dt);
   stepFx(dt);
   syncHud();
 }
@@ -2987,7 +2988,13 @@ function spawnBoss(key){
 
 var UID=0;
 function makeEnemy(k){
-  var t=ETYPE[k], a=Math.random()*Math.PI*2;
+  var t=ETYPE[k];
+  // 湧き上限：同種が上限に達していたらスケルトンで代替（リッチ4/ネクロ3/ブーマー3）
+  if(t&&t.cap){
+    var cc=0; for(var ci=0;ci<enemies.length;ci++){ if(!enemies[ci].dead&&enemies[ci].k===k) cc++; }
+    if(cc>=t.cap){ k='skeleton'; t=ETYPE[k]; }
+  }
+  var a=Math.random()*Math.PI*2;
   var dist=Math.hypot(W,H)/2+60+Math.random()*120;
   var scale=1+time/60*0.63, dscale=1+time/60*0.22;
   var e={ k:k, nm:t.nm, x:P.x+Math.cos(a)*dist, y:P.y+Math.sin(a)*dist,
@@ -2996,10 +3003,17 @@ function makeEnemy(k){
     ai:t.ai||'', acd:t.acd||0, at:0.6+Math.random()*1.2, st:'', stT:0,
     vx:0, vy:0, res:t.res||0, flat:(t.flat||0)*scale,
     range:t.range||0, chspd:t.chspd||0, wind:t.wind||0, chdur:t.chdur||0,
-    bspd:t.bspd||0, bdmg:(t.bdmg||0)*dscale,
-    boom:t.boom||0, boomR:t.boomR||0, boomDmg:(t.boomDmg||0)*dscale, life:0,
+    bspd:t.bspd||0, bdmg:(t.bdmg||0)*dscale, sum:t.sum||'', nsum:t.nsum||0,
+    boom:t.boom||0, boomR:t.boomR||0, boomDmg:(t.boomDmg||0)*dscale, puddle:t.puddle||0, life:0,
+    shield:t.shield||0, shieldMax:t.shield||0, buffT:0,
     kb:0, kbx:0, kby:0, ht:0, slow:0, el:0, elT:0, rcd:0, frz:0, dotD:0, dotT:0, dotN:0, vuln:0,
     ph:Math.random()*6.28, elite:0, boss:0, dead:0, uid:(++UID) };
+  // グール：プレイヤーの近くの地面から出現（ぼこぼこ予告→出現）
+  if(t.ai==='burrow'){
+    var ba=Math.random()*6.283, bd=90+Math.random()*90;
+    e.x=P.x+Math.cos(ba)*bd; e.y=P.y+Math.sin(ba)*bd;
+    e.st='burrow'; e.stT=0.7;
+  }
   enemies.push(e);
   // 図鑑：初めて出会う種類ならカード表示待ちに積む
   if(DEX[k]&&!BSEEN[k]){ BSEEN[k]=1; dexQueue.push(k); }
@@ -3038,9 +3052,11 @@ function moveEnemies(dt){
     var moved=0;
     // 画面外にかなり離れた雑魚は消す（ボス・エリート・突進中の敵は除外）
     if(!e.boss&&!e.elite&&e.ai!=='dash'&&d>DESP){ e.dead=1; continue; }
-    // 継続ダメージ
+    // 継続ダメージ（盾があるうちは盾が肩代わり）
     if(e.dotT>0){
-      e.dotT-=dt; e.hp-=e.dotD*dt;
+      e.dotT-=dt;
+      if(e.shield>0){ e.shield-=e.dotD*dt; if(e.shield<0) e.shield=0; }
+      else e.hp-=e.dotD*dt;
       e.dotN=(e.dotN||0)-dt;
       if(e.dotN<=0){
         e.dotN=0.45;
@@ -3287,6 +3303,22 @@ function moveEnemies(dt){
       if(e.life>0){ e.life-=dt; if(e.life<=0){ e.dead=1; continue; } }
       if(d>1500){ e.dead=1; continue; }
     }
+    else if(e.ai==='burrow'){
+      // グール：地面から出現。予告(ぼこぼこ)中は動かず・無害、時間経過で出現して以後は追尾。
+      if(e.st==='burrow'){ e.stT-=dt; moved=1;
+        if(e.stT<=0){ e.st=''; sfx(120,.14,'sawtooth',.06,.5); fx.push({k:'ring',x:e.x,y:e.y,r:0,to:e.r+18,t:0,life:.28,col:'#9ab07a'}); }
+      }
+    }
+    else if(e.ai==='buff'){
+      // リッチ：周囲の味方を強化（速度+/被ダメ-）。バフは短時間で切れるので範囲内で更新し続ける。
+      e.buffTick=(e.buffTick||0)-dt;
+      if(e.buffTick<=0){ e.buffTick=0.2;
+        for(var bi=0;bi<enemies.length;bi++){ var be=enemies[bi];
+          if(be===e||be.dead||be.boss) continue;
+          if((be.x-e.x)*(be.x-e.x)+(be.y-e.y)*(be.y-e.y)<220*220) be.buffT=0.35;
+        }
+      }
+    }
 
     // --- 移動 ---
     if(e.kb>0){
@@ -3294,8 +3326,10 @@ function moveEnemies(dt){
       e.x+=e.kbx*e.kb*dt*13*kr; e.y+=e.kby*e.kb*dt*13*kr; e.kb-=dt*38;
     }else if(!moved){
       var sp=e.slow>0?e.spd*0.45:e.spd;
+      if(e.buffT>0) sp*=1.25;                 // リッチのオーラ：移動速度+25%
       e.x+=dx/d*sp*dt; e.y+=dy/d*sp*dt;
     }
+    if(e.buffT>0) e.buffT-=dt;
     if(e.ht>0) e.ht-=dt;
     if(e.slow>0) e.slow-=dt;
     if(e.elT>0){ e.elT-=dt; if(e.elT<=0) e.el=0; }
@@ -3303,7 +3337,7 @@ function moveEnemies(dt){
     if(e.vuln>0) e.vuln-=dt;
 
     // --- プレイヤーへの接触 ---
-    if(e.dmg>0&&d<e.r+P.r&&P.hurt<=0&&P.inv<=0&&!P.god){
+    if(e.dmg>0&&e.st!=='burrow'&&d<e.r+P.r&&P.hurt<=0&&P.inv<=0&&!P.god){
       P.hp-=e.dmg*(1-0.04*M('armor'))*(1-0.03*(P.p.bulwark||0))*dexTakeMul(figKey(e)); P.hurt=0.55; shake=Math.min(16,shake+5);
       sfx(140,.16,'square',.09,.5);
       if(P.hp<=0){ P.hp=0; setKiller(e); die(); return; }
@@ -3338,6 +3372,18 @@ function moveEbul(dt){
     }
   }
 }
+// 毒の沼（ブーマーの遺物）：乗っているあいだ継続ダメージ。無敵時間に関係なく緩やかに削る。
+function movePuddles(dt){
+  var arm=(1-0.04*M('armor'))*(1-0.03*(P.p.bulwark||0));
+  for(var i=puddles.length-1;i>=0;i--){
+    var q=puddles[i]; q.life-=dt; q.t+=dt;
+    if(q.life<=0){ puddles.splice(i,1); continue; }
+    if(!P.god&&!P.nodmg&&Math.hypot(P.x-q.x,P.y-q.y)<P.r+q.r){
+      P.hp-=14*dt*arm;                          // 毎秒14の継続ダメージ
+      if(P.hp<=0){ P.hp=0; KILLER={k:'boomer',nm:'毒の沼'}; die(); return; }
+    }
+  }
+}
 function hurt(e,dmg,nx,ny,el){
   if(e.dead) return;
   var crit=Math.random()<CRITC();
@@ -3347,6 +3393,17 @@ function hurt(e,dmg,nx,ny,el){
   if(P.nodmg) d=0;                         // テスト：判定は走るが敵は死なない
   if(e.vuln>0) d*=1.2;                     // 深淵の手：被ダメージ上昇
   if(e.flat) d=Math.max(d*0.25,d-e.flat);   // 甲羅：軽い攻撃ほど通らない
+  if(e.buffT>0) d*=0.8;                      // リッチのオーラ：被ダメージ -20%
+  if(e.shield>0){                            // 盾の戦士：割れるまで本体HPに通さない（この一撃も本体には行かない）
+    e.shield-=d; if(e.shield<0) e.shield=0;
+    e.ht=0.12; dmgSec+=d;
+    if(SRC!=='bell'&&SRC!=='aura'&&SRC!=='blizzard'){ e.kb=Math.max(e.kb,crit?4:2.2); e.kbx=nx||0; e.kby=ny||0; }
+    if(SRC) WDMG[SRC]=(WDMG[SRC]||0)+d; else WDMG._react=(WDMG._react||0)+d;
+    if(dmgs.length>110) dmgs.shift();
+    dmgs.push({x:e.x,y:e.y-e.r-4,v:-52,t:0,life:.6,txt:Math.round(d),crit:crit,col:'#8fd4ff'});
+    if(e.shield<=0){ fx.push({k:'ring',x:e.x,y:e.y,r:0,to:e.r+16,t:0,life:.3,col:'#bfe0ff'}); sfx(360,.12,'square',.05,1.2); }
+    return;
+  }
   e.hp-=d; e.ht=0.12; dmgSec+=d;   // DPS/DPM 集計
   // ベル・ホーリージャッジ（十字架AoE）・アイスブリザードはノックバックさせない
   if(SRC!=='bell'&&SRC!=='aura'&&SRC!=='blizzard'){ e.kb=Math.max(e.kb,crit?4:2.2); e.kbx=nx||0; e.kby=ny||0; }
@@ -3359,6 +3416,12 @@ function hurt(e,dmg,nx,ny,el){
 function kill(e){
   if(e.dead) return;
   e.dead=1; kills++;
+  // ブーマー：死亡時に毒の沼を残す（乗ると継続ダメージ）
+  if(e.puddle){
+    puddles.push({x:e.x,y:e.y,r:(e.r||18)+34,life:6,t:0});
+    if(puddles.length>16) puddles.shift();
+    fx.push({k:'ring',x:e.x,y:e.y,r:0,to:(e.r||18)+40,t:0,life:.4,col:'#8fbf3a'});
+  }
   // 図鑑：討伐数（表示用）とスコア（ザコの強化ポイント）を集計
   if(e.boss){ if(BOSS[e.bkey]) BKILL[e.bkey]=(BKILL[e.bkey]||0)+1; }
   else if(DEX[e.k]){ BKILL[e.k]=(BKILL[e.k]||0)+1; BSCORE[e.k]=(BSCORE[e.k]||0)+(e.elite?PTS_ELITE:e.pts); }
@@ -4037,6 +4100,7 @@ function render(){
 
   // ---- 地面の層：広い面の演出はすべて敵より下に描く ----
   drawMagRing();
+  for(i=0;i<puddles.length;i++) drawPuddle(puddles[i]);
   for(i=0;i<relics.length;i++) drawRelic(relics[i]);
   for(i=0;i<chests.length;i++) drawChest(chests[i]);
   for(i=0;i<coins.length;i++) drawCoin(coins[i]);
@@ -4663,8 +4727,44 @@ var SPRSZ={blob:{s:3.0,oy:0.35}, goblin:{s:3.2,oy:0.55}, orc:{s:3.0,oy:0.50},
   hog:{s:3.2,oy:0.30}, hog_boss:{s:2.7,oy:0.28}, bat:{s:3.6,oy:0.10}, spirit:{s:3.4,oy:0.10},
   cyclops:{s:2.9,oy:0.50}, wolf:{s:3.3,oy:0.35}, fenrir:{s:2.7,oy:0.35}, turtle:{s:3.0,oy:0.35},
   goat:{s:3.1,oy:0.45}, harpy:{s:3.4,oy:0.15}, slimeking:{s:2.7,oy:0.28}};
+// 毒の沼（ブーマー）：緑の沼＋泡。消える直前にフェード。
+function drawPuddle(q){
+  var a=Math.min(1,q.life/1.2)*0.55;
+  ctx.save(); ctx.translate(q.x,q.y);
+  ctx.globalAlpha=a; ctx.fillStyle='#3f5a1c';
+  ctx.beginPath(); ctx.ellipse(0,0,q.r,q.r*0.56,0,0,6.3); ctx.fill();
+  ctx.globalAlpha=a*0.9; ctx.fillStyle='#6fa028';
+  for(var k=0;k<5;k++){ var an=k/5*6.283+q.t*0.5;
+    ctx.beginPath(); ctx.ellipse(Math.cos(an)*q.r*0.42,Math.sin(an)*q.r*0.24,q.r*0.2,q.r*0.11,0,0,6.3); ctx.fill(); }
+  ctx.globalAlpha=a; ctx.fillStyle='#bfe86a';
+  ctx.beginPath(); ctx.arc(Math.sin(q.t*2.2)*q.r*0.3,Math.cos(q.t*1.7)*q.r*0.16,2.4+Math.max(0,Math.sin(q.t*5)),0,6.3); ctx.fill();
+  ctx.globalAlpha=1; ctx.restore();
+}
 function drawEnemy(e){
   ctx.save(); ctx.translate(e.x,e.y);
+  // グール：地面からの出現予告（ぼこぼこ）。本体は描かず、盛り上がる土だけ見せる。
+  if(e.st==='burrow'){
+    var pp=1-Math.max(0,e.stT)/0.7;
+    ctx.fillStyle='rgba(0,0,0,.28)';
+    for(var gb=0;gb<4;gb++){ var ga=gb/4*6.283+e.ph, gr=e.r*(0.45+0.25*Math.abs(Math.sin(time*11+gb)));
+      ctx.beginPath(); ctx.ellipse(Math.cos(ga)*e.r*0.5,Math.sin(ga)*e.r*0.3,gr*0.42,gr*0.24,0,0,6.3); ctx.fill(); }
+    ctx.fillStyle=e.dark;
+    ctx.beginPath(); ctx.ellipse(0,0,e.r*(0.45+pp*0.55),e.r*(0.28+pp*0.3),0,0,6.3); ctx.fill();
+    ctx.restore(); return;
+  }
+  // リッチ：強化オーラ範囲と、強化中の味方へ伸びる光の線（強化が一目で分かる演出）
+  if(e.ai==='buff'){
+    ctx.save();
+    ctx.globalAlpha=0.10+0.05*Math.sin(time*4); ctx.fillStyle='#c9a0ff';
+    ctx.beginPath(); ctx.arc(0,0,220,0,6.3); ctx.fill();
+    ctx.globalAlpha=0.55; ctx.strokeStyle='#e0b0ff'; ctx.lineWidth=2;
+    for(var li=0;li<enemies.length;li++){ var le=enemies[li];
+      if(le===e||le.dead||le.boss||!(le.buffT>0)) continue;
+      if((le.x-e.x)*(le.x-e.x)+(le.y-e.y)*(le.y-e.y)<220*220){
+        ctx.beginPath(); ctx.moveTo(0,0); ctx.lineTo(le.x-e.x,le.y-e.y); ctx.stroke(); }
+    }
+    ctx.globalAlpha=1; ctx.restore();
+  }
   var bh=blobHop(e), isBlob=!!bh;
   var slAir=bh?bh.air:0;
   var hit=e.ht>0, R=e.r;
@@ -4743,6 +4843,17 @@ function drawEnemy(e){
   }
   if(isBlob) ctx.restore();
   if(wob) ctx.restore();
+  // リッチに強化されている味方：紫の脈打つリング
+  if(e.buffT>0&&e.ai!=='buff'){
+    ctx.globalAlpha=0.35+0.25*Math.sin(time*8); ctx.strokeStyle='#e0b0ff'; ctx.lineWidth=2.5;
+    ctx.beginPath(); ctx.arc(0,0,R+5,0,6.3); ctx.stroke(); ctx.globalAlpha=1;
+  }
+  // 盾の戦士：頭上にシールドバー（割れるまで本体に通らない）
+  if(e.shield>0&&e.shieldMax>0){
+    var sw=R*2.2;
+    ctx.fillStyle='#0a1420'; ctx.fillRect(-sw/2,-R-16,sw,4);
+    ctx.fillStyle='#7fd0ff'; ctx.fillRect(-sw/2,-R-16,sw*Math.max(0,e.shield/e.shieldMax),4);
+  }
   // 卵のHPバー（壊せることが分かるように）
   if(e.shape==='egg'){
     var bw=R*2.4;
@@ -5951,9 +6062,10 @@ function renderStageSelect(){
   for(var i=0;i<ns.length;i++){
     var n=ns[i], st=STAGES[n], un=stageUnlocked(n), cl=STGCLEAR[n];
     var head=un?((STGNUM[n-1]||n)+' '+st.nm):('🔒 '+st.nm);
-    var note=un?(st.sub+(cl?'・クリア済':'')+'　▶ 出撃'):'前ステージのクリアで解放';
-    h+='<button class="stbtn'+(un?'':' lock')+'" data-stg="'+n+'"'+(un?'':' disabled')+'>'+
-       '<b>'+head+'</b><span>'+note+'</span></button>';
+    var badge=cl?'<span style="margin-left:6px;color:var(--gold);font-size:12px;font-weight:700">👑CLEAR</span>':'';
+    var note=un?(st.sub+'　▶ 出撃'):'前ステージのクリアで解放';
+    h+='<button class="stbtn'+(un?'':' lock')+(cl?' cleared':'')+'" data-stg="'+n+'"'+(un?'':' disabled')+'>'+
+       '<b>'+head+badge+'</b><span>'+note+'</span></button>';
   }
   el.innerHTML=h;
   el.onclick=function(ev){
@@ -6003,6 +6115,9 @@ Array.prototype.forEach.call(document.querySelectorAll('#setshake button'),funct
 // 更新履歴：1つのお知らせ内で「バージョン見出し」ごとに変更点を並べる（新しい順）。
 // マージのたびに先頭へ新バージョンを追加し、VERSION も更新する。
 var UPDATES=[
+  {v:'α1.0.47', items:[
+    'ステージ3の敵に固有ギミックを追加：盾の戦士（盾を割るまで無傷）、グール（地面から出現）、リッチ（味方を強化・光の線で表示）、ネクロマンサー（召喚）、ブーマー（自爆＋毒の沼）。',
+    'ステージの最後のボスを倒すと、ステージ選択に👑クリアバッジが付くようにしました。']},
   {v:'α1.0.46', items:[
     'ステージ3「古代の王墓」を追加！アンデッド13種が登場する高難度ステージです。',
     '※モンスターの立ち絵と一部の特殊行動・ボスの技は順次実装していきます（現在は仮の見た目・動き）。']},
