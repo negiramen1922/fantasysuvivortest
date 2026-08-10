@@ -1772,7 +1772,7 @@ function figInfo(id){
   if(BOSS[id]){ var B=BOSS[id], tt=ETYPE[B.key]||{}; return {nm:B.nm,shape:tt.shape,col:tt.col,dark:tt.dark,desc:BDEX[id]||'',boss:true}; }
   var t=ETYPE[id]||{}; return {nm:t.nm,shape:t.shape,col:t.col,dark:t.dark,desc:DEX[id]||'',boss:false};
 }
-var VERSION='α1.0.63'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
+var VERSION='α1.0.64'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
 function applySave(o){
   for(var i=0;i<UPG.length;i++) META[UPG[i].id]=0;
   try{
@@ -6361,15 +6361,16 @@ function banner(txt){
 var KILLER=null;   // 直近の致命傷の発生源 {k:図鑑キー, nm:表示名}
 function setKiller(e){ if(e) KILLER={k:figKey(e),nm:e.nm}; }
 var contUsed=0, contFlag=0;                       // このランのコンティニュー回数／使用フラグ
+var CONT_MAX=3;                                    // 1ランのコンティニュー上限
 function reviveCost(){ return 10*Math.pow(2,contUsed); }   // 倍々：10→20→40…
 function die(){
   var cost=reviveCost();
-  if(gold+WALLET.gold>=cost) openRevive(cost);    // 金貨があれば復活の提案
+  if(contUsed<CONT_MAX&&gold+WALLET.gold>=cost) openRevive(cost);   // 上限内かつ金貨があれば復活の提案
   else finish(false);
 }
 function openRevive(cost){
   state='revive'; playBGM(null);
-  document.getElementById('revinfo').textContent='復活費用：金貨 '+cost+'（所持 '+(gold+WALLET.gold)+'）　※復活のたびに費用は倍になります';
+  document.getElementById('revinfo').textContent='復活費用：金貨 '+cost+'（所持 '+(gold+WALLET.gold)+'）　※残り '+(CONT_MAX-contUsed)+' 回・費用は倍になります';
   document.getElementById('revbtn').textContent='金貨 '+cost+' で続ける';
   document.getElementById('revive').classList.add('on');
 }
@@ -6486,6 +6487,7 @@ function finish(won){
     '生存 <b>'+(m<10?'0':'')+m+':'+(s<10?'0':'')+s+' / 20:00</b>　討伐 <b>'+kills+'</b> 体<br>'+
     '到達 <b>Lv '+P.lv+'</b>　元素反応 <b>'+reacts+'</b> 回　会心 <b>'+crits+'</b> 回<br>'+
     '持ち帰り <b>銀貨 +'+silver+' / 金貨 +'+gold+'</b><br>'+
+    (contUsed>0?'コンティニュー <b>'+contUsed+'</b> 回<br>':'')+
     '熟練度 <b>'+(wtxt.join('　')||'—')+'</b>'+
     (anyPicks()?'<br><span style="color:var(--gold)">★ 武器熟練で特性を選べます</span>':'')+
     (newCh.length?'<br><span style="color:var(--gold)">★ '+newCh.join('・')+' が解放されました</span>':'')+
@@ -6582,6 +6584,9 @@ Array.prototype.forEach.call(document.querySelectorAll('#setshake button'),funct
 // 更新履歴：1つのお知らせ内で「バージョン見出し」ごとに変更点を並べる（新しい順）。
 // マージのたびに先頭へ新バージョンを追加し、VERSION も更新する。
 var UPDATES=[
+  {v:'α1.0.64', items:[
+    'コンティニューは1ランにつき最大3回までにしました。',
+    'リザルトにコンティニュー回数を表示するようにしました。']},
   {v:'α1.0.63', items:[
     '力尽きたとき、金貨を払ってその場で復活（コンティニュー）できるようになりました。費用は10→20→40…と倍増。復活で60%回復＋数秒無敵＋周囲を一掃します。',
     '※将来のオンラインランキングは「コンティニューなし」のランのみ対象の予定です。']},
