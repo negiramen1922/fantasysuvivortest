@@ -1082,7 +1082,7 @@ var BOSS={
                ai:'slam', acd:3.4, wind:0.9, nbul:22, bspd:205, bdmg:16, split:{k:'slimeM',n:5} },
   goblinking:{ nm:'ゴブリンキング',     res:0.94, key:'goblin', hp:85000,  r:46, spd:58, dmg:44, xp:1830, pts:24000,
                ai:'kingcombo', acd:3.4, chspd:560, chdur:1.0, wind:0.7 },
-  fenrir:    { nm:'フェンリル',         res:0.96, key:'wolf',   hp:160000, r:50, spd:104, dmg:52, xp:2160, pts:60000,
+  fenrir:    { nm:'フェンリル',         res:0.96, key:'wolf',   hp:160000, r:50, spd:104, dmg:33, xp:2160, pts:60000,
                ai:'fenrir', acd:4.0, chspd:600, chdur:1.0, wind:0.8, nbul:20, bspd:210, bdmg:16, last:1 },
   // ===== ステージ2（森）ボス =====
   kervi:      { nm:'神鹿ケルビ',       res:0.92, key:'deer',    hp:30000,  r:46, spd:60, dmg:40, xp:1200, pts:16000,
@@ -1735,7 +1735,7 @@ function figInfo(id){
   if(BOSS[id]){ var B=BOSS[id], tt=ETYPE[B.key]||{}; return {nm:B.nm,shape:tt.shape,col:tt.col,dark:tt.dark,desc:BDEX[id]||'',boss:true}; }
   var t=ETYPE[id]||{}; return {nm:t.nm,shape:t.shape,col:t.col,dark:t.dark,desc:DEX[id]||'',boss:false};
 }
-var VERSION='α1.0.57'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
+var VERSION='α1.0.58'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
 function applySave(o){
   for(var i=0;i<UPG.length;i++) META[UPG[i].id]=0;
   try{
@@ -6461,6 +6461,8 @@ Array.prototype.forEach.call(document.querySelectorAll('#setshake button'),funct
 // 更新履歴：1つのお知らせ内で「バージョン見出し」ごとに変更点を並べる（新しい順）。
 // マージのたびに先頭へ新バージョンを追加し、VERSION も更新する。
 var UPDATES=[
+  {v:'α1.0.58', items:[
+    'フェンリルの攻撃力を下げました（終盤の一撃を約120に）。']},
   {v:'α1.0.57', items:[
     '敵の攻撃力の伸びをさらに緩和（ワンパン軽減）。',
     'スケルトンキング：突進のたびに全方位弾幕を出すように。',
