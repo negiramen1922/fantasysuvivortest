@@ -1006,6 +1006,20 @@ var ETYPE={
   beetle:  { nm:'グレータービートル', res:0.65, hp:260, spd:40,  r:20, col:'#5a4632', dark:'#241a10', xp:6, dmg:20, shape:'beetle',  pts:64,  sv:0.15, flat:4 },
   gnat:    { nm:'スウォームナット',   res:0.00, hp:20,  spd:200, r:7,  col:'#8a7a52', dark:'#3a3020', xp:1, dmg:6,  shape:'gnat',    pts:4,   sv:0.02,  ai:'dash' },
   treant:  { nm:'トレント',           res:0.62, hp:600, spd:36,  r:23, col:'#6e8a4a', dark:'#33421f', xp:8, dmg:24, shape:'treant',  pts:78,  sv:0.16, flat:5 },
+  // ===== ステージ3（古代の王墓）モンスター =====
+  skeleton: { nm:'スケルトン',           res:0.05, hp:50,  spd:60,  r:12, col:'#e8e4d0', dark:'#6b6250', xp:2, dmg:12, shape:'skeleton', pts:10, sv:0.05 },
+  mummy:    { nm:'マミー',               res:0.45, hp:240, spd:40,  r:17, col:'#cdbb90', dark:'#5c4d2c', xp:5, dmg:24, shape:'mummy',    pts:50, sv:0.13 },
+  wraith:   { nm:'レイス',               res:0.12, hp:90,  spd:200, r:12, col:'#9fd8e0', dark:'#2f5a63', xp:3, dmg:16, shape:'wraith',   pts:28, sv:0.08 },
+  fly:      { nm:'フライ',               res:0.00, hp:22,  spd:210, r:8,  col:'#7a8a4a', dark:'#33401c', xp:1, dmg:8,  shape:'fly',      pts:5,  sv:0.02, ai:'dash' },
+  shadow:   { nm:'シャドウ',             res:0.20, hp:150, spd:235, r:12, col:'#2a2833', dark:'#0a0810', xp:4, dmg:22, shape:'shadow',   pts:40, sv:0.11 },
+  gargoyle: { nm:'ガーゴイル',           res:0.60, hp:300, spd:90,  r:16, col:'#8a90a0', dark:'#33384a', xp:6, dmg:22, shape:'gargoyle', pts:64, sv:0.15, ai:'fly' },
+  ghoul:    { nm:'グール',               res:0.10, hp:130, spd:110, r:14, col:'#9ab07a', dark:'#3d4a26', xp:3, dmg:18, shape:'ghoul',    pts:30, sv:0.09, ai:'burrow' },
+  lich:     { nm:'リッチ',               res:0.15, hp:160, spd:44,  r:14, col:'#b48ad0', dark:'#3f2a58', xp:5, dmg:12, shape:'lich',     pts:52, sv:0.14, ai:'buff', cap:4 },
+  shieldman:{ nm:'盾の戦士',             res:0.15, hp:120, spd:70,  r:14, col:'#c0c4cc', dark:'#4a4e58', xp:4, dmg:20, shape:'shieldman',pts:44, sv:0.12, shield:180 },
+  sarcher:  { nm:'スケルトンアーチャー', res:0.10, hp:80,  spd:60,  r:12, col:'#d8d0b0', dark:'#5c5238', xp:3, dmg:12, shape:'sarcher',  pts:30, sv:0.10, ai:'shoot', range:360, acd:2.4, bspd:240, bdmg:16 },
+  necro:    { nm:'ネクロマンサー',       res:0.20, hp:200, spd:46,  r:14, col:'#7a5aa0', dark:'#2a1a42', xp:6, dmg:10, shape:'necro',    pts:56, sv:0.15, ai:'summon', sum:'skeleton', nsum:2, acd:5.0, cap:3 },
+  dullahan: { nm:'デュラハン',           res:0.40, hp:260, spd:60,  r:17, col:'#4a5a6a', dark:'#1a2530', xp:6, dmg:26, shape:'dullahan', pts:60, sv:0.15, ai:'charge', range:340, acd:3.0, chspd:500, wind:0.6, chdur:1.15 },
+  boomer:   { nm:'ブーマー',             res:0.10, hp:300, spd:60,  r:19, col:'#8a9a5a', dark:'#3a4520', xp:6, dmg:14, shape:'boomer',   pts:56, sv:0.15, boom:1, boomR:110, boomDmg:40, puddle:1, cap:3 },
   // ボス専用の見た目（ウェーブには出ない）
   deer:    { nm:'神鹿',   res:0.9, hp:100, spd:60, r:20, col:'#c8b48a', dark:'#5a4a2c', xp:1, dmg:10, shape:'deer',   pts:10, sv:0 },
   moth:    { nm:'蛾',     res:0.9, hp:100, spd:44, r:20, col:'#8a6ab0', dark:'#3a2a50', xp:1, dmg:10, shape:'moth',   pts:10, sv:0 },
@@ -1036,10 +1050,24 @@ var DEX={
   spider:'爆裂蜘蛛。近づくと導火し、自爆して巻き込む。',
   beetle:'装甲の兜虫。重装甲で軽い攻撃を通しにくい。',
   gnat:'羽虫の群れ。まっすぐ突進して画面外へ抜けていく。',
-  treant:'歩き出した古木。非常に硬く、生半可な攻撃は通らない重量級。'
+  treant:'歩き出した古木。非常に硬く、生半可な攻撃は通らない重量級。',
+  skeleton:'王墓を守る最下級のアンデッド。数で押してくる。',
+  mummy:'包帯に包まれた亡骸。遅いが硬く、一撃が重い。',
+  wraith:'亡霊。音もなく高速で肉薄する。',
+  fly:'死肉に群がるハエ。まっすぐ突進して画面外へ抜ける・群れで出現。',
+  shadow:'影の棒人間。レイスを上回る最速級の亡霊。',
+  gargoyle:'石の翼を持つ番人。空を飛び、非常に硬い。',
+  ghoul:'地の底から現れる屍食鬼。足元の地面を割って飛び出し襲う。',
+  lich:'王墓の大魔道士。周囲の味方を強化する。先に倒したい。',
+  shieldman:'盾を構えた不死の戦士。盾を割らないと本体に届かない。',
+  sarcher:'骨の射手。距離を取って骨の矢を撃ってくる。',
+  necro:'死者を呼び起こす降霊術師。スケルトンを召喚し続ける。',
+  dullahan:'首なしの騎士。長い助走から予告つきで突進する。',
+  boomer:'肥大した屍食鬼。近づくと自爆し、倒すと毒の沼を残す。'
 };
 var DEXLIST=['slime','goblin','bat','boar','wolf','orc','rider','harpy','ogre','turtle','slimeM','slimeS',
-  'spirit','bird','myconid','bee','panther','dryad','mantis','spider','beetle','gnat','treant'];
+  'spirit','bird','myconid','bee','panther','dryad','mantis','spider','beetle','gnat','treant',
+  'skeleton','mummy','wraith','fly','shadow','gargoyle','ghoul','lich','shieldman','sarcher','necro','dullahan','boomer'];
 
 // ステージ1のボス。5分ごとに1体、30分のフェンリルがラストボス。
 var BOSS={
@@ -1062,7 +1090,16 @@ var BOSS={
   arachnid:   { nm:'アラクネイド',     res:0.94, key:'arachne', hp:160000, r:50, spd:58, dmg:44, xp:1900, pts:40000,
                ai:'arachnid', acd:2.0, nbul:20, bspd:220, bdmg:16 },
   eldertreant:{ nm:'エルダートレント', res:0.96, key:'wtreant', hp:300000, r:56, spd:34, dmg:50, xp:2400, pts:60000,
-               ai:'treant', acd:2.5, bdmg:15, last:1 }
+               ai:'treant', acd:2.5, bdmg:15, last:1 },
+  // ===== ステージ3（王墓）ボス ※AIは仮（本実装はステップ3）=====
+  gravekeeper:{ nm:'墓守',             res:0.92, key:'skeleton', hp:40000,  r:46, spd:56, dmg:42, xp:1300, pts:16000,
+               ai:'slam', acd:3.4, wind:0.7, nbul:16, bspd:250, bdmg:18 },
+  skeletonking:{ nm:'スケルトンキング', res:0.94, key:'skeleton', hp:90000,  r:48, spd:60, dmg:46, xp:1700, pts:24000,
+               ai:'slam', acd:3.4, wind:0.8, nbul:20, bspd:250, bdmg:18 },
+  hecaton:    { nm:'ヘカトンケイル',   res:0.95, key:'mummy',    hp:175000, r:54, spd:44, dmg:48, xp:2000, pts:40000,
+               ai:'slam', acd:3.2, wind:0.8, nbul:24, bspd:240, bdmg:18 },
+  skeledragon:{ nm:'スケルトンドラゴン', res:0.96, key:'gargoyle', hp:340000, r:56, spd:100, dmg:54, xp:2600, pts:70000,
+               ai:'fenrir', acd:4.0, chspd:600, chdur:1.0, wind:0.8, nbul:22, bspd:220, bdmg:18, last:1 }
 };
 var BOSS_AT=[[300,'greatboar'],[600,'slimeking'],[900,'goblinking'],[1200,'fenrir']];
 
@@ -1100,12 +1137,33 @@ var WAVE2=[
 // ステージ2のボス（HPは hpMul 倍で出す）。締めは森の主フェンリル。
 var BOSS_AT2=[[300,'kervi'],[600,'gmoth'],[900,'arachnid'],[1200,'eldertreant']];
 
+// ステージ3（古代の王墓）の出現構成。弱い敵→強い敵を段階投入。フライはスウォーム専用。
+var WAVE3=[
+  { t:0,    mix:[['skeleton',1.00]] },                                                                          // 0:00 スケルトン
+  { t:60,   mix:[['skeleton',0.62],['wraith',1.00]] },                                                          // 1:00 レイス
+  { t:150,  mix:[['skeleton',0.42],['wraith',0.74],['sarcher',1.00]] },                                         // 2:30 スケルトンアーチャー
+  { t:240,  mix:[['skeleton',0.30],['wraith',0.56],['sarcher',0.78],['mummy',1.00]] },                          // 4:00 マミー
+  { t:330,  mix:[['skeleton',0.22],['wraith',0.44],['sarcher',0.64],['mummy',0.84],['ghoul',1.00]] },           // 5:30 グール（ボス1後）
+  { t:420,  mix:[['wraith',0.24],['sarcher',0.44],['mummy',0.64],['ghoul',0.82],['shieldman',1.00]] },          // 7:00 盾の戦士
+  { t:510,  mix:[['wraith',0.18],['sarcher',0.36],['mummy',0.54],['ghoul',0.70],['shieldman',0.85],['shadow',1.00]] }, // 8:30 シャドウ
+  { t:630,  mix:[['sarcher',0.16],['mummy',0.34],['ghoul',0.50],['shieldman',0.66],['shadow',0.84],['lich',1.00]] },   // 10:30 リッチ（ボス2後）
+  { t:720,  mix:[['mummy',0.18],['ghoul',0.36],['shieldman',0.52],['shadow',0.70],['lich',0.82],['dullahan',1.00]] },  // 12:00 デュラハン
+  { t:840,  mix:[['ghoul',0.16],['shieldman',0.32],['shadow',0.50],['lich',0.64],['dullahan',0.82],['necro',1.00]] },  // 14:00 ネクロマンサー
+  { t:930,  mix:[['shieldman',0.16],['shadow',0.34],['lich',0.48],['dullahan',0.66],['necro',0.82],['gargoyle',1.00]] },// 15:30 ガーゴイル（ボス3後）
+  { t:1020, mix:[['shadow',0.16],['lich',0.30],['dullahan',0.48],['necro',0.64],['gargoyle',0.82],['boomer',1.00]] },  // 17:00 ブーマー
+  { t:1110, mix:[['shadow',0.14],['mummy',0.28],['dullahan',0.46],['necro',0.62],['gargoyle',0.80],['boomer',1.00]] }  // 18:30 終盤混成
+];
+// ステージ3のボス。締めはスケルトンドラゴン。
+var BOSS_AT3=[[300,'gravekeeper'],[600,'skeletonking'],[900,'hecaton'],[1200,'skeledragon']];
+
 // ステージ定義。req をクリア済みで次ステージが解放される。
 var STAGES={
   1:{ nm:'草原',   sub:'20:00・フェンリル', wave:WAVE,  bossAt:BOSS_AT,  hpMul:1.0, req:0,
       ground:{ bg:'#150f2c', grid:'rgba(80,62,140,.28)', dot:'rgba(120,96,200,.14)' } },
   2:{ nm:'森',     sub:'20:00・速く重い', wave:WAVE2, bossAt:BOSS_AT2, hpMul:1.0, req:1, swarm:1, swarmStart:360,
-      ground:{ bg:'#0e1f14', grid:'rgba(70,120,74,.26)',  dot:'rgba(120,180,120,.15)' } }
+      ground:{ bg:'#0e1f14', grid:'rgba(70,120,74,.26)',  dot:'rgba(120,180,120,.15)' } },
+  3:{ nm:'古代の王墓', sub:'20:00・アンデッド・高難度', wave:WAVE3, bossAt:BOSS_AT3, hpMul:1.15, req:2, swarm:1, swarmStart:300, swarmK:'fly',
+      ground:{ bg:'#1c1710', grid:'rgba(150,120,70,.24)', dot:'rgba(200,170,110,.13)' } }
 };
 var ALLSTG=1;   // 開発中は全ステージ解放。製品化時は 0 に戻す
 var curStage=1, bossHpMul=1, curGround=STAGES[1].ground;
@@ -1662,15 +1720,20 @@ var BDEX={
   kervi:'森の神鹿。三連の突進を放ち、突進のたびに弾を撒く。',
   gmoth:'巨大な蛾。扇状の弾幕を撒き散らし続ける。',
   arachnid:'蜘蛛の女王。卵を産み付け、全方位弾幕を繰り返す。',
-  eldertreant:'森の古き主。木の根を這わせ、巨大な弾を放つ。'
+  eldertreant:'森の古き主。木の根を這わせ、巨大な弾を放つ。',
+  gravekeeper:'十字の墓を抱えた人形のアンデッド。墓を投げ、突き立てて全方位弾幕を放つ。',
+  skeletonking:'骨の王。全方位の骨弾を撒き、配下を召喚し、剣を担いで突進する。',
+  hecaton:'百手の巨人。無数の拳を落とし、着弾点から弾幕を撒く。',
+  skeledragon:'王墓の主たる竜の亡骸。滞空突進と弾幕、そして極太のブレスを放つ。'
 };
-var BOSSDEX=['greatboar','slimeking','goblinking','fenrir','kervi','gmoth','arachnid','eldertreant'];
+var BOSSDEX=['greatboar','slimeking','goblinking','fenrir','kervi','gmoth','arachnid','eldertreant',
+  'gravekeeper','skeletonking','hecaton','skeledragon'];
 // 図鑑エントリの見た目・名前・説明を種別問わず返す
 function figInfo(id){
   if(BOSS[id]){ var B=BOSS[id], tt=ETYPE[B.key]||{}; return {nm:B.nm,shape:tt.shape,col:tt.col,dark:tt.dark,desc:BDEX[id]||'',boss:true}; }
   var t=ETYPE[id]||{}; return {nm:t.nm,shape:t.shape,col:t.col,dark:t.dark,desc:DEX[id]||'',boss:false};
 }
-var VERSION='α1.0.45'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
+var VERSION='α1.0.46'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
 function applySave(o){
   for(var i=0;i<UPG.length;i++) META[UPG[i].id]=0;
   try{
@@ -3385,11 +3448,12 @@ function swarmTick(dt){
 function spawnSwarm(a){
   var n=32+Math.floor(Math.random()*15);            // 密度アップ（20〜30 → 32〜46体）
   if(a==null) a=Math.random()*6.283;
+  var sk=(STAGES[curStage]&&STAGES[curStage].swarmK)||'gnat';   // ステージごとのスウォーム種（王墓＝フライ）
   var cx=P.x+Math.cos(a)*760, cy=P.y+Math.sin(a)*760;
   var dx=P.x-cx, dy=P.y-cy, dd=Math.hypot(dx,dy)||1;
   var vx=dx/dd, vy=dy/dd, px=-vy, py=vx;
   for(var i=0;i<n;i++){
-    var e=makeEnemy('gnat');
+    var e=makeEnemy(sk);
     var side=(Math.random()-0.5)*230, along=Math.random()*200;
     e.x=cx+px*side-vx*along; e.y=cy+py*side-vy*along;
     var sp=e.spd*(0.9+Math.random()*0.2);
@@ -4450,6 +4514,10 @@ function drawForestShape(s,R,col,dark,t){
 }
 // ステージ1の手続き描画（刷新）。ctx は敵中心へ translate 済み。
 function drawS1Shape(s,R,col,dark,t){
+  // ステージ3の敵は当面プレースホルダ：近い既存図形で代用（スプライトは後日差し替え）
+  var S3A={skeleton:'goblin',ghoul:'goblin',shieldman:'orc',sarcher:'archer',necro:'archer',lich:'archer',
+           mummy:'orc',dullahan:'orc',boomer:'orc',gargoyle:'harpy',wraith:'goblin',shadow:'goblin',fly:'harpy'};
+  if(S3A[s]) s=S3A[s];
   if(s==='blob'){
     var w=1+Math.sin(t*4)*0.07;
     ctx.fillStyle=col;
@@ -5935,6 +6003,9 @@ Array.prototype.forEach.call(document.querySelectorAll('#setshake button'),funct
 // 更新履歴：1つのお知らせ内で「バージョン見出し」ごとに変更点を並べる（新しい順）。
 // マージのたびに先頭へ新バージョンを追加し、VERSION も更新する。
 var UPDATES=[
+  {v:'α1.0.46', items:[
+    'ステージ3「古代の王墓」を追加！アンデッド13種が登場する高難度ステージです。',
+    '※モンスターの立ち絵と一部の特殊行動・ボスの技は順次実装していきます（現在は仮の見た目・動き）。']},
   {v:'α1.0.45', items:[
     'バランス調整：アラクネイドとエルダートレント（森ボス）のHPを引き上げました。']},
   {v:'α1.0.44', items:[
