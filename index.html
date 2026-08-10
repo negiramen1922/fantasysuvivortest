@@ -1020,6 +1020,8 @@ var ETYPE={
   necro:    { nm:'ネクロマンサー',       res:0.20, hp:200, spd:46,  r:14, col:'#7a5aa0', dark:'#2a1a42', xp:6, dmg:10, shape:'necro',    pts:56, sv:0.15, ai:'summon', sum:'skeleton', nsum:2, acd:5.0, cap:3 },
   dullahan: { nm:'デュラハン',           res:0.40, hp:260, spd:60,  r:17, col:'#4a5a6a', dark:'#1a2530', xp:6, dmg:26, shape:'dullahan', pts:60, sv:0.15, ai:'charge', range:340, acd:3.0, chspd:500, wind:0.6, chdur:1.15 },
   boomer:   { nm:'ブーマー',             res:0.10, hp:300, spd:60,  r:19, col:'#8a9a5a', dark:'#3a4520', xp:6, dmg:14, shape:'boomer',   pts:56, sv:0.15, boom:1, boomR:110, boomDmg:40, puddle:1, cap:3 },
+  // エルダートレントが生やす回復の木（ウェーブには出ない・図鑑なし）
+  healtree: { nm:'いのちの木',           res:0.30, hp:100, spd:0,   r:20, col:'#6e8a4a', dark:'#33421f', xp:0, dmg:0,  shape:'treant',   pts:120, sv:0, ai:'healtree' },
   // ボス専用の見た目（ウェーブには出ない）
   deer:    { nm:'神鹿',   res:0.9, hp:100, spd:60, r:20, col:'#c8b48a', dark:'#5a4a2c', xp:1, dmg:10, shape:'deer',   pts:10, sv:0 },
   moth:    { nm:'蛾',     res:0.9, hp:100, spd:44, r:20, col:'#8a6ab0', dark:'#3a2a50', xp:1, dmg:10, shape:'moth',   pts:10, sv:0 },
@@ -1733,7 +1735,7 @@ function figInfo(id){
   if(BOSS[id]){ var B=BOSS[id], tt=ETYPE[B.key]||{}; return {nm:B.nm,shape:tt.shape,col:tt.col,dark:tt.dark,desc:BDEX[id]||'',boss:true}; }
   var t=ETYPE[id]||{}; return {nm:t.nm,shape:t.shape,col:t.col,dark:t.dark,desc:DEX[id]||'',boss:false};
 }
-var VERSION='α1.0.54'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
+var VERSION='α1.0.55'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
 function applySave(o){
   for(var i=0;i<UPG.length;i++) META[UPG[i].id]=0;
   try{
@@ -3019,6 +3021,17 @@ function makeEnemy(k){
   if(DEX[k]&&!BSEEN[k]){ BSEEN[k]=1; dexQueue.push(k); }
   return e;
 }
+// エルダートレント：周囲に3本の「いのちの木」を生やす。倒れると本体を回復。HPは本体の失ったHPの5%。
+function growHealTrees(tr){
+  for(var i=0;i<enemies.length;i++) if(!enemies[i].dead&&enemies[i].ai==='healtree') return;   // 既に生えていれば追加しない
+  var lost=Math.max(0,tr.mhp-tr.hp), thp=Math.max(400,Math.round(lost*0.05));
+  for(var k=0;k<3;k++){ var a=k/3*6.283+Math.random()*0.5, dd=200+Math.random()*50;
+    var o=makeEnemy('healtree'); o.x=tr.x+Math.cos(a)*dd; o.y=tr.y+Math.sin(a)*dd;
+    o.hp=thp; o.mhp=thp; o.owner=tr; o.fallT=8.0; o.rdmg=tr.bdmg||14;
+  }
+  fx.push({k:'ring',x:tr.x,y:tr.y,r:0,to:250,t:0,life:.5,col:'#8fd06a'});
+  sfx(140,.3,'square',.06,0.7);
+}
 // クモの卵：敵として置く（プレイヤーの攻撃で壊せる）。少し固め・接触ダメージなし・孵化で自爆クモ3体。
 function spawnEgg(x,y){
   var scale=1+time/60*0.63;
@@ -3035,14 +3048,14 @@ function spawnEgg(x,y){
 function sweepDead(){
   for(var i=enemies.length-1;i>=0;i--) if(enemies[i].dead) enemies.splice(i,1);
 }
-function eshoot(e,ang,spd,dmg,r){
+function eshoot(e,ang,spd,dmg,r,col){
   ebul.push({x:e.x,y:e.y,vx:Math.cos(ang)*spd,vy:Math.sin(ang)*spd,
-             r:r||6,dmg:dmg,life:3.2,t:0,bk:(e.boss?e.bkey:e.k)});
+             r:r||6,dmg:dmg,life:3.2,t:0,bk:(e.boss?e.bkey:e.k),col:col||null});
 }
 // 任意の地点から弾を撃つ（ヘカトンケイルの拳の着弾点など）
-function eshootAt(x,y,ang,spd,dmg,bk,r){
+function eshootAt(x,y,ang,spd,dmg,bk,r,col){
   ebul.push({x:x,y:y,vx:Math.cos(ang)*spd,vy:Math.sin(ang)*spd,
-             r:r||6,dmg:dmg,life:3.2,t:0,bk:bk});
+             r:r||6,dmg:dmg,life:3.2,t:0,bk:bk,col:col||null});
 }
 // 設置弾：hold 秒その場に留まり、その後 (vx,vy) で動き出す（トレントの根攻撃用）
 function eplace(x,y,dmg,hold,vx,vy,r,bk){
@@ -3360,8 +3373,9 @@ function moveEnemies(dt){
         e.mtick-=dt; moved=1;
         if(e.mtick<=0){ e.mtick=0.5;
           var ma=Math.atan2(dy,dx);
-          for(var mf=0;mf<5;mf++) eshoot(e,ma+(mf-2)*0.18,e.bspd,e.bdmg);        // 扇
-          for(var mo=0;mo<e.nbul;mo++) eshoot(e,mo/e.nbul*6.283+e.mc*0.2,e.bspd*0.8,e.bdmg);  // 全方位
+          for(var mr=0;mr<2;mr++) for(var mf=0;mf<10;mf++) eshoot(e,ma+(mf-4.5)*0.12+mr*0.06,e.bspd,e.bdmg);  // ジャイアントモス風の扇 10×2
+          var nn=Math.round(e.nbul*1.5);                                          // 全方位（密度1.5倍）
+          for(var mo=0;mo<nn;mo++) eshoot(e,mo/nn*6.283+e.mc*0.2,e.bspd*0.8,e.bdmg);
           fx.push({k:'ring',x:e.x,y:e.y,r:0,to:130,t:0,life:.3,col:'#cfeaff'});
           shake=Math.min(18,shake+5); sfx(160,.16,'square',.06,1.3);
           e.mc++; if(e.mc>=3){ e.st='beamwind'; e.stT=1.3; e.beamA=Math.atan2(dy,dx); }
@@ -3372,8 +3386,10 @@ function moveEnemies(dt){
       }
       else if(e.st==='beam'){
         e.stT-=dt; moved=1;
-        var rel=Math.atan2(P.y-e.y,P.x-e.x)-e.beamA; rel=Math.atan2(Math.sin(rel),Math.cos(rel));
-        if(!P.god&&P.hurt<=0&&P.inv<=0&&Math.abs(rel)<0.28&&d<1500){
+        // 根本から太い直線ビーム：ビーム線への垂直距離で判定
+        var brel=Math.atan2(P.y-e.y,P.x-e.x)-e.beamA; brel=Math.atan2(Math.sin(brel),Math.cos(brel));
+        var balong=d*Math.cos(brel), bperp=Math.abs(d*Math.sin(brel));
+        if(!P.god&&P.hurt<=0&&P.inv<=0&&balong>-e.r&&balong<1700&&bperp<78){
           P.hp-=e.dmg*(1-0.04*M('armor'))*(1-0.03*(P.p.bulwark||0))*dexTakeMul(figKey(e))*2.2*dt;
           shake=Math.min(20,shake+2);
           if(P.hp<=0){ P.hp=0; setKiller(e); die(); return; }
@@ -3415,7 +3431,13 @@ function moveEnemies(dt){
       // アラクネイド：赤い予告→卵を設置→全方位弾幕×3 を繰り返す。卵は孵化で自爆クモを産む（壊せる）。
       if(e.st==='eggwind'){
         e.stT-=dt; moved=1;
-        if(e.stT<=0){ spawnEgg(e.egx,e.egy); e.st='barrage'; e.bcount=0; e.stT=0.45; }
+        if(e.stT<=0){ spawnEgg(e.egx,e.egy);
+          // 卵設置と同時にランダムな方向へ白い大弾幕
+          var wa=Math.random()*6.283;
+          for(var wb=0;wb<16;wb++) eshoot(e,wa+(wb-7.5)*0.10,e.bspd*0.72,e.bdmg*1.3,13,'#ffffff');
+          fx.push({k:'ring',x:e.x,y:e.y,r:0,to:120,t:0,life:.35,col:'#ffffff'});
+          sfx(200,.2,'square',.06,0.8);
+          e.st='barrage'; e.bcount=0; e.stT=0.45; }
       }
       else if(e.st==='barrage'){
         e.stT-=dt; moved=1;
@@ -3479,16 +3501,38 @@ function moveEnemies(dt){
       else if(e.st==='giant'){ moved=1; e.stT-=dt;
         if(e.stT<=0){
           var goff=(e.gc%2)*(Math.PI/14);   // 大弾幕は1発ごとに半分ずらして交互に
-          for(var gi=0;gi<14;gi++) eshoot(e,gi/14*6.283+goff,135,e.bdmg*1.3,16);   // 巨大丸弾幕
+          for(var gi=0;gi<14;gi++) eshoot(e,gi/14*6.283+goff,135,e.bdmg*1.3,16);   // 大弾幕（遅い・大）
+          for(var gsm=0;gsm<24;gsm++) eshoot(e,gsm/24*6.283+goff*0.5+0.13,300,e.bdmg,6); // 小弾幕（速い・小）
           fx.push({k:'ring',x:e.x,y:e.y,r:0,to:150,t:0,life:.4,col:'#b7e08a'});
           shake=Math.min(18,shake+6); sfx(80,.26,'square',.09,.4); noise(.2,.1);
           e.gc++;
-          if(e.gc>=3){ e.st='rest'; e.stT=1.4; } else e.stT=0.7;
+          if(e.gc>=3){ growHealTrees(e); e.st='rest'; e.stT=1.4; } else e.stT=0.7;
         }
       }
       else if(e.st==='rest'){ moved=1; e.stT-=dt; if(e.stT<=0){ e.st=''; e.at=e.acd; } }
       else if(e.at<=0&&d<900){ e.st='roots'; e.rootI=0; e.tick=0;
         fx.push({k:'ring',x:e.x,y:e.y,r:0,to:e.r+30,t:0,life:.3,col:'#8fd06a'}); }   // 根攻撃の予兆
+    }
+    else if(e.ai==='healtree'){
+      // いのちの木：一定時間後に倒れて本体を回復。倒れる2秒前から木の根攻撃。壊せば回復を防げる。
+      moved=1; e.fallT-=dt;
+      if(e.fallT<=2.0){                                   // 倒壊2秒前〜：木の根攻撃
+        e.rtick=(e.rtick||0)-dt;
+        if(e.rtick<=0){ e.rtick=0.5;
+          for(var hri=0;hri<8;hri++){ var hra=hri*(6.283/8)+Math.random()*0.2;
+            eplace(e.x,e.y,e.rdmg||14,0.35,Math.cos(hra)*165,Math.sin(hra)*165,7,'treant'); }
+          sfx(150,.05,'square',.03,0.6);
+        }
+      }
+      if(e.fallT<=0){                                     // 倒れて本体を10%回復
+        if(e.owner&&!e.owner.dead){
+          e.owner.hp=Math.min(e.owner.mhp,e.owner.hp+e.owner.mhp*0.10);
+          fx.push({k:'ring',x:e.owner.x,y:e.owner.y,r:0,to:e.owner.r+30,t:0,life:.5,col:'#9fe07a'});
+        }
+        fx.push({k:'ring',x:e.x,y:e.y,r:0,to:80,t:0,life:.5,col:'#9fe07a'});
+        sfx(400,.3,'triangle',.07,0.6);
+        e.dead=1; continue;
+      }
     }
     else if(e.ai==='dash'){
       // スウォーム：出現時に決めた方向へ直進。追尾せず画面外で消滅。
@@ -5051,6 +5095,15 @@ function drawEnemy(e){
     ctx.globalAlpha=0.35+0.25*Math.sin(time*8); ctx.strokeStyle='#e0b0ff'; ctx.lineWidth=2.5;
     ctx.beginPath(); ctx.arc(0,0,R+5,0,6.3); ctx.stroke(); ctx.globalAlpha=1;
   }
+  // いのちの木：HPバー＋倒壊カウント（残り時間リング。最後2秒は赤＝木の根攻撃中）
+  if(e.ai==='healtree'){
+    var tw=R*2.4;
+    ctx.fillStyle='#000'; ctx.fillRect(-tw/2,-R-16,tw,5);
+    ctx.fillStyle='#8fd06a'; ctx.fillRect(-tw/2,-R-16,tw*Math.max(0,e.hp/e.mhp),5);
+    ctx.globalAlpha=0.6; ctx.strokeStyle=(e.fallT<=2?'#ff6a4d':'#9fe07a'); ctx.lineWidth=3;
+    ctx.beginPath(); ctx.arc(0,0,R+10,-Math.PI/2,-Math.PI/2+6.283*Math.max(0,e.fallT)/8,false); ctx.stroke();
+    ctx.globalAlpha=1;
+  }
   // 盾の戦士：頭上にシールドバー（割れるまで本体に通らない）
   if(e.shield>0&&e.shieldMax>0){
     var sw=R*2.2;
@@ -5107,23 +5160,23 @@ function drawEnemy(e){
     ctx.strokeStyle='#ffe27a'; ctx.globalAlpha=0.5+0.3*Math.sin(time*22); ctx.lineWidth=2;
     ctx.beginPath(); ctx.arc(0,0,R+7,0,6.3); ctx.stroke(); ctx.globalAlpha=1;
   }
-  // スケルトンドラゴン：極太ブレス（予告＝細い赤扇／発射＝極太の光の扇）
+  // スケルトンドラゴン：根本から極太の直線ブレス（予告＝細い赤線／発射＝極太ビーム）
   if(e.ai==='sdragon'&&(e.st==='beamwind'||e.st==='beam')){
-    var bL=1600, ba2=e.beamA||0, bhw=0.28;
+    var bL=1700, ba2=e.beamA||0;
+    ctx.save(); ctx.rotate(ba2);
     if(e.st==='beamwind'){
-      ctx.globalAlpha=0.16+0.14*Math.sin(time*26); ctx.fillStyle='#ff5a3a';
-      ctx.beginPath(); ctx.moveTo(0,0); ctx.lineTo(Math.cos(ba2-bhw)*bL,Math.sin(ba2-bhw)*bL); ctx.lineTo(Math.cos(ba2+bhw)*bL,Math.sin(ba2+bhw)*bL); ctx.closePath(); ctx.fill();
-      ctx.globalAlpha=0.6; ctx.strokeStyle='#ffb08a'; ctx.lineWidth=2;
-      ctx.beginPath(); ctx.moveTo(0,0); ctx.lineTo(Math.cos(ba2)*bL,Math.sin(ba2)*bL); ctx.stroke();
+      ctx.globalAlpha=0.20+0.14*Math.sin(time*26); ctx.fillStyle='#ff5a3a';
+      ctx.fillRect(0,-78,bL,156);                       // 予告：極太の範囲を薄く表示
+      ctx.globalAlpha=0.7; ctx.strokeStyle='#ffb08a'; ctx.lineWidth=2;
+      ctx.beginPath(); ctx.moveTo(0,0); ctx.lineTo(bL,0); ctx.stroke();
       ctx.globalAlpha=1;
     }else{
-      ctx.globalAlpha=0.5; ctx.fillStyle='#ff8a2f';
-      ctx.beginPath(); ctx.moveTo(0,0); ctx.lineTo(Math.cos(ba2-bhw)*bL,Math.sin(ba2-bhw)*bL); ctx.lineTo(Math.cos(ba2+bhw)*bL,Math.sin(ba2+bhw)*bL); ctx.closePath(); ctx.fill();
-      ctx.globalAlpha=0.9; ctx.fillStyle='#fff2c0';
-      var iw=bhw*0.6;
-      ctx.beginPath(); ctx.moveTo(0,0); ctx.lineTo(Math.cos(ba2-iw)*bL,Math.sin(ba2-iw)*bL); ctx.lineTo(Math.cos(ba2+iw)*bL,Math.sin(ba2+iw)*bL); ctx.closePath(); ctx.fill();
+      ctx.globalAlpha=0.55; ctx.fillStyle='#ff8a2f'; ctx.fillRect(0,-78,bL,156);     // 外側
+      ctx.globalAlpha=0.9;  ctx.fillStyle='#ffd27a'; ctx.fillRect(0,-52,bL,104);     // 中間
+      ctx.globalAlpha=0.98; ctx.fillStyle='#fff2c0'; ctx.fillRect(0,-30,bL,60);      // 芯
       ctx.globalAlpha=1;
     }
+    ctx.restore();
   }
   // スケルトンキング：墓落下の警告＋降ってくる墓
   if(e.ai==='sking'&&e.st==='kgrave'&&e.graves){
@@ -5232,11 +5285,12 @@ function drawEnemyOutlines(){
 }
 function drawEbul(b){
   ctx.save(); ctx.translate(b.x,b.y);
-  ctx.globalAlpha=.35; ctx.fillStyle='#ff6a8a';
+  var g=b.col||'#ff6a8a', mid=b.col?'#ffffff':'#ffd0d8', core=b.col||'#ff3d63';
+  ctx.globalAlpha=.35; ctx.fillStyle=g;
   ctx.beginPath(); ctx.arc(0,0,b.r*2,0,6.3); ctx.fill();
   ctx.globalAlpha=1;
-  ctx.fillStyle='#ffd0d8'; ctx.beginPath(); ctx.arc(0,0,b.r,0,6.3); ctx.fill();
-  ctx.fillStyle='#ff3d63'; ctx.beginPath(); ctx.arc(0,0,b.r*0.5,0,6.3); ctx.fill();
+  ctx.fillStyle=mid; ctx.beginPath(); ctx.arc(0,0,b.r,0,6.3); ctx.fill();
+  ctx.fillStyle=core; ctx.beginPath(); ctx.arc(0,0,b.r*0.5,0,6.3); ctx.fill();
   ctx.restore();
 }
 function drawChakGuide(c){
@@ -6403,6 +6457,10 @@ Array.prototype.forEach.call(document.querySelectorAll('#setshake button'),funct
 // 更新履歴：1つのお知らせ内で「バージョン見出し」ごとに変更点を並べる（新しい順）。
 // マージのたびに先頭へ新バージョンを追加し、VERSION も更新する。
 var UPDATES=[
+  {v:'α1.0.55', items:[
+    'スケルトンドラゴン：ブレスを根本から極太に強化。ジャイアントモス風の扇弾幕（10×2）も追加、全方位弾幕の密度も1.5倍に。',
+    'アラクネイド：卵を設置すると同時に、ランダムな方向へ白い大弾幕を放つように。',
+    'エルダートレント：大弾幕＋小弾幕（速い）の混成に。さらに周囲に「いのちの木」を3本生やし、倒れると本体のHPを回復（1本10%）。木は倒れる直前に木の根攻撃をします。木を壊せば回復を防げます。']},
   {v:'α1.0.54', items:[
     'スケルトンキング：踏み込みを3連続突進に変更。突進後に自身から全方位弾幕＋予告のあと墓が落ちてきます。',
     'ヘカトンケイル：拳を1つずつ順番に10回落下（HP50%以下で加速）。そのあと8方向に伸びる回転ビームを4回（右回り／左回りが交互）。']},
