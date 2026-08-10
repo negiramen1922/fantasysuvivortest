@@ -1735,7 +1735,7 @@ function figInfo(id){
   if(BOSS[id]){ var B=BOSS[id], tt=ETYPE[B.key]||{}; return {nm:B.nm,shape:tt.shape,col:tt.col,dark:tt.dark,desc:BDEX[id]||'',boss:true}; }
   var t=ETYPE[id]||{}; return {nm:t.nm,shape:t.shape,col:t.col,dark:t.dark,desc:DEX[id]||'',boss:false};
 }
-var VERSION='α1.0.58'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
+var VERSION='α1.0.59'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
 function applySave(o){
   for(var i=0;i<UPG.length;i++) META[UPG[i].id]=0;
   try{
@@ -3675,7 +3675,7 @@ function kill(e){
   }
   // 図鑑：討伐数（表示用）とスコア（ザコの強化ポイント）を集計
   if(e.boss){ if(BOSS[e.bkey]) BKILL[e.bkey]=(BKILL[e.bkey]||0)+1; }
-  else if(DEX[e.k]){ BKILL[e.k]=(BKILL[e.k]||0)+1; BSCORE[e.k]=(BSCORE[e.k]||0)+(e.elite?PTS_ELITE:e.pts); }
+  else if(DEX[e.k]){ BKILL[e.k]=(BKILL[e.k]||0)+1; BSCORE[e.k]=(BSCORE[e.k]||0)+Math.round((e.elite?PTS_ELITE:e.pts)*0.5); }   // 図鑑ポイントを半減
   score+=e.boss?e.pts:(e.elite?PTS_ELITE:e.pts);
   var np=e.boss?60:(e.elite?26:7);
   for(var k=0;k<np;k++){
@@ -3719,7 +3719,7 @@ function kill(e){
     if(e.elite){
       chests.push({x:e.x,y:e.y,t:0});
       flash=Math.max(flash,.45); shake=Math.min(20,shake+9); hitStop=Math.max(hitStop,.09);
-    }else if(Math.random()<(((ETYPE[e.k]?ETYPE[e.k].sv:e.sv)||0)*(1+0.15*M('luck')+0.10*(P.p.greed||0)))){
+    }else if(Math.random()<(((ETYPE[e.k]?ETYPE[e.k].sv:e.sv)||0)*0.45*(1+0.15*M('luck')+0.10*(P.p.greed||0)))){   // 銀貨の入手量を絞る（約45%）
       coins.push({x:e.x,y:e.y,vx:(Math.random()-.5)*90,vy:(Math.random()-.5)*90,pull:0,sp:0});
     }
   }
@@ -5452,7 +5452,7 @@ function drawQuake(f){
   ctx.globalAlpha=1; ctx.restore();
 }
 function drawShot(s){
-  if(s.src==='fire'&&sprReady('fireball')){ drawSprRot('fireball',s.x,s.y,Math.atan2(s.vy,s.vx)+Math.PI/2,(s.r||8)*3.6); return; }
+  if(s.src==='fire'&&sprReady('fireball')){ drawSprRot('fireball',s.x,s.y,Math.atan2(s.vy,s.vx)-Math.PI/2,(s.r||8)*3.6); return; }
   if(s.src==='ice'&&sprReady('icejav')){ drawSprRot('icejav',s.x,s.y,(s.ang||0)+Math.PI/2,(s.r||7)*3.8); return; }
   ctx.save(); ctx.translate(s.x,s.y);
   if(s.kind==='pellet'){
@@ -6461,6 +6461,10 @@ Array.prototype.forEach.call(document.querySelectorAll('#setshake button'),funct
 // 更新履歴：1つのお知らせ内で「バージョン見出し」ごとに変更点を並べる（新しい順）。
 // マージのたびに先頭へ新バージョンを追加し、VERSION も更新する。
 var UPDATES=[
+  {v:'α1.0.59', items:[
+    'ファイヤーボールの向きを修正。',
+    'モンスター討伐で貯まる図鑑ポイントを半分に調整。',
+    '銀貨の入手量を絞りました（強化がすぐ終わってしまう問題の調整）。']},
   {v:'α1.0.58', items:[
     'フェンリルの攻撃力を下げました（終盤の一撃を約120に）。']},
   {v:'α1.0.57', items:[
