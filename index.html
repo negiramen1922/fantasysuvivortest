@@ -613,6 +613,9 @@ img.wspr{width:1.15em;height:1.15em;object-fit:contain;image-rendering:pixelated
         <div class="setrow"><span>画面の揺れ</span><span id="setshake">
           <button class="tg" data-s2="0">なし</button><button class="tg" data-s2="0.5">弱</button><button class="tg" data-s2="1">標準</button><button class="tg" data-s2="1.5">強</button>
         </span></div>
+        <div class="setrow"><span>視野（遠くまで見える）</span><span id="setview">
+          <button class="tg" data-vz="1">標準</button><button class="tg" data-vz="0.85">広め</button><button class="tg" data-vz="0.72">最大</button>
+        </span></div>
         <div class="setrow"><span>バージョン</span><span id="setver" class="setval"></span></div>
         <div class="setrow"><span>データを初期化</span><button class="btn sub2" id="hardreset" style="margin-top:0;color:#ff8a7a;border-color:#7a2a2a">完全リセット</button></div>
       </div>
@@ -1837,6 +1840,8 @@ function umax(id){ for(var i=0;i<UPG.length;i++) if(UPG[i].id===id) return UPG[i
 
 var META={}, WALLET={silver:0,gold:0}, best=0;
 var SHK=1;   // 画面揺れの強さ 0 / 0.5 / 1 / 1.5
+var VZOOM=1; // 視野（描画ズーム）。小さいほど広く見える 1.0=標準 / 0.85=広め / 0.72=最大
+function offR(){ return Math.hypot(W,H)/2/VZOOM; }   // 画面外スポーン半径（視野に応じて外側へ）
 var VOLM=0.8; // 全体音量 0〜1
 var VOLS=0.8; // 効果音音量
 var VOLB=0.55; // BGM音量
@@ -1901,7 +1906,7 @@ function figInfo(id){
   if(BOSS[id]){ var B=BOSS[id], tt=ETYPE[B.key]||{}; return {nm:B.nm,shape:tt.shape,col:tt.col,dark:tt.dark,desc:BDEX[id]||'',boss:true}; }
   var t=ETYPE[id]||{}; return {nm:t.nm,shape:t.shape,col:t.col,dark:t.dark,desc:DEX[id]||'',boss:false};
 }
-var VERSION='α1.0.81'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
+var VERSION='α1.0.82'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
 function applySave(o){
   for(var i=0;i<UPG.length;i++) META[UPG[i].id]=0;
   try{
@@ -1912,6 +1917,7 @@ function applySave(o){
       if(o.sel) for(var k3 in WTRAIT){ if(o.sel[k3] instanceof Array) SEL[k3]=o.sel[k3].filter(function(x){ return TMAP[x]; }); }
       best=o.best|0;
       if(typeof o.shk==='number') SHK=o.shk;
+      if(typeof o.vz==='number'&&o.vz>=0.5&&o.vz<=1) VZOOM=o.vz;
       if(typeof o.vol==='number') VOLS=Math.max(0,Math.min(1,o.vol));
       if(typeof o.volm==='number') VOLM=Math.max(0,Math.min(1,o.volm));
       if(typeof o.vols==='number') VOLS=Math.max(0,Math.min(1,o.vols));
@@ -1939,7 +1945,7 @@ function applySave(o){
 }
 (function loadSave(){ try{ applySave(JSON.parse(localStorage.getItem('bsv_save')||'null')); }catch(e){ applySave(null); } })();
 function saveObj(){
-  return {m:META,w:WALLET,wx:WX,sel:SEL,best:best,shk:SHK,volm:VOLM,vols:VOLS,volb:VOLB,unl:UNL,ach:ACH,ch:SELCH,stg:STGCLEAR,sgb:STGBEST,sgw:STGWAVE,eb:ENDBEST,et:ENDTIME,nk:NICK,ban:Object.keys(BAN).filter(function(k){return BAN[k];}),tut:TUTSEEN,perf:PERF,dps:SHOWDPS,dpm:SHOWDPM,rsp:RESPEC_AT,bk:BKILL,bsc:BSCORE,bs:Object.keys(BSEEN).filter(function(k){return BSEEN[k];}),bsel:BSEL};
+  return {m:META,w:WALLET,wx:WX,sel:SEL,best:best,shk:SHK,vz:VZOOM,volm:VOLM,vols:VOLS,volb:VOLB,unl:UNL,ach:ACH,ch:SELCH,stg:STGCLEAR,sgb:STGBEST,sgw:STGWAVE,eb:ENDBEST,et:ENDTIME,nk:NICK,ban:Object.keys(BAN).filter(function(k){return BAN[k];}),tut:TUTSEEN,perf:PERF,dps:SHOWDPS,dpm:SHOWDPM,rsp:RESPEC_AT,bk:BKILL,bsc:BSCORE,bs:Object.keys(BSEEN).filter(function(k){return BSEEN[k];}),bsel:BSEL};
 }
 function saveGame(){
   try{ localStorage.setItem('bsv_save',JSON.stringify(saveObj())); }catch(e){}
@@ -3257,7 +3263,7 @@ function checkBossEndless(){
 function spawnBoss(key){
   var B=BOSS[key], t=ETYPE[B.key];
   var scale=1+time/60*0.63, dscale=1+time/60*0.13;   // 攻撃力の伸びを緩和（ワンパン対策）
-  var a=Math.random()*6.283, dist=Math.hypot(W,H)/2+90;
+  var a=Math.random()*6.283, dist=offR()+90;
   var bhp=B.hp*bossHpMul;
   var e={ k:B.key, bkey:key, boss:1, last:B.last||0,
     nm:B.nm, x:P.x+Math.cos(a)*dist, y:P.y+Math.sin(a)*dist,
@@ -3297,7 +3303,7 @@ function makeEnemy(k){
     if(cc>=t.cap){ k='skeleton'; t=ETYPE[k]; }
   }
   var a=Math.random()*Math.PI*2;
-  var dist=Math.hypot(W,H)/2+60+Math.random()*120;
+  var dist=offR()+60+Math.random()*120;
   var scale=1+time/60*0.63, dscale=1+time/60*0.13;   // 攻撃力の伸びを緩和（ワンパン対策）
   var e={ k:k, nm:t.nm, x:P.x+Math.cos(a)*dist, y:P.y+Math.sin(a)*dist,
     hp:t.hp*scale, mhp:t.hp*scale, spd:t.spd*(0.9+Math.random()*0.25), r:t.r,
@@ -3362,7 +3368,7 @@ function eplace(x,y,dmg,hold,vx,vy,r,bk){
   ebul.push({x:x,y:y,vx:0,vy:0,r:r||6,dmg:dmg,life:hold+2.8,t:0,hold:hold,mvx:vx,mvy:vy,bk:bk});
 }
 function moveEnemies(dt){
-  var DESP=Math.max(1300,Math.hypot(W,H)*1.2);   // これ以上離れた雑魚は消滅（VS風・端末/難易度対策）
+  var DESP=Math.max(1300,Math.hypot(W,H)*1.2/VZOOM);   // これ以上離れた雑魚は消滅（視野が広いほど遠くまで保持）
   for(var i=enemies.length-1;i>=0;i--){
     var e=enemies[i];
     if(e.dead) continue;
@@ -4064,7 +4070,8 @@ function spawnSwarm(a){
   var n=32+Math.floor(Math.random()*15);            // 密度アップ（20〜30 → 32〜46体）
   if(a==null) a=Math.random()*6.283;
   var sk=(STAGES[curStage]&&STAGES[curStage].swarmK)||'gnat';   // ステージごとのスウォーム種（王墓＝フライ）
-  var cx=P.x+Math.cos(a)*760, cy=P.y+Math.sin(a)*760;
+  var SWR=Math.max(760,offR()+150);   // 視野が広い時は画面外から来るように距離を延ばす
+  var cx=P.x+Math.cos(a)*SWR, cy=P.y+Math.sin(a)*SWR;
   var dx=P.x-cx, dy=P.y-cy, dd=Math.hypot(dx,dy)||1;
   var vx=dx/dd, vy=dy/dd, px=-vy, py=vx;
   for(var i=0;i<n;i++){
@@ -4645,8 +4652,10 @@ function render(){
 
   var sh=(state==='paused'||state==='chest'||state==='test')?0:shake*SHK;
   var sx=(Math.random()-.5)*sh, sy=(Math.random()-.5)*sh;
+  ctx.save();
+  if(VZOOM!==1){ ctx.translate(W/2,H/2); ctx.scale(VZOOM,VZOOM); ctx.translate(-W/2,-H/2); }   // 視野：自機中心にズームアウト
   var camx=P.x-W/2-sx, camy=P.y-H/2-sy;
-  ctx.save(); ctx.translate(-camx,-camy);
+  ctx.translate(-camx,-camy);
 
   drawGround(camx,camy);
   var i,f;
@@ -4734,11 +4743,13 @@ function drawStick(){
 }
 function drawGround(cx,cy){
   var g=96;
+  // 視野ズームで広がった可視範囲までグリッドを描く
+  var ex=(W/VZOOM-W)/2, ey=(H/VZOOM-H)/2, Lx=cx-ex, Rx=cx+W+ex, Ty=cy-ey, By=cy+H+ey;
   ctx.strokeStyle=curGround.grid; ctx.lineWidth=1;
   ctx.beginPath();
-  var x0=Math.floor(cx/g)*g, y0=Math.floor(cy/g)*g;
-  for(var x=x0;x<cx+W+g;x+=g){ ctx.moveTo(x,cy); ctx.lineTo(x,cy+H); }
-  for(var y=y0;y<cy+H+g;y+=g){ ctx.moveTo(cx,y); ctx.lineTo(cx+W,y); }
+  var x0=Math.floor(Lx/g)*g, y0=Math.floor(Ty/g)*g;
+  for(var x=x0;x<Rx+g;x+=g){ ctx.moveTo(x,Ty); ctx.lineTo(x,By); }
+  for(var y=y0;y<By+g;y+=g){ ctx.moveTo(Lx,y); ctx.lineTo(Rx,y); }
   ctx.stroke();
   ctx.fillStyle=curGround.dot;
   for(var i=0;i<40;i++){
@@ -5891,7 +5902,7 @@ function drawRelic(rl){
 // 画面外の対象を画面端に「方向矢印＋アイコン」で表示する汎用マーカー
 function edgeMarker(wx,wy,glyph,col,big){
   var mgn=26, cxp=W/2, cyp=H/2, hw=W/2-mgn, hh=H/2-mgn;
-  var sx=wx-P.x+W/2, sy=wy-P.y+H/2;
+  var sx=(wx-P.x)*VZOOM+W/2, sy=(wy-P.y)*VZOOM+H/2;   // 視野ズームを反映した画面座標
   if(sx>mgn&&sx<W-mgn&&sy>mgn&&sy<H-mgn) return;   // 画面内なら不要
   var ang=Math.atan2(wy-P.y,wx-P.x), ux=Math.cos(ang), uy=Math.sin(ang);
   var tx=ux!==0?hw/Math.abs(ux):1e9, ty=uy!==0?hh/Math.abs(uy):1e9, tt=Math.min(tx,ty);
@@ -6860,6 +6871,9 @@ function renderSettings(){
   Array.prototype.forEach.call(document.querySelectorAll('#setshake button'),function(b){
     b.classList.toggle('on',parseFloat(b.getAttribute('data-s2'))===SHK);
   });
+  Array.prototype.forEach.call(document.querySelectorAll('#setview button'),function(b){
+    b.classList.toggle('on',parseFloat(b.getAttribute('data-vz'))===VZOOM);
+  });
   document.getElementById('setver').textContent=VERSION;
 }
 document.getElementById('setbtn').onclick=function(){ audio(); renderSettings(); setEl.classList.add('on'); };
@@ -6876,11 +6890,16 @@ document.getElementById('setdpm').onclick=function(){ SHOWDPM=SHOWDPM?0:1; saveG
 Array.prototype.forEach.call(document.querySelectorAll('#setshake button'),function(b){
   b.onclick=function(){ SHK=parseFloat(b.getAttribute('data-s2')); saveGame(); syncShakeBtns(); renderSettings(); };
 });
+Array.prototype.forEach.call(document.querySelectorAll('#setview button'),function(b){
+  b.onclick=function(){ VZOOM=parseFloat(b.getAttribute('data-vz')); saveGame(); renderSettings(); };
+});
 
 /* ============ お知らせ（ホーム右上のメール）============ */
 // 更新履歴：1つのお知らせ内で「バージョン見出し」ごとに変更点を並べる（新しい順）。
 // マージのたびに先頭へ新バージョンを追加し、VERSION も更新する。
 var UPDATES=[
+  {v:'α1.0.82', items:[
+    '「視野」設定を追加（設定 → 視野：標準／広め／最大）。スマホでも遠くの敵や弾が見やすくなります。広くするほど画面外から敵が来るように調整済み。']},
   {v:'α1.0.81', items:[
     '限界突破に「武器カテゴリ共通の軸」を追加。物理系の武器では「会心率」「会心ダメージ」を限界突破で伸ばせるようになりました（その武器だけに効きます）。',
     '無限ランの舞台切り替え処理を安定化（まれなクラッシュを防止）。']},

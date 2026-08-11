@@ -10,6 +10,12 @@
 - リザルト画面と設定画面に `VERSION` を表示。
 - お知らせ（`UPDATES` 配列）は**1枠内でバージョン見出しごとに変更点を掲載**（新しい順）。マージ時は `UPDATES` 先頭に新バージョンを追加し `VERSION` を一致させる。
 
+## ver.α1.0.82
+- 「視野」設定を追加（`VZOOM`：1.0標準／0.85広め／0.72最大）。設定画面にトグル、`saveObj` `vz` で保存。
+  - `render()` で自機中心にズームアウト（`translate(W/2,H/2)→scale→translate`）。`drawGround` を可視範囲拡張に対応。
+  - 画面外スポーンを視野連動に：`offR()=hypot(W,H)/2/VZOOM` を `makeEnemy`/`spawnBoss`/`spawnSwarm` の距離に採用、`DESP` も `/VZOOM`。`edgeMarker` の画面座標に `*VZOOM` を反映（広くしても敵が画面外から来る・端マーカーが正しく出る）。
+  - 検証：標準/最大でプレイし、可視範囲拡大・グリッド充填・エラーなしを確認。
+
 ## ver.α1.0.81
 - 限界突破にカテゴリ共通軸を追加（`lbCat()`）。物理系（`WKIND==='phys'`）に `crit(会心率+2%/lv)`・`critd(会心ダメージ+15%/lv)` を付与。`lbAxes()` が WAX 由来軸＋カテゴリ軸を合成。
   - 効果配線：`CRITC` に `+0.02*LB(SRC,'crit')`、`CRITD` に `+0.15*LB(SRC,'critd')`（その武器の限界突破ぶんだけ乗る／`SRC` null時は0で安全）。
