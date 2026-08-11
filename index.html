@@ -1870,7 +1870,8 @@ var BKILL={};  // 種別ごとの累計討伐数（表示用・遊び心。ザ�
 var BSCORE={}; // ザコの累計スコア（強化ポイント算出用）
 var BSEEN={};  // 図鑑で発見済み（初遭遇カードを出したか）
 var BCLAIM={}; // 図鑑コレクション報酬を受け取り済み {id:1}
-var CLEARGOLD={1:20,2:30,3:40};   // ステージ討伐完了(クリア)で得られる金貨
+var CLEARGOLD={1:6,2:9,3:12};     // ステージ討伐完了(クリア)で得られる金貨（控えめ・報酬の主役はボス宝箱へ）
+var BOSSGOLD={1:4,2:6,3:9};       // ボス宝箱1個あたりの金貨（ステージが上がるほど増える。4体ぶんが主収入）
 function figReward(id){ return isBossKey(id)?10:2; }              // 図鑑報酬：ボス10・ザコ2 金貨
 function dexRewardable(id){ return !!(BSEEN[id]&&!BCLAIM[id]); }  // 未受取の報酬があるか
 function anyDexReward(){ for(var k in BSEEN){ if(BSEEN[k]&&!BCLAIM[k]) return 1; } return 0; }
@@ -1929,7 +1930,7 @@ function figInfo(id){
   if(BOSS[id]){ var B=BOSS[id], tt=ETYPE[B.key]||{}; return {nm:B.nm,shape:tt.shape,col:tt.col,dark:tt.dark,desc:BDEX[id]||'',boss:true}; }
   var t=ETYPE[id]||{}; return {nm:t.nm,shape:t.shape,col:t.col,dark:t.dark,desc:DEX[id]||'',boss:false};
 }
-var VERSION='α1.0.90'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
+var VERSION='α1.0.91'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
 function applySave(o){
   for(var i=0;i<UPG.length;i++) META[UPG[i].id]=0;
   try{
@@ -4335,12 +4336,17 @@ function openChest(ch){
               : (r<0.05+lk?3:(r<0.20+lk?2:1));
   var pool=chestPool();
   n=Math.min(n,pool.length);
-  var hit=isB||Math.random()<0.50;
-  chGold = hit?(1+Math.floor(time/800))*(isB?2:1):0;
-  chSilver = hit?0:3;
+  if(isB){                                       // ボス宝箱：ステージごとに増える金貨（クリアの主収入）
+    chGold = (BOSSGOLD[curStage]||6);
+    chSilver = 0;
+  }else{                                          // エリート宝箱：金貨ドロップ率UP（0.50→0.62）・少額
+    var hit=Math.random()<0.62;
+    chGold = hit?1:0;
+    chSilver = hit?0:3;
+  }
   chHeal=0;
   if(P.hp<P.max){ chHeal=Math.round(P.max*0.25); P.hp=Math.min(P.max,P.hp+chHeal); }
-  if(!n){ chGold+=4; chItems=[]; }              // 伸ばせる軸が無ければ金貨のみ
+  if(!n){ chGold+=(isB?0:1); chItems=[]; }        // 伸ばせる軸が無ければ金貨のみ（ボスは倍率のみ／エリートは+1）
   flash=Math.max(flash,.5); shake=Math.min(20,shake+7);
   startRoulette(n,pool);
 }
@@ -4828,7 +4834,8 @@ var SPRDATA={
   skeletonClub:'assets/skeleton_club.png',
   shieldman:'assets/shieldman.png',
   wraith:'assets/wraith.png',
-  mummy:'assets/mummy.png'
+  mummy:'assets/mummy.png',
+  shadow:'assets/shadow.png'
 };
 var SPR={}, SPRT={}, SPRRDY={};
 // 端に接する白（不透明な白背景）だけをフラッドフィルで透過に。内部の白ハイライトは残す。
@@ -4903,7 +4910,7 @@ var SHAPE_SPR={blob:'blob',goblin:'goblin',orc:'orc',bat:'bat',spirit:'spirit',o
   wolf:'wolf',turtle:'turtle',harpy:'harpy',rider:'goat',
   bird:'bird',myconid:'myconid',bee:'bee',spider:'spider',beetle:'beetle',dryad:'maneater',
   panther:'panther',mantis:'mantis',treant:'treant',
-  skeleton:'skeleton',shieldman:'shieldman',wraith:'wraith',mummy:'mummy'};
+  skeleton:'skeleton',shieldman:'shieldman',wraith:'wraith',mummy:'mummy',shadow:'shadow'};
 // 棍棒持ち（素体＋棍棒レイヤーで攻撃時に棍棒を振る）。値＝棍棒レイヤーの握り位置（フレーム比 0..1）
 var CLUBBER={goblin:[0.34,0.77], orc:[0.31,0.67], cyclops:[0.34,0.75], skeleton:[0.78,0.72]};
 function enemySpr(e){
@@ -5348,7 +5355,7 @@ var SPRSZ={blob:{s:3.0,oy:0.35}, goblin:{s:3.2,oy:0.55}, orc:{s:3.0,oy:0.50},
   bird:{s:3.0,oy:0.30}, myconid:{s:3.1,oy:0.40}, bee:{s:3.2,oy:0.15}, spider:{s:3.2,oy:0.25},
   beetle:{s:2.8,oy:0.30}, maneater:{s:3.2,oy:0.42}, goblinking:{s:2.7,oy:0.42},
   panther:{s:3.4,oy:0.28}, mantis:{s:3.2,oy:0.40}, treant:{s:2.7,oy:0.48}, eldertreant:{s:2.5,oy:0.48},
-  skeleton:{s:3.2,oy:0.42}, shieldman:{s:3.1,oy:0.42}, wraith:{s:3.4,oy:0.16}, mummy:{s:3.0,oy:0.42}};
+  skeleton:{s:3.2,oy:0.42}, shieldman:{s:3.1,oy:0.42}, wraith:{s:3.4,oy:0.16}, mummy:{s:3.0,oy:0.42}, shadow:{s:3.4,oy:0.28}};
 // 毒の沼（ブーマー）：緑の沼＋泡。消える直前にフェード。
 function drawPuddle(q){
   var a=Math.min(1,q.life/1.2)*0.55;
@@ -6935,6 +6942,9 @@ Array.prototype.forEach.call(document.querySelectorAll('#setview button'),functi
 // 更新履歴：1つのお知らせ内で「バージョン見出し」ごとに変更点を並べる（新しい順）。
 // マージのたびに先頭へ新バージョンを追加し、VERSION も更新する。
 var UPDATES=[
+  {v:'α1.0.91', items:[
+    'シャドウ（黒の棒人間）の立ち絵を追加しました。',
+    '金貨バランス調整：ボス宝箱の金貨をステージが上がるほど増やし（4/6/9×4体）、金貨のドロップ率もUP。代わりにクリア報酬は控えめに（6/9/12）。ステージ3を完走すると最大70前後の金貨が得られます。']},
   {v:'α1.0.90', items:[
     'スケルトンが骨を武器として持ち、近づくと振り下ろすようになりました。']},
   {v:'α1.0.89', items:[
