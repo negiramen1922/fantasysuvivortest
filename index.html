@@ -1216,6 +1216,10 @@ var curStage=1, bossHpMul=1, curGround=STAGES[1].ground;
 var STGCLEAR={};
 var STGBEST={};   // ステージ別の最高スコア
 var STGWAVE={};   // ステージ別の到達ウェーブ最高
+// 無限ラン：10分ごとに舞台（＝ステージのロスター）が循環し、ボスも出る。死亡のみで終了・コンティニュー無し。
+var ENDLESS=false, ENDBLK=0, endBossDone={};
+var ENDLESS_BLOCK=600;   // 1舞台＝600秒（10分）
+var ENDBEST=0, ENDTIME=0;   // 無限ランの最高スコア／最長生存秒
 var BAN={};   // 排他でBANした武器 id→1
 
 var PTS_ELITE=450, PTS_REACT=30, PTS_SEC=25, PTS_LV=200, PTS_CLEAR=50000;
@@ -1822,7 +1826,7 @@ function figInfo(id){
   if(BOSS[id]){ var B=BOSS[id], tt=ETYPE[B.key]||{}; return {nm:B.nm,shape:tt.shape,col:tt.col,dark:tt.dark,desc:BDEX[id]||'',boss:true}; }
   var t=ETYPE[id]||{}; return {nm:t.nm,shape:t.shape,col:t.col,dark:t.dark,desc:DEX[id]||'',boss:false};
 }
-var VERSION='α1.0.74'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
+var VERSION='α1.0.75'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
 function applySave(o){
   for(var i=0;i<UPG.length;i++) META[UPG[i].id]=0;
   try{
@@ -1843,6 +1847,8 @@ function applySave(o){
       if(o.stg) for(var sg in STAGES) if(o.stg[sg]) STGCLEAR[sg]=1;
       if(o.sgb) for(var sb in o.sgb) STGBEST[sb]=o.sgb[sb]|0;
       if(o.sgw) for(var sw in o.sgw) STGWAVE[sw]=o.sgw[sw]|0;
+      if(typeof o.eb==='number') ENDBEST=o.eb|0;
+      if(typeof o.et==='number') ENDTIME=o.et|0;
       if(o.ban) for(var bi=0;bi<o.ban.length;bi++) if(WEAPONS[o.ban[bi]]) BAN[o.ban[bi]]=1;
       if(o.ch&&CHARS[o.ch]&&UNL[o.ch]) SELCH=o.ch;
       if(o.tut) TUTSEEN=1;
@@ -1857,7 +1863,7 @@ function applySave(o){
 }
 (function loadSave(){ try{ applySave(JSON.parse(localStorage.getItem('bsv_save')||'null')); }catch(e){ applySave(null); } })();
 function saveObj(){
-  return {m:META,w:WALLET,wx:WX,sel:SEL,best:best,shk:SHK,volm:VOLM,vols:VOLS,volb:VOLB,unl:UNL,ach:ACH,ch:SELCH,stg:STGCLEAR,sgb:STGBEST,sgw:STGWAVE,ban:Object.keys(BAN).filter(function(k){return BAN[k];}),tut:TUTSEEN,perf:PERF,dps:SHOWDPS,dpm:SHOWDPM,rsp:RESPEC_AT,bk:BKILL,bsc:BSCORE,bs:Object.keys(BSEEN).filter(function(k){return BSEEN[k];}),bsel:BSEL};
+  return {m:META,w:WALLET,wx:WX,sel:SEL,best:best,shk:SHK,volm:VOLM,vols:VOLS,volb:VOLB,unl:UNL,ach:ACH,ch:SELCH,stg:STGCLEAR,sgb:STGBEST,sgw:STGWAVE,eb:ENDBEST,et:ENDTIME,ban:Object.keys(BAN).filter(function(k){return BAN[k];}),tut:TUTSEEN,perf:PERF,dps:SHOWDPS,dpm:SHOWDPM,rsp:RESPEC_AT,bk:BKILL,bsc:BSCORE,bs:Object.keys(BSEEN).filter(function(k){return BSEEN[k];}),bsel:BSEL};
 }
 function saveGame(){
   try{ localStorage.setItem('bsv_save',JSON.stringify(saveObj())); }catch(e){}
@@ -1866,6 +1872,7 @@ function saveGame(){
 function M(id){ return META[id]||0; }
 
 function fmt(n){ return String(Math.floor(n)).replace(/\B(?=(\d{3})+(?!\d))/g,','); }
+function fmtTime(sec){ var m=Math.floor(sec/60), s=Math.floor(sec%60); return (m<10?'0':'')+m+':'+(s<10?'0':'')+s; }
 
 function xpNeed(lv){
   var n;
@@ -1896,6 +1903,7 @@ function reset(){
   score=0; silver=0; gold=0; magFx=0; chakSpin=0; wxRun={}; lastCd={}; coolMax={}; WDMG={};
   KILLER=null; INF={tgt:0,ramp:0,tick:0,on:false,ex:0,ey:0,extra:[],heat:0,over:false};
   contUsed=0; contFlag=0;
+  if(ENDLESS){ ENDBLK=0; endBossDone={}; marks=[]; }   // 無限ラン：分経過バナー無し・ブロック管理を初期化
   slotSig='';
   cool={};
   syncHud();
@@ -2020,6 +2028,7 @@ function update(dt){
   movePickups(dt);
   sweepDead();
   if(magFx>0) magFx-=dt;
+  if(ENDLESS) endlessTick();
   spawn(dt);
   swarmTick(dt);
   checkBoss();
@@ -3083,8 +3092,22 @@ function cap(){
   var mx=area<330000?200:(area<520000?290:380);
   return Math.min(mx,46+time*0.30);
 }
+// 無限ラン：10分ごとに舞台（ステージのロスター・地面・BGM・ボスHP倍率）を循環で切り替える
+function endlessTick(){
+  var blk=Math.floor(time/ENDLESS_BLOCK);
+  if(blk===ENDBLK) return;
+  ENDBLK=blk;
+  var st=(blk%3)+1, loop=Math.floor(blk/3);
+  curStage=st;
+  var stg=STAGES[st];
+  WAVE=stg.wave; BOSS_AT=stg.bossAt; curGround=stg.ground;
+  bossHpMul=(stg.hpMul||1)*(1+loop*0.5);           // 周回ごとにボスHPを強化（2周目×1.5・3周目×2.0…）
+  if(!(boss&&!boss.dead)) playBGM('s'+st);
+  banner((STGNUM[st-1]||st)+' '+stg.nm+(loop>0?'（'+(loop+1)+'周目）':''));
+  flash=Math.max(flash,.4);
+}
 function spawn(dt){
-  if(time>=RUN) return;              // 30:00 以降はフェンリル戦のみ
+  if(!ENDLESS&&time>=RUN) return;    // 通常：20:00 以降は湧き停止（ラストボス戦のみ）／無限ランは継続
   spawnT-=dt;
   var bossOn=boss&&!boss.dead;
   var capNow=bossOn?Math.floor(cap()*0.5):cap();   // ボス戦中は雑魚の上限を半減
@@ -3105,8 +3128,9 @@ function spawn(dt){
   }
 }
 function rollType(){
+  var wt=ENDLESS?((time%ENDLESS_BLOCK)*2):time;   // 無限ラン：10分ブロックを20分尺ウェーブに圧縮して進行
   var w=WAVE[0];
-  for(var i=1;i<WAVE.length;i++) if(time>=WAVE[i].t) w=WAVE[i];
+  for(var i=1;i<WAVE.length;i++) if(wt>=WAVE[i].t) w=WAVE[i];
   var r=Math.random();
   for(var j=0;j<w.mix.length;j++) if(r<=w.mix[j][1]) return w.mix[j][0];
   return w.mix[w.mix.length-1][0];
@@ -3114,10 +3138,26 @@ function rollType(){
 
 /* ============ ボス ============ */
 function checkBoss(){
+  if(ENDLESS){ checkBossEndless(); return; }
   if(bossN>=BOSS_AT.length) return;
   if(time<BOSS_AT[bossN][0]) return;
   spawnBoss(BOSS_AT[bossN][1]);
   bossN++;
+}
+// 無限ラン：各10分ブロックの +5:00 と +9:30 に、そのブロックのステージのボスをローテで1体ずつ
+function checkBossEndless(){
+  if(boss&&!boss.dead) return;                      // 同時に出すのは1体まで
+  var blk=Math.floor(time/ENDLESS_BLOCK), local=time-blk*ENDLESS_BLOCK;
+  var st=(blk%3)+1, list=STAGES[st].bossAt;
+  var slots=[300,570];
+  for(var s=0;s<slots.length;s++){
+    var key=blk+'_'+s;
+    if(local>=slots[s]&&!endBossDone[key]){
+      endBossDone[key]=1;
+      spawnBoss(list[(blk*2+s)%list.length][1]);
+      return;
+    }
+  }
 }
 function spawnBoss(key){
   var B=BOSS[key], t=ETYPE[B.key];
@@ -3872,8 +3912,8 @@ function kill(e){
     sfx(1046,.5,'triangle',.09);
     setTimeout(function(){ sfx(1568,.5,'triangle',.085); },170);
     if(boss===e) boss=null;
-    if(!e.last) playBGM('s'+curStage);
-    if(e.last){ setTimeout(function(){ finish(true); },700); }
+    if(!e.last||ENDLESS) playBGM('s'+curStage);
+    if(e.last&&!ENDLESS){ setTimeout(function(){ finish(true); },700); }   // 無限ランは勝利終了しない
   }else{
     // 中スライムはさらに小スライムへ
     if(e.split2){
@@ -5917,7 +5957,7 @@ function syncHud(){
   document.getElementById('kills').textContent=kills;
   var m=Math.floor(time/60), s=Math.floor(time%60);
   document.getElementById('timer').textContent=
-    (m<10?'0':'')+m+':'+(s<10?'0':'')+s+' / 20:00';
+    (m<10?'0':'')+m+':'+(s<10?'0':'')+s+(ENDLESS?'  ♾':' / 20:00');
   document.getElementById('score').innerHTML='<i>SCORE</i>'+fmt(score);
   document.getElementById('coins').innerHTML=
     '<span class="sv">銀 '+silver+'</span> <span class="gd">金 '+gold+'</span>';
@@ -6435,7 +6475,7 @@ function buildText(){
   var charBlock='<div class="wrow"><span class="wg">'+CH().glyph+'</span>'+CH().nm+
     (CH().grow?'<span style="color:var(--gold)">　'+CH().grow.tx+'（現在 +'+
        (CH().grow.v*(P.lv-1)*100).toFixed(0)+'%）</span>':'')+'</div>';
-  return '経過 <b>'+(m<10?'0':'')+m+':'+(s<10?'0':'')+s+' / 20:00</b>　'+
+  return '経過 <b>'+(m<10?'0':'')+m+':'+(s<10?'0':'')+s+(ENDLESS?'  ♾ 無限':' / 20:00')+'</b>　'+
          'SCORE <b>'+fmt(score)+'</b>　討伐 <b>'+kills+'</b>　元素反応 <span class="el">'+reacts+'</span>　会心 <b>'+crits+'</b><br>'+
          '持ち帰り 銀貨 <b>'+silver+'</b>　金貨 <b>'+gold+'</b><br>'+
          '<div class="psec">キャラ</div>'+charBlock+
@@ -6473,6 +6513,7 @@ var contUsed=0, contFlag=0;                       // このランのコンティ
 var CONT_MAX=3;                                    // 1ランのコンティニュー上限
 function reviveCost(){ return 10*Math.pow(2,contUsed); }   // 倍々：10→20→40…
 function die(){
+  if(ENDLESS){ finish(false); return; }             // 無限ランはコンティニュー無し・即終了
   var cost=reviveCost();
   if(contUsed<CONT_MAX&&gold+WALLET.gold>=cost) openRevive(cost);   // 上限内かつ金貨があれば復活の提案
   else finish(false);
@@ -6550,8 +6591,9 @@ function finish(won){
   var bTime=Math.floor(time)*PTS_SEC, bLv=P.lv*PTS_LV, bClear=won?PTS_CLEAR:0;
   var base=score;
   score=base+bTime+bLv+bClear;
-  var rec=score>best;
-  if(rec) best=score;
+  var rec;
+  if(ENDLESS){ rec=score>ENDBEST; if(rec) ENDBEST=score; if(Math.floor(time)>ENDTIME) ENDTIME=Math.floor(time); }
+  else { rec=score>best; if(rec) best=score; }
   ACH.lv=Math.max(ACH.lv,P.lv);
   ACH.kills+=kills; ACH.reacts+=reacts;
   ACH.time=Math.max(ACH.time,Math.floor(time));
@@ -6568,12 +6610,14 @@ function finish(won){
   var killK=won?'':(KILLER?KILLER.k:'timeup');
   var killN=won?'':(KILLER?KILLER.nm:'時間切れ');
   var waveIdx=0; for(var wi=0;wi<WAVE.length;wi++) if(time>=WAVE[wi].t) waveIdx++;
-  STGBEST[curStage]=Math.max(STGBEST[curStage]||0,score);       // ステージ別 最高スコア
-  STGWAVE[curStage]=Math.max(STGWAVE[curStage]||0,waveIdx);     // ステージ別 到達ウェーブ
+  if(!ENDLESS){
+    STGBEST[curStage]=Math.max(STGBEST[curStage]||0,score);     // ステージ別 最高スコア
+    STGWAVE[curStage]=Math.max(STGWAVE[curStage]||0,waveIdx);   // ステージ別 到達ウェーブ
+  }
   // 解析：ラン終了時にまとめて記録（使用武器＝使用率の分母/分子）
   if(typeof fbLog==='function'){
     var wlist=Object.keys(P.w).filter(function(w){return WEAPONS[w];});
-    fbLog('run_end',{stage:curStage,won:won?1:0,time_sec:Math.floor(time),level:P.lv,score:score,kills:kills,weapon_count:wlist.length,weapons:wlist.join(','),killed_by:killK,killed_by_name:killN,wave:waveIdx,boss_reached:bossN,continues:contUsed,continued:contFlag});
+    fbLog('run_end',{stage:curStage,mode:(ENDLESS?'endless':'stage'),won:won?1:0,time_sec:Math.floor(time),level:P.lv,score:score,kills:kills,weapon_count:wlist.length,weapons:wlist.join(','),killed_by:killK,killed_by_name:killN,wave:waveIdx,boss_reached:bossN,continues:contUsed,continued:contFlag});
     wlist.forEach(function(w){ fbLog('weapon_used',{weapon:w,name:WEAPONS[w].nm,stage:curStage,won:won?1:0}); });
   }
   // 構成：ラン中メニューと同じく縦並び＋アイコン
@@ -6582,10 +6626,14 @@ function finish(won){
           ' <b>'+P.w[id]+'</b>'+(AW(id)?'<span style="color:var(--gold)">★</span>':'')+'</div>';
   }
   var stg=STAGES[curStage]||STAGES[1];
-  var stgLabel=(STGNUM[curStage-1]||curStage)+' '+stg.nm;
-  document.getElementById('vtitle').textContent=won?'討伐完了':(time>=RUN?'敗北':'力尽きた');
+  var eBlk=Math.floor(time/ENDLESS_BLOCK), eLoop=Math.floor(eBlk/3)+1;
+  var stgLabel=ENDLESS?'♾ 無限ラン':((STGNUM[curStage-1]||curStage)+' '+stg.nm);
+  document.getElementById('vtitle').textContent=won?'討伐完了':((!ENDLESS&&time>=RUN)?'敗北':'力尽きた');
   document.getElementById('vtitle').style.color=won?'#56e0ff':'#ffcc4d';
   var causeHtml=(!won&&KILLER)?'<div style="font-size:13px;color:#ff9a7a;margin:2px 0 4px">死因：<b>'+KILLER.nm+'</b></div>':'';
+  var survHtml=ENDLESS
+    ? ('生存 <b>'+(m<10?'0':'')+m+':'+(s<10?'0':'')+s+'</b>　到達 <b>'+eLoop+'周目・'+stg.nm+'</b>　討伐 <b>'+kills+'</b> 体<br>')
+    : ('生存 <b>'+(m<10?'0':'')+m+':'+(s<10?'0':'')+s+' / 20:00</b>　討伐 <b>'+kills+'</b> 体<br>');
   document.getElementById('res').innerHTML=
     '<div style="font-size:11px;color:#6b5f9c;letter-spacing:1px">ver '+VERSION+'　'+stgLabel+'</div>'+
     causeHtml+
@@ -6594,8 +6642,8 @@ function finish(won){
       '撃破 '+fmt(base)+'　生存 +'+fmt(bTime)+'　Lv +'+fmt(bLv)+
       (bClear?'　完走 +'+fmt(bClear):'')+'</div>'+
     (rec?'<div style="color:var(--gold);font-size:15px;margin-bottom:6px">★ 自己ベスト更新</div>'
-        :'<div style="font-size:12px;color:#6b5f9c;margin-bottom:6px">ベスト '+fmt(best)+'</div>')+
-    '生存 <b>'+(m<10?'0':'')+m+':'+(s<10?'0':'')+s+' / 20:00</b>　討伐 <b>'+kills+'</b> 体<br>'+
+        :'<div style="font-size:12px;color:#6b5f9c;margin-bottom:6px">ベスト '+fmt(ENDLESS?ENDBEST:best)+'</div>')+
+    survHtml+
     '到達 <b>Lv '+P.lv+'</b>　元素反応 <b>'+reacts+'</b> 回　会心 <b>'+crits+'</b> 回<br>'+
     '持ち帰り <b>銀貨 +'+silver+' / 金貨 +'+gold+'</b><br>'+
     (contUsed>0?'コンティニュー <b>'+contUsed+'</b> 回<br>':'')+
@@ -6617,9 +6665,11 @@ function showView(v){
   if(v==='home'){ syncTitle(); playBGM('home'); if(!TUTSEEN) openTutorial(); }
   else if(v==='stage') renderStageSelect();
 }
-function startRun(n){
+function startRun(n,endless){
   audio();
-  if(n!=null) curStage=n;
+  ENDLESS=!!endless;
+  if(ENDLESS) curStage=1;               // 無限ランは草原(舞台1)から開始し10分ごとに循環
+  else if(n!=null) curStage=n;
   document.getElementById('veil').classList.add('hide');
   ['paused','shop','mast','ban','settings','news','bosswrap','chest','test','chr','dex','dexcard','tutorial'].forEach(function(id){
     var e=document.getElementById(id); if(e) e.classList.remove('on');
@@ -6628,7 +6678,7 @@ function startRun(n){
   reset(); state='playing'; last=performance.now();
   playBGM('s'+curStage);
   // 解析：ラン開始（開始→完走の比＝離脱率、ステージ別の挑戦回数の分母）
-  if(typeof fbLog==='function') fbLog('run_start',{stage:curStage,character:SELCH,char_name:CH().nm});
+  if(typeof fbLog==='function') fbLog('run_start',{stage:curStage,mode:(ENDLESS?'endless':'stage'),character:SELCH,char_name:CH().nm});
 }
 // ステージに出現するモンスター（出現表＋スウォーム＝雑魚、bossAt＝ボス）を重複なく返す
 function stageMonsters(st){
@@ -6672,16 +6722,25 @@ function renderStageSelect(){
          '<span style="font-size:11px;color:#7fd4ff">'+st.sub+'　▶ 出撃</span>'+
        '</button>';
   }
+  // 無限ラン（専用モード）：10分ごとに舞台が循環し、ボスも押し寄せる。死亡のみ・スコアでランキング。
+  var erec=(ENDBEST>0)?('最高 '+fmt(ENDBEST)+'　最長 '+fmtTime(ENDTIME)):'記録なし';
+  h+='<button class="stbtn" data-endless="1" style="border-color:#5a4f8a">'+
+       '<b>♾ 無限ラン</b>'+
+       '<span style="font-size:11px;color:#9a90c0;margin:2px 0">10分ごとに舞台が変わり、敵とボスが際限なく押し寄せる。倒れるまで生き延びろ。</span>'+
+       '<span style="font-size:11px;color:var(--gold)">'+erec+'</span>'+
+       '<span style="font-size:11px;color:#7fd4ff">コンティニュー無し・スコアアタック　▶ 出撃</span>'+
+     '</button>';
   el.innerHTML=h;
   el.onclick=function(ev){
     var b=ev.target.closest?ev.target.closest('.stbtn'):null; if(!b) return;
+    if(b.getAttribute('data-endless')){ startRun(null,true); return; }
     var n=+b.getAttribute('data-stg'); if(!stageUnlocked(n)) return;
     startRun(n);
   };
 }
 document.getElementById('startbtn').onclick=function(){ audio(); showView('stage'); };
 document.getElementById('stageback').onclick=function(){ showView('home'); };
-document.getElementById('againbtn').onclick=function(){ startRun(curStage); };
+document.getElementById('againbtn').onclick=function(){ startRun(ENDLESS?null:curStage,ENDLESS); };
 document.getElementById('homebtn').onclick=function(){ showView('home'); };
 document.getElementById('revbtn').onclick=function(){ audio(); doRevive(); };
 document.getElementById('revgiveup').onclick=function(){ audio(); giveUp(); };
@@ -6722,6 +6781,9 @@ Array.prototype.forEach.call(document.querySelectorAll('#setshake button'),funct
 // 更新履歴：1つのお知らせ内で「バージョン見出し」ごとに変更点を並べる（新しい順）。
 // マージのたびに先頭へ新バージョンを追加し、VERSION も更新する。
 var UPDATES=[
+  {v:'α1.0.75', items:[
+    '新モード「♾ 無限ラン」を追加！10分ごとに舞台（草原→森→王墓→…）が循環し、各舞台のボスも次々出現。倒れるまで終わらないスコアアタックです（コンティニュー無し）。周回するほど強くなります。',
+    '※オンラインランキングは次のアップデートで対応予定。']},
   {v:'α1.0.74', items:[
     'ステージ3のデュラハンの出現量を約半分に減らしました（減った分は他のアンデッドに配分）。']},
   {v:'α1.0.73', items:[
