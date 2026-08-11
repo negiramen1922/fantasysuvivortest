@@ -229,7 +229,8 @@ canvas{display:block;width:100%;height:100%;touch-action:none}
 .setrow>span:first-child{color:#e9e2ff;flex:none}
 .setval{color:var(--arc);width:52px;text-align:right;flex:none}
 #volm,#vols,#volb{flex:1;accent-color:#56e0ff}
-#setbody,#newslist{width:100%;max-width:440px;margin:0 auto;text-align:left}
+#setbody,#newslist{width:100%;max-width:440px;margin:0 auto;text-align:left;
+  flex:1 1 auto;min-height:0;overflow-y:auto;-webkit-overflow-scrolling:touch}
 #newslist{flex:1;min-height:0;overflow-y:auto}
 .newsitem{padding:11px 4px;border-bottom:1px solid var(--line)}
 .newsitem .nt{color:var(--gold);font-size:14px}
@@ -1914,7 +1915,7 @@ function figInfo(id){
   if(BOSS[id]){ var B=BOSS[id], tt=ETYPE[B.key]||{}; return {nm:B.nm,shape:tt.shape,col:tt.col,dark:tt.dark,desc:BDEX[id]||'',boss:true}; }
   var t=ETYPE[id]||{}; return {nm:t.nm,shape:t.shape,col:t.col,dark:t.dark,desc:DEX[id]||'',boss:false};
 }
-var VERSION='α1.0.83'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
+var VERSION='α1.0.84'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
 function applySave(o){
   for(var i=0;i<UPG.length;i++) META[UPG[i].id]=0;
   try{
@@ -6912,6 +6913,8 @@ Array.prototype.forEach.call(document.querySelectorAll('#setview button'),functi
 // 更新履歴：1つのお知らせ内で「バージョン見出し」ごとに変更点を並べる（新しい順）。
 // マージのたびに先頭へ新バージョンを追加し、VERSION も更新する。
 var UPDATES=[
+  {v:'α1.0.84', items:[
+    '設定画面（とお知らせ）が縦に長いとき、スマホで下の「完全リセット」「閉じる」等が押せない不具合を修正。中身をスクロールできるようにしました。']},
   {v:'α1.0.83', items:[
     '金貨を入手しやすく：ステージ討伐完了（クリア）で金貨（ステージ1＝20／2＝30／3＝40）を獲得。',
     '図鑑コレクション報酬を追加：モンスター1種につき金貨2、ボス1体につき金貨10。図鑑（📖）に🎁の付いた枠を開き、右上「報酬を獲得」で受け取れます（受け取れる報酬があるとホームの図鑑ボタンに！が付きます）。',
