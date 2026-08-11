@@ -1870,7 +1870,8 @@ var BKILL={};  // 種別ごとの累計討伐数（表示用・遊び心。ザ�
 var BSCORE={}; // ザコの累計スコア（強化ポイント算出用）
 var BSEEN={};  // 図鑑で発見済み（初遭遇カードを出したか）
 var BCLAIM={}; // 図鑑コレクション報酬を受け取り済み {id:1}
-var CLEARGOLD={1:6,2:9,3:12};     // ステージ討伐完了(クリア)で得られる金貨（控えめ・報酬の主役はボス宝箱へ）
+var CLEARGOLD={1:6,2:9,3:12};     // ステージ討伐完了(クリア)で得られる金貨（毎回・控えめ）
+var FIRSTCLEAR={1:30,2:50,3:80};  // 初回クリア報酬（そのステージを初めてクリアした時だけ・一度きり）
 var BOSSGOLD={1:4,2:6,3:9};       // ボス宝箱1個あたりの金貨（ステージが上がるほど増える。4体ぶんが主収入）
 function figReward(id){ return isBossKey(id)?10:2; }              // 図鑑報酬：ボス10・ザコ2 金貨
 function dexRewardable(id){ return !!(BSEEN[id]&&!BCLAIM[id]); }  // 未受取の報酬があるか
@@ -1930,7 +1931,7 @@ function figInfo(id){
   if(BOSS[id]){ var B=BOSS[id], tt=ETYPE[B.key]||{}; return {nm:B.nm,shape:tt.shape,col:tt.col,dark:tt.dark,desc:BDEX[id]||'',boss:true}; }
   var t=ETYPE[id]||{}; return {nm:t.nm,shape:t.shape,col:t.col,dark:t.dark,desc:DEX[id]||'',boss:false};
 }
-var VERSION='α1.0.91'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
+var VERSION='α1.0.92'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
 function applySave(o){
   for(var i=0;i<UPG.length;i++) META[UPG[i].id]=0;
   try{
@@ -6751,9 +6752,14 @@ function finish(won){
   ACH.lv=Math.max(ACH.lv,P.lv);
   ACH.kills+=kills; ACH.reacts+=reacts;
   ACH.time=Math.max(ACH.time,Math.floor(time));
+  var firstClear=(won&&!ENDLESS&&!STGCLEAR[curStage]);   // 初回クリア判定（STGCLEAR を立てる前に）
   if(won){ ACH.clear=1; STGCLEAR[curStage]=1; }
   var newCh=unlockCheck();
-  if(won&&!ENDLESS) gold+=(CLEARGOLD[curStage]||0);   // ステージ討伐完了ボーナス（金貨）
+  var firstClearGold=0;
+  if(won&&!ENDLESS){
+    gold+=(CLEARGOLD[curStage]||0);                     // ステージ討伐完了ボーナス（毎回）
+    if(firstClear){ firstClearGold=(FIRSTCLEAR[curStage]||0); gold+=firstClearGold; }   // 初回クリア報酬（一度きり）
+  }
   WALLET.silver+=silver; WALLET.gold+=gold;
   // 熟練度を加算。特性を新たに選べるようになった武器はトーストで連続通知（リザルトの熟練度テキストは廃止）
   for(var wk in wxRun){
@@ -6800,6 +6806,7 @@ function finish(won){
     '到達 <b>Lv '+P.lv+'</b>　元素反応 <b>'+reacts+'</b> 回　会心 <b>'+crits+'</b> 回<br>'+
     '持ち帰り <b>銀貨 +'+silver+' / 金貨 +'+gold+'</b><br>'+
     (contUsed>0?'コンティニュー <b>'+contUsed+'</b> 回<br>':'')+
+    (firstClearGold?'<span style="color:var(--gold)">🎉 初回クリア報酬 金貨 +'+firstClearGold+'</span><br>':'')+
     (anyPicks()?'<span style="color:var(--gold)">★ 武器熟練で特性を選べます</span><br>':'')+
     (newCh.length?'<span style="color:var(--gold)">★ '+newCh.join('・')+' が解放されました</span><br>':'')+
     '<div class="psec">構成</div>'+(comp||'—')+
@@ -6942,6 +6949,8 @@ Array.prototype.forEach.call(document.querySelectorAll('#setview button'),functi
 // 更新履歴：1つのお知らせ内で「バージョン見出し」ごとに変更点を並べる（新しい順）。
 // マージのたびに先頭へ新バージョンを追加し、VERSION も更新する。
 var UPDATES=[
+  {v:'α1.0.92', items:[
+    '「初回クリア報酬」を追加：各ステージを初めてクリアした時だけ、金貨ボーナス（ステージ1＝30／2＝50／3＝80）がもらえます。毎回のクリアボーナス（6/9/12）は据え置きです。']},
   {v:'α1.0.91', items:[
     'シャドウ（黒の棒人間）の立ち絵を追加しました。',
     '金貨バランス調整：ボス宝箱の金貨をステージが上がるほど増やし（4/6/9×4体）、金貨のドロップ率もUP。代わりにクリア報酬は控えめに（6/9/12）。ステージ3を完走すると最大70前後の金貨が得られます。']},

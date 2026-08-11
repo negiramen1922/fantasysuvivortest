@@ -10,6 +10,10 @@
 - リザルト画面と設定画面に `VERSION` を表示。
 - お知らせ（`UPDATES` 配列）は**1枠内でバージョン見出しごとに変更点を掲載**（新しい順）。マージ時は `UPDATES` 先頭に新バージョンを追加し `VERSION` を一致させる。
 
+## ver.α1.0.92
+- 初回クリア報酬を追加（`FIRSTCLEAR={1:30,2:50,3:80}`）。`finish()` で `STGCLEAR[curStage]` を立てる前に `firstClear` を判定し、初回のみ金貨を加算（毎回の `CLEARGOLD` は据え置き）。リザルトに「🎉 初回クリア報酬 金貨 +N」を表示。判定は既存の `STGCLEAR`（セーブ済み）を利用。
+  - 検証：`docs/check.py` 通過、リザルト生成でエラーなしを確認。
+
 ## ver.α1.0.91
 - シャドウの立ち絵を追加（`dotpict_20260810_203028.png`＝黒の棒人間。以前「黒グモ」と誤認していた画像）。`assets/shadow.png` に透過焼き込み、`SPRDATA`/`SHAPE_SPR`/`SPRSZ` に登録。
 - 金貨バランス調整（`openChest`／`CLEARGOLD`／`BOSSGOLD`）。
