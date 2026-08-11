@@ -1681,30 +1681,39 @@ function addWLv(id,ax){
 
 var SRC=null;          // いま damage を出している武器
 var inBurst=0;         // 連射の追加射（熟練度を二重に加算しないための印）
-function CRITC(){      // 会心率：武器種で基礎値が違い、キャラの会心が乗る
+function CRITC(){      // 会心率：武器種で基礎値が違い、キャラの会心＋その武器の限界突破が乗る
   var k=SRC?WKIND[SRC]:null;
   var b=(k==='phys')?0.12:((k==='mag')?0.05:0.09);
   var w=(k==='mag')?0.4:1;          // 魔法は会心の恩恵が4割
-  return Math.min(0.90,b+(0.05*(P.p.crit||0)+0.03*M('crit'))*w+CH().crit);
+  return Math.min(0.90,b+(0.05*(P.p.crit||0)+0.03*M('crit'))*w+CH().crit+0.02*LB(SRC,'crit'));
 }
-function CRITD(){      // 会心倍率：全武器共通
-  return 2+0.20*(P.p.critd||0)+0.12*M('critd');
+function CRITD(){      // 会心倍率：全武器共通＋その武器の限界突破（物理系）
+  return 2+0.20*(P.p.critd||0)+0.12*M('critd')+0.15*LB(SRC,'critd');
 }
 function AX(w,k){ var a=P.wa[w]; return (a&&a[k])||0; }
 // 限界突破：各軸のカンスト後に積める追加ステータス。武器ごとに「その武器の育成軸(WAX)」に沿った軸だけ出す。
-var LBN={ dmg:'攻撃力', area:'範囲', rate:'頻度', count:'数', pierce:'貫通', dur:'持続', range:'射程', burst:'連射', ammo:'弾数', chain:'連鎖', split:'拡散' };
+var LBN={ dmg:'攻撃力', area:'範囲', rate:'頻度', count:'数', pierce:'貫通', dur:'持続', range:'射程', burst:'連射', ammo:'弾数', chain:'連鎖', split:'拡散', crit:'会心率', critd:'会心ダメージ' };
 var LBT={ dmg:'ダメージ +8%（上限なし）', area:'範囲 +4%', rate:'間隔 −1.5%',
           count:'発生数 +1', pierce:'貫通 +1', dur:'効果の持続 +1（延焼・氷・熱量など）',
-          range:'射程 +8%', burst:'同時発射 +1', ammo:'装填数 +1', chain:'連鎖 +1', split:'拡散 +1' };
-var LBCAP={ dmg:0, area:25, rate:0, count:8, pierce:10, dur:8, range:15, burst:5, ammo:8, chain:8, split:8 };   // 0 = 上限なし
-var LBSUP={ dmg:1, area:1, rate:1, count:1, pierce:1, dur:1, range:1, burst:1, ammo:1, chain:1, split:1 };   // 効果を実装済みの軸
+          range:'射程 +8%', burst:'同時発射 +1', ammo:'装填数 +1', chain:'連鎖 +1', split:'拡散 +1',
+          crit:'この武器の会心率 +2%', critd:'この武器の会心ダメージ +15%' };
+var LBCAP={ dmg:0, area:25, rate:0, count:8, pierce:10, dur:8, range:15, burst:5, ammo:8, chain:8, split:8, crit:10, critd:10 };   // 0 = 上限なし
+var LBSUP={ dmg:1, area:1, rate:1, count:1, pierce:1, dur:1, range:1, burst:1, ammo:1, chain:1, split:1, crit:1, critd:1 };   // 効果を実装済みの軸
 // 武器ごとの限界突破の軸。未指定なら WAX（その武器の育成軸）を流用＝その武器に効く軸だけ出る。
 // ここで武器を上書きすれば軸を個別に増減できる（例：ガトリングに範囲は出したくない→WAXに範囲が無いので自動で出ない）。
 var WLB={ };
+// カテゴリ共通の限界突破軸：武器種・属性ごとの“らしい”強化を追加する。
+function lbCat(w){
+  var out=[];
+  if(WKIND[w]==='phys') out.push('critd','crit');   // 物理系：会心ダメージ・会心率
+  return out;
+}
 function lbAxes(w){
   if(WLB[w]) return WLB[w];
   var out=[], src=WAX[w]||{};
   for(var k in src) if(LBSUP[k]) out.push(k);
+  var cat=lbCat(w);
+  for(var i=0;i<cat.length;i++) if(out.indexOf(cat[i])<0) out.push(cat[i]);   // カテゴリ軸を追加
   return out;
 }
 function LB(w,k){ var a=P.lb&&P.lb[w]; return (a&&a[k])||0; }
@@ -1892,7 +1901,7 @@ function figInfo(id){
   if(BOSS[id]){ var B=BOSS[id], tt=ETYPE[B.key]||{}; return {nm:B.nm,shape:tt.shape,col:tt.col,dark:tt.dark,desc:BDEX[id]||'',boss:true}; }
   var t=ETYPE[id]||{}; return {nm:t.nm,shape:t.shape,col:t.col,dark:t.dark,desc:DEX[id]||'',boss:false};
 }
-var VERSION='α1.0.80'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
+var VERSION='α1.0.81'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
 function applySave(o){
   for(var i=0;i<UPG.length;i++) META[UPG[i].id]=0;
   try{
@@ -3176,11 +3185,12 @@ function cap(){
 // 無限ラン：10分ごとに舞台（ステージのロスター・地面・BGM・ボスHP倍率）を循環で切り替える
 function endlessTick(){
   var blk=Math.floor(time/ENDLESS_BLOCK);
-  if(blk===ENDBLK) return;
+  if(blk===ENDBLK||!(blk>=0)) return;              // 未変化 or 想定外(NaN等)は何もしない
+  var st=(blk%3)+1, stg=STAGES[st];
+  if(!stg) return;                                  // 念のためのガード：不正な舞台ではクラッシュさせない
   ENDBLK=blk;
-  var st=(blk%3)+1, loop=Math.floor(blk/3);
+  var loop=Math.floor(blk/3);
   curStage=st;
-  var stg=STAGES[st];
   WAVE=stg.wave; BOSS_AT=stg.bossAt; curGround=stg.ground;
   bossHpMul=(stg.hpMul||1)*(1+loop*0.5);           // 周回ごとにボスHPを強化（2周目×1.5・3周目×2.0…）
   if(!(boss&&!boss.dead)) playBGM('s'+st);
@@ -3228,8 +3238,12 @@ function checkBoss(){
 // 無限ラン：各10分ブロックの +5:00 と +9:30 に、そのブロックのステージのボスをローテで1体ずつ
 function checkBossEndless(){
   if(boss&&!boss.dead) return;                      // 同時に出すのは1体まで
-  var blk=Math.floor(time/ENDLESS_BLOCK), local=time-blk*ENDLESS_BLOCK;
-  var st=(blk%3)+1, list=STAGES[st].bossAt;
+  var blk=Math.floor(time/ENDLESS_BLOCK);
+  if(!(blk>=0)) return;
+  var local=time-blk*ENDLESS_BLOCK;
+  var st=(blk%3)+1, stg=STAGES[st];
+  if(!stg) return;                                  // 念のためのガード
+  var list=stg.bossAt;
   var slots=[300,570];
   for(var s=0;s<slots.length;s++){
     var key=blk+'_'+s;
@@ -6867,6 +6881,9 @@ Array.prototype.forEach.call(document.querySelectorAll('#setshake button'),funct
 // 更新履歴：1つのお知らせ内で「バージョン見出し」ごとに変更点を並べる（新しい順）。
 // マージのたびに先頭へ新バージョンを追加し、VERSION も更新する。
 var UPDATES=[
+  {v:'α1.0.81', items:[
+    '限界突破に「武器カテゴリ共通の軸」を追加。物理系の武器では「会心率」「会心ダメージ」を限界突破で伸ばせるようになりました（その武器だけに効きます）。',
+    '無限ランの舞台切り替え処理を安定化（まれなクラッシュを防止）。']},
   {v:'α1.0.80', items:[
     'リザルトの熟練度テキストを廃止し、代わりに「特性を選べるようになった武器」を軽い通知（トースト）で連続表示するようにしました。',
     'モンスター図鑑の発見・ランクアップも同じトースト通知に。プレイを止める発見カードは廃止して邪魔にならないように。',
