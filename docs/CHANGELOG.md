@@ -10,6 +10,13 @@
 - リザルト画面と設定画面に `VERSION` を表示。
 - お知らせ（`UPDATES` 配列）は**1枠内でバージョン見出しごとに変更点を掲載**（新しい順）。マージ時は `UPDATES` 先頭に新バージョンを追加し `VERSION` を一致させる。
 
+## ver.α1.0.83
+- 金貨の入手性UP。
+  - ステージクリア（`won&&!ENDLESS`）で `CLEARGOLD={1:20,2:30,3:40}` の金貨を付与（`finish` の `gold` に加算→持ち帰り）。
+  - 図鑑コレクション報酬：`figReward(id)`（ボス10・ザコ2）。`BCLAIM`（saveObj `bc`）で受取済み管理。詳細（`#figdet`）右上に「報酬を獲得」ボタン（`#fdreward`／`claimFigReward`）、図鑑ボタンに未受取バッジ（`updateDexBadge`／`anyDexReward`）、一覧行に🎁表示。
+- 軽量モード（`LIGHT`／saveObj `light`）。ONで `resize()` の `DPR` を1固定（Retina端末で塗り負荷を約1/4に）。**ゲーム内容・難度は不変**（描画解像度のみ）。設定にトグル。
+- 検証：軽量ONでcanvas実解像度が半減（1792→896px）・図鑑バッジ／🎁／報酬受取→ボタン消滅・エラーなしを確認。
+
 ## ver.α1.0.82
 - 「視野」設定を追加（`VZOOM`：1.0標準／0.85広め／0.72最大）。設定画面にトグル、`saveObj` `vz` で保存。
   - `render()` で自機中心にズームアウト（`translate(W/2,H/2)→scale→translate`）。`drawGround` を可視範囲拡張に対応。

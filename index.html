@@ -616,6 +616,7 @@ img.wspr{width:1.15em;height:1.15em;object-fit:contain;image-rendering:pixelated
         <div class="setrow"><span>視野（遠くまで見える）</span><span id="setview">
           <button class="tg" data-vz="1">標準</button><button class="tg" data-vz="0.85">広め</button><button class="tg" data-vz="0.72">最大</button>
         </span></div>
+        <div class="setrow"><span>軽量モード<br><span style="font-size:10px;color:#8a7fc0">解像度を下げて動作を軽く（難度は変わりません）</span></span><button class="tg" id="setlight">OFF</button></div>
         <div class="setrow"><span>バージョン</span><span id="setver" class="setval"></span></div>
         <div class="setrow"><span>データを初期化</span><button class="btn sub2" id="hardreset" style="margin-top:0;color:#ff8a7a;border-color:#7a2a2a">完全リセット</button></div>
       </div>
@@ -702,7 +703,8 @@ img.wspr{width:1.15em;height:1.15em;object-fit:contain;image-rendering:pixelated
 
   <!-- 図鑑：詳細（枠タップで開く） -->
   <div id="figdet">
-    <div class="dexbox">
+    <div class="dexbox" style="position:relative">
+      <button id="fdreward" style="display:none;position:absolute;top:10px;right:10px;margin-top:0;padding:6px 12px;border-radius:16px;background:var(--gold);color:#1a1000;border:none;font-size:12px;font-weight:700;cursor:pointer">報酬を獲得</button>
       <canvas id="fdpc" width="120" height="120"></canvas>
       <div class="dexname" id="fdname"></div>
       <div id="fdmeta" style="color:var(--gold);font-size:12px;margin-top:4px"></div>
@@ -827,7 +829,7 @@ function resize(){
   var r=cv.getBoundingClientRect();
   W=Math.max(260,Math.round(r.width));
   H=Math.max(320,Math.round(r.height));
-  DPR=Math.min(2,window.devicePixelRatio||1);
+  DPR=LIGHT?1:Math.min(2,window.devicePixelRatio||1);   // 軽量モードは等倍で描画（Retina端末で負荷を約1/4に）
   cv.width=Math.round(W*DPR);
   cv.height=Math.round(H*DPR);
 }
@@ -1842,6 +1844,7 @@ var META={}, WALLET={silver:0,gold:0}, best=0;
 var SHK=1;   // 画面揺れの強さ 0 / 0.5 / 1 / 1.5
 var VZOOM=1; // 視野（描画ズーム）。小さいほど広く見える 1.0=標準 / 0.85=広め / 0.72=最大
 function offR(){ return Math.hypot(W,H)/2/VZOOM; }   // 画面外スポーン半径（視野に応じて外側へ）
+var LIGHT=0; // 軽量モード：解像度(DPR)を1に下げて描画負荷を軽くする（ゲーム内容・難度は変えない）
 var VOLM=0.8; // 全体音量 0〜1
 var VOLS=0.8; // 効果音音量
 var VOLB=0.55; // BGM音量
@@ -1851,6 +1854,11 @@ var RESPEC_WEEK=7*24*3600*1000; // 振り直しのクールタイム（1週間�
 var BKILL={};  // 種別ごとの累計討伐数（表示用・遊び心。ザコはETYPEキー、ボスはbkey）
 var BSCORE={}; // ザコの累計スコア（強化ポイント算出用）
 var BSEEN={};  // 図鑑で発見済み（初遭遇カードを出したか）
+var BCLAIM={}; // 図鑑コレクション報酬を受け取り済み {id:1}
+var CLEARGOLD={1:20,2:30,3:40};   // ステージ討伐完了(クリア)で得られる金貨
+function figReward(id){ return isBossKey(id)?10:2; }              // 図鑑報酬：ボス10・ザコ2 金貨
+function dexRewardable(id){ return !!(BSEEN[id]&&!BCLAIM[id]); }  // 未受取の報酬があるか
+function anyDexReward(){ for(var k in BSEEN){ if(BSEEN[k]&&!BCLAIM[k]) return 1; } return 0; }
 var BSEL={};   // 強化割り振り {id:{x,d,t}}（経験値/与ダメ/被ダメ）
 var dexQueue=[]; // 初遭遇カードの表示待ち
 var ZAKO_SCORE_PER=10000; // ザコ：この累計スコアごとに強化ポイント1（≒4〜5ラン）
@@ -1906,7 +1914,7 @@ function figInfo(id){
   if(BOSS[id]){ var B=BOSS[id], tt=ETYPE[B.key]||{}; return {nm:B.nm,shape:tt.shape,col:tt.col,dark:tt.dark,desc:BDEX[id]||'',boss:true}; }
   var t=ETYPE[id]||{}; return {nm:t.nm,shape:t.shape,col:t.col,dark:t.dark,desc:DEX[id]||'',boss:false};
 }
-var VERSION='α1.0.82'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
+var VERSION='α1.0.83'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
 function applySave(o){
   for(var i=0;i<UPG.length;i++) META[UPG[i].id]=0;
   try{
@@ -1918,6 +1926,8 @@ function applySave(o){
       best=o.best|0;
       if(typeof o.shk==='number') SHK=o.shk;
       if(typeof o.vz==='number'&&o.vz>=0.5&&o.vz<=1) VZOOM=o.vz;
+      if(o.light) LIGHT=1;
+      if(o.bc) for(var bck in o.bc){ if(o.bc[bck]) BCLAIM[bck]=1; }
       if(typeof o.vol==='number') VOLS=Math.max(0,Math.min(1,o.vol));
       if(typeof o.volm==='number') VOLM=Math.max(0,Math.min(1,o.volm));
       if(typeof o.vols==='number') VOLS=Math.max(0,Math.min(1,o.vols));
@@ -1945,7 +1955,7 @@ function applySave(o){
 }
 (function loadSave(){ try{ applySave(JSON.parse(localStorage.getItem('bsv_save')||'null')); }catch(e){ applySave(null); } })();
 function saveObj(){
-  return {m:META,w:WALLET,wx:WX,sel:SEL,best:best,shk:SHK,vz:VZOOM,volm:VOLM,vols:VOLS,volb:VOLB,unl:UNL,ach:ACH,ch:SELCH,stg:STGCLEAR,sgb:STGBEST,sgw:STGWAVE,eb:ENDBEST,et:ENDTIME,nk:NICK,ban:Object.keys(BAN).filter(function(k){return BAN[k];}),tut:TUTSEEN,perf:PERF,dps:SHOWDPS,dpm:SHOWDPM,rsp:RESPEC_AT,bk:BKILL,bsc:BSCORE,bs:Object.keys(BSEEN).filter(function(k){return BSEEN[k];}),bsel:BSEL};
+  return {m:META,w:WALLET,wx:WX,sel:SEL,best:best,shk:SHK,vz:VZOOM,light:LIGHT,volm:VOLM,vols:VOLS,volb:VOLB,unl:UNL,ach:ACH,ch:SELCH,stg:STGCLEAR,sgb:STGBEST,sgw:STGWAVE,eb:ENDBEST,et:ENDTIME,nk:NICK,ban:Object.keys(BAN).filter(function(k){return BAN[k];}),tut:TUTSEEN,perf:PERF,dps:SHOWDPS,dpm:SHOWDPM,rsp:RESPEC_AT,bk:BKILL,bsc:BSCORE,bs:Object.keys(BSEEN).filter(function(k){return BSEEN[k];}),bc:Object.keys(BCLAIM).filter(function(k){return BCLAIM[k];}).reduce(function(o,k){o[k]=1;return o;},{}),bsel:BSEL};
 }
 function saveGame(){
   try{ localStorage.setItem('bsv_save',JSON.stringify(saveObj())); }catch(e){}
@@ -6196,6 +6206,7 @@ function syncTitle(){
     '<span style="color:#fff">'+CH().glyph+' '+CH().nm+'</span>　'+purseHtml()+
     (best?'<br><span style="color:#6b5f9c">ベストスコア '+fmt(best)+'</span>':'');
   document.getElementById('mastbtn').innerHTML='武器熟練'+(anyPicks()?'<span class="badge">!</span>':'');
+  updateDexBadge();
   var nl=0; for(var ci in CHARS) if(!UNL[ci]&&achOK(ci)) nl++;
   document.getElementById('chrbtn').innerHTML='キャラクター'+(nl?'<span class="badge">!</span>':'');
 }
@@ -6712,6 +6723,7 @@ function finish(won){
   ACH.time=Math.max(ACH.time,Math.floor(time));
   if(won){ ACH.clear=1; STGCLEAR[curStage]=1; }
   var newCh=unlockCheck();
+  if(won&&!ENDLESS) gold+=(CLEARGOLD[curStage]||0);   // ステージ討伐完了ボーナス（金貨）
   WALLET.silver+=silver; WALLET.gold+=gold;
   // 熟練度を加算。特性を新たに選べるようになった武器はトーストで連続通知（リザルトの熟練度テキストは廃止）
   for(var wk in wxRun){
@@ -6868,6 +6880,7 @@ function renderSettings(){
   var pb=document.getElementById('setperf'); pb.textContent=PERF?'ON':'OFF'; pb.classList.toggle('on',!!PERF);
   var db=document.getElementById('setdps'); db.textContent=SHOWDPS?'ON':'OFF'; db.classList.toggle('on',!!SHOWDPS);
   var mb=document.getElementById('setdpm'); mb.textContent=SHOWDPM?'ON':'OFF'; mb.classList.toggle('on',!!SHOWDPM);
+  var lb=document.getElementById('setlight'); lb.textContent=LIGHT?'ON':'OFF'; lb.classList.toggle('on',!!LIGHT);
   Array.prototype.forEach.call(document.querySelectorAll('#setshake button'),function(b){
     b.classList.toggle('on',parseFloat(b.getAttribute('data-s2'))===SHK);
   });
@@ -6887,6 +6900,7 @@ document.getElementById('volb').onchange=function(){ VOLB=(+this.value)/100; sav
 document.getElementById('setperf').onclick=function(){ PERF=PERF?0:1; fpsA=[];fpsI=0;perfT=0; saveGame(); syncPerfBtn(); renderSettings(); };
 document.getElementById('setdps').onclick=function(){ SHOWDPS=SHOWDPS?0:1; saveGame(); renderSettings(); };
 document.getElementById('setdpm').onclick=function(){ SHOWDPM=SHOWDPM?0:1; saveGame(); renderSettings(); };
+document.getElementById('setlight').onclick=function(){ LIGHT=LIGHT?0:1; resize(); saveGame(); renderSettings(); };
 Array.prototype.forEach.call(document.querySelectorAll('#setshake button'),function(b){
   b.onclick=function(){ SHK=parseFloat(b.getAttribute('data-s2')); saveGame(); syncShakeBtns(); renderSettings(); };
 });
@@ -6898,6 +6912,10 @@ Array.prototype.forEach.call(document.querySelectorAll('#setview button'),functi
 // 更新履歴：1つのお知らせ内で「バージョン見出し」ごとに変更点を並べる（新しい順）。
 // マージのたびに先頭へ新バージョンを追加し、VERSION も更新する。
 var UPDATES=[
+  {v:'α1.0.83', items:[
+    '金貨を入手しやすく：ステージ討伐完了（クリア）で金貨（ステージ1＝20／2＝30／3＝40）を獲得。',
+    '図鑑コレクション報酬を追加：モンスター1種につき金貨2、ボス1体につき金貨10。図鑑（📖）に🎁の付いた枠を開き、右上「報酬を獲得」で受け取れます（受け取れる報酬があるとホームの図鑑ボタンに！が付きます）。',
+    '「軽量モード」を追加（設定）。解像度を下げて動作を軽くします。ゲーム内容・難度は変わりません。']},
   {v:'α1.0.82', items:[
     '「視野」設定を追加（設定 → 視野：標準／広め／最大）。スマホでも遠くの敵や弾が見やすくなります。広くするほど画面外から敵が来るように調整済み。']},
   {v:'α1.0.81', items:[
@@ -7216,6 +7234,7 @@ function dexRowEl(id,draws){
     var parts=[['📖',sel.x||0],['⚔️',sel.d||0],['🛡️',sel.t||0]], mini='';
     for(var mi=0;mi<3;mi++) mini+='<span class="'+(parts[mi][1]>0?'':'z')+'">'+parts[mi][0]+parts[mi][1]+'</span>';
     if(pts>0) mini+='<span class="av">＋'+pts+' 割り振り可</span>';
+    if(dexRewardable(id)) mini+='<span class="av" style="background:var(--gold);color:#1a1000">🎁 報酬 金貨+'+figReward(id)+'</span>';
     info.innerHTML='<div class="dnm">'+(boss?'👑':'')+inf.nm+'<span class="dk">討伐 '+fmt(n)+'</span></div>'+
       '<div class="figmini">'+mini+'</div>';
     row.classList.add('tap');
@@ -7246,9 +7265,22 @@ function openFigDetail(id){
                :('次のポイントまで あと '+fmt((figLv(id)+1)*ZAKO_SCORE_PER-(BSCORE[id]||0))+' スコア（'+fmt(ZAKO_SCORE_PER)+'ごと）');
   if(figLv(id)>=FIG_CAP) hint='上限（'+FIG_CAP+'pt）まで解放済み';
   document.getElementById('fdhint').textContent=hint;
+  // コレクション報酬：未受取なら「報酬を獲得」ボタンを表示（右上）
+  var rb=document.getElementById('fdreward');
+  if(dexRewardable(id)){ rb.style.display=''; rb.textContent='報酬を獲得 金貨+'+figReward(id); }
+  else rb.style.display='none';
   drawPortrait(document.getElementById('fdpc'),id);
   figDetEl.classList.add('on');
 }
+function claimFigReward(){
+  var id=curFigId; if(!id||!dexRewardable(id)) return;
+  WALLET.gold+=figReward(id); BCLAIM[id]=1; saveGame();
+  sfx(880,.12,'triangle',.07,1.4);
+  document.getElementById('fdreward').style.display='none';
+  updateDexBadge(); renderDex();
+  var pv=document.getElementById('vpurse'); if(pv) pv.innerHTML=purseHtml();
+}
+document.getElementById('fdreward').onclick=function(){ audio(); claimFigReward(); };
 document.getElementById('fdclose').onclick=function(){ figDetEl.classList.remove('on'); };
 function renderDex(){
   var all=DEXLIST.concat(BOSSDEX), seen=0;
@@ -7261,6 +7293,7 @@ function renderDex(){
   for(var j=0;j<BOSSDEX.length;j++) L.appendChild(dexRowEl(BOSSDEX[j],draws));
   for(var q=0;q<draws.length;q++) drawPortrait(draws[q][0],draws[q][1]);
 }
+function updateDexBadge(){ var b=document.getElementById('dexbtn'); if(b) b.innerHTML='📖'+(anyDexReward()?'<span class="badge">!</span>':''); }
 document.getElementById('dexbtn').onclick=function(){ audio(); renderDex(); dexEl.classList.add('on'); };
 document.getElementById('dexclose').onclick=function(){ dexEl.classList.remove('on'); };
 document.getElementById('dexreset').onclick=function(){ if(window.confirm('図鑑の強化割り振りを全てリセットしますか？（討伐数・稼いだポイントは保持されます）')){ resetFig(); renderDex(); } };
