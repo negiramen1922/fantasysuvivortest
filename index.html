@@ -1681,16 +1681,26 @@ function CRITD(){      // 会心倍率：全武器共通
   return 2+0.20*(P.p.critd||0)+0.12*M('critd');
 }
 function AX(w,k){ var a=P.wa[w]; return (a&&a[k])||0; }
-// 限界突破：全部カンストした後に無制限（一部は上限あり）で積める追加ステータス
-var LBN={ dmg:'攻撃力', area:'範囲', rate:'頻度', count:'数', pierce:'貫通' };
+// 限界突破：各軸のカンスト後に積める追加ステータス。武器ごとに「その武器の育成軸(WAX)」に沿った軸だけ出す。
+var LBN={ dmg:'攻撃力', area:'範囲', rate:'頻度', count:'数', pierce:'貫通', dur:'持続', range:'射程', burst:'連射', ammo:'弾数', chain:'連鎖', split:'拡散' };
 var LBT={ dmg:'ダメージ +8%（上限なし）', area:'範囲 +4%', rate:'間隔 −1.5%',
-          count:'発生数 +1', pierce:'貫通 +1' };
-var LBCAP={ dmg:0, area:100, rate:0, count:8, pierce:10 };   // 0 = 上限なし
+          count:'発生数 +1', pierce:'貫通 +1', dur:'効果の持続 +1（延焼・氷・熱量など）',
+          range:'射程 +8%', burst:'同時発射 +1', ammo:'装填数 +1', chain:'連鎖 +1', split:'拡散 +1' };
+var LBCAP={ dmg:0, area:25, rate:0, count:8, pierce:10, dur:8, range:15, burst:5, ammo:8, chain:8, split:8 };   // 0 = 上限なし
+var LBSUP={ dmg:1, area:1, rate:1, count:1, pierce:1, dur:1, range:1, burst:1, ammo:1, chain:1, split:1 };   // 効果を実装済みの軸
+// 武器ごとの限界突破の軸。未指定なら WAX（その武器の育成軸）を流用＝その武器に効く軸だけ出る。
+// ここで武器を上書きすれば軸を個別に増減できる（例：ガトリングに範囲は出したくない→WAXに範囲が無いので自動で出ない）。
+var WLB={ };
+function lbAxes(w){
+  if(WLB[w]) return WLB[w];
+  var out=[], src=WAX[w]||{};
+  for(var k in src) if(LBSUP[k]) out.push(k);
+  return out;
+}
 function LB(w,k){ var a=P.lb&&P.lb[w]; return (a&&a[k])||0; }
 function lbOK(w,k){
-  if(k==='count'&&!(WAX[w]&&WAX[w].count)) return 0;
-  if(k==='pierce'&&!(WAX[w]&&WAX[w].pierce)) return 0;
-  if(k==='rate') return RATE(w)>0.21;
+  if(lbAxes(w).indexOf(k)<0) return 0;         // その武器の軸でなければ出さない（例：ガトリングに範囲は出ない）
+  if(k==='rate') return RATE(w)>0.21;          // 頻度は下限に達したら打ち止め
   if(LBCAP[k]&&LB(w,k)>=LBCAP[k]) return 0;
   return 1;
 }
@@ -1706,14 +1716,14 @@ function DMG(w){ return RCM(w)*Math.pow(1.45,AX(w,'dmg'))*(1+TR(w,'dmg'))*(1+0.0
 function AREA(w){ return Math.pow(1.18,AX(w,'area'))*(1+TR(w,'area'))*(1+0.04*LB(w,'area'))*CH().area*(1+0.05*(P.p.reach||0)); }
 function RATE(w){ return Math.max(0.20,Math.pow(0.85,AX(w,'rate'))*(1+TR(w,'cd'))*(1-0.015*LB(w,'rate'))); }
 function CNT(w){ return AX(w,'count')+TR(w,'count')+LB(w,'count'); }
-function BST(w){ return AX(w,'burst'); }
+function BST(w){ return AX(w,'burst')+LB(w,'burst'); }
 function PRC(w){ return AX(w,'pierce')*2+TR(w,'pierce')+LB(w,'pierce'); }
 function SLW(w){ return AX(w,'slow')*1.0+TR(w,'slow'); }
-// 持続軸：効果の持続時間（鈍足の時間・延焼・ランプ上限など）。旧「鈍足」軸/特性の分も引き継いで加算。
-function DURV(w){ return AX(w,'dur')+TR(w,'dur')+AX(w,'slow')+TR(w,'slow'); }
-function AMMO(w){ return AX(w,'ammo'); }
-function CHN(w){ return AX(w,'chain')*2+TR(w,'chain'); }
-function SPL(w){ return AX(w,'split')*2+TR(w,'split'); }
+// 持続軸：効果の持続時間（鈍足の時間・延焼・ランプ上限など）。旧「鈍足」軸/特性＋限界突破ぶんも加算。
+function DURV(w){ return AX(w,'dur')+TR(w,'dur')+AX(w,'slow')+TR(w,'slow')+LB(w,'dur'); }
+function AMMO(w){ return AX(w,'ammo')+LB(w,'ammo'); }
+function CHN(w){ return AX(w,'chain')*2+TR(w,'chain')+LB(w,'chain'); }
+function SPL(w){ return AX(w,'split')*2+TR(w,'split')+LB(w,'split'); }
 // 射程：基本距離（カテゴリ）×射程軸の倍率。ここに無い武器は近接/自己中心（射程軸なし）。
 // 基本射程は「おおむね画面内」に収める（射程軸を伸ばすと画面外まで届く）。
 var WRNG={
@@ -1722,7 +1732,7 @@ var WRNG={
   chain:{base:460,cat:'長'}, thunder:{base:460,cat:'長'},
   fire:{base:520,cat:'長'}, ice:{base:520,cat:'長'}, bow:{base:560,cat:'長'},
   holy:{base:520,cat:'長'}, rock:{base:540,cat:'長'}, gatling:{base:560,cat:'長'} };
-function RNGM(w){ return Math.pow(1.20,AX(w,'range')); }   // 射程軸の倍率
+function RNGM(w){ return Math.pow(1.20,AX(w,'range'))*Math.pow(1.08,LB(w,'range')); }   // 射程軸の倍率（限界突破ぶんは緩やか）
 function RNG(w){ return (WRNG[w]?WRNG[w].base:640)*RNGM(w); }
 function axLeft(w,k){ return (WAX[w][k]||0)-AX(w,k); }
 
@@ -1872,7 +1882,7 @@ function figInfo(id){
   if(BOSS[id]){ var B=BOSS[id], tt=ETYPE[B.key]||{}; return {nm:B.nm,shape:tt.shape,col:tt.col,dark:tt.dark,desc:BDEX[id]||'',boss:true}; }
   var t=ETYPE[id]||{}; return {nm:t.nm,shape:t.shape,col:t.col,dark:t.dark,desc:DEX[id]||'',boss:false};
 }
-var VERSION='α1.0.78'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
+var VERSION='α1.0.79'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
 function applySave(o){
   for(var i=0;i<UPG.length;i++) META[UPG[i].id]=0;
   try{
@@ -4540,7 +4550,8 @@ function rollChoices(){
 function lbPool(){
   var out=[], id;
   for(id in P.w){
-    for(var k in LBN){
+    var ax=lbAxes(id);
+    for(var i=0;i<ax.length;i++){ var k=ax[i];
       if(!lbOK(id,k)) continue;
       out.push({id:id,kind:'lb',ax:k,gold:1,
         nm:WEAPONS[id].nm+' ・ 限界突破',glyph:wIcon(id),tag:'限界突破',
@@ -6830,6 +6841,9 @@ Array.prototype.forEach.call(document.querySelectorAll('#setshake button'),funct
 // 更新履歴：1つのお知らせ内で「バージョン見出し」ごとに変更点を並べる（新しい順）。
 // マージのたびに先頭へ新バージョンを追加し、VERSION も更新する。
 var UPDATES=[
+  {v:'α1.0.79', items:[
+    '限界突破を武器ごとに最適化：その武器の育成軸に沿った内容だけ出るようにしました（例：ガトリングに「範囲」は出ません）。',
+    '限界突破で伸ばせる軸を拡張（持続・射程・連射・弾数・連鎖・拡散を追加）。武器の特徴を活かして際限なく強化できます。範囲などの上限も見直し（攻撃力は引き続き上限なし）。']},
   {v:'α1.0.78', items:[
     'ホーム左上に「👤 プロフィール」を追加。ここからGoogleログイン／ログアウトと、ランキング表示名の変更ができます。',
     'ログイン導線とニックネーム設定をプロフィールに集約しました（画面下のログイン欄・別の名前入力画面は廃止）。']},
