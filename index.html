@@ -124,12 +124,14 @@ canvas{display:block;width:100%;height:100%;touch-action:none}
 #profnick{width:100%;box-sizing:border-box;margin-top:4px;padding:9px 10px;border-radius:8px;
   background:#171327;border:1px solid #4a3f7a;color:#fff;font-size:15px;text-align:center}
 /* ホーム左上のユーザープロフィール */
-#profile{position:absolute;top:16px;left:16px;z-index:2;display:flex;align-items:center;gap:6px;
-  max-width:46%;padding:6px 13px 6px 9px;border-radius:22px;cursor:pointer;pointer-events:auto;
+/* ホーム上部バー：左＝プロフィール、右＝アイコン。flexで重ならないよう自動配置（名前は省略表示で縮む） */
+#topbar{position:absolute;top:14px;left:14px;right:14px;z-index:3;display:flex;align-items:center;justify-content:space-between;gap:8px}
+#profile{display:flex;align-items:center;gap:6px;min-width:0;flex:0 1 auto;
+  padding:6px 12px 6px 9px;border-radius:22px;cursor:pointer;pointer-events:auto;
   background:rgba(30,22,60,.6);border:2px solid var(--line);color:#e8e2ff;font-size:13px}
 #profile:hover,#profile:focus-visible{border-color:var(--arc);color:var(--arc);outline:none}
-#profav{font-size:18px;line-height:1}
-#profname{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:150px}
+#profav{font-size:18px;line-height:1;flex:none}
+#profname{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
 /* 通知トースト（熟練度アップ・図鑑の発見/ランクアップ）。連続表示・自動で消える・非ブロッキング */
 #toasts{position:absolute;top:96px;left:50%;transform:translateX(-50%);z-index:60;
   display:flex;flex-direction:column;gap:6px;align-items:center;pointer-events:none;max-width:92%}
@@ -210,7 +212,7 @@ canvas{display:block;width:100%;height:100%;touch-action:none}
 .tutstep .tt .sub{display:block;color:#a99fce;font-size:12px;margin-top:3px}
 .tutgoal{color:var(--gold);text-align:center;font-size:14px;margin-top:6px;line-height:1.6}
 .vview{display:none;flex-direction:column;align-items:center;width:100%;max-width:540px;margin:auto}
-#homehead{position:absolute;top:16px;right:16px;display:flex;gap:10px;z-index:2}
+#homehead{display:flex;gap:10px;flex:none}
 .hicon{width:46px;height:46px;font-size:20px;cursor:pointer;pointer-events:auto;
   background:transparent;color:var(--ash);border:2px solid var(--line);position:relative}
 .hicon:hover,.hicon:focus-visible{border-color:var(--arc);color:var(--arc);outline:none}
@@ -460,6 +462,10 @@ img.wspr{width:1.15em;height:1.15em;object-fit:contain;image-rendering:pixelated
 @media (max-width:820px){
   .deskonly{display:none}
   .mobonly{display:inline}
+  #topbar{top:12px;left:10px;right:10px;gap:6px}
+  #homehead{gap:6px}
+  .hicon{width:40px;height:40px;font-size:18px}
+  #profile{font-size:12px;padding:5px 10px 5px 8px}
 
   #topline{top:16px;gap:14px}
   #subline{top:42px;gap:12px}
@@ -564,13 +570,15 @@ img.wspr{width:1.15em;height:1.15em;object-fit:contain;image-rendering:pixelated
   <div id="veil">
     <!-- ホーム -->
     <div id="homeview" class="vview">
-      <button id="profile" aria-label="プロフィール"><span id="profav">👤</span><span id="profname">ゲスト</span></button>
-      <div id="homehead">
-        <button id="dexbtn" class="hicon" aria-label="図鑑">📖</button>
-        <button id="rankbtn" class="hicon" aria-label="ランキング">🏆</button>
-        <button id="tutbtn" class="hicon" aria-label="遊びかた">❓</button>
-        <button id="newsbtn" class="hicon" aria-label="お知らせ">✉</button>
-        <button id="setbtn" class="hicon" aria-label="設定">⚙</button>
+      <div id="topbar">
+        <button id="profile" aria-label="プロフィール"><span id="profav">👤</span><span id="profname">ゲスト</span></button>
+        <div id="homehead">
+          <button id="dexbtn" class="hicon" aria-label="図鑑">📖</button>
+          <button id="rankbtn" class="hicon" aria-label="ランキング">🏆</button>
+          <button id="tutbtn" class="hicon" aria-label="遊びかた">❓</button>
+          <button id="newsbtn" class="hicon" aria-label="お知らせ">✉</button>
+          <button id="setbtn" class="hicon" aria-label="設定">⚙</button>
+        </div>
       </div>
       <div class="title" id="hometitle">勇者サバイバー</div>
       <div id="vpurse"></div>
@@ -1915,7 +1923,7 @@ function figInfo(id){
   if(BOSS[id]){ var B=BOSS[id], tt=ETYPE[B.key]||{}; return {nm:B.nm,shape:tt.shape,col:tt.col,dark:tt.dark,desc:BDEX[id]||'',boss:true}; }
   var t=ETYPE[id]||{}; return {nm:t.nm,shape:t.shape,col:t.col,dark:t.dark,desc:DEX[id]||'',boss:false};
 }
-var VERSION='α1.0.84'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
+var VERSION='α1.0.85'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
 function applySave(o){
   for(var i=0;i<UPG.length;i++) META[UPG[i].id]=0;
   try{
@@ -6913,6 +6921,8 @@ Array.prototype.forEach.call(document.querySelectorAll('#setview button'),functi
 // 更新履歴：1つのお知らせ内で「バージョン見出し」ごとに変更点を並べる（新しい順）。
 // マージのたびに先頭へ新バージョンを追加し、VERSION も更新する。
 var UPDATES=[
+  {v:'α1.0.85', items:[
+    'ホーム上部を整理：左のユーザー名と右のメニューアイコンが重なる不具合を修正。名前が長い場合は自動で省略表示され、アイコンと重ならないようにしました。']},
   {v:'α1.0.84', items:[
     '設定画面（とお知らせ）が縦に長いとき、スマホで下の「完全リセット」「閉じる」等が押せない不具合を修正。中身をスクロールできるようにしました。']},
   {v:'α1.0.83', items:[
