@@ -1927,7 +1927,7 @@ function figInfo(id){
   if(BOSS[id]){ var B=BOSS[id], tt=ETYPE[B.key]||{}; return {nm:B.nm,shape:tt.shape,col:tt.col,dark:tt.dark,desc:BDEX[id]||'',boss:true}; }
   var t=ETYPE[id]||{}; return {nm:t.nm,shape:t.shape,col:t.col,dark:t.dark,desc:DEX[id]||'',boss:false};
 }
-var VERSION='α1.0.86'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
+var VERSION='α1.0.87'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
 function applySave(o){
   for(var i=0;i<UPG.length;i++) META[UPG[i].id]=0;
   try{
@@ -4820,7 +4820,12 @@ var SPRDATA={
   panther:'assets/panther.png',
   mantis:'assets/mantis.png',
   treant:'assets/treant.png',
-  eldertreant:'assets/eldertreant.png'
+  eldertreant:'assets/eldertreant.png',
+  skeleton:'assets/skeleton.png',
+  shieldman:'assets/shieldman.png',
+  wraith:'assets/wraith.png',
+  mummy:'assets/mummy.png',
+  shadow:'assets/shadow.png'
 };
 var SPR={}, SPRT={}, SPRRDY={};
 // 端に接する白（不透明な白背景）だけをフラッドフィルで透過に。内部の白ハイライトは残す。
@@ -4894,7 +4899,8 @@ function wIcon(id){ return WSPR[id]?('<img class="wspr" src="assets/'+WSPR[id]+'
 var SHAPE_SPR={blob:'blob',goblin:'goblin',orc:'orc',bat:'bat',spirit:'spirit',ogre:'cyclops',
   wolf:'wolf',turtle:'turtle',harpy:'harpy',rider:'goat',
   bird:'bird',myconid:'myconid',bee:'bee',spider:'spider',beetle:'beetle',dryad:'maneater',
-  panther:'panther',mantis:'mantis',treant:'treant'};
+  panther:'panther',mantis:'mantis',treant:'treant',
+  skeleton:'skeleton',shieldman:'shieldman',wraith:'wraith',mummy:'mummy',shadow:'shadow'};
 // 棍棒持ち（素体＋棍棒レイヤーで攻撃時に棍棒を振る）。値＝棍棒レイヤーの握り位置（フレーム比 0..1）
 var CLUBBER={goblin:[0.34,0.77], orc:[0.31,0.67], cyclops:[0.34,0.75]};
 function enemySpr(e){
@@ -5338,7 +5344,8 @@ var SPRSZ={blob:{s:3.0,oy:0.35}, goblin:{s:3.2,oy:0.55}, orc:{s:3.0,oy:0.50},
   goat:{s:3.1,oy:0.45}, harpy:{s:4.4,oy:0.15}, slimeking:{s:2.7,oy:0.28},
   bird:{s:3.0,oy:0.30}, myconid:{s:3.1,oy:0.40}, bee:{s:3.2,oy:0.15}, spider:{s:3.2,oy:0.25},
   beetle:{s:2.8,oy:0.30}, maneater:{s:3.2,oy:0.42}, goblinking:{s:2.7,oy:0.42},
-  panther:{s:3.4,oy:0.28}, mantis:{s:3.2,oy:0.40}, treant:{s:2.7,oy:0.48}, eldertreant:{s:2.5,oy:0.48}};
+  panther:{s:3.4,oy:0.28}, mantis:{s:3.2,oy:0.40}, treant:{s:2.7,oy:0.48}, eldertreant:{s:2.5,oy:0.48},
+  skeleton:{s:3.2,oy:0.42}, shieldman:{s:3.1,oy:0.42}, wraith:{s:3.4,oy:0.16}, mummy:{s:3.0,oy:0.42}, shadow:{s:3.5,oy:0.20}};
 // 毒の沼（ブーマー）：緑の沼＋泡。消える直前にフェード。
 function drawPuddle(q){
   var a=Math.min(1,q.life/1.2)*0.55;
@@ -6925,6 +6932,8 @@ Array.prototype.forEach.call(document.querySelectorAll('#setview button'),functi
 // 更新履歴：1つのお知らせ内で「バージョン見出し」ごとに変更点を並べる（新しい順）。
 // マージのたびに先頭へ新バージョンを追加し、VERSION も更新する。
 var UPDATES=[
+  {v:'α1.0.87', items:[
+    'ステージ3モンスターの立ち絵を追加：スケルトン・盾の戦士・レイス・マミー・シャドウ。']},
   {v:'α1.0.86', items:[
     'ラン中の一時停止画面も、武器が多くて縦に長いとき「再開する／リタイア」が押せない不具合を修正。構成部分をスクロールできるようにし、ボタンは常に押せるようにしました。']},
   {v:'α1.0.85', items:[
