@@ -896,6 +896,8 @@ function sfx(freq,dur,type,vol,slide){
   g.gain.exponentialRampToValueAtTime(0.0001,a.currentTime+dur);
   o.connect(g); g.connect(a.destination); o.start(); o.stop(a.currentTime+dur+0.02);
 }
+// コイン獲得の「チャリン♪」：高い2音を続けて鳴らす
+function coinSfx(){ sfx(1318,.07,'square',.09); setTimeout(function(){ sfx(1975,.16,'triangle',.09,1.0); },70); }
 function noise(dur,vol){
   var a=audio(); if(!a) return;
   var n=a.sampleRate*dur, b=a.createBuffer(1,n,a.sampleRate), d=b.getChannelData(0);
@@ -1927,7 +1929,7 @@ function figInfo(id){
   if(BOSS[id]){ var B=BOSS[id], tt=ETYPE[B.key]||{}; return {nm:B.nm,shape:tt.shape,col:tt.col,dark:tt.dark,desc:BDEX[id]||'',boss:true}; }
   var t=ETYPE[id]||{}; return {nm:t.nm,shape:t.shape,col:t.col,dark:t.dark,desc:DEX[id]||'',boss:false};
 }
-var VERSION='α1.0.87'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
+var VERSION='α1.0.88'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
 function applySave(o){
   for(var i=0;i<UPG.length;i++) META[UPG[i].id]=0;
   try{
@@ -6932,6 +6934,8 @@ Array.prototype.forEach.call(document.querySelectorAll('#setview button'),functi
 // 更新履歴：1つのお知らせ内で「バージョン見出し」ごとに変更点を並べる（新しい順）。
 // マージのたびに先頭へ新バージョンを追加し、VERSION も更新する。
 var UPDATES=[
+  {v:'α1.0.88', items:[
+    '図鑑のコレクション報酬で金貨を受け取ると「チャリン♪」と鳴るようにしました。']},
   {v:'α1.0.87', items:[
     'ステージ3モンスターの立ち絵を追加：スケルトン・盾の戦士・レイス・マミー・シャドウ。']},
   {v:'α1.0.86', items:[
@@ -7303,7 +7307,7 @@ function openFigDetail(id){
 function claimFigReward(){
   var id=curFigId; if(!id||!dexRewardable(id)) return;
   WALLET.gold+=figReward(id); BCLAIM[id]=1; saveGame();
-  sfx(880,.12,'triangle',.07,1.4);
+  coinSfx();   // チャリン♪
   document.getElementById('fdreward').style.display='none';
   updateDexBadge(); renderDex();
   var pv=document.getElementById('vpurse'); if(pv) pv.innerHTML=purseHtml();
