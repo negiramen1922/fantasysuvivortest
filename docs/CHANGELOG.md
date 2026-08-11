@@ -10,6 +10,14 @@
 - リザルト画面と設定画面に `VERSION` を表示。
 - お知らせ（`UPDATES` 配列）は**1枠内でバージョン見出しごとに変更点を掲載**（新しい順）。マージ時は `UPDATES` 先頭に新バージョンを追加し `VERSION` を一致させる。
 
+## ver.α1.0.93
+- 受け取りボックス（メールボックス）を実装。後から追加された報酬や取り逃しそうな報酬をここへ集約する仕組み。
+  - グローバル `MAILBOX=[]`（`{t:アイコン,m:説明,g:金貨,s:銀貨}`）。`mailAdd(msg,gold,silver,icon)` で追加、`saveObj`/`applySave` に `mb` キーで永続化。
+  - ホーム左上 `#homehead` に `🎁 #mailbtn` を追加（未受取件数の `.badge` 付き、`updateMailBadge()` を `syncTitle` から呼ぶ）。`#mailbox` モーダル（`.shopbox` 流用、`#maillist` を内部スクロール）。
+  - `renderMailbox()`/`claimMail(i)`/`claimAllMail()`：受け取りで `WALLET` に加算し `coinSfx()` を鳴らして item を除去、`syncTitle()` で所持金表示を更新。
+  - `finish()` の初回クリア報酬を受け取りボックス経由に変更：`gold` へ直接加算せず `mailAdd('② 森 初回クリア報酬', firstClearGold, 0, '🎉')` で送付。リザルトは「🎉 初回クリア報酬 金貨 +N を受け取りボックスへ送りました」に変更。
+  - 検証：`docs/check.py` 通過、受け取りボックスの開閉・受け取りでエラーなしを確認。
+
 ## ver.α1.0.92
 - 初回クリア報酬を追加（`FIRSTCLEAR={1:30,2:50,3:80}`）。`finish()` で `STGCLEAR[curStage]` を立てる前に `firstClear` を判定し、初回のみ金貨を加算（毎回の `CLEARGOLD` は据え置き）。リザルトに「🎉 初回クリア報酬 金貨 +N」を表示。判定は既存の `STGCLEAR`（セーブ済み）を利用。
   - 検証：`docs/check.py` 通過、リザルト生成でエラーなしを確認。

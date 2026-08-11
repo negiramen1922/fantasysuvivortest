@@ -171,9 +171,18 @@ canvas{display:block;width:100%;height:100%;touch-action:none}
 #pstat b{color:#fff;font-weight:normal}
 #pstat .el{color:var(--gold)}
 
-#shop,#mast,#ban,#settings,#news,#tutorial,#dex{position:absolute;inset:0;display:none;align-items:center;justify-content:center;
+#shop,#mast,#ban,#settings,#news,#tutorial,#dex,#mailbox{position:absolute;inset:0;display:none;align-items:center;justify-content:center;
   background:rgba(6,4,16,.95);padding:14px;z-index:6}
-#shop.on,#mast.on,#ban.on,#settings.on,#news.on,#tutorial.on,#dex.on{display:flex}
+#shop.on,#mast.on,#ban.on,#settings.on,#news.on,#tutorial.on,#dex.on,#mailbox.on{display:flex}
+#maillist{width:100%;flex:1;min-height:0;overflow-y:auto;display:flex;flex-direction:column;gap:8px}
+.mailrow{display:flex;gap:10px;align-items:center;padding:10px;border:1px solid var(--line);border-radius:10px;background:rgba(20,14,45,.5)}
+.mailrow .mic{flex:none;font-size:22px;width:30px;text-align:center}
+.mailrow .mi{flex:1;min-width:0;text-align:left}
+.mailrow .mnm{color:#e9e2ff;font-size:14px}
+.mailrow .mrw{color:var(--gold);font-size:12px;margin-top:2px}
+.mailrow .mrw .sv{color:#cfe0ff}
+.mailrow button{flex:none}
+.mailempty{color:#6b5f9c;text-align:center;padding:30px 10px;font-size:13px}
 #dexlist{width:100%;max-width:520px;margin:0 auto;flex:1;min-height:0;overflow-y:auto}
 .dexrow{display:flex;gap:11px;align-items:center;padding:9px 4px;border-bottom:1px solid var(--line)}
 .dexrow canvas{flex:none;width:52px;height:52px;background:rgba(20,14,45,.6);border:1px solid var(--line);border-radius:8px}
@@ -577,6 +586,7 @@ img.wspr{width:1.15em;height:1.15em;object-fit:contain;image-rendering:pixelated
       <div id="topbar">
         <button id="profile" aria-label="プロフィール"><span id="profav">👤</span><span id="profname">ゲスト</span></button>
         <div id="homehead">
+          <button id="mailbtn" class="hicon" aria-label="受け取りボックス">🎁</button>
           <button id="dexbtn" class="hicon" aria-label="図鑑">📖</button>
           <button id="rankbtn" class="hicon" aria-label="ランキング">🏆</button>
           <button id="tutbtn" class="hicon" aria-label="遊びかた">❓</button>
@@ -642,6 +652,15 @@ img.wspr{width:1.15em;height:1.15em;object-fit:contain;image-rendering:pixelated
       <div class="shophead"><div class="title">お知らせ</div></div>
       <div id="newslist"></div>
       <button class="btn sub2" id="newsclose" style="margin-top:0">閉じる</button>
+    </div>
+  </div>
+
+  <div id="mailbox">
+    <div class="shopbox">
+      <div class="shophead"><div class="title">🎁 受け取りボックス</div></div>
+      <div id="maillist"></div>
+      <button class="btn" id="mailall" style="margin-top:0">すべて受け取る</button>
+      <button class="btn sub2" id="mailclose" style="margin-top:0">閉じる</button>
     </div>
   </div>
 
@@ -1876,6 +1895,10 @@ var BOSSGOLD={1:4,2:6,3:9};       // ボス宝箱1個あたりの金貨（ステ
 function figReward(id){ return isBossKey(id)?10:2; }              // 図鑑報酬：ボス10・ザコ2 金貨
 function dexRewardable(id){ return !!(BSEEN[id]&&!BCLAIM[id]); }  // 未受取の報酬があるか
 function anyDexReward(){ for(var k in BSEEN){ if(BSEEN[k]&&!BCLAIM[k]) return 1; } return 0; }
+// 受け取りボックス（メールボックス）：後から追加された報酬や取り逃しそうな報酬をここに送る
+var MAILBOX=[]; // [{t:'💌'アイコン, m:'説明', g:金貨, s:銀貨}]
+function mailAdd(msg,gold,silver,icon){ MAILBOX.push({t:icon||'🎁', m:msg||'報酬', g:gold||0, s:silver||0}); if(typeof saveGame==='function') saveGame(); if(typeof updateMailBadge==='function') updateMailBadge(); }
+function anyMail(){ return MAILBOX.length>0; }
 var BSEL={};   // 強化割り振り {id:{x,d,t}}（経験値/与ダメ/被ダメ）
 var dexQueue=[]; // 初遭遇カードの表示待ち
 var ZAKO_SCORE_PER=10000; // ザコ：この累計スコアごとに強化ポイント1（≒4〜5ラン）
@@ -1931,7 +1954,7 @@ function figInfo(id){
   if(BOSS[id]){ var B=BOSS[id], tt=ETYPE[B.key]||{}; return {nm:B.nm,shape:tt.shape,col:tt.col,dark:tt.dark,desc:BDEX[id]||'',boss:true}; }
   var t=ETYPE[id]||{}; return {nm:t.nm,shape:t.shape,col:t.col,dark:t.dark,desc:DEX[id]||'',boss:false};
 }
-var VERSION='α1.0.92'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
+var VERSION='α1.0.93'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
 function applySave(o){
   for(var i=0;i<UPG.length;i++) META[UPG[i].id]=0;
   try{
@@ -1967,12 +1990,13 @@ function applySave(o){
       if(o.bsc) for(var bck in o.bsc){ if(typeof o.bsc[bck]==='number') BSCORE[bck]=o.bsc[bck]; }
       if(o.bs) for(var bsk=0;bsk<o.bs.length;bsk++) BSEEN[o.bs[bsk]]=1;
       if(o.bsel) for(var bse in o.bsel){ var v=o.bsel[bse]; if(v) BSEL[bse]={x:v.x|0,d:v.d|0,t:v.t|0}; }
+      if(o.mb instanceof Array){ MAILBOX=[]; for(var mi=0;mi<o.mb.length;mi++){ var mm=o.mb[mi]; if(mm) MAILBOX.push({t:(mm.t||'🎁'),m:(''+(mm.m||'報酬')).slice(0,60),g:mm.g|0,s:mm.s|0}); } }
     }
   }catch(e){}
 }
 (function loadSave(){ try{ applySave(JSON.parse(localStorage.getItem('bsv_save')||'null')); }catch(e){ applySave(null); } })();
 function saveObj(){
-  return {m:META,w:WALLET,wx:WX,sel:SEL,best:best,shk:SHK,vz:VZOOM,light:LIGHT,volm:VOLM,vols:VOLS,volb:VOLB,unl:UNL,ach:ACH,ch:SELCH,stg:STGCLEAR,sgb:STGBEST,sgw:STGWAVE,eb:ENDBEST,et:ENDTIME,nk:NICK,ban:Object.keys(BAN).filter(function(k){return BAN[k];}),tut:TUTSEEN,perf:PERF,dps:SHOWDPS,dpm:SHOWDPM,rsp:RESPEC_AT,bk:BKILL,bsc:BSCORE,bs:Object.keys(BSEEN).filter(function(k){return BSEEN[k];}),bc:Object.keys(BCLAIM).filter(function(k){return BCLAIM[k];}).reduce(function(o,k){o[k]=1;return o;},{}),bsel:BSEL};
+  return {m:META,w:WALLET,wx:WX,sel:SEL,best:best,shk:SHK,vz:VZOOM,light:LIGHT,volm:VOLM,vols:VOLS,volb:VOLB,unl:UNL,ach:ACH,ch:SELCH,stg:STGCLEAR,sgb:STGBEST,sgw:STGWAVE,eb:ENDBEST,et:ENDTIME,nk:NICK,ban:Object.keys(BAN).filter(function(k){return BAN[k];}),tut:TUTSEEN,perf:PERF,dps:SHOWDPS,dpm:SHOWDPM,rsp:RESPEC_AT,bk:BKILL,bsc:BSCORE,bs:Object.keys(BSEEN).filter(function(k){return BSEEN[k];}),bc:Object.keys(BCLAIM).filter(function(k){return BCLAIM[k];}).reduce(function(o,k){o[k]=1;return o;},{}),bsel:BSEL,mb:MAILBOX};
 }
 function saveGame(){
   try{ localStorage.setItem('bsv_save',JSON.stringify(saveObj())); }catch(e){}
@@ -6237,7 +6261,7 @@ function syncTitle(){
     '<span style="color:#fff">'+CH().glyph+' '+CH().nm+'</span>　'+purseHtml()+
     (best?'<br><span style="color:#6b5f9c">ベストスコア '+fmt(best)+'</span>':'');
   document.getElementById('mastbtn').innerHTML='武器熟練'+(anyPicks()?'<span class="badge">!</span>':'');
-  updateDexBadge();
+  updateDexBadge(); updateMailBadge();
   var nl=0; for(var ci in CHARS) if(!UNL[ci]&&achOK(ci)) nl++;
   document.getElementById('chrbtn').innerHTML='キャラクター'+(nl?'<span class="badge">!</span>':'');
 }
@@ -6758,7 +6782,12 @@ function finish(won){
   var firstClearGold=0;
   if(won&&!ENDLESS){
     gold+=(CLEARGOLD[curStage]||0);                     // ステージ討伐完了ボーナス（毎回）
-    if(firstClear){ firstClearGold=(FIRSTCLEAR[curStage]||0); gold+=firstClearGold; }   // 初回クリア報酬（一度きり）
+    if(firstClear){
+      firstClearGold=(FIRSTCLEAR[curStage]||0);
+      // 初回クリア報酬は「受け取りボックス」へ送る（取り逃さないように・後から追加報酬もここに集約）
+      var _stgnm=(STGNUM[curStage-1]||curStage)+' '+((STAGES[curStage]&&STAGES[curStage].nm)||('ステージ'+curStage));
+      mailAdd(_stgnm+' 初回クリア報酬',firstClearGold,0,'🎉');
+    }
   }
   WALLET.silver+=silver; WALLET.gold+=gold;
   // 熟練度を加算。特性を新たに選べるようになった武器はトーストで連続通知（リザルトの熟練度テキストは廃止）
@@ -6806,7 +6835,7 @@ function finish(won){
     '到達 <b>Lv '+P.lv+'</b>　元素反応 <b>'+reacts+'</b> 回　会心 <b>'+crits+'</b> 回<br>'+
     '持ち帰り <b>銀貨 +'+silver+' / 金貨 +'+gold+'</b><br>'+
     (contUsed>0?'コンティニュー <b>'+contUsed+'</b> 回<br>':'')+
-    (firstClearGold?'<span style="color:var(--gold)">🎉 初回クリア報酬 金貨 +'+firstClearGold+'</span><br>':'')+
+    (firstClearGold?'<span style="color:var(--gold)">🎉 初回クリア報酬 金貨 +'+firstClearGold+' を受け取りボックスへ送りました</span><br>':'')+
     (anyPicks()?'<span style="color:var(--gold)">★ 武器熟練で特性を選べます</span><br>':'')+
     (newCh.length?'<span style="color:var(--gold)">★ '+newCh.join('・')+' が解放されました</span><br>':'')+
     '<div class="psec">構成</div>'+(comp||'—')+
@@ -6949,6 +6978,9 @@ Array.prototype.forEach.call(document.querySelectorAll('#setview button'),functi
 // 更新履歴：1つのお知らせ内で「バージョン見出し」ごとに変更点を並べる（新しい順）。
 // マージのたびに先頭へ新バージョンを追加し、VERSION も更新する。
 var UPDATES=[
+  {v:'α1.0.93', items:[
+    'ホーム左上に「🎁 受け取りボックス」を追加：後から追加された報酬や、取り逃しそうな報酬はここに届きます。各報酬を個別に、または「すべて受け取る」でまとめて受け取れます。',
+    '初回クリア報酬を受け取りボックス経由に変更：各ステージを初めてクリアすると、初回クリア報酬（30/50/80）が受け取りボックスに届きます（どのステージの報酬か分かるよう表示）。リザルトからすぐ受け取れなくても取り逃しません。']},
   {v:'α1.0.92', items:[
     '「初回クリア報酬」を追加：各ステージを初めてクリアした時だけ、金貨ボーナス（ステージ1＝30／2＝50／3＝80）がもらえます。毎回のクリアボーナス（6/9/12）は据え置きです。']},
   {v:'α1.0.91', items:[
@@ -7230,6 +7262,43 @@ function renderNews(){
 }
 document.getElementById('newsbtn').onclick=function(){ audio(); renderNews(); newsEl.classList.add('on'); };
 document.getElementById('newsclose').onclick=function(){ newsEl.classList.remove('on'); };
+
+/* ============ 受け取りボックス（メールボックス）============ */
+var mailEl=document.getElementById('mailbox');
+function updateMailBadge(){ var b=document.getElementById('mailbtn'); if(b) b.innerHTML='🎁'+(anyMail()?'<span class="badge">'+(MAILBOX.length>9?'9+':MAILBOX.length)+'</span>':''); }
+function renderMailbox(){
+  var L=document.getElementById('maillist'); if(!L) return; L.innerHTML='';
+  if(!MAILBOX.length){ L.innerHTML='<div class="mailempty">受け取れる報酬はありません。<br>今後追加される報酬などはここに届きます。</div>'; }
+  else for(var i=0;i<MAILBOX.length;i++){
+    var it=MAILBOX[i];
+    var rw=[]; if(it.g>0) rw.push('金貨 +'+it.g); if(it.s>0) rw.push('<span class="sv">銀貨 +'+it.s+'</span>');
+    var d=document.createElement('div'); d.className='mailrow';
+    d.innerHTML='<div class="mic">'+(it.t||'🎁')+'</div>'+
+      '<div class="mi"><div class="mnm">'+escHtml(it.m||'報酬')+'</div><div class="mrw">'+(rw.join('　')||'—')+'</div></div>'+
+      '<button class="btn sub2" data-i="'+i+'" style="width:auto;padding:8px 14px;font-size:13px">受け取る</button>';
+    L.appendChild(d);
+  }
+  var claim=L.querySelectorAll('button[data-i]');
+  for(var j=0;j<claim.length;j++){ claim[j].onclick=function(){ claimMail(+this.getAttribute('data-i')); }; }
+  var allb=document.getElementById('mailall'); if(allb) allb.style.display=MAILBOX.length?'':'none';
+}
+function grantMail(it){ if(!it) return; WALLET.gold+=(it.g|0); WALLET.silver+=(it.s|0); }
+function claimMail(i){
+  if(i<0||i>=MAILBOX.length) return;
+  grantMail(MAILBOX[i]); MAILBOX.splice(i,1);
+  saveGame(); coinSfx(); updateMailBadge(); renderMailbox();
+  if(typeof syncTitle==='function') syncTitle();
+}
+function claimAllMail(){
+  if(!MAILBOX.length) return;
+  for(var i=0;i<MAILBOX.length;i++) grantMail(MAILBOX[i]);
+  MAILBOX=[];
+  saveGame(); coinSfx(); updateMailBadge(); renderMailbox();
+  if(typeof syncTitle==='function') syncTitle();
+}
+document.getElementById('mailbtn').onclick=function(){ audio(); renderMailbox(); mailEl.classList.add('on'); };
+document.getElementById('mailclose').onclick=function(){ mailEl.classList.remove('on'); };
+document.getElementById('mailall').onclick=function(){ claimAllMail(); };
 
 /* ============ チュートリアル（遊びかた）============ */
 var tutEl=document.getElementById('tutorial');
