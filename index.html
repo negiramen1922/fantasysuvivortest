@@ -1929,7 +1929,7 @@ function figInfo(id){
   if(BOSS[id]){ var B=BOSS[id], tt=ETYPE[B.key]||{}; return {nm:B.nm,shape:tt.shape,col:tt.col,dark:tt.dark,desc:BDEX[id]||'',boss:true}; }
   var t=ETYPE[id]||{}; return {nm:t.nm,shape:t.shape,col:t.col,dark:t.dark,desc:DEX[id]||'',boss:false};
 }
-var VERSION='α1.0.89'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
+var VERSION='α1.0.90'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
 function applySave(o){
   for(var i=0;i<UPG.length;i++) META[UPG[i].id]=0;
   try{
@@ -4824,6 +4824,8 @@ var SPRDATA={
   treant:'assets/treant.png',
   eldertreant:'assets/eldertreant.png',
   skeleton:'assets/skeleton.png',
+  skeletonBare:'assets/skeleton.png',
+  skeletonClub:'assets/skeleton_club.png',
   shieldman:'assets/shieldman.png',
   wraith:'assets/wraith.png',
   mummy:'assets/mummy.png'
@@ -4903,7 +4905,7 @@ var SHAPE_SPR={blob:'blob',goblin:'goblin',orc:'orc',bat:'bat',spirit:'spirit',o
   panther:'panther',mantis:'mantis',treant:'treant',
   skeleton:'skeleton',shieldman:'shieldman',wraith:'wraith',mummy:'mummy'};
 // 棍棒持ち（素体＋棍棒レイヤーで攻撃時に棍棒を振る）。値＝棍棒レイヤーの握り位置（フレーム比 0..1）
-var CLUBBER={goblin:[0.34,0.77], orc:[0.31,0.67], cyclops:[0.34,0.75]};
+var CLUBBER={goblin:[0.34,0.77], orc:[0.31,0.67], cyclops:[0.34,0.75], skeleton:[0.78,0.72]};
 function enemySpr(e){
   if(e.shape==='boar'){ var h=e.boss?'hog_boss':'hog'; return sprReady(h)?h:null; }
   if(e.boss&&e.bkey==='slimeking') return sprReady('slimeking')?'slimeking':null;   // ボス専用絵
@@ -6933,6 +6935,8 @@ Array.prototype.forEach.call(document.querySelectorAll('#setview button'),functi
 // 更新履歴：1つのお知らせ内で「バージョン見出し」ごとに変更点を並べる（新しい順）。
 // マージのたびに先頭へ新バージョンを追加し、VERSION も更新する。
 var UPDATES=[
+  {v:'α1.0.90', items:[
+    'スケルトンが骨を武器として持ち、近づくと振り下ろすようになりました。']},
   {v:'α1.0.89', items:[
     'シャドウに誤って別画像（スケルトンの骨）を割り当てていたのを取り消しました。シャドウの立ち絵は正しい画像が届き次第あらためて反映します。']},
   {v:'α1.0.88', items:[
