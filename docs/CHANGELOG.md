@@ -10,6 +10,13 @@
 - リザルト画面と設定画面に `VERSION` を表示。
 - お知らせ（`UPDATES` 配列）は**1枠内でバージョン見出しごとに変更点を掲載**（新しい順）。マージ時は `UPDATES` 先頭に新バージョンを追加し `VERSION` を一致させる。
 
+## ver.α1.0.95
+- デイリーログインボーナスを実装。毎日 金貨+3、7日連続で7日目は 金貨+10。1日空くと連続リセット。
+  - `DAILY={last,streak}`（`DAILY_BASE=3/DAILY_BONUS=10/DAILY_LEN=7`）。`saveObj`/`applySave` に `dl` キーで永続化。
+  - `dateStr()`/`isYesterday()`/`dailyClaimable()`/`dailyPendingDay()`/`dailyRewardOf()`/`claimDaily()`。連続判定：`last===昨日` なら継続（7日到達の翌日は1日目へ）、それ以外は1日目にリセット。
+  - `#daily` モーダル（7マス表示・当日ハイライト・受取済み✓・7日目は特別枠）。`showView('home')` で `TUTSEEN && dailyClaimable()` のとき自動表示（初回セッションはチュートリアル優先で翌回に）。受け取りは `WALLET.gold` へ直接加算＋`coinSfx()`＋トースト。
+  - 検証：Day1(+3)/連続7日(+10)/連続途切れ(1日目リセット)/受取後の再表示なし、をエラーなしで確認。
+
 ## ver.α1.0.94
 - 初回クリア報酬の遡及配布（バックフィル）。初回クリア報酬の実装前に既にクリアしていたステージについても、受け取りボックスへ報酬を届ける。
   - `FCGOT={}`（配布済みステージ）を追加、`saveObj`/`applySave` に `fcg` キーで永続化。`finish()` の初回クリア時に `FCGOT[curStage]=1` を立てて二重配布を防止。

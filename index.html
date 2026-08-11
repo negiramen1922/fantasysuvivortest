@@ -171,9 +171,19 @@ canvas{display:block;width:100%;height:100%;touch-action:none}
 #pstat b{color:#fff;font-weight:normal}
 #pstat .el{color:var(--gold)}
 
-#shop,#mast,#ban,#settings,#news,#tutorial,#dex,#mailbox{position:absolute;inset:0;display:none;align-items:center;justify-content:center;
+#shop,#mast,#ban,#settings,#news,#tutorial,#dex,#mailbox,#daily{position:absolute;inset:0;display:none;align-items:center;justify-content:center;
   background:rgba(6,4,16,.95);padding:14px;z-index:6}
-#shop.on,#mast.on,#ban.on,#settings.on,#news.on,#tutorial.on,#dex.on,#mailbox.on{display:flex}
+#shop.on,#mast.on,#ban.on,#settings.on,#news.on,#tutorial.on,#dex.on,#mailbox.on,#daily.on{display:flex}
+#daily.on{z-index:8}
+#dailydays{display:grid;grid-template-columns:repeat(7,1fr);gap:6px;width:100%}
+.dday{display:flex;flex-direction:column;align-items:center;gap:3px;padding:8px 2px;border:1px solid var(--line);border-radius:9px;background:rgba(20,14,45,.5);position:relative}
+.dday .dn{font-size:10px;color:var(--ash)}
+.dday .dg{font-size:11px;color:var(--gold);font-weight:bold}
+.dday.d7{border-color:rgba(255,204,77,.5);background:rgba(60,44,10,.5)}
+.dday.done{opacity:.55}
+.dday.done::after{content:'✓';position:absolute;top:2px;right:4px;color:#7ce08a;font-size:11px}
+.dday.cur{border-color:var(--gold);box-shadow:0 0 12px rgba(255,204,77,.35)}
+#dailymsg{text-align:center;color:#cbb8ff;font-size:13px;margin:2px 0}
 #maillist{width:100%;flex:1;min-height:0;overflow-y:auto;display:flex;flex-direction:column;gap:8px}
 .mailrow{display:flex;gap:10px;align-items:center;padding:10px;border:1px solid var(--line);border-radius:10px;background:rgba(20,14,45,.5)}
 .mailrow .mic{flex:none;font-size:22px;width:30px;text-align:center}
@@ -661,6 +671,16 @@ img.wspr{width:1.15em;height:1.15em;object-fit:contain;image-rendering:pixelated
       <div id="maillist"></div>
       <button class="btn" id="mailall" style="margin-top:0">すべて受け取る</button>
       <button class="btn sub2" id="mailclose" style="margin-top:0">閉じる</button>
+    </div>
+  </div>
+
+  <div id="daily">
+    <div class="shopbox" style="max-width:440px">
+      <div class="shophead"><div class="title">🗓️ デイリーボーナス</div></div>
+      <div id="dailydays"></div>
+      <div id="dailymsg"></div>
+      <button class="btn" id="dailyclaim" style="margin-top:0">受け取る</button>
+      <button class="btn sub2" id="dailyclose" style="margin-top:0">閉じる</button>
     </div>
   </div>
 
@@ -1900,6 +1920,27 @@ function anyDexReward(){ for(var k in BSEEN){ if(BSEEN[k]&&!BCLAIM[k]) return 1;
 var MAILBOX=[]; // [{t:'💌'アイコン, m:'説明', g:金貨, s:銀貨}]
 function mailAdd(msg,gold,silver,icon){ MAILBOX.push({t:icon||'🎁', m:msg||'報酬', g:gold||0, s:silver||0}); if(typeof saveGame==='function') saveGame(); if(typeof updateMailBadge==='function') updateMailBadge(); }
 function anyMail(){ return MAILBOX.length>0; }
+// デイリーログインボーナス：毎日 金貨+3、7日連続で7日目は金貨+10。1日空くと連続はリセット。
+var DAILY={last:'', streak:0};   // last='YYYY-M-D'（ローカル日付）, streak=最後に受け取った連続日(1..7)
+var DAILY_BASE=3, DAILY_BONUS=10, DAILY_LEN=7;
+function dateStr(d){ d=d||new Date(); return d.getFullYear()+'-'+(d.getMonth()+1)+'-'+d.getDate(); }
+function isYesterday(s){ var y=new Date(); y.setDate(y.getDate()-1); return s===dateStr(y); }
+function dailyClaimable(){ return DAILY.last!==dateStr(); }
+function dailyPendingDay(){ // 今受け取ると何日目になるか（1..7）
+  if(DAILY.last && isYesterday(DAILY.last)) return (DAILY.streak>=DAILY_LEN)?1:(DAILY.streak+1);
+  return 1; // 初回 or 連続が途切れた
+}
+function dailyRewardOf(day){ return day>=DAILY_LEN?DAILY_BONUS:DAILY_BASE; }
+function claimDaily(){
+  if(!dailyClaimable()) return 0;
+  var day=dailyPendingDay(), g=dailyRewardOf(day);
+  DAILY.streak=day; DAILY.last=dateStr();
+  WALLET.gold+=g;
+  if(typeof saveGame==='function') saveGame();
+  if(typeof coinSfx==='function') coinSfx();
+  if(typeof toast==='function') toast('🗓️','デイリーボーナス 金貨 +'+g+(day>=DAILY_LEN?'（7日連続達成！）':''),'#ffd27a');
+  return g;
+}
 // 既にクリア済みのステージ（初回クリア報酬の実装前にクリアした人）へ、初回クリア報酬を受け取りボックスへ遡及配布する。
 // FCGOT で配布済みを記録し二重配布を防ぐ。起動時・クラウド同期後に呼ぶ（冪等）。
 function backfillFirstClear(){
@@ -1969,7 +2010,7 @@ function figInfo(id){
   if(BOSS[id]){ var B=BOSS[id], tt=ETYPE[B.key]||{}; return {nm:B.nm,shape:tt.shape,col:tt.col,dark:tt.dark,desc:BDEX[id]||'',boss:true}; }
   var t=ETYPE[id]||{}; return {nm:t.nm,shape:t.shape,col:t.col,dark:t.dark,desc:DEX[id]||'',boss:false};
 }
-var VERSION='α1.0.94'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
+var VERSION='α1.0.95'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
 function applySave(o){
   for(var i=0;i<UPG.length;i++) META[UPG[i].id]=0;
   try{
@@ -2007,12 +2048,13 @@ function applySave(o){
       if(o.bsel) for(var bse in o.bsel){ var v=o.bsel[bse]; if(v) BSEL[bse]={x:v.x|0,d:v.d|0,t:v.t|0}; }
       if(o.mb instanceof Array){ MAILBOX=[]; for(var mi=0;mi<o.mb.length;mi++){ var mm=o.mb[mi]; if(mm) MAILBOX.push({t:(mm.t||'🎁'),m:(''+(mm.m||'報酬')).slice(0,60),g:mm.g|0,s:mm.s|0}); } }
       if(o.fcg) for(var fc in o.fcg){ if(o.fcg[fc]) FCGOT[fc]=1; }
+      if(o.dl&&typeof o.dl==='object'){ DAILY.last=(''+(o.dl.last||'')).slice(0,12); DAILY.streak=Math.max(0,Math.min(DAILY_LEN,o.dl.streak|0)); }
     }
   }catch(e){}
 }
 (function loadSave(){ try{ applySave(JSON.parse(localStorage.getItem('bsv_save')||'null')); }catch(e){ applySave(null); } })();
 function saveObj(){
-  return {m:META,w:WALLET,wx:WX,sel:SEL,best:best,shk:SHK,vz:VZOOM,light:LIGHT,volm:VOLM,vols:VOLS,volb:VOLB,unl:UNL,ach:ACH,ch:SELCH,stg:STGCLEAR,sgb:STGBEST,sgw:STGWAVE,eb:ENDBEST,et:ENDTIME,nk:NICK,ban:Object.keys(BAN).filter(function(k){return BAN[k];}),tut:TUTSEEN,perf:PERF,dps:SHOWDPS,dpm:SHOWDPM,rsp:RESPEC_AT,bk:BKILL,bsc:BSCORE,bs:Object.keys(BSEEN).filter(function(k){return BSEEN[k];}),bc:Object.keys(BCLAIM).filter(function(k){return BCLAIM[k];}).reduce(function(o,k){o[k]=1;return o;},{}),bsel:BSEL,mb:MAILBOX,fcg:FCGOT};
+  return {m:META,w:WALLET,wx:WX,sel:SEL,best:best,shk:SHK,vz:VZOOM,light:LIGHT,volm:VOLM,vols:VOLS,volb:VOLB,unl:UNL,ach:ACH,ch:SELCH,stg:STGCLEAR,sgb:STGBEST,sgw:STGWAVE,eb:ENDBEST,et:ENDTIME,nk:NICK,ban:Object.keys(BAN).filter(function(k){return BAN[k];}),tut:TUTSEEN,perf:PERF,dps:SHOWDPS,dpm:SHOWDPM,rsp:RESPEC_AT,bk:BKILL,bsc:BSCORE,bs:Object.keys(BSEEN).filter(function(k){return BSEEN[k];}),bc:Object.keys(BCLAIM).filter(function(k){return BCLAIM[k];}).reduce(function(o,k){o[k]=1;return o;},{}),bsel:BSEL,mb:MAILBOX,fcg:FCGOT,dl:DAILY};
 }
 function saveGame(){
   try{ localStorage.setItem('bsv_save',JSON.stringify(saveObj())); }catch(e){}
@@ -6868,7 +6910,7 @@ function showView(v){
   document.getElementById('homeview').style.display  = v==='home' ?'flex':'none';
   document.getElementById('stageview').style.display = v==='stage'?'flex':'none';
   document.getElementById('resultview').style.display= v==='result'?'flex':'none';
-  if(v==='home'){ syncTitle(); playBGM('home'); if(!TUTSEEN) openTutorial(); }
+  if(v==='home'){ syncTitle(); playBGM('home'); if(!TUTSEEN) openTutorial(); else if(typeof maybeShowDaily==='function') maybeShowDaily(); }
   else if(v==='stage') renderStageSelect();
 }
 function startRun(n,endless){
@@ -6995,6 +7037,8 @@ Array.prototype.forEach.call(document.querySelectorAll('#setview button'),functi
 // 更新履歴：1つのお知らせ内で「バージョン見出し」ごとに変更点を並べる（新しい順）。
 // マージのたびに先頭へ新バージョンを追加し、VERSION も更新する。
 var UPDATES=[
+  {v:'α1.0.95', items:[
+    'デイリーログインボーナスを追加：毎日ログインすると金貨 +3、7日連続で受け取ると7日目は金貨 +10。1日空くと連続はリセットされます。ホームに来たとき未受け取りなら自動で表示します。']},
   {v:'α1.0.94', items:[
     '初回クリア報酬の遡及配布：初回クリア報酬の実装より前に既にクリアしていたステージについても、その初回クリア報酬を「受け取りボックス」へお届けするようにしました（起動時に自動でボックスに届きます）。']},
   {v:'α1.0.93', items:[
@@ -7318,6 +7362,39 @@ function claimAllMail(){
 document.getElementById('mailbtn').onclick=function(){ audio(); renderMailbox(); mailEl.classList.add('on'); };
 document.getElementById('mailclose').onclick=function(){ mailEl.classList.remove('on'); };
 document.getElementById('mailall').onclick=function(){ claimAllMail(); };
+
+/* ============ デイリーログインボーナス ============ */
+var dailyEl=document.getElementById('daily');
+function renderDaily(){
+  var pending=dailyClaimable();
+  var curDay=pending?dailyPendingDay():(DAILY.streak||1);
+  var L=document.getElementById('dailydays'); if(L){ L.innerHTML='';
+    for(var i=1;i<=DAILY_LEN;i++){
+      var cls='dday'+(i===DAILY_LEN?' d7':'')+(i<curDay?' done':'')+(i===curDay?' cur':'');
+      var d=document.createElement('div'); d.className=cls;
+      d.innerHTML='<div class="dn">'+i+'日目</div><div class="dg">金'+dailyRewardOf(i)+'</div>';
+      L.appendChild(d);
+    }
+  }
+  var msg=document.getElementById('dailymsg');
+  var btn=document.getElementById('dailyclaim');
+  if(pending){
+    if(msg) msg.innerHTML='今日のログインボーナス：<b style="color:var(--gold)">金貨 +'+dailyRewardOf(curDay)+'</b>'+(curDay>=DAILY_LEN?'（7日連続達成！）':'　連続 '+curDay+'/'+DAILY_LEN+'日目');
+    if(btn){ btn.style.display=''; btn.disabled=false; btn.textContent='受け取る'; }
+  }else{
+    if(msg) msg.innerHTML='本日は受け取り済みです。<br><span style="color:#8a7fbf">また明日ログインしてね（連続 '+(DAILY.streak||0)+'/'+DAILY_LEN+'日）</span>';
+    if(btn){ btn.style.display='none'; }
+  }
+}
+function openDaily(){ audio(); renderDaily(); dailyEl.classList.add('on'); }
+document.getElementById('dailyclaim').onclick=function(){
+  var g=claimDaily();
+  renderDaily(); syncTitle();
+  if(g) setTimeout(function(){ dailyEl.classList.remove('on'); },650);   // 受け取ったら少し見せてから閉じる
+};
+document.getElementById('dailyclose').onclick=function(){ dailyEl.classList.remove('on'); };
+// ホームに来たとき、未受け取りなら自動で表示（チュートリアル中の初回セッションは翌回に回す）
+function maybeShowDaily(){ if(TUTSEEN && dailyClaimable()) openDaily(); }
 
 /* ============ チュートリアル（遊びかた）============ */
 var tutEl=document.getElementById('tutorial');
