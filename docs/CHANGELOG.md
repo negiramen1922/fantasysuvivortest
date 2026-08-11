@@ -10,6 +10,10 @@
 - リザルト画面と設定画面に `VERSION` を表示。
 - お知らせ（`UPDATES` 配列）は**1枠内でバージョン見出しごとに変更点を掲載**（新しい順）。マージ時は `UPDATES` 先頭に新バージョンを追加し `VERSION` を一致させる。
 
+## ver.α1.0.86
+- 一時停止画面の見切れ修正。内側を `.pausebox`（flex column・max-height:100%）にし、`#pstat` を `flex:1;overflow-y:auto`、`#pbtns` を `flex:none` に。構成が長くてもタイトルとボタンは固定、中身だけスクロール。
+  - 検証：420×430＋武器6種で `#pstat` スクロール・「再開する」常時表示・エラーなしを確認。
+
 ## ver.α1.0.85
 - ホーム上部バーの重なり修正。`#profile`（左）と `#homehead`（右アイコン）を独立 absolute から `#topbar`（flex・space-between）に統合。名前は `min-width:0`＋ellipsisで縮み、アイコンと重ならない。モバイルでアイコン/余白を縮小。
   - 検証：390/360/320px＋長い名前で prof.right < head.left（重なりなし）・アイコン全表示・エラーなしを確認。
