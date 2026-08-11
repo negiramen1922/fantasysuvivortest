@@ -113,6 +113,16 @@ canvas{display:block;width:100%;height:100%;touch-action:none}
   background:conic-gradient(from -90deg, #ff3b1f var(--h,0%), transparent 0)}
 .slot.inf.over{box-shadow:0 0 14px rgba(255,60,30,.9);animation:infpulse .5s infinite alternate}
 @keyframes infpulse{from{filter:none}to{filter:brightness(1.5)}}
+/* オンラインランキング */
+#ranklist{max-height:52vh;overflow-y:auto;margin-top:10px;text-align:left}
+.rankrow{display:flex;align-items:center;gap:8px;padding:5px 8px;border-bottom:1px solid #221b3e;font-size:13px}
+.rankrow .rk{width:36px;color:var(--gold);text-align:right;font-weight:700}
+.rankrow .rn{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#e8e2ff}
+.rankrow .rs{width:84px;text-align:right;color:#fff}
+.rankrow .rt{width:52px;text-align:right;color:var(--ash);font-size:11px}
+.rankrow.me{background:rgba(127,212,255,.14);border-radius:6px}
+#nickinput{width:100%;box-sizing:border-box;margin-top:12px;padding:9px 10px;border-radius:8px;
+  background:#171327;border:1px solid #4a3f7a;color:#fff;font-size:15px;text-align:center}
 
 #banner{position:absolute;left:0;right:0;top:31%;text-align:center;font-size:40px;
   color:var(--gold);letter-spacing:9px;opacity:0;
@@ -538,6 +548,7 @@ img.wspr{width:1.15em;height:1.15em;object-fit:contain;image-rendering:pixelated
     <div id="homeview" class="vview">
       <div id="homehead">
         <button id="dexbtn" class="hicon" aria-label="図鑑">📖</button>
+        <button id="rankbtn" class="hicon" aria-label="ランキング">🏆</button>
         <button id="tutbtn" class="hicon" aria-label="遊びかた">❓</button>
         <button id="newsbtn" class="hicon" aria-label="お知らせ">✉</button>
         <button id="setbtn" class="hicon" aria-label="設定">⚙</button>
@@ -569,6 +580,7 @@ img.wspr{width:1.15em;height:1.15em;object-fit:contain;image-rendering:pixelated
       <div id="res"></div>
       <div id="resbtns">
         <button class="btn" id="againbtn">もう一度</button>
+        <button class="btn sub2" id="rankbtn2" style="display:none">ランキング</button>
         <button class="btn sub2" id="homebtn">ホームへ</button>
       </div>
     </div>
@@ -629,6 +641,30 @@ img.wspr{width:1.15em;height:1.15em;object-fit:contain;image-rendering:pixelated
         <button class="btn sub2" id="synccloud" style="margin-top:0">クラウドのデータを使う<br><span id="synclab" style="font-size:11px;color:var(--ash)"></span></button>
       </div>
       <div style="font-size:10px;color:#8a7fc0;margin-top:10px">※選んだ方が両方の端末に反映されます</div>
+    </div>
+  </div>
+
+  <div id="rank" style="position:absolute;inset:0;display:none;align-items:center;justify-content:center;background:rgba(6,4,16,.86);z-index:10">
+    <div class="dexbox" style="max-width:440px;width:92%">
+      <div class="dexname" style="font-size:20px">🏆 無限ラン ランキング</div>
+      <div class="dexdesc" style="font-size:11px">スコア上位50位（コンティニュー無しの無限ラン）</div>
+      <div id="ranklist"></div>
+      <div style="display:flex;gap:8px;margin-top:12px">
+        <button class="btn sub2" id="ranknick" style="margin-top:0;flex:1">名前を変更</button>
+        <button class="btn sub2" id="rankclose" style="margin-top:0;flex:1">閉じる</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="nick" style="position:absolute;inset:0;display:none;align-items:center;justify-content:center;background:rgba(6,4,16,.9);z-index:11">
+    <div class="dexbox" style="max-width:360px;width:90%">
+      <div class="dexname" style="font-size:18px">ランキング表示名</div>
+      <div class="dexdesc" style="font-size:12px">ランキングに載る名前を決めてください（16文字まで・後から変更可）。</div>
+      <input id="nickinput" type="text" maxlength="16" placeholder="なまえ">
+      <div style="display:flex;gap:8px;margin-top:12px">
+        <button class="btn" id="nicksave" style="margin-top:0;flex:1">決定</button>
+        <button class="btn sub2" id="nickcancel" style="margin-top:0;flex:1">あとで</button>
+      </div>
     </div>
   </div>
 
@@ -1220,6 +1256,7 @@ var STGWAVE={};   // ステージ別の到達ウェーブ最高
 var ENDLESS=false, ENDBLK=0, endBossDone={};
 var ENDLESS_BLOCK=600;   // 1舞台＝600秒（10分）
 var ENDBEST=0, ENDTIME=0;   // 無限ランの最高スコア／最長生存秒
+var NICK='';                // ランキング表示名（セーブに保存）
 var BAN={};   // 排他でBANした武器 id→1
 
 var PTS_ELITE=450, PTS_REACT=30, PTS_SEC=25, PTS_LV=200, PTS_CLEAR=50000;
@@ -1826,7 +1863,7 @@ function figInfo(id){
   if(BOSS[id]){ var B=BOSS[id], tt=ETYPE[B.key]||{}; return {nm:B.nm,shape:tt.shape,col:tt.col,dark:tt.dark,desc:BDEX[id]||'',boss:true}; }
   var t=ETYPE[id]||{}; return {nm:t.nm,shape:t.shape,col:t.col,dark:t.dark,desc:DEX[id]||'',boss:false};
 }
-var VERSION='α1.0.75'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
+var VERSION='α1.0.76'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
 function applySave(o){
   for(var i=0;i<UPG.length;i++) META[UPG[i].id]=0;
   try{
@@ -1849,6 +1886,7 @@ function applySave(o){
       if(o.sgw) for(var sw in o.sgw) STGWAVE[sw]=o.sgw[sw]|0;
       if(typeof o.eb==='number') ENDBEST=o.eb|0;
       if(typeof o.et==='number') ENDTIME=o.et|0;
+      if(typeof o.nk==='string') NICK=o.nk.slice(0,16);
       if(o.ban) for(var bi=0;bi<o.ban.length;bi++) if(WEAPONS[o.ban[bi]]) BAN[o.ban[bi]]=1;
       if(o.ch&&CHARS[o.ch]&&UNL[o.ch]) SELCH=o.ch;
       if(o.tut) TUTSEEN=1;
@@ -1863,7 +1901,7 @@ function applySave(o){
 }
 (function loadSave(){ try{ applySave(JSON.parse(localStorage.getItem('bsv_save')||'null')); }catch(e){ applySave(null); } })();
 function saveObj(){
-  return {m:META,w:WALLET,wx:WX,sel:SEL,best:best,shk:SHK,volm:VOLM,vols:VOLS,volb:VOLB,unl:UNL,ach:ACH,ch:SELCH,stg:STGCLEAR,sgb:STGBEST,sgw:STGWAVE,eb:ENDBEST,et:ENDTIME,ban:Object.keys(BAN).filter(function(k){return BAN[k];}),tut:TUTSEEN,perf:PERF,dps:SHOWDPS,dpm:SHOWDPM,rsp:RESPEC_AT,bk:BKILL,bsc:BSCORE,bs:Object.keys(BSEEN).filter(function(k){return BSEEN[k];}),bsel:BSEL};
+  return {m:META,w:WALLET,wx:WX,sel:SEL,best:best,shk:SHK,volm:VOLM,vols:VOLS,volb:VOLB,unl:UNL,ach:ACH,ch:SELCH,stg:STGCLEAR,sgb:STGBEST,sgw:STGWAVE,eb:ENDBEST,et:ENDTIME,nk:NICK,ban:Object.keys(BAN).filter(function(k){return BAN[k];}),tut:TUTSEEN,perf:PERF,dps:SHOWDPS,dpm:SHOWDPM,rsp:RESPEC_AT,bk:BKILL,bsc:BSCORE,bs:Object.keys(BSEEN).filter(function(k){return BSEEN[k];}),bsel:BSEL};
 }
 function saveGame(){
   try{ localStorage.setItem('bsv_save',JSON.stringify(saveObj())); }catch(e){}
@@ -6594,6 +6632,7 @@ function finish(won){
   var rec;
   if(ENDLESS){ rec=score>ENDBEST; if(rec) ENDBEST=score; if(Math.floor(time)>ENDTIME) ENDTIME=Math.floor(time); }
   else { rec=score>best; if(rec) best=score; }
+  if(ENDLESS&&typeof submitRanking==='function') submitRanking(score,Math.floor(time));   // オンラインランキング登録（自己ベスト時のみ・要ログイン）
   ACH.lv=Math.max(ACH.lv,P.lv);
   ACH.kills+=kills; ACH.reacts+=reacts;
   ACH.time=Math.max(ACH.time,Math.floor(time));
@@ -6652,6 +6691,7 @@ function finish(won){
     (newCh.length?'<br><span style="color:var(--gold)">★ '+newCh.join('・')+' が解放されました</span>':'')+
     '<div class="psec">構成</div>'+(comp||'—')+
     damageBreakdownHtml();
+  document.getElementById('rankbtn2').style.display=ENDLESS?'':'none';   // 無限ランのみランキングボタン表示
   showView('result');
   document.getElementById('veil').classList.remove('hide');
 }
@@ -6728,7 +6768,7 @@ function renderStageSelect(){
        '<b>♾ 無限ラン</b>'+
        '<span style="font-size:11px;color:#9a90c0;margin:2px 0">10分ごとに舞台が変わり、敵とボスが際限なく押し寄せる。倒れるまで生き延びろ。</span>'+
        '<span style="font-size:11px;color:var(--gold)">'+erec+'</span>'+
-       '<span style="font-size:11px;color:#7fd4ff">コンティニュー無し・スコアアタック　▶ 出撃</span>'+
+       '<span style="font-size:11px;color:#7fd4ff">コンティニュー無し・スコアでオンラインランキング　▶ 出撃</span>'+
      '</button>';
   el.innerHTML=h;
   el.onclick=function(ev){
@@ -6781,6 +6821,9 @@ Array.prototype.forEach.call(document.querySelectorAll('#setshake button'),funct
 // 更新履歴：1つのお知らせ内で「バージョン見出し」ごとに変更点を並べる（新しい順）。
 // マージのたびに先頭へ新バージョンを追加し、VERSION も更新する。
 var UPDATES=[
+  {v:'α1.0.76', items:[
+    '無限ランに「🏆 オンラインランキング」を追加！スコアで世界と勝負できます（ホーム右上の🏆／リザルトから閲覧）。',
+    'ランキング登録にはGoogleログインが必要です。初回にニックネームを設定してください（16文字まで・後から変更可）。自己ベスト更新時に自動登録されます。']},
   {v:'α1.0.75', items:[
     '新モード「♾ 無限ラン」を追加！10分ごとに舞台（草原→森→王墓→…）が循環し、各舞台のボスも次々出現。倒れるまで終わらないスコアアタックです（コンティニュー無し）。周回するほど強くなります。',
     '※オンラインランキングは次のアップデートで対応予定。']},
@@ -7136,6 +7179,8 @@ document.getElementById('hardreset').onclick=function(){
 /* ============ Firebase：Google認証 / クラウドセーブ / 解析 ============ */
 // 未設定・未ロード・オフライン時は全て no-op。ゲームはローカルのみで通常動作する。
 var FB=null, fbDB=null, fbAnalytics=null, FBUSER=null, cloudTimer=null, syncPend=null;
+var pendingRank=null;   // ニックネーム未設定時に保留するスコア（NICK は上部で宣言・セーブ対象）
+function escHtml(s){ return String(s==null?'':s).replace(/[&<>"']/g,function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]; }); }
 function fbReady(){ return !!(window.firebase && window.FIREBASE_CONFIG && window.FIREBASE_CONFIG.apiKey); }
 function fbLog(name,params){ if(fbAnalytics){ try{ fbAnalytics.logEvent(name,params||{}); }catch(e){} } }
 // セーブの進行度スコア（競合表示・比較用）
@@ -7202,6 +7247,58 @@ function openSyncChooser(localStr,cloudStr){
 document.getElementById('fbbtn').onclick=function(){ audio(); if(FBUSER) fbLogout(); else fbLogin(); };
 document.getElementById('synclocal').onclick=function(){ document.getElementById('syncsel').style.display='none'; if(syncPend){ applyCloud(syncPend.l); cloudPushNow(); } };
 document.getElementById('synccloud').onclick=function(){ document.getElementById('syncsel').style.display='none'; if(syncPend){ applyCloud(syncPend.c); } };
+
+/* ===== オンラインランキング（無限ラン・スコア）===== */
+// 自己ベスト更新時のみ、1ユーザー1件（uid をドキュメントIDに）で rankings に登録。未ログインは登録しない。
+function submitRanking(sc,timeSec){
+  if(!fbDB||!FBUSER) return;
+  if(!NICK){ pendingRank={score:sc,timeSec:timeSec}; openNick(); return; }   // 名前未設定なら入力を促し保留
+  var ref=fbDB.collection('rankings').doc(FBUSER.uid);
+  ref.get().then(function(d){
+    var prev=(d.exists?d.data():null), best=(prev&&prev.score|0)||0;
+    if((sc|0)<=best) return;
+    ref.set({ uid:FBUSER.uid, name:NICK.slice(0,16), score:sc|0, timeSec:timeSec|0, v:VERSION,
+      ts:firebase.firestore.FieldValue.serverTimestamp() }).catch(function(e){ console.warn('rank set',e); });
+  }).catch(function(e){ console.warn('rank get',e); });
+}
+function openRanking(){
+  var el=document.getElementById('rank'); el.style.display='flex';
+  var list=document.getElementById('ranklist');
+  if(!fbReady()||!fbDB){ list.innerHTML='<div class="dexdesc">ランキングは現在利用できません（オフライン/未設定）。</div>'; return; }
+  list.innerHTML='<div class="dexdesc">読み込み中…</div>';
+  var mine=FBUSER?FBUSER.uid:null;
+  fbDB.collection('rankings').orderBy('score','desc').limit(50).get().then(function(qs){
+    var rows='', i=0, seen=false;
+    qs.forEach(function(doc){ i++; var d=doc.data(); var me=(mine&&d.uid===mine); if(me) seen=true;
+      rows+='<div class="rankrow'+(me?' me':'')+'"><span class="rk">'+i+'</span><span class="rn">'+escHtml(d.name||'?')+'</span><span class="rs">'+fmt(d.score||0)+'</span><span class="rt">'+fmtTime(d.timeSec||0)+'</span></div>';
+    });
+    list.innerHTML=rows||'<div class="dexdesc">まだ記録がありません。最初の1位を狙おう！</div>';
+    if(FBUSER&&!seen&&ENDBEST>0){   // 圏外なら自分の順位を別途表示
+      fbDB.collection('rankings').where('score','>',ENDBEST).get().then(function(c){
+        list.innerHTML+='<div class="rankrow me" style="margin-top:8px"><span class="rk">'+(c.size+1)+'</span><span class="rn">'+escHtml(NICK||'あなた')+'</span><span class="rs">'+fmt(ENDBEST)+'</span><span class="rt">'+fmtTime(ENDTIME)+'</span></div>';
+      }).catch(function(){});
+    }
+  }).catch(function(e){ list.innerHTML='<div class="dexdesc">読み込みに失敗しました。時間をおいて再度お試しください。</div>'; console.warn('rank list',e); });
+}
+function openNick(){
+  if(!FBUSER){ return; }
+  document.getElementById('nickinput').value=NICK||(FBUSER&&FBUSER.displayName)||'';
+  document.getElementById('nick').style.display='flex';
+  setTimeout(function(){ try{ document.getElementById('nickinput').focus(); }catch(e){} },50);
+}
+function saveNick(){
+  var v=(document.getElementById('nickinput').value||'').trim().slice(0,16);
+  if(!v){ return; }
+  NICK=v; saveGame();
+  document.getElementById('nick').style.display='none';
+  if(pendingRank){ var pr=pendingRank; pendingRank=null; submitRanking(pr.score,pr.timeSec); }
+}
+document.getElementById('rankbtn').onclick=function(){ audio(); openRanking(); };
+document.getElementById('rankbtn2').onclick=function(){ audio(); openRanking(); };
+document.getElementById('rankclose').onclick=function(){ document.getElementById('rank').style.display='none'; };
+document.getElementById('ranknick').onclick=function(){ if(!FBUSER){ alert('名前の登録にはGoogleログインが必要です。'); return; } openNick(); };
+document.getElementById('nicksave').onclick=function(){ audio(); saveNick(); };
+document.getElementById('nickcancel').onclick=function(){ pendingRank=null; document.getElementById('nick').style.display='none'; };
 
 VOLLEY={bow:doBow,fire:doFire,ice:doIce,holy:doHoly,rock:doRock,musket:doMusket,dynamite:doDyna};
 resize();

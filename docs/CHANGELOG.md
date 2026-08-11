@@ -10,6 +10,14 @@
 - リザルト画面と設定画面に `VERSION` を表示。
 - お知らせ（`UPDATES` 配列）は**1枠内でバージョン見出しごとに変更点を掲載**（新しい順）。マージ時は `UPDATES` 先頭に新バージョンを追加し `VERSION` を一致させる。
 
+## ver.α1.0.76
+- 無限ランのオンラインランキング（フェーズ2）を追加。
+  - Firestore `rankings/{uid}` に1ユーザー1件（自己ベスト更新時のみ上書き）：`{uid,name,score,timeSec,v,ts}`。`submitRanking()` を `finish()` の無限ラン分岐から呼ぶ（要ログイン）。
+  - `openRanking()`：スコア降順トップ50を表示＋圏外なら自分の順位（`where('score','>',ENDBEST)` の件数+1）。ホーム右上🏆／リザルトの「ランキング」ボタンから。
+  - ニックネーム（`NICK`／saveObj `nk`・クラウド同期対象）。未設定で登録時は入力モーダル（`#nick`）を出し、保存後に保留スコアを送信。`escHtml` で表示名をサニタイズ。
+  - `docs/FIREBASE.md` に `rankings` のセキュリティルール（read全許可・writeは自分のuidのみ＋score/name検証）を追記。**コンソールでのルール設定が必要**。
+  - 検証：`?dev` でホーム🏆→モーダル開閉・オフライン時フォールバック表示・エラーなしを確認（Firestore実書き込みはログイン必須のため本番で要確認）。
+
 ## ver.α1.0.75
 - 無限ランモード（フェーズ1：ゲームプレイ）を追加。
   - `ENDLESS` フラグ＋`ENDLESS_BLOCK=600`（10分）。`endlessTick()` が10分ごとに舞台を循環（`(blk%3)+1`＝ステージ1→2→3→1…）し、`curStage`/`WAVE`/`curGround`/BGM/`bossHpMul` を切替。周回（`floor(blk/3)`）ごとにボスHP ×(1+loop*0.5)。

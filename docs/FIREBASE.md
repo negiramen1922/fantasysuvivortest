@@ -32,11 +32,27 @@ service cloud.firestore {
     match /saves/{uid} {
       allow read, write: if request.auth != null && request.auth.uid == uid;
     }
+    // 無限ランのオンラインランキング（スコア）
+    match /rankings/{uid} {
+      allow read: if true;                                  // 一覧は誰でも閲覧可
+      allow write: if request.auth != null
+                   && request.auth.uid == uid              // 自分の行だけ書き込み可（uid＝ドキュメントID）
+                   && request.resource.data.uid == uid
+                   && request.resource.data.score is int
+                   && request.resource.data.score >= 0
+                   && request.resource.data.score <= 100000000
+                   && request.resource.data.name is string
+                   && request.resource.data.name.size() <= 16;
+    }
   }
 }
 ```
 
 - セーブは `saves/{uid}` に `{ save: <localStorageのbsv_save文字列>, prog: 進行度スコア, ts: 更新時刻 }` で保存されます。
+- ランキングは `rankings/{uid}` に `{ uid, name, score, timeSec, v, ts }` で1ユーザー1件（自己ベスト更新時のみ上書き）。
+  - 表示はスコア降順トップ50＋自分の順位。**登録にはGoogleログインが必要**（未ログインはプレイのみ）。
+  - クライアント書き込みのため厳密な改ざん防止は不可（アルファ版の割り切り）。上限チェックのみルールで担保。
+  - 一覧取得に `orderBy('score','desc')` を使うため、Firestore が単一フィールドの自動インデックスで対応（追加インデックス設定は不要）。
 
 ## 5. 解析（Analytics / GA4）
 - 上で Analytics を有効にしていれば自動で **アクセス数・セッション** が記録されます。
