@@ -10,6 +10,10 @@
 - リザルト画面と設定画面に `VERSION` を表示。
 - お知らせ（`UPDATES` 配列）は**1枠内でバージョン見出しごとに変更点を掲載**（新しい順）。マージ時は `UPDATES` 先頭に新バージョンを追加し `VERSION` を一致させる。
 
+## ver.α1.0.118
+- 武器熟練リニューアル完成（全22武器）。ice/blizzard に鈍足効果量(slowmag)を実装。`e.slowMul` を導入：移動を `e.spd*(e.slowMul||0.45)`、鈍足終了で 0.45 リセット。blizzard適用時と ice弾(slowMul付与→ヒットで反映)で `0.45*(1-TR(w,slowmag))`。
+- 検証：ice/blizzard の minor/major、blizzard/ice 装備で3.5秒ランしてクラッシュ無し。
+
 ## ver.α1.0.117
 - 焔輪→フレイムサークルに改名。熟練度10Lv：flame/inferno/quake/rock/voidh/aura 実装（20/22武器）。
 - 新メカ配線：elemChanceに TR(SRC,ele)（元素付着）、inferno coolRateに cool・heatUp分母に heatcap、aura life を乗算(TR life)、voidh pull=135*(1+TR pull)、quake kb=4.5*(1+TR knock)、hurtのkbを (crit?4:2.2)*(1+TR(SRC,knock)) に（rock用）。
