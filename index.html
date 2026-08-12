@@ -2192,7 +2192,7 @@ function figInfo(id){
   if(BOSS[id]){ var B=BOSS[id], tt=ETYPE[B.key]||{}; return {nm:B.nm,shape:tt.shape,col:tt.col,dark:tt.dark,desc:BDEX[id]||'',boss:true}; }
   var t=ETYPE[id]||{}; return {nm:t.nm,shape:t.shape,col:t.col,dark:t.dark,desc:DEX[id]||'',boss:false};
 }
-var VERSION='α1.0.101'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
+var VERSION='α1.0.102'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
 function applySave(o){
   for(var i=0;i<UPG.length;i++) META[UPG[i].id]=0;
   try{
@@ -3519,8 +3519,8 @@ function spawn(dt){
   if(eliteT<=0&&!boss){
     eliteT=Math.max(30,54-time*0.015);
     var k=rollType(), e=makeEnemy(k);
-    // HP倍率は時間で増える（後半に一瞬で溶けて宝箱を落とすだけの存在にならないよう）
-    var em=3.4+time*0.05;                       // 5分=18倍 / 10分=33倍 / 20分=63倍
+    // HP倍率は時間で増える（後半に一瞬で溶けて宝箱を落とすだけの存在にならないよう）。時間係数は緩和（0.05→0.025）。
+    var em=3.4+time*0.025;                      // 10分=18倍 / 20分=33倍 / 40分=63倍（旧の約半分）
     e.elite=1; e.hp*=em; e.mhp=e.hp; e.r*=1.5; e.res=Math.max(e.res,0.55);
     flash=Math.max(flash,.3); sfx(90,.5,'sawtooth',.09,.5);
   }
@@ -3562,9 +3562,10 @@ function spawnBoss(key){
   var scale=1+time/60*0.63, dscale=1+time/60*0.13;   // 攻撃力の伸びを緩和（ワンパン対策）
   var a=Math.random()*6.283, dist=offR()+90;
   var bhp=B.hp*bossHpMul;
-  // ボスHPの下限（床）：常に最強エリート級（敵HP430×時間倍率）の約1.5倍は確保。
-  // 時間で伸びるので、無限ラン後半でも「エリートより柔らかいボス」が生まれない。通常ステージは終盤ボスの基礎HPが高く床は効かない（＝クリア可能なまま）。
-  var floorHp=430*(3.4+time*0.05)*1.5;
+  // ボスHPの下限（床）：常に「最強エリート級」より約1.2倍固くする。
+  // エリートHP = 敵HP430 × makeEnemyの時間スケール(1+分×0.63) × エリート倍率(3.4+時間×0.025)。同じ式に合わせて算出。
+  // 時間で伸びるので無限ラン後半でも「エリートより柔らかいボス」が生まれない。通常ステージは終盤ボスの基礎HPが高く床は非活性（＝クリア可能なまま）。
+  var floorHp=430*(1+time/60*0.63)*(3.4+time*0.025)*1.2;
   if(bhp<floorHp) bhp=floorHp;
   var e={ k:B.key, bkey:key, boss:1, last:B.last||0,
     nm:B.nm, x:P.x+Math.cos(a)*dist, y:P.y+Math.sin(a)*dist,
@@ -7291,6 +7292,9 @@ Array.prototype.forEach.call(document.querySelectorAll('#setview button'),functi
 // 更新履歴：1つのお知らせ内で「バージョン見出し」ごとに変更点を並べる（新しい順）。
 // マージのたびに先頭へ新バージョンを追加し、VERSION も更新する。
 var UPDATES=[
+  {v:'α1.0.102', items:[
+    'エリートの固さを緩和（時間による強化を約半分に）。後半でエリートが理不尽に固くなりすぎる問題を調整しました。',
+    'ボスのHP下限を見直し、常に最強エリートより約1.2倍固くなるように修正。これでどの時間帯でも「エリートよりボスのほうが柔らかい」逆転が起きなくなりました。']},
   {v:'α1.0.101', items:[
     '無限ラン：ステージが「5分ごと」に循環するようになりました（従来は10分）。ボスの出現ペースは従来どおり5分に1体で、周回するほど各ステージの4体のボスが順に登場し強化されます。',
     'ボスが柔らかすぎる問題を修正：ボスのHPに「常に最強エリートより固くなる下限」を導入。無限ラン後半でも、時間で強くなるエリートにボスが追い越されて柔らかくなることがなくなりました。通常ステージの終盤ボスはこれまで通り（クリア可能）です。']},
