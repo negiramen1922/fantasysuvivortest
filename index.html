@@ -360,6 +360,13 @@ canvas{display:block;width:100%;height:100%;touch-action:none}
 #vbtns{display:flex;gap:10px;justify-content:center;flex-wrap:wrap}
 #vbtns .btn{margin-top:22px}
 #stagesel{margin-top:20px;display:flex;flex-direction:column;align-items:center;gap:10px}
+#wlimitsel{display:flex;flex-direction:column;align-items:center;gap:5px;padding:9px 12px;border:1px solid var(--line);border-radius:11px;background:rgba(20,14,45,.5);width:100%;max-width:420px}
+#wlimitsel .wll{font-size:12px;color:#cbb8ff}
+#wlimitsel .wlb{display:flex;gap:6px}
+.wlopt{width:34px;height:34px;font-family:inherit;font-size:15px;border-radius:8px;border:1px solid var(--line);background:#1a1330;color:#e9e2ff;cursor:pointer}
+.wlopt:hover:not(.on){border-color:var(--ash)}
+.wlopt.on{border-color:var(--gold);background:rgba(255,204,77,.15);color:var(--gold);font-weight:bold}
+#wlimitsel .wlhint{font-size:10px;color:#8a7fbf;text-align:center}
 .stlabel{font-size:11px;color:var(--ash);letter-spacing:.14em;margin-bottom:8px}
 .strow{display:flex;gap:10px;justify-content:center;flex-wrap:wrap}
 .stbtn{display:flex;flex-direction:column;align-items:center;gap:2px;min-width:120px;
@@ -1432,6 +1439,8 @@ var STGWAVE={};   // ステージ別の到達ウェーブ最高
 var STGLV={};     // ステージ別の到達最高レベル（次ステージ解放条件に使う）
 // ステージ解放条件：指定ステージで指定レベルに到達すると次が解放（②＝①でLv20 / ③＝②でLv40）
 var STGREQ={ 2:{stg:1,lv:20}, 3:{stg:2,lv:40} };
+var WLIMIT=6;     // ラン前設定：装備できる武器の最大数（1〜6）。1にすると単一武器の縛りプレイ。
+var W1CLEAR={};   // 武器1つ（単一武器）でクリアしたステージ {stage:1}（実績用）
 // 無限ラン：10分ごとに舞台（＝ステージのロスター）が循環し、ボスも出る。死亡のみで終了・コンティニュー無し。
 var ENDLESS=false, ENDBLK=0, endBossDone={};
 var ENDLESS_BLOCK=600;   // 1舞台＝600秒（10分）
@@ -2082,14 +2091,18 @@ var ACHV=[
   {k:'dex',   nm:'図鑑 発見数',  ic:'📖', side:'pre', tiers:[10,20,50,100],    words:['見習いの','探究の','博識の','万物の'],
     fn:function(){ var n=0; for(var k in BSEEN) if(BSEEN[k]) n++; return n; }},
   {k:'wpn',   nm:'使った武器の種類', ic:'⚒', side:'suf', tiers:[10,20,50,100], words:['武芸者','達人','百戦錬磨','万能の匠'],
-    fn:function(){ var n=0; for(var w in WX) if((WX[w]||0)>0&&WEAPONS[w]) n++; return n; }}
+    fn:function(){ var n=0; for(var w in WX) if((WX[w]||0)>0&&WEAPONS[w]) n++; return n; }},
+  {k:'w1',    nm:'武器1つでクリア', ic:'🗡', side:'pre', tiers:[1,2,3], labels:['ステージ1','ステージ2','ステージ3'],
+    words:['一刀の','無双の','孤高の'],
+    fn:function(){ var n=0; for(var s=1;s<=3;s++) if(W1CLEAR[s]) n++; return n; },
+    doneFn:function(i){ return !!W1CLEAR[i+1]; }}
 ];
 var ACLAIM={};                 // 受け取り済み実績 { 'kills:0':1, ... }
 var TWON={pre:'', suf:''};     // 選択中の二つ名パーツid（'cat:tier'）。空なら未設定
 function achDef(k){ for(var i=0;i<ACHV.length;i++) if(ACHV[i].k===k) return ACHV[i]; return null; }
 function achId(a,i){ return a.k+':'+i; }
 function achStat(a){ return a.fn?a.fn():(ACH[a.stat]||0); }
-function achDone(a,i){ return achStat(a)>=a.tiers[i]; }
+function achDone(a,i){ return a.doneFn?!!a.doneFn(i):(achStat(a)>=a.tiers[i]); }
 function achClaimed(a,i){ return !!ACLAIM[achId(a,i)]; }
 function achClaimable(a,i){ return achDone(a,i)&&!achClaimed(a,i); }
 function anyAchClaim(){ for(var x=0;x<ACHV.length;x++){ var a=ACHV[x]; for(var i=0;i<a.tiers.length;i++) if(achClaimable(a,i)) return 1; } return 0; }
@@ -2179,7 +2192,7 @@ function figInfo(id){
   if(BOSS[id]){ var B=BOSS[id], tt=ETYPE[B.key]||{}; return {nm:B.nm,shape:tt.shape,col:tt.col,dark:tt.dark,desc:BDEX[id]||'',boss:true}; }
   var t=ETYPE[id]||{}; return {nm:t.nm,shape:t.shape,col:t.col,dark:t.dark,desc:DEX[id]||'',boss:false};
 }
-var VERSION='α1.0.99'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
+var VERSION='α1.0.100'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
 function applySave(o){
   for(var i=0;i<UPG.length;i++) META[UPG[i].id]=0;
   try{
@@ -2220,6 +2233,8 @@ function applySave(o){
       if(o.dl&&typeof o.dl==='object'){ DAILY.last=(''+(o.dl.last||'')).slice(0,12); DAILY.streak=Math.max(0,Math.min(DAILY_LEN,o.dl.streak|0)); }
       if(o.ac) for(var acx in o.ac){ if(o.ac[acx]) ACLAIM[acx]=1; }
       if(o.tw&&typeof o.tw==='object'){ TWON.pre=(''+(o.tw.pre||'')).slice(0,20); TWON.suf=(''+(o.tw.suf||'')).slice(0,20); }
+      if(typeof o.wl==='number') WLIMIT=Math.max(1,Math.min(6,o.wl|0));
+      if(o.w1) for(var w1x in o.w1){ if(o.w1[w1x]) W1CLEAR[w1x]=1; }
       if(o.sgl) for(var sl in o.sgl) STGLV[sl]=o.sgl[sl]|0;
       if(o.wu){ for(var wq in o.wu){ if(o.wu[wq]&&WEAPONS[wq]) WUNL[wq]=1; } }
       else { // 旧セーブ（武器解放が無い）は移行：熟練度が付いている＝使ったことのある武器を解放して手持ちを失わせない
@@ -2231,7 +2246,7 @@ function applySave(o){
 }
 (function loadSave(){ try{ applySave(JSON.parse(localStorage.getItem('bsv_save')||'null')); }catch(e){ applySave(null); } })();
 function saveObj(){
-  return {m:META,w:WALLET,wx:WX,sel:SEL,best:best,shk:SHK,vz:VZOOM,light:LIGHT,volm:VOLM,vols:VOLS,volb:VOLB,unl:UNL,ach:ACH,ch:SELCH,stg:STGCLEAR,sgb:STGBEST,sgw:STGWAVE,eb:ENDBEST,et:ENDTIME,nk:NICK,ban:Object.keys(BAN).filter(function(k){return BAN[k];}),tut:TUTSEEN,perf:PERF,dps:SHOWDPS,dpm:SHOWDPM,rsp:RESPEC_AT,bk:BKILL,bsc:BSCORE,bs:Object.keys(BSEEN).filter(function(k){return BSEEN[k];}),bc:Object.keys(BCLAIM).filter(function(k){return BCLAIM[k];}).reduce(function(o,k){o[k]=1;return o;},{}),bsel:BSEL,mb:MAILBOX,fcg:FCGOT,dl:DAILY,sgl:STGLV,wu:WUNL,ac:ACLAIM,tw:TWON};
+  return {m:META,w:WALLET,wx:WX,sel:SEL,best:best,shk:SHK,vz:VZOOM,light:LIGHT,volm:VOLM,vols:VOLS,volb:VOLB,unl:UNL,ach:ACH,ch:SELCH,stg:STGCLEAR,sgb:STGBEST,sgw:STGWAVE,eb:ENDBEST,et:ENDTIME,nk:NICK,ban:Object.keys(BAN).filter(function(k){return BAN[k];}),tut:TUTSEEN,perf:PERF,dps:SHOWDPS,dpm:SHOWDPM,rsp:RESPEC_AT,bk:BKILL,bsc:BSCORE,bs:Object.keys(BSEEN).filter(function(k){return BSEEN[k];}),bc:Object.keys(BCLAIM).filter(function(k){return BCLAIM[k];}).reduce(function(o,k){o[k]=1;return o;},{}),bsel:BSEL,mb:MAILBOX,fcg:FCGOT,dl:DAILY,sgl:STGLV,wu:WUNL,ac:ACLAIM,tw:TWON,wl:WLIMIT,w1:W1CLEAR};
 }
 function saveGame(){
   try{ localStorage.setItem('bsv_save',JSON.stringify(saveObj())); }catch(e){}
@@ -4842,7 +4857,7 @@ function rollChoices(){
       // 未所持：新規取得のカード
       if(wLocked(id)) continue;                 // 未解放（ロック中）の武器は出さない
       if(BAN[id]) continue;                     // 排他でBANされた武器は出さない
-      if(slots>=6) continue;
+      if(slots>=WLIMIT) continue;               // ラン前設定の装備武器数の上限まで
       var CATLBL={melee:'近接',mid:'中射程',long:'長射程'};
       var rc=CATLBL[WCLASS[id]]?('　［'+CATLBL[WCLASS[id]]+'］'):'';
       pool.push({id:id,kind:'new',nm:W_.nm,glyph:wIcon(id),tag:W_.tag,tx:W_.tx+rc,lvtx:'NEW'});
@@ -7094,6 +7109,7 @@ function finish(won){
     STGBEST[curStage]=Math.max(STGBEST[curStage]||0,score);     // ステージ別 最高スコア
     STGWAVE[curStage]=Math.max(STGWAVE[curStage]||0,waveIdx);   // ステージ別 到達ウェーブ
     STGLV[curStage]=Math.max(STGLV[curStage]||0,P.lv);          // ステージ別 到達最高レベル（次ステージ解放判定）
+    if(won){ var _wc=0; for(var _wk in P.w) if(WEAPONS[_wk]) _wc++; if(_wc===1) W1CLEAR[curStage]=1; }   // 武器1つでクリア（実績）
   }
   // 解析：ラン終了時にまとめて記録（使用武器＝使用率の分母/分子）
   if(typeof fbLog==='function'){
@@ -7210,8 +7226,14 @@ function renderStageSelect(){
        '<span style="font-size:11px;color:var(--gold)">'+erec+'</span>'+
        '<span style="font-size:11px;color:#7fd4ff">コンティニュー無し・スコアでオンラインランキング　▶ 出撃</span>'+
      '</button>';
-  el.innerHTML=h;
+  // ラン前設定：装備できる武器の最大数（1〜6）
+  var wlh='<div id="wlimitsel"><span class="wll">装備できる武器の最大数</span><span class="wlb">';
+  for(var wn=1;wn<=6;wn++) wlh+='<button class="wlopt'+(WLIMIT===wn?' on':'')+'" data-wl="'+wn+'">'+wn+'</button>';
+  wlh+='</span><span class="wlhint">'+(WLIMIT===1?'※武器1つ＝単一武器の縛りプレイ（ステージクリアで専用実績）':'ラン中に新しく取得できる武器の数を制限します')+'</span></div>';
+  el.innerHTML=wlh+h;
   el.onclick=function(ev){
+    var wb=ev.target.closest?ev.target.closest('.wlopt'):null;
+    if(wb){ WLIMIT=+wb.getAttribute('data-wl'); saveGame(); renderStageSelect(); return; }
     var b=ev.target.closest?ev.target.closest('.stbtn'):null; if(!b) return;
     if(b.getAttribute('data-endless')){ startRun(null,true); return; }
     var n=+b.getAttribute('data-stg'); if(!stageUnlocked(n)) return;
@@ -7269,6 +7291,10 @@ Array.prototype.forEach.call(document.querySelectorAll('#setview button'),functi
 // 更新履歴：1つのお知らせ内で「バージョン見出し」ごとに変更点を並べる（新しい順）。
 // マージのたびに先頭へ新バージョンを追加し、VERSION も更新する。
 var UPDATES=[
+  {v:'α1.0.100', items:[
+    'ランキングの表示を「［二つ名］プレイヤー名」の形式にしました。',
+    'ラン前設定を追加：ステージ選択画面で「装備できる武器の最大数（1〜6）」を選べます。1にすると単一武器の縛りプレイになります（ラン中に新しい武器は取得できず、既存武器の強化とパッシブのみ）。',
+    '実績「武器1つでクリア」を追加：武器1つだけでステージ1／2／3をクリアすると達成（二つ名＝一刀の／無双の／孤高の）。']},
   {v:'α1.0.99', items:[
     '実績カテゴリを追加：「ステージ制覇」（1／2／3クリア）、「図鑑 発見数」（10／20／50／100）、「使った武器の種類」（10／20／50／100）。今後キャラや武器・モンスターが増えると上位ティアも達成できるようになります。']},
   {v:'α1.0.98', items:[
@@ -7685,10 +7711,12 @@ function renderAchieve(){
     var a=ACHV[x], v=achStat(a), rows='';
     for(var i=0;i<a.tiers.length;i++){
       var done=achDone(a,i), claimed=achClaimed(a,i), can=achClaimable(a,i);
-      var prev=i>0?a.tiers[i-1]:0, pct=Math.max(0,Math.min(100,(v-prev)/(a.tiers[i]-prev)*100));
+      var prev=i>0?a.tiers[i-1]:0;
+      var pct=a.doneFn?(done?100:0):Math.max(0,Math.min(100,(v-prev)/(a.tiers[i]-prev)*100));
       var g=GOLD_TIER[i]||GOLD_TIER[GOLD_TIER.length-1];
+      var tlabel=a.labels?a.labels[i]:achFmt(a,a.tiers[i]);
       rows+='<div class="acht'+(done?' done':'')+'">'+
-        '<span class="atw">'+achFmt(a,a.tiers[i])+'</span>'+
+        '<span class="atw">'+tlabel+'</span>'+
         '<span class="atbar"><i style="width:'+(done?100:pct)+'%"></i></span>'+
         '<span class="atg">『'+a.words[i]+'』</span>'+
         (claimed?'<span class="attag">受取済</span>':
@@ -7948,13 +7976,14 @@ function openRanking(){
   fbDB.collection('rankings').orderBy('score','desc').limit(50).get().then(function(qs){
     var rows='', i=0, seen=false;
     qs.forEach(function(doc){ i++; var d=doc.data(); var me=(mine&&d.uid===mine); if(me) seen=true;
-      var rttl=d.title?('<span class="rttl">《'+escHtml(d.title)+'》</span>'):'';
+      var rttl=d.title?('<span class="rttl">['+escHtml(d.title)+']</span>'):'';
       rows+='<div class="rankrow'+(me?' me':'')+'"><span class="rk">'+i+'</span><span class="rn">'+rttl+escHtml(d.name||'?')+'</span><span class="rs">'+fmt(d.score||0)+'</span><span class="rt">'+fmtTime(d.timeSec||0)+'</span></div>';
     });
     list.innerHTML=rows||'<div class="dexdesc">まだ記録がありません。最初の1位を狙おう！</div>';
     if(FBUSER&&!seen&&ENDBEST>0){   // 圏外なら自分の順位を別途表示
       fbDB.collection('rankings').where('score','>',ENDBEST).get().then(function(c){
-        list.innerHTML+='<div class="rankrow me" style="margin-top:8px"><span class="rk">'+(c.size+1)+'</span><span class="rn">'+escHtml(NICK||'あなた')+'</span><span class="rs">'+fmt(ENDBEST)+'</span><span class="rt">'+fmtTime(ENDTIME)+'</span></div>';
+        var myttl=twoName()?('<span class="rttl">['+escHtml(twoName())+']</span>'):'';
+        list.innerHTML+='<div class="rankrow me" style="margin-top:8px"><span class="rk">'+(c.size+1)+'</span><span class="rn">'+myttl+escHtml(NICK||'あなた')+'</span><span class="rs">'+fmt(ENDBEST)+'</span><span class="rt">'+fmtTime(ENDTIME)+'</span></div>';
       }).catch(function(){});
     }
   }).catch(function(e){ list.innerHTML='<div class="dexdesc">読み込みに失敗しました。時間をおいて再度お試しください。</div>'; console.warn('rank list',e); });
