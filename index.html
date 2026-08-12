@@ -1144,7 +1144,7 @@ var WEAPONS={
     tx:'最寄りの敵へ火球を放つ。当たると爆発し、貫通しながら数が増えていく。' },
   inferno:{ nm:'インフェルノビーム', glyph:'☄', tag:'炎', max:10,
     tx:'ロックした敵へ灼熱のビームを照射し続ける（倒すか射程外まで維持）。当て続けるほど火力が上がるが、熱がたまり満タンでオーバーヒート＝一時停止。持続軸で熱容量と冷却が上がる。' },
-  flame:{ nm:'焔輪', glyph:'\u{1F7E0}', tag:'炎', max:10,
+  flame:{ nm:'フレイムサークル', glyph:'\u{1F7E0}', tag:'炎', max:10,
     tx:'火の玉が周囲を巡る。触れた敵を焼き続ける。' },
   ice:{ nm:'アイスジャベリン', glyph:'\u2744', tag:'氷', max:10,
     tx:'貫通する氷の槍。貫かれた敵は動きが鈍る。' },
@@ -1844,6 +1844,54 @@ var MAST={
     major:[ {id:'be_ct',ic:'✳️',nm:'多重波紋',tx:'波紋 +1',d:'同時に広がる波紋が#増える',dv:'1つ',ef:{count:1}},
             {id:'be_D',ic:'💪',nm:'剛・攻撃力',tx:'+12%',d:'音の威力が#大きく上がる',dv:'12%',ef:{dmg:.12}},
             {id:'be_A',ic:'🌀',nm:'大波紋',tx:'+15%',d:'音の波紋が#大きく広がる',dv:'15%',ef:{area:.15}} ]
+  },
+  flame:{  // フレイムサークル：dmg/count/area/rate。既に炎を付与→元素付着で付与率UP
+    minor:[ {id:'fl_d',ic:'💪',nm:'攻撃力',tx:'+6%',d:'火の玉の威力が#上がる',dv:'6%',ef:{dmg:.06}},
+            {id:'fl_a',ic:'🌀',nm:'範囲',tx:'+6%',d:'火の玉が#大きくなる',dv:'6%',ef:{area:.06}},
+            {id:'fl_c',ic:'⌛',nm:'間隔',tx:'−5%',d:'回転が#速くなる',dv:'5%',ef:{cd:-.05}} ],
+    major:[ {id:'fl_ct',ic:'✳️',nm:'多重火球',tx:'火の玉 +1',d:'周囲を巡る火の玉が#増える',dv:'1個',ef:{count:1}},
+            {id:'fl_D',ic:'💪',nm:'剛・攻撃力',tx:'+12%',d:'火の玉の威力が#大きく上がる',dv:'12%',ef:{dmg:.12}},
+            {id:'fl_e',ic:'◈',nm:'元素付着',tx:'+8%',d:'炎の付与率が#上がり元素反応を起こしやすくなる',dv:'8%',ef:{ele:.08}} ]
+  },
+  inferno:{  // インフェルノ：dmg/count/dur/rate/range。持続=熱容量, 冷却=回復速度
+    minor:[ {id:'if_d',ic:'💪',nm:'攻撃力',tx:'+6%',d:'ビームの威力が#上がる',dv:'6%',ef:{dmg:.06}},
+            {id:'if_h',ic:'⏳',nm:'熱容量',tx:'+5%',d:'オーバーヒートまでの余裕が#増える',dv:'5%',ef:{heatcap:.05}},
+            {id:'if_c',ic:'⌛',nm:'間隔',tx:'−5%',d:'照射の間隔が#短くなる',dv:'5%',ef:{cd:-.05}} ],
+    major:[ {id:'if_ct',ic:'✳️',nm:'多重ビーム',tx:'ビーム +1',d:'同時に照射するビームが#増える',dv:'1本',ef:{count:1}},
+            {id:'if_cool',ic:'❄️',nm:'冷却',tx:'+10%',d:'オーバーヒートからの回復が#速くなる',dv:'10%',ef:{cool:.10}},
+            {id:'if_D',ic:'💪',nm:'剛・攻撃力',tx:'+12%',d:'ビームの威力が#大きく上がる',dv:'12%',ef:{dmg:.12}} ]
+  },
+  quake:{  // グランドアッパー：dmg/area/rate/range。ノックバック
+    minor:[ {id:'qu_d',ic:'💪',nm:'攻撃力',tx:'+6%',d:'隆起の威力が#上がる',dv:'6%',ef:{dmg:.06}},
+            {id:'qu_a',ic:'🌀',nm:'範囲',tx:'+6%',d:'隆起の範囲が#広がる',dv:'6%',ef:{area:.06}},
+            {id:'qu_c',ic:'⌛',nm:'間隔',tx:'−5%',d:'突き上げの間隔が#短くなる',dv:'5%',ef:{cd:-.05}} ],
+    major:[ {id:'qu_D',ic:'💪',nm:'剛・攻撃力',tx:'+12%',d:'隆起の威力が#大きく上がる',dv:'12%',ef:{dmg:.12}},
+            {id:'qu_k',ic:'💨',nm:'衝撃波',tx:'+10%',d:'敵を#強く吹き飛ばす',dv:'10%',ef:{knock:.10}},
+            {id:'qu_A',ic:'🌀',nm:'大範囲',tx:'+15%',d:'隆起の範囲が#大きく広がる',dv:'15%',ef:{area:.15}} ]
+  },
+  rock:{  // ロックボール：dmg/area/count/rate/burst/range。ノックバック
+    minor:[ {id:'ro_d',ic:'💪',nm:'攻撃力',tx:'+6%',d:'岩の威力が#上がる',dv:'6%',ef:{dmg:.06}},
+            {id:'ro_a',ic:'🌀',nm:'範囲',tx:'+6%',d:'岩が#大きくなる',dv:'6%',ef:{area:.06}},
+            {id:'ro_c',ic:'⌛',nm:'間隔',tx:'−5%',d:'転がす間隔が#短くなる',dv:'5%',ef:{cd:-.05}} ],
+    major:[ {id:'ro_ct',ic:'✳️',nm:'双岩',tx:'岩 +1',d:'同時に転がす岩が#増える',dv:'1個',ef:{count:1}},
+            {id:'ro_k',ic:'💨',nm:'剛体',tx:'+10%',d:'敵を#強く弾き飛ばす',dv:'10%',ef:{knock:.10}},
+            {id:'ro_D',ic:'💪',nm:'剛・攻撃力',tx:'+12%',d:'岩の威力が#大きく上がる',dv:'12%',ef:{dmg:.12}} ]
+  },
+  voidh:{  // ブラックホール：dmg/area/count/rate。吸引力(pull)
+    minor:[ {id:'vo_d',ic:'💪',nm:'攻撃力',tx:'+6%',d:'暗黒球の威力が#上がる',dv:'6%',ef:{dmg:.06}},
+            {id:'vo_a',ic:'🌀',nm:'範囲',tx:'+6%',d:'暗黒球が#大きくなる',dv:'6%',ef:{area:.06}},
+            {id:'vo_c',ic:'⌛',nm:'間隔',tx:'−5%',d:'生成の間隔が#短くなる',dv:'5%',ef:{cd:-.05}} ],
+    major:[ {id:'vo_D',ic:'💪',nm:'剛・攻撃力',tx:'+12%',d:'暗黒球の威力が#大きく上がる',dv:'12%',ef:{dmg:.12}},
+            {id:'vo_p',ic:'🕳️',nm:'超重力',tx:'+15%',d:'敵を#強く引き寄せる',dv:'15%',ef:{pull:.15}},
+            {id:'vo_ct',ic:'✳️',nm:'双球',tx:'球 +1',d:'同時に生む暗黒球が#増える',dv:'1個',ef:{count:1}} ]
+  },
+  aura:{  // ホーリージャッジ：dmg/area/count/rate。残留(life)
+    minor:[ {id:'au_d',ic:'💪',nm:'攻撃力',tx:'+6%',d:'裁きの剣の威力が#上がる',dv:'6%',ef:{dmg:.06}},
+            {id:'au_a',ic:'🌀',nm:'範囲',tx:'+6%',d:'裁きの範囲が#広がる',dv:'6%',ef:{area:.06}},
+            {id:'au_c',ic:'⌛',nm:'間隔',tx:'−5%',d:'剣を落とす間隔が#短くなる',dv:'5%',ef:{cd:-.05}} ],
+    major:[ {id:'au_ct',ic:'✳️',nm:'多重剣',tx:'剣 +1',d:'同時に落ちる剣が#増える',dv:'1本',ef:{count:1}},
+            {id:'au_l',ic:'⏳',nm:'長久',tx:'+10%',d:'剣が残る時間が#延びる',dv:'10%',ef:{life:.10}},
+            {id:'au_A',ic:'🌀',nm:'大範囲',tx:'+15%',d:'裁きの範囲が#大きく広がる',dv:'15%',ef:{area:.15}} ]
   }
 };
 var MASTIDS={};   // 武器ごとの有効オプションid集合（旧SELの掃除に使う）
@@ -2325,7 +2373,7 @@ function figInfo(id){
   if(BOSS[id]){ var B=BOSS[id], tt=ETYPE[B.key]||{}; return {nm:B.nm,shape:tt.shape,col:tt.col,dark:tt.dark,desc:BDEX[id]||'',boss:true}; }
   var t=ETYPE[id]||{}; return {nm:t.nm,shape:t.shape,col:t.col,dark:t.dark,desc:DEX[id]||'',boss:false};
 }
-var VERSION='α1.0.116'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
+var VERSION='α1.0.117'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
 function applySave(o){
   for(var i=0;i<UPG.length;i++) META[UPG[i].id]=0;
   try{
@@ -2458,7 +2506,7 @@ function spd(){ return P.spd*(1+0.10*(P.p.swift||0)+0.05*M('speed')); }
 // 元素の付与率：武器レベル・元素親和（ラン内＋永続）で伸びる
 function elemChance(el){
   var lv=(SRC&&P.w[SRC])||1;
-  return Math.min(1,0.30+0.05*lv+0.10*(P.p.affinity||0)+0.04*M('affinity')+CH().ele);
+  return Math.min(1,0.30+0.05*lv+0.10*(P.p.affinity||0)+0.04*M('affinity')+CH().ele+TR(SRC,'ele'));
 }
 // 元素反応のダメージ倍率
 function elemPow(){
@@ -2799,7 +2847,7 @@ var INF={tgt:0, ramp:0, tick:0, on:false, ex:0, ey:0, extra:[], heat:0, over:fal
 function infernoTick(dt){
   var rng=RNG('inferno'), extra=Math.round(CNT('inferno'));       // 数軸：追加ビーム本数
   var keep=TF('inferno','rampkeep')||AW('inferno');
-  var coolRate=0.5*(1+0.3*DURV('inferno'));                       // 冷却速度（持続軸で上昇）
+  var coolRate=0.5*(1+0.3*DURV('inferno')+TR('inferno','cool'));                       // 冷却速度（持続軸で上昇）
   // オーバーヒート中：ビーム停止。熱ゲージが0に戻るまで撃てない。
   if(INF.over){
     INF.on=false; INF.extra=[];
@@ -2824,7 +2872,7 @@ function infernoTick(dt){
     e=cand[0].e; INF.tgt=e.uid; INF.ramp=keep?INF.ramp:0;         // 新ロックで火力リセット（維持特性は引き継ぎ）
   }
   // 発熱：照射中は熱がたまり、満タンでオーバーヒート（強制冷却へ）。持続軸で発熱を緩やかに（＝熱容量アップ）。
-  var heatUp=0.34/(1+0.25*DURV('inferno'));
+  var heatUp=0.34/(1+0.25*DURV('inferno')+TR('inferno','heatcap'));
   INF.heat=Math.min(1,INF.heat+dt*heatUp);
   if(INF.heat>=1){ INF.over=true; INF.on=false; INF.extra=[]; return; }
   INF.on=true; INF.ex=e.x; INF.ey=e.y;
@@ -3190,7 +3238,7 @@ function holySplit(s){
 // ホーリージャッジ：十字の剣が敵の元へ落ち、着弾後もしばらく周囲を裁く
 function doAura(){
   var n=1+CNT('aura'), rad=70*AREA('aura'), dmg=8*DMG('aura')*pw('aura');
-  var life=4.0+TR('aura','life');
+  var life=4.0*(1+TR('aura','life'));
   var used=[];
   for(var i=0;i<n;i++){
     var pick=null,bd=1e9;
@@ -3291,7 +3339,7 @@ function doQuake(){
   var rad=68*AREA('quake');
   var step=rad*1.15;                           // 隆起の間隔
   var dmg=26*DMG('quake')*pw('quake');
-  var kb=TF('quake','knock')?9:4.5;
+  var kb=4.5*(1+TR('quake','knock'));
   for(var i=0;i<n;i++){
     var dd=step*(i+1);
     quakes.push({ x:P.x+Math.cos(ang)*dd, y:P.y+Math.sin(ang)*dd,
@@ -3448,7 +3496,7 @@ function moveDhand(dt){
 // ブラックホール：周囲の敵を引き寄せながら削る
 function doVoid(){
   var cnt=1+CNT('voidh'), rad=88*AREA('voidh'), dmg=2.2*DMG('voidh')*pw('voidh');
-  var pull=TF('voidh','pull')?230:135;
+  var pull=135*(1+TR('voidh','pull'));
   for(var i=0;i<cnt;i++){
     var e=nearest(P.x,P.y,520);
     var a=Math.random()*6.283, r=110+Math.random()*120;
@@ -4396,7 +4444,7 @@ function hurt(e,dmg,nx,ny,el){
   if(e.shield>0){                            // 盾の戦士：割れるまで本体HPに通さない（この一撃も本体には行かない）
     e.shield-=d; if(e.shield<0) e.shield=0;
     e.ht=0.12; dmgSec+=d;
-    if(SRC!=='bell'&&SRC!=='aura'&&SRC!=='blizzard'&&SRC!=='inferno'){ e.kb=Math.max(e.kb,crit?4:2.2); e.kbx=nx||0; e.kby=ny||0; }
+    if(SRC!=='bell'&&SRC!=='aura'&&SRC!=='blizzard'&&SRC!=='inferno'){ e.kb=Math.max(e.kb,(crit?4:2.2)*(1+TR(SRC,'knock'))); e.kbx=nx||0; e.kby=ny||0; }
     if(SRC) WDMG[SRC]=(WDMG[SRC]||0)+d; else WDMG._react=(WDMG._react||0)+d;
     if(dmgs.length>110) dmgs.shift();
     dmgs.push({x:e.x,y:e.y-e.r-4,v:-52,t:0,life:.6,txt:Math.round(d),crit:crit,col:'#8fd4ff'});
@@ -4405,7 +4453,7 @@ function hurt(e,dmg,nx,ny,el){
   }
   e.hp-=d; e.ht=0.12; dmgSec+=d;   // DPS/DPM 集計
   // ベル・ホーリージャッジ（十字架AoE）・アイスブリザード・インフェルノビームはノックバックさせない
-  if(SRC!=='bell'&&SRC!=='aura'&&SRC!=='blizzard'&&SRC!=='inferno'){ e.kb=Math.max(e.kb,crit?4:2.2); e.kbx=nx||0; e.kby=ny||0; }
+  if(SRC!=='bell'&&SRC!=='aura'&&SRC!=='blizzard'&&SRC!=='inferno'){ e.kb=Math.max(e.kb,(crit?4:2.2)*(1+TR(SRC,'knock'))); e.kbx=nx||0; e.kby=ny||0; }
   if(SRC) WDMG[SRC]=(WDMG[SRC]||0)+d; else WDMG._react=(WDMG._react||0)+d;   // 与ダメージ集計
   if(dmgs.length>110) dmgs.shift();
   dmgs.push({x:e.x,y:e.y-e.r-4,v:-52,t:0,life:.65,txt:Math.round(d),crit:crit});

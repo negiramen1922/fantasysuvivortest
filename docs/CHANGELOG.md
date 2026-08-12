@@ -10,6 +10,11 @@
 - リザルト画面と設定画面に `VERSION` を表示。
 - お知らせ（`UPDATES` 配列）は**1枠内でバージョン見出しごとに変更点を掲載**（新しい順）。マージ時は `UPDATES` 先頭に新バージョンを追加し `VERSION` を一致させる。
 
+## ver.α1.0.117
+- 焔輪→フレイムサークルに改名。熟練度10Lv：flame/inferno/quake/rock/voidh/aura 実装（20/22武器）。
+- 新メカ配線：elemChanceに TR(SRC,ele)（元素付着）、inferno coolRateに cool・heatUp分母に heatcap、aura life を乗算(TR life)、voidh pull=135*(1+TR pull)、quake kb=4.5*(1+TR knock)、hurtのkbを (crit?4:2.2)*(1+TR(SRC,knock)) に（rock用）。
+- 検証：inferno/voidh/flame の minor/major・エラー無し。
+
 ## ver.α1.0.116
 - 熟練度10Lv：新メカ不要の7武器を実装（fire/thunder/chain/laser/holy/dhand/bell）。固有効果は大爆発(explode)・感電(chain)を流用。検証：fire/dhand の minor/major・エラー無し。
 
