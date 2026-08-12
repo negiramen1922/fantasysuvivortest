@@ -415,6 +415,39 @@ canvas{display:block;width:100%;height:100%;touch-action:none}
 .wtr{font-size:11px;color:var(--arc);line-height:1.55}
 .mpick{display:inline-block;font-size:16px;margin-right:2px;line-height:1.2}
 .wtr .no{color:#4d4275}
+.wm.clk{cursor:pointer}
+.wm.clk:hover{border-color:var(--violet)}
+.wm .wmore{flex:0 0 auto;color:#6b5f9c;font-size:18px;align-self:center}
+/* 武器詳細画面 */
+.wd{text-align:left}
+.wdback{background:var(--panel);border:1px solid var(--line);color:var(--ash);font-family:inherit;
+  font-size:12px;padding:6px 12px;cursor:pointer;margin-bottom:12px}
+.wdback:hover{border-color:var(--gold);color:#fff}
+.wdhead{display:flex;align-items:center;gap:14px;margin-bottom:8px}
+.wdicon{font-size:38px;flex:0 0 50px;text-align:center}
+.wdname{font-size:20px;color:#fff;letter-spacing:2px}
+.wdtags{margin-top:5px}
+.wdtags .wdcat{display:inline-block;font-size:10px;padding:1px 8px;margin-right:5px;border-radius:8px;
+  background:var(--gold);color:#2a1f00;font-weight:bold}
+.wdtx{font-size:12.5px;line-height:1.7;color:#cfc7ea;margin:6px 0 12px}
+.wdbarlabel{font-size:12px;color:#fff;margin-bottom:4px}
+.wdbarlabel span{color:var(--ash);margin-left:6px;font-size:11px}
+.wdsec{font-size:13px;color:var(--gold);margin:14px 0 7px;border-bottom:1px solid var(--line);padding-bottom:3px}
+.wdpicks{display:flex;flex-direction:column;gap:5px}
+.wdrow{display:flex;align-items:center;gap:9px;background:var(--panel);border:1px solid var(--line);padding:6px 10px}
+.wdrow .ic{font-size:18px;flex:0 0 24px;text-align:center}
+.wdrow .nm{font-size:12.5px;color:#fff;flex:1}
+.wdrow .nm .cnt{font-size:11px;color:var(--ash);margin-left:5px}
+.wdrow .vl{font-size:12px;color:var(--gold);white-space:nowrap}
+.wdnopick{font-size:12px;color:#4d4275;padding:4px 2px}
+.wdpickbtn{width:100%;margin-top:9px;background:var(--gold);color:#2a1f00;border:none;font-family:inherit;
+  font-weight:bold;font-size:14px;padding:9px;cursor:pointer}
+.wdpickbtn:hover{filter:brightness(1.08)}
+.wdawk{margin-top:14px;border:2px solid var(--gold);border-radius:10px;padding:11px 13px;
+  background:linear-gradient(180deg,rgba(255,204,77,.10),rgba(255,204,77,.03))}
+.wdawk-t{font-size:15px;color:var(--gold);font-weight:bold;margin-bottom:5px}
+.wdawk-d{font-size:12.5px;line-height:1.65;color:#f0e7c8}
+.wdawk-note{font-size:10.5px;color:var(--ash);margin-top:7px}
 .badge{display:inline-block;background:var(--gold);color:#1a1000;font-size:10px;
   padding:1px 6px;margin-left:6px;vertical-align:middle}
 
@@ -2412,7 +2445,7 @@ function figInfo(id){
   if(BOSS[id]){ var B=BOSS[id], tt=ETYPE[B.key]||{}; return {nm:B.nm,shape:tt.shape,col:tt.col,dark:tt.dark,desc:BDEX[id]||'',boss:true}; }
   var t=ETYPE[id]||{}; return {nm:t.nm,shape:t.shape,col:t.col,dark:t.dark,desc:DEX[id]||'',boss:false};
 }
-var VERSION='α1.0.121'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
+var VERSION='α1.0.122'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
 function applySave(o){
   for(var i=0;i<UPG.length;i++) META[UPG[i].id]=0;
   try{
@@ -6842,7 +6875,7 @@ function renderMast(){
     } else {
       body='<div class="wtr"><span class="no">強化内容は調整中（近日実装）</span></div>';
     }
-    var row=document.createElement('div'); row.className='wm'+(left?' rdy':'');
+    var row=document.createElement('div'); row.className='wm clk'+(left?' rdy':'');
     row.innerHTML='<div class="ug">'+wIcon(w)+'</div>'+
       '<div class="wmb">'+
         '<div class="wmn">'+WEAPONS[w].nm+
@@ -6854,12 +6887,64 @@ function renderMast(){
         '<div class="wbar"><div style="width:'+pct+'%"></div></div>'+
         body+
       '</div>'+
-      (left?'<button class="ubuy gd" data-w="'+w+'">選ぶ</button>':'');
+      (left?'<button class="ubuy gd" data-w="'+w+'">選ぶ</button>':'')+
+      '<div class="wmore">›</div>';
+    row.onclick=function(){ openWeaponDetail(w); };
     mlistEl.appendChild(row);
   });
   Array.prototype.forEach.call(mlistEl.querySelectorAll('.ubuy[data-w]'),function(b){
-    b.onclick=function(){ openTraitPick(b.getAttribute('data-w')); };
+    b.onclick=function(ev){ ev.stopPropagation(); openTraitPick(b.getAttribute('data-w')); };
   });
+}
+// 武器詳細画面：アイコン＋名前＋特徴／端から端の熟練度バー／取得済み強化／金枠で覚醒
+function openWeaponDetail(w){
+  if(!WEAPONS[w]) return;
+  audio();
+  var x=WX[w]||0, lv=wtier(w), left=picksLeft(w);
+  var nx=lv<WTH.length?WTH[lv]:0, pv=lv>0?WTH[lv-1]:0;
+  var pct=nx?Math.max(0,Math.min(100,(x-pv)/(nx-pv)*100)):100;
+  document.getElementById('masttitle').textContent='武器詳細';
+  document.getElementById('mastnote').innerHTML='';
+  // 取得済み強化を id ごとに集計
+  var picks=SEL[w]||[], cnt={}, order=[];
+  picks.forEach(function(id){ if(cnt[id]==null){ cnt[id]=0; order.push(id); } cnt[id]++; });
+  var picksHtml;
+  if(!MAST[w]){
+    picksHtml='<div class="wdnopick">強化内容は調整中（近日実装）</div>';
+  } else if(!order.length){
+    picksHtml='<div class="wdnopick">まだ強化を取得していません</div>';
+  } else {
+    picksHtml=order.map(function(id){ var o=TMAP[id]; if(!o) return '';
+      return '<div class="wdrow"><div class="ic">'+(o.ic||wIcon(w))+'</div>'+
+        '<div class="nm">'+o.nm+(cnt[id]>1?'<span class="cnt">×'+cnt[id]+'</span>':'')+'</div>'+
+        '<div class="vl">'+o.tx+'</div></div>';
+    }).join('');
+  }
+  var awkHtml = AWK[w] ? (
+    '<div class="wdawk">'+
+      '<div class="wdawk-t">★ 覚醒：'+AWK[w]+'</div>'+
+      '<div class="wdawk-d">'+(AWT[w]||'')+'</div>'+
+      '<div class="wdawk-note">ラン中に武器レベルを10まで上げると覚醒します</div>'+
+    '</div>') : '';
+  mlistEl.innerHTML=
+    '<div class="wd">'+
+      '<button class="wdback" type="button">← 一覧へ戻る</button>'+
+      '<div class="wdhead">'+
+        '<div class="wdicon">'+wIcon(w)+'</div>'+
+        '<div><div class="wdname">'+WEAPONS[w].nm+'</div>'+
+          '<div class="wdtags"><span class="wdcat">'+WCAT[w]+'</span>'+tagChips(WTAG[w])+'</div>'+
+        '</div>'+
+      '</div>'+
+      '<div class="wdtx">'+(WEAPONS[w].tx||'')+'</div>'+
+      '<div class="wdbarlabel">熟練度 Lv '+lv+'/10<span>'+fmt(x)+(nx?' / '+fmt(nx):' — MAX')+'</span></div>'+
+      '<div class="wbar"><div style="width:'+pct+'%"></div></div>'+
+      '<div class="wdsec">強化内容</div>'+
+      '<div class="wdpicks">'+picksHtml+'</div>'+
+      (left?'<button class="wdpickbtn" type="button">強化を選ぶ（残り'+left+'）</button>':'')+
+      awkHtml+
+    '</div>';
+  mlistEl.querySelector('.wdback').onclick=function(){ audio(); renderMast(); };
+  var pb=mlistEl.querySelector('.wdpickbtn'); if(pb) pb.onclick=function(){ openTraitPick(w); };
 }
 function openTraitPick(w){
   if(!MAST[w]||picksLeft(w)<=0) return;
@@ -7548,6 +7633,8 @@ Array.prototype.forEach.call(document.querySelectorAll('#setview button'),functi
 // 更新履歴：1つのお知らせ内で「バージョン見出し」ごとに変更点を並べる（新しい順）。
 // マージのたびに先頭へ新バージョンを追加し、VERSION も更新する。
 var UPDATES=[
+  {v:'α1.0.122', items:[
+    '武器熟練の一覧から各武器をタップすると「武器詳細」画面が開くようになりました。武器アイコン・名前・特徴・タグ、端から端までの熟練度バー、取得済みの強化内容、そして金枠で覚醒（Lv10で挙動が変わる特別強化）の名前と効果を確認できます。']},
   {v:'α1.0.121', items:[
     'スケルトンドラゴンの極太ブレスの追尾が強すぎたので、旋回速度を弱めました（1.05→0.45rad/s）。横に走れば避けやすくなっています。']},
   {v:'α1.0.120', items:[
