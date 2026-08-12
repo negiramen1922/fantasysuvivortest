@@ -2412,7 +2412,7 @@ function figInfo(id){
   if(BOSS[id]){ var B=BOSS[id], tt=ETYPE[B.key]||{}; return {nm:B.nm,shape:tt.shape,col:tt.col,dark:tt.dark,desc:BDEX[id]||'',boss:true}; }
   var t=ETYPE[id]||{}; return {nm:t.nm,shape:t.shape,col:t.col,dark:t.dark,desc:DEX[id]||'',boss:false};
 }
-var VERSION='α1.0.120'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
+var VERSION='α1.0.121'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
 function applySave(o){
   for(var i=0;i<UPG.length;i++) META[UPG[i].id]=0;
   try{
@@ -4248,7 +4248,7 @@ function moveEnemies(dt){
         // 追尾ブレス：プレイヤーへゆっくり旋回（必中にならないよう回避可能な旋回速度）
         var bwant=Math.atan2(P.y-e.y,P.x-e.x);
         var bda=Math.atan2(Math.sin(bwant-e.beamA),Math.cos(bwant-e.beamA));
-        var bturn=1.05*dt; e.beamA+=Math.max(-bturn,Math.min(bturn,bda));
+        var bturn=0.45*dt; e.beamA+=Math.max(-bturn,Math.min(bturn,bda));   // 追尾は弱め（回避しやすい旋回速度）
         // 根本から太い直線ビーム：ビーム線への垂直距離で判定
         var brel=Math.atan2(P.y-e.y,P.x-e.x)-e.beamA; brel=Math.atan2(Math.sin(brel),Math.cos(brel));
         var balong=d*Math.cos(brel), bperp=Math.abs(d*Math.sin(brel));
@@ -7548,6 +7548,8 @@ Array.prototype.forEach.call(document.querySelectorAll('#setview button'),functi
 // 更新履歴：1つのお知らせ内で「バージョン見出し」ごとに変更点を並べる（新しい順）。
 // マージのたびに先頭へ新バージョンを追加し、VERSION も更新する。
 var UPDATES=[
+  {v:'α1.0.121', items:[
+    'スケルトンドラゴンの極太ブレスの追尾が強すぎたので、旋回速度を弱めました（1.05→0.45rad/s）。横に走れば避けやすくなっています。']},
   {v:'α1.0.120', items:[
     '武器熟練画面の右上に「？」ヘルプを追加。熟練度の貯まり方（同タイプ武器へ10%・入手済みの他武器へ5%波及）、レベルアップで強化を選べること、Lv3・6・9は強力な強化が選べること、最大10レベルまでの説明を表示します。']},
   {v:'α1.0.119', items:[
