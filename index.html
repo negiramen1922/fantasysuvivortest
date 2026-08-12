@@ -1458,7 +1458,8 @@ var ebul, boss, bossN, quakes, dhits, vacs, vacT, bells, swords, zones, volley, 
 var lasers;
 
 /* ============ 武器熟練度・特性 ============ */
-var WTH=[4000,30000,100000];   // 特性1/2/3の到達値
+var WTH=[4000,10000,20000,50000,100000,180000,300000,450000,650000,1000000];   // 熟練度 Lv1〜10 の到達値
+var MASTERY_WIP=true;   // 熟練度リニューアル調整中：新しい強化はまだ取得不可（画面に「調整中」を表示）。完成したら false。
 var WTRAIT={
   slash:[
     [{id:'s1a',nm:'鋭刃',tx:'ダメージ +20%',ef:{dmg:.20}},
@@ -1721,7 +1722,7 @@ var TMAP={};
 var WX={}, SEL={}, wxRun={}, lastCd={};
 var WDMG={};   // このランの武器別 与ダメージ集計
 function wtier(id){ var x=WX[id]||0,n=0; for(var i=0;i<WTH.length;i++) if(x>=WTH[i]) n++; return n; }
-function picksLeft(id){ return Math.max(0,wtier(id)-((SEL[id]||[]).length)); }
+function picksLeft(id){ if(MASTERY_WIP) return 0; return Math.max(0,wtier(id)-((SEL[id]||[]).length)); }
 function anyPicks(){ for(var w in WTRAIT) if(picksLeft(w)) return 1; return 0; }
 // 選択済み特性の効果を合計する
 function TR(wid,key){
@@ -1775,11 +1776,11 @@ function wgain(id,hits){
 /* ============ 武器の育成軸 ============ */
 // 1回の強化で必ずレベルが1上がり、選んだ軸に1点入る。
 // 軸ごとに上限があり、上限の合計は取得可能な点数(7)より多いので必ず取捨選択になる。
-var AXN={ dmg:'攻撃力', area:'範囲', rate:'間隔', count:'弾数', dur:'持続',
-          pierce:'貫通', slow:'鈍足', chain:'連鎖', split:'拡散', burst:'連射', ammo:'装填', range:'射程' };
-var AXT={ dmg:'ダメージ +45%', area:'範囲 +18%', rate:'間隔 −15%', count:'弾数 +1', dur:'効果の持続が伸びる（鈍足の時間／延焼／インフェルノの熱容量・冷却速度UP）',
+var AXN={ dmg:'攻撃力', area:'範囲', rate:'間隔', count:'発射数', dur:'持続',
+          pierce:'貫通', slow:'鈍足', chain:'連鎖', split:'拡散', burst:'連射', ammo:'弾倉', range:'射程' };
+var AXT={ dmg:'ダメージ +45%', area:'範囲 +18%', rate:'間隔 −15%', count:'発射数 +1', dur:'効果の持続が伸びる（鈍足の時間／延焼／インフェルノの熱容量・冷却速度UP）',
           pierce:'貫通 +2', slow:'鈍足の持続 +1.0秒', chain:'連鎖 +2', split:'拡散 +2',
-          burst:'同じ方向へ続けて撃つ回数 +1', ammo:'装填数が増える', range:'届く距離・飛距離 +20%' };
+          burst:'同じ方向へ続けて撃つ回数 +1', ammo:'弾倉（撃てる弾数）が増える', range:'届く距離・飛距離 +20%' };
 // 物理は会心で殲滅、魔法は元素反応で連鎖させる
 var WKIND={ slash:'phys', scythe:'phys', chakram:'phys', bow:'phys', dynamite:'phys',
             quake:'phys', rock:'phys', bell:'phys', chainsaw:'phys', musket:'phys',
@@ -1859,10 +1860,10 @@ function CRITD(){      // 会心倍率：全武器共通＋その武器の限界
 }
 function AX(w,k){ var a=P.wa[w]; return (a&&a[k])||0; }
 // 限界突破：各軸のカンスト後に積める追加ステータス。武器ごとに「その武器の育成軸(WAX)」に沿った軸だけ出す。
-var LBN={ dmg:'攻撃力', area:'範囲', rate:'頻度', count:'数', pierce:'貫通', dur:'持続', range:'射程', burst:'連射', ammo:'弾数', chain:'連鎖', split:'拡散', crit:'会心率', critd:'会心ダメージ' };
+var LBN={ dmg:'攻撃力', area:'範囲', rate:'間隔', count:'発射数', pierce:'貫通', dur:'持続', range:'射程', burst:'連射', ammo:'弾倉', chain:'連鎖', split:'拡散', crit:'会心', critd:'剛撃' };
 var LBT={ dmg:'ダメージ +8%（上限なし）', area:'範囲 +4%', rate:'間隔 −1.5%',
-          count:'発生数 +1', pierce:'貫通 +1', dur:'効果の持続 +1（延焼・氷・熱量など）',
-          range:'射程 +8%', burst:'同時発射 +1', ammo:'装填数 +1', chain:'連鎖 +1', split:'拡散 +1',
+          count:'発射数 +1', pierce:'貫通 +1', dur:'効果の持続 +1（延焼・氷・熱量など）',
+          range:'射程 +8%', burst:'連射 +1', ammo:'弾倉 +1', chain:'連鎖 +1', split:'拡散 +1',
           crit:'この武器の会心率 +2%', critd:'この武器の会心ダメージ +15%' };
 var LBCAP={ dmg:0, area:25, rate:0, count:8, pierce:10, dur:8, range:15, burst:5, ammo:8, chain:8, split:8, crit:10, critd:10 };   // 0 = 上限なし
 var LBSUP={ dmg:1, area:1, rate:1, count:1, pierce:1, dur:1, range:1, burst:1, ammo:1, chain:1, split:1, crit:1, critd:1 };   // 効果を実装済みの軸
@@ -2189,7 +2190,7 @@ function figInfo(id){
   if(BOSS[id]){ var B=BOSS[id], tt=ETYPE[B.key]||{}; return {nm:B.nm,shape:tt.shape,col:tt.col,dark:tt.dark,desc:BDEX[id]||'',boss:true}; }
   var t=ETYPE[id]||{}; return {nm:t.nm,shape:t.shape,col:t.col,dark:t.dark,desc:DEX[id]||'',boss:false};
 }
-var VERSION='α1.0.108'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
+var VERSION='α1.0.109'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
 function applySave(o){
   for(var i=0;i<UPG.length;i++) META[UPG[i].id]=0;
   try{
@@ -6573,6 +6574,31 @@ document.getElementById('chrclose').onclick=function(){ document.getElementById(
 var mastEl=document.getElementById('mast'), mlistEl=document.getElementById('mastlist');
 function renderMast(){
   document.getElementById('masttitle').textContent='武器熟練';
+  if(MASTERY_WIP){   // 調整中：新しい強化は取得不可。熟練度(WX)の蓄積とレベルだけ表示する。
+    document.getElementById('mastnote').innerHTML=
+      '<span style="color:var(--gold)">🔧 熟練度は現在リニューアル調整中です</span><br>'+
+      '<span style="font-size:12px;color:var(--ash)">近日、10レベル制の新しい強化（武器ごとに最適化）が選べるようになります。熟練度は今も貯まっています。</span>';
+    mlistEl.innerHTML='';
+    Object.keys(WTRAIT).forEach(function(w){
+      if(!WEAPONS[w]) return;
+      var x=WX[w]||0, lv=wtier(w), open=x>0;
+      var nx=lv<WTH.length?WTH[lv]:0, pv=lv>0?WTH[lv-1]:0;
+      var pct=nx?Math.max(0,Math.min(100,(x-pv)/(nx-pv)*100)):100;
+      var row=document.createElement('div'); row.className='wm';
+      row.innerHTML='<div class="ug">'+wIcon(w)+'</div>'+
+        '<div class="wmb">'+
+          '<div class="wmn">'+WEAPONS[w].nm+
+            '<span>'+WCAT[w]+'　Lv '+lv+'/10　'+fmt(x)+(nx?' / '+fmt(nx):' — MAX')+'</span>'+
+            (open?'':'<span class="badge" style="background:#3b2d6b;color:#a99fd0">未使用</span>')+
+          '</div>'+
+          '<div style="margin:3px 0">'+tagChips(WTAG[w])+'</div>'+
+          '<div class="wbar"><div style="width:'+pct+'%"></div></div>'+
+          '<div class="wtr"><span class="no">強化内容は調整中（近日実装）</span></div>'+
+        '</div>';
+      mlistEl.appendChild(row);
+    });
+    return;
+  }
   var n=0; for(var w in WTRAIT) n+=picksLeft(w);
   document.getElementById('mastnote').innerHTML=
     n?'<span style="color:var(--gold)">特性を '+n+' 個選べます</span>'
@@ -7101,7 +7127,7 @@ function finish(won){
     if(wxRun[wk]<1) continue;
     var wtB=wtier(wk);
     WX[wk]=(WX[wk]||0)+wxRun[wk];
-    if(WEAPONS[wk]&&wtier(wk)>wtB) toast('⭐',WEAPONS[wk].nm+' 熟練度アップ！特性を選べます','#ffd27a');
+    if(!MASTERY_WIP&&WEAPONS[wk]&&wtier(wk)>wtB) toast('⭐',WEAPONS[wk].nm+' 熟練度アップ！特性を選べます','#ffd27a');
   }
   saveGame();
   var killK=won?'':(KILLER?KILLER.k:'timeup');
@@ -7293,6 +7319,9 @@ Array.prototype.forEach.call(document.querySelectorAll('#setview button'),functi
 // 更新履歴：1つのお知らせ内で「バージョン見出し」ごとに変更点を並べる（新しい順）。
 // マージのたびに先頭へ新バージョンを追加し、VERSION も更新する。
 var UPDATES=[
+  {v:'α1.0.109', items:[
+    '用語をさらに調整：武器の「弾数」→「発射数」、リロード式の弾倉/散弾→「弾倉」。限界突破の軸名も同じ用語に統一しました。',
+    '武器熟練をリニューアルするため、いったん「調整中」にしました。熟練度（経験）は今も貯まりますが、新しい強化の取得は一時停止しています。近日、10レベル制の新しい熟練強化を実装します。']},
   {v:'α1.0.108', items:[
     '用語を統一しました。武器の軸・パッシブ・永続強化で同じ効果は同じ名前に：与ダメージ＝攻撃力／間隔（発射間隔の短縮）／移動速度／体力／再生／防護（被ダメ軽減）／回収範囲／範囲／元素付着（付与率）。武器の「数」は「弾数」、リロード式の弾倉/散弾は「装填」に改名。']},
   {v:'α1.0.107', items:[
