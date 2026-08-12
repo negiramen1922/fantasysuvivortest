@@ -10,8 +10,9 @@
 - リザルト画面と設定画面に `VERSION` を表示。
 - お知らせ（`UPDATES` 配列）は**1枠内でバージョン見出しごとに変更点を掲載**（新しい順）。マージ時は `UPDATES` 先頭に新バージョンを追加し `VERSION` を一致させる。
 
-## ver.α1.0.118
-- 武器熟練リニューアル完成（全22武器）。ice/blizzard に鈍足効果量(slowmag)を実装。`e.slowMul` を導入：移動を `e.spd*(e.slowMul||0.45)`、鈍足終了で 0.45 リセット。blizzard適用時と ice弾(slowMul付与→ヒットで反映)で `0.45*(1-TR(w,slowmag))`。
+## ver.α1.0.119
+- スケルトンドラゴン(sdragon)のAIを刷新。ヘカトンケイルより弱い問題への対応。新パターン: `cwind`→`dash`(2連, 軌跡に `eplace` で2列の壁を設置し `hold`1.3s後に左右へ散開)→`circ`(大小の全方位円弾幕を4回交互, 大=nbul*0.75/遅/r15/×1.25, 小=nbul*1.6/速/r6)→`fan`(gmoth風の大扇 7連を `e.sa+=1.15` で向きを変えつつ14回)→`beamwind`(1.3s予告)→`beam`(1.9s, `e.beamA` を毎フレーム最大1.05rad/s でプレイヤーへ旋回する追尾ブレス, 判定 bperp<100)。render は既存の beamwind/beam ブロックが `e.beamA` を毎フレーム参照するため追尾に追従。
+- 検証：スケルトンドラゴンをステージ3/エンドレスで出現させエラー無しを確認。ice/blizzard に鈍足効果量(slowmag)を実装。`e.slowMul` を導入：移動を `e.spd*(e.slowMul||0.45)`、鈍足終了で 0.45 リセット。blizzard適用時と ice弾(slowMul付与→ヒットで反映)で `0.45*(1-TR(w,slowmag))`。
 - 検証：ice/blizzard の minor/major、blizzard/ice 装備で3.5秒ランしてクラッシュ無し。
 
 ## ver.α1.0.117

@@ -2389,7 +2389,7 @@ function figInfo(id){
   if(BOSS[id]){ var B=BOSS[id], tt=ETYPE[B.key]||{}; return {nm:B.nm,shape:tt.shape,col:tt.col,dark:tt.dark,desc:BDEX[id]||'',boss:true}; }
   var t=ETYPE[id]||{}; return {nm:t.nm,shape:t.shape,col:t.col,dark:t.dark,desc:DEX[id]||'',boss:false};
 }
-var VERSION='α1.0.118'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
+var VERSION='α1.0.119'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
 function applySave(o){
   for(var i=0;i<UPG.length;i++) META[UPG[i].id]=0;
   try{
@@ -4179,35 +4179,58 @@ function moveEnemies(dt){
       }
     }
     else if(e.ai==='sdragon'){
-      // スケルトンドラゴン：滞空突進 → 扇＋全方位の混成弾幕 → 極太ブレス
+      // スケルトンドラゴン：滞空突進（軌跡に散開する2列弾幕）→ 大小交互の全方位円弾幕 → 多方向の大扇弾幕 → 追尾ブレス
       if(e.st==='cwind'){ e.stT-=dt; moved=1;
-        if(e.stT<=0){ e.st='dash'; e.stT=e.chdur; e.vx=dx/d*e.chspd; e.vy=dy/d*e.chspd; sfx(150,.16,'sawtooth',.06,.6); } }
+        if(e.stT<=0){ e.st='dash'; e.stT=e.chdur; e.vx=dx/d*e.chspd; e.vy=dy/d*e.chspd; e.dtick=0; sfx(150,.16,'sawtooth',.06,.6); } }
       else if(e.st==='dash'){ e.stT-=dt; moved=1; e.x+=e.vx*dt; e.y+=e.vy*dt;
+        // 飛行の軌跡に2列の壁を残し、少し置いてから左右へ散開させる（エルダートレントの根に近い挙動）
+        e.dtick-=dt;
+        if(e.dtick<=0){ e.dtick=0.055;
+          var dl=Math.hypot(e.vx,e.vy)||1, px=-e.vy/dl, py=e.vx/dl, off=26;
+          eplace(e.x+px*off, e.y+py*off, e.bdmg, 1.3,  px*72,  py*72, 7, (e.boss?e.bkey:e.k));   // 右列→右へ散開
+          eplace(e.x-px*off, e.y-py*off, e.bdmg, 1.3, -px*72, -py*72, 7, (e.boss?e.bkey:e.k));   // 左列→左へ散開
+          sfx(200,.03,'square',.02,0.5);
+        }
         if(e.stT<=0){ e.dashN--;
           if(e.dashN>0){ e.st='cwind'; e.stT=e.wind*0.6; }   // 2連続突進
-          else{ e.st='mix'; e.mtick=0; e.mc=0; } } }
-      else if(e.st==='mix'){
+          else{ e.st='circ'; e.mtick=0; e.mc=0; } } }
+      else if(e.st==='circ'){
+        // 突撃後：小円弾幕と大円弾幕を交互に全方位へ
         e.mtick-=dt; moved=1;
-        if(e.mtick<=0){ e.mtick=0.5;
-          var ma=Math.atan2(dy,dx);
-          for(var mr=0;mr<2;mr++) for(var mf=0;mf<10;mf++) eshoot(e,ma+(mf-4.5)*0.12+mr*0.06,e.bspd,e.bdmg);  // ジャイアントモス風の扇 10×2
-          var nn=Math.round(e.nbul*1.5);                                          // 全方位（密度1.5倍）
-          for(var mo=0;mo<nn;mo++) eshoot(e,mo/nn*6.283+e.mc*0.2,e.bspd*0.8,e.bdmg);
+        if(e.mtick<=0){ e.mtick=0.55;
+          if(e.mc%2===0){ var nb=Math.round(e.nbul*0.75);                          // 大・遅
+            for(var ci=0;ci<nb;ci++) eshoot(e, ci/nb*6.283 + e.mc*0.18, e.bspd*0.7, e.bdmg*1.25, 15);
+          } else { var ns=Math.round(e.nbul*1.6);                                   // 小・速
+            for(var cs=0;cs<ns;cs++) eshoot(e, cs/ns*6.283 + e.mc*0.18, e.bspd*0.95, e.bdmg, 6);
+          }
           fx.push({k:'ring',x:e.x,y:e.y,r:0,to:130,t:0,life:.3,col:'#cfeaff'});
           shake=Math.min(18,shake+5); sfx(160,.16,'square',.06,1.3);
-          e.mc++; if(e.mc>=3){ e.st='beamwind'; e.stT=1.3; e.beamA=Math.atan2(dy,dx); }
+          e.mc++; if(e.mc>=4){ e.st='fan'; e.stT=0; e.fc=0; e.sa=Math.atan2(dy,dx); }
+        }
+      }
+      else if(e.st==='fan'){
+        // ジャイアントモス風：向きを変えつつ大きな扇弾幕を撒き続ける
+        e.stT-=dt; moved=1;
+        if(e.stT<=0){ e.stT=0.16; e.sa+=1.15;
+          for(var ff=0;ff<7;ff++) eshoot(e, e.sa+(ff-3)*0.12, e.bspd, e.bdmg, 8);   // 大扇 7連
+          sfx(500,.03,'square',.026,1.1);
+          e.fc++; if(e.fc>=14){ e.st='beamwind'; e.stT=1.3; e.beamA=Math.atan2(dy,dx); }
         }
       }
       else if(e.st==='beamwind'){ e.stT-=dt; moved=1;    // 極太ブレスの予告
-        if(e.stT<=0){ e.st='beam'; e.stT=1.1; shake=Math.min(24,shake+12); sfx(70,.5,'sawtooth',.11,.35); noise(.5,.14); }
+        if(e.stT<=0){ e.st='beam'; e.stT=1.9; shake=Math.min(24,shake+12); sfx(70,.5,'sawtooth',.11,.35); noise(.5,.14); }
       }
       else if(e.st==='beam'){
         e.stT-=dt; moved=1;
+        // 追尾ブレス：プレイヤーへゆっくり旋回（必中にならないよう回避可能な旋回速度）
+        var bwant=Math.atan2(P.y-e.y,P.x-e.x);
+        var bda=Math.atan2(Math.sin(bwant-e.beamA),Math.cos(bwant-e.beamA));
+        var bturn=1.05*dt; e.beamA+=Math.max(-bturn,Math.min(bturn,bda));
         // 根本から太い直線ビーム：ビーム線への垂直距離で判定
         var brel=Math.atan2(P.y-e.y,P.x-e.x)-e.beamA; brel=Math.atan2(Math.sin(brel),Math.cos(brel));
         var balong=d*Math.cos(brel), bperp=Math.abs(d*Math.sin(brel));
-        if(!P.god&&P.hurt<=0&&P.inv<=0&&balong>-e.r&&balong<1700&&bperp<117){
-          P.hp-=e.dmg*(1-0.04*M('armor'))*(1-0.03*(P.p.bulwark||0))*dexTakeMul(figKey(e))*2.2*dt;
+        if(!P.god&&P.hurt<=0&&P.inv<=0&&balong>-e.r&&balong<1700&&bperp<100){
+          P.hp-=e.dmg*(1-0.04*M('armor'))*(1-0.03*(P.p.bulwark||0))*dexTakeMul(figKey(e))*2.0*dt;
           shake=Math.min(20,shake+2);
           if(P.hp<=0){ P.hp=0; setKiller(e); die(); return; }
         }
@@ -7501,6 +7524,8 @@ Array.prototype.forEach.call(document.querySelectorAll('#setview button'),functi
 // 更新履歴：1つのお知らせ内で「バージョン見出し」ごとに変更点を並べる（新しい順）。
 // マージのたびに先頭へ新バージョンを追加し、VERSION も更新する。
 var UPDATES=[
+  {v:'α1.0.119', items:[
+    'スケルトンドラゴンの行動を強化！ 突進の軌跡に2列の弾幕を残し時間経過で左右へ散開、突進後は大小の全方位円弾幕を交互に展開、その後ジャイアントモス風の大扇弾幕を撒き、最後はプレイヤーをゆっくり追尾する極太ブレスを放ちます（追尾は回避可能な旋回速度）。']},
   {v:'α1.0.118', items:[
     '武器熟練リニューアル完成！ 全22武器が新しい10レベル制の熟練強化に対応しました。アイスジャベリン・アイスブリザードには「凍てつき（鈍足効果量アップ）」を追加。これで「調整中」表示は解消です。']},
   {v:'α1.0.117', items:[
