@@ -338,6 +338,19 @@ canvas{display:block;width:100%;height:100%;touch-action:none}
 #mastlist .card .num{margin-top:0;font-size:12px}
 #mastlist .card .nm .mval{color:var(--gold);font-size:13px;font-weight:normal}
 .mhl{color:#ffe14d;font-weight:bold}   /* 説明文中の数値の強調（黄色）*/
+/* 武器熟練のヘルプ（？ボタン＋説明パネル） */
+#masthead-right{display:flex;align-items:center;gap:8px}
+#masthelp{width:26px;height:26px;flex:0 0 26px;border-radius:50%;border:1px solid var(--line);
+  background:rgba(255,255,255,.06);color:var(--gold);font-size:15px;font-weight:bold;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;padding:0;line-height:1;font-family:inherit}
+#masthelp:hover,#masthelp.on{background:rgba(255,204,77,.18)}
+#masthelpbox{display:none;font-size:12.5px;line-height:1.75;color:#efeaff;
+  background:rgba(11,8,24,.55);border:1px solid var(--line);border-radius:10px;padding:12px 14px}
+#masthelpbox.on{display:block}
+#masthelpbox p{margin:0 0 7px}
+#masthelpbox p:last-child{margin-bottom:0}
+#masthelpbox b{color:var(--gold)}
+#masthelpbox .hv{color:#ffe14d;font-weight:bold}
 .shopbox{width:100%;max-width:560px;max-height:100%;display:flex;flex-direction:column;gap:10px}
 .shophead{display:flex;align-items:baseline;justify-content:space-between;gap:10px}
 .shophead .title{font-size:23px;letter-spacing:5px}
@@ -934,7 +947,17 @@ img.wspr{width:1.15em;height:1.15em;object-fit:contain;image-rendering:pixelated
     <div class="shopbox">
       <div class="shophead">
         <div class="title" id="masttitle">武器熟練</div>
-        <div id="mastnote" style="font-size:12px;color:var(--ash)"></div>
+        <div id="masthead-right">
+          <div id="mastnote" style="font-size:12px;color:var(--ash)"></div>
+          <button id="masthelp" type="button" aria-label="武器熟練の説明">？</button>
+        </div>
+      </div>
+      <div id="masthelpbox">
+        <p>武器熟練度は<b>ステージで武器を使って敵を攻撃する</b>と貯まります。</p>
+        <p>メインで使った武器がいちばん貯まり、<b>同じタイプ（カテゴリ）の武器には <span class="hv">10%</span></b>、<b>それ以外の入手済みの武器にも <span class="hv">5%</span></b> の熟練度が波及します。</p>
+        <p>熟練度が一定量たまると<b>レベルが上がり</b>、レベルアップごとに<b>強化を1つ選べます</b>。</p>
+        <p><b>3の倍数のレベル（Lv3・6・9）</b>では、弾数アップなどの<b>強力な強化</b>を選べます。</p>
+        <p>武器のレベルは<b>最大 <span class="hv">10</span></b> まで上がります。</p>
       </div>
       <div id="mastlist"></div>
       <div style="display:flex;gap:8px">
@@ -2389,7 +2412,7 @@ function figInfo(id){
   if(BOSS[id]){ var B=BOSS[id], tt=ETYPE[B.key]||{}; return {nm:B.nm,shape:tt.shape,col:tt.col,dark:tt.dark,desc:BDEX[id]||'',boss:true}; }
   var t=ETYPE[id]||{}; return {nm:t.nm,shape:t.shape,col:t.col,dark:t.dark,desc:DEX[id]||'',boss:false};
 }
-var VERSION='α1.0.119'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
+var VERSION='α1.0.120'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
 function applySave(o){
   for(var i=0;i<UPG.length;i++) META[UPG[i].id]=0;
   try{
@@ -6866,7 +6889,8 @@ function takeTrait(w,id){
   saveGame(); renderMast(); syncTitle();
   [0,80,170].forEach(function(ms,i){ setTimeout(function(){ sfx([659,880,1174][i],.15,'triangle',.075); },ms); });
 }
-document.getElementById('mastbtn').onclick=function(){ audio(); renderMast(); mastEl.classList.add('on'); };
+document.getElementById('mastbtn').onclick=function(){ audio(); renderMast(); document.getElementById('masthelpbox').classList.remove('on'); document.getElementById('masthelp').classList.remove('on'); mastEl.classList.add('on'); };
+document.getElementById('masthelp').onclick=function(){ audio(); var bx=document.getElementById('masthelpbox'); var op=bx.classList.toggle('on'); this.classList.toggle('on',op); };
 document.getElementById('mastclose').onclick=function(){ mastEl.classList.remove('on'); syncTitle(); };
 document.getElementById('mastreset').onclick=function(){ if(window.confirm('武器熟練の特性選択をリセットしますか？（熟練度は保持され、特性を選び直せます）')){ resetMast(); renderMast(); syncTitle(); } };
 
@@ -7524,6 +7548,8 @@ Array.prototype.forEach.call(document.querySelectorAll('#setview button'),functi
 // 更新履歴：1つのお知らせ内で「バージョン見出し」ごとに変更点を並べる（新しい順）。
 // マージのたびに先頭へ新バージョンを追加し、VERSION も更新する。
 var UPDATES=[
+  {v:'α1.0.120', items:[
+    '武器熟練画面の右上に「？」ヘルプを追加。熟練度の貯まり方（同タイプ武器へ10%・入手済みの他武器へ5%波及）、レベルアップで強化を選べること、Lv3・6・9は強力な強化が選べること、最大10レベルまでの説明を表示します。']},
   {v:'α1.0.119', items:[
     'スケルトンドラゴンの行動を強化！ 突進の軌跡に2列の弾幕を残し時間経過で左右へ散開、突進後は大小の全方位円弾幕を交互に展開、その後ジャイアントモス風の大扇弾幕を撒き、最後はプレイヤーをゆっくり追尾する極太ブレスを放ちます（追尾は回避可能な旋回速度）。']},
   {v:'α1.0.118', items:[
