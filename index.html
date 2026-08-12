@@ -1325,20 +1325,17 @@ var MTAG={
   skeleton:['アンデッド'], mummy:['アンデッド'], ghoul:['アンデッド'], lich:['アンデッド'],
   shieldman:['アンデッド'], sarcher:['アンデッド'], necro:['アンデッド'], dullahan:['アンデッド'], boomer:['アンデッド'],
   wraith:['アンデッド','ファントム'], shadow:['ファントム'], gargoyle:['アンデッド','飛行'],
-  bigslime:['スライム'], slimeking:['スライム'],
+  slimeking:['スライム'],
   greatboar:['ビースト'], fenrir:['ビースト'],
-  champion:['亜人'], goblinking:['亜人'],
+  goblinking:['亜人'],
   kervi:['精霊','ビースト'], gmoth:['昆虫','飛行'], arachnid:['昆虫'], eldertreant:['植物'],
   gravekeeper:['アンデッド'], skeletonking:['アンデッド'], hecaton:['巨人','アンデッド'], skeledragon:['竜','アンデッド']
 };
 
 // ステージ1のボス。5分ごとに1体、30分のフェンリルがラストボス。
 var BOSS={
-  bigslime:  { nm:'巨大スライム',       res:0.90, key:'slime',  hp:3000,   r:46, spd:40, dmg:26, xp:450,  pts:3000 },
   greatboar: { nm:'グレーターボア',     res:0.92, key:'boar',   hp:9000,   r:44, spd:60, dmg:34, xp:860,  pts:6000,
                ai:'charge', range:520, acd:2.4, chspd:540, wind:0.65, chdur:1.1 },
-  champion:  { nm:'ゴブリンチャンピオン', res:0.92, key:'goblin', hp:22000,  r:40, spd:64, dmg:36, xp:1230, pts:10000,
-               ai:'slam', acd:3.6, wind:0.7, nbul:16, bspd:250, bdmg:18 },
   slimeking: { nm:'スライムキング',     res:0.90, key:'slime',  hp:45000,  r:54, spd:46, dmg:40, xp:1520, pts:16000,
                ai:'slam', acd:3.4, wind:0.9, nbul:22, bspd:205, bdmg:16, split:{k:'slimeM',n:5} },
   goblinking:{ nm:'ゴブリンキング',     res:0.94, key:'goblin', hp:85000,  r:46, spd:58, dmg:44, xp:1830, pts:24000,
@@ -2192,7 +2189,7 @@ function figInfo(id){
   if(BOSS[id]){ var B=BOSS[id], tt=ETYPE[B.key]||{}; return {nm:B.nm,shape:tt.shape,col:tt.col,dark:tt.dark,desc:BDEX[id]||'',boss:true}; }
   var t=ETYPE[id]||{}; return {nm:t.nm,shape:t.shape,col:t.col,dark:t.dark,desc:DEX[id]||'',boss:false};
 }
-var VERSION='α1.0.106'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
+var VERSION='α1.0.107'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
 function applySave(o){
   for(var i=0;i<UPG.length;i++) META[UPG[i].id]=0;
   try{
@@ -7296,6 +7293,8 @@ Array.prototype.forEach.call(document.querySelectorAll('#setview button'),functi
 // 更新履歴：1つのお知らせ内で「バージョン見出し」ごとに変更点を並べる（新しい順）。
 // マージのたびに先頭へ新バージョンを追加し、VERSION も更新する。
 var UPDATES=[
+  {v:'α1.0.107', items:[
+    '未使用だったボス「巨大スライム」「ゴブリンチャンピオン」を削除しました（通常プレイに影響はありません）。']},
   {v:'α1.0.106', items:[
     'ステージ2・3のボスHPを再調整（少し軽めに）。② 森：ケルビ40,000／モス95,000／アラクネイド230,000／エルダートレント400,000。③ 王墓：墓守46,000／スケルトンキング130,000／ヘカトン270,000／スケルトンドラゴン450,000。ステージ1は据え置きです。']},
   {v:'α1.0.105', items:[
