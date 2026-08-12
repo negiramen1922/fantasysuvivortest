@@ -10,6 +10,13 @@
 - リザルト画面と設定画面に `VERSION` を表示。
 - お知らせ（`UPDATES` 配列）は**1枠内でバージョン見出しごとに変更点を掲載**（新しい順）。マージ時は `UPDATES` 先頭に新バージョンを追加し `VERSION` を一致させる。
 
+## ver.α1.0.125
+- グール(ghoul)にスプライト追加（従来は S3A で goblin 図形の流用）。`assets/ghoul.png` を `SPRDATA`・`SHAPE_SPR`(`ghoul:'ghoul'`)・`SPRSZ`(`{s:3.2,oy:0.30}`) に登録。
+- 墓守(gravekeeper)を3差分スプライト化。`assets/gravekeeper.png`(墓を持った版=通常)＋`assets/gravekeeper_bare.png`(持ってない版)＋`assets/grave.png`(墓単体)。`enemySpr` で墓を手放す状態（boomerang/stab/gwind/gdash）は `gravekeeper_bare` を返す。drawBoss の墓守描画は手続き十字を廃し `drawSprRot('grave',...)` に置換（ブーメラン=回転/突き刺し=正立/盾構え=対プレイヤー回転、各々未ロード時は図形フォールバック）。図鑑ポートレートは「持った版」。
+- フレイムサークル(flame)の「間隔」熟練で回転速度も上昇。`whirlA+=dt*2.4` を `whirlA+=dt*2.4/Math.max(0.2,1+TR('flame','cd'))` に変更（RATE の cd 係数と同期。fl_c の説明「回転が速くなる」に実挙動を一致）。
+- リポジトリ整理：ルートの新規アップロード `dotpict_20260812_234337.png`(グール)・`_235102.png`(ゾンビ＝該当敵なしのため未使用) を削除。
+- 検証：ローカルhttpで図鑑に墓守（持った版）表示、ステージ3 5:00でgwind/gdash時に本体=持ってない版＋墓スプライトが盾表示、エラー無しを確認。
+
 ## ver.α1.0.124
 - 墓守(gravekeeper)・スケルトンキング(skeletonking)・ヘカトンケイル(hecaton)にボス専用スプライトを追加。従来は key:'skeleton'/'mummy' の流用だった。`assets/gravekeeper.png`・`assets/skeletonking.png`・`assets/hecaton.png`(各64²) を追加し `SPRDATA` に登録、`enemySpr` に `e.bkey==='...'` の専用絵分岐を追加（slimeking等と同方式）、`SPRSZ` にサイズ登録（gravekeeper `{s:3.0,oy:0.42}`／skeletonking `{s:2.9,oy:0.34}`／hecaton `{s:2.7,oy:0.42}`）。図鑑ポートレートは `SPRDATA[id]` 経由で自動反映。CLUBBER の棍棒レイヤーはボス専用絵が優先されるため不使用。
 - リポジトリ整理：ルート直下のアップロード元 `dotpict_*.png` を全削除（必要分は assets/ にコピー済み）。再発防止に `.gitignore` へ `dotpict_*.png` を追加。

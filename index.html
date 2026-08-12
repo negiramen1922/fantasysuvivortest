@@ -2445,7 +2445,7 @@ function figInfo(id){
   if(BOSS[id]){ var B=BOSS[id], tt=ETYPE[B.key]||{}; return {nm:B.nm,shape:tt.shape,col:tt.col,dark:tt.dark,desc:BDEX[id]||'',boss:true}; }
   var t=ETYPE[id]||{}; return {nm:t.nm,shape:t.shape,col:t.col,dark:t.dark,desc:DEX[id]||'',boss:false};
 }
-var VERSION='α1.0.124'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
+var VERSION='α1.0.125'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
 function applySave(o){
   for(var i=0;i<UPG.length;i++) META[UPG[i].id]=0;
   try{
@@ -2641,7 +2641,7 @@ function update(dt){
   // ヒットストップ：世界は止まるが演出は動く
   if(hitStop>0){ hitStop-=dt; stepFx(dt); return; }
   time+=dt;
-  whirlA+=dt*2.4;
+  whirlA+=dt*2.4/Math.max(0.2,1+TR('flame','cd'));   // フレイムサークルの「間隔」強化で回転も速くなる
   if(swingT>0){ swingT-=dt; if(swingT<0) swingT=0; }
   rtok+=dt*14; if(rtok>8) rtok=8;
   if(chainT>0){ chainT-=dt; if(chainT<=0) chain=0; }
@@ -5399,8 +5399,11 @@ var SPRDATA={
   deer:'assets/deer.png',
   moth:'assets/moth.png',
   gravekeeper:'assets/gravekeeper.png',
+  gravekeeper_bare:'assets/gravekeeper_bare.png',
+  grave:'assets/grave.png',
   skeletonking:'assets/skeletonking.png',
-  hecaton:'assets/hecaton.png'
+  hecaton:'assets/hecaton.png',
+  ghoul:'assets/ghoul.png'
 };
 var SPR={}, SPRT={}, SPRRDY={};
 // 端に接する白（不透明な白背景）だけをフラッドフィルで透過に。内部の白ハイライトは残す。
@@ -5475,7 +5478,7 @@ var SHAPE_SPR={blob:'blob',goblin:'goblin',orc:'orc',bat:'bat',spirit:'spirit',o
   wolf:'wolf',turtle:'turtle',harpy:'harpy',rider:'goat',
   bird:'bird',myconid:'myconid',bee:'bee',spider:'spider',beetle:'beetle',dryad:'maneater',
   panther:'panther',mantis:'mantis',treant:'treant',deer:'deer',moth:'moth',
-  skeleton:'skeleton',shieldman:'shieldman',wraith:'wraith',mummy:'mummy',shadow:'shadow'};
+  skeleton:'skeleton',shieldman:'shieldman',wraith:'wraith',mummy:'mummy',shadow:'shadow',ghoul:'ghoul'};
 // 棍棒持ち（素体＋棍棒レイヤーで攻撃時に棍棒を振る）。値＝棍棒レイヤーの握り位置（フレーム比 0..1）
 var CLUBBER={goblin:[0.34,0.77], orc:[0.31,0.67], cyclops:[0.34,0.75], skeleton:[0.78,0.72]};
 function enemySpr(e){
@@ -5484,7 +5487,11 @@ function enemySpr(e){
   if(e.boss&&e.bkey==='fenrir') return sprReady('fenrir')?'fenrir':null;
   if(e.boss&&e.bkey==='goblinking') return sprReady('goblinking')?'goblinking':null;   // ボス専用絵（王冠つき）
   if(e.boss&&e.bkey==='eldertreant') return sprReady('eldertreant')?'eldertreant':null;   // ボス専用絵（古樹）
-  if(e.boss&&e.bkey==='gravekeeper') return sprReady('gravekeeper')?'gravekeeper':null;   // ボス専用絵（墓守）
+  if(e.boss&&e.bkey==='gravekeeper'){                                    // 墓守：墓を手放している間は「持ってない版」
+    var gkThrown=(e.st==='boomerang'||e.st==='stab'||e.st==='gwind'||e.st==='gdash');
+    var gkN=(gkThrown&&sprReady('gravekeeper_bare'))?'gravekeeper_bare':'gravekeeper';
+    return sprReady(gkN)?gkN:null;
+  }
   if(e.boss&&e.bkey==='skeletonking') return sprReady('skeletonking')?'skeletonking':null; // ボス専用絵（スケルトンキング）
   if(e.boss&&e.bkey==='hecaton') return sprReady('hecaton')?'hecaton':null;               // ボス専用絵（ヘカトンケイル）
   var n=SHAPE_SPR[e.shape]; return (n&&sprReady(n))?n:null;
@@ -5924,7 +5931,8 @@ var SPRSZ={blob:{s:3.0,oy:0.35}, goblin:{s:3.2,oy:0.55}, orc:{s:3.0,oy:0.50},
   beetle:{s:2.8,oy:0.30}, maneater:{s:3.2,oy:0.42}, goblinking:{s:2.7,oy:0.42},
   panther:{s:3.4,oy:0.28}, mantis:{s:3.2,oy:0.40}, treant:{s:2.7,oy:0.48}, eldertreant:{s:2.5,oy:0.48},
   deer:{s:3.0,oy:0.42}, moth:{s:3.0,oy:0.22},
-  gravekeeper:{s:3.0,oy:0.42}, skeletonking:{s:2.9,oy:0.34}, hecaton:{s:2.7,oy:0.42},
+  gravekeeper:{s:3.0,oy:0.42}, gravekeeper_bare:{s:3.0,oy:0.42}, skeletonking:{s:2.9,oy:0.34}, hecaton:{s:2.7,oy:0.42},
+  ghoul:{s:3.2,oy:0.30},
   skeleton:{s:3.2,oy:0.42}, shieldman:{s:3.1,oy:0.42}, wraith:{s:3.4,oy:0.16}, mummy:{s:3.0,oy:0.42}, shadow:{s:3.4,oy:0.28}};
 // 毒の沼（ブーマー）：緑の沼＋泡。消える直前にフェード。
 function drawPuddle(q){
@@ -6174,27 +6182,33 @@ function drawEnemy(e){
   if(e.ai==='gravekeeper'){
     if(e.st==='boomerang'||e.st==='stab'){
       var mgx=(e.gx||e.x)-e.x, mgy=(e.gy||e.y)-e.y;
-      ctx.save(); ctx.translate(mgx,mgy);
-      if(e.st==='boomerang') ctx.rotate(e.grot||0);
-      ctx.fillStyle='#c2b9a6'; ctx.strokeStyle='#4a463c'; ctx.lineWidth=3;
-      ctx.fillRect(-10,-7,20,46); ctx.strokeRect(-10,-7,20,46);   // 縦棒（大きく）
-      ctx.fillRect(-24,3,48,16); ctx.strokeRect(-24,3,48,16);     // 横棒（大きく）
-      ctx.restore();
+      var grot=(e.st==='boomerang')?(e.grot||0):0;
+      if(!drawSprRot('grave',mgx,mgy,grot,80)){                   // 墓単体スプライト（未ロード時は図形で代替）
+        ctx.save(); ctx.translate(mgx,mgy); ctx.rotate(grot);
+        ctx.fillStyle='#c2b9a6'; ctx.strokeStyle='#4a463c'; ctx.lineWidth=3;
+        ctx.fillRect(-10,-7,20,46); ctx.strokeRect(-10,-7,20,46);   // 縦棒（大きく）
+        ctx.fillRect(-24,3,48,16); ctx.strokeRect(-24,3,48,16);     // 横棒（大きく）
+        ctx.restore();
+      }
       if(e.st==='stab'){
         ctx.strokeStyle='#c9b0ff'; ctx.globalAlpha=0.5+0.35*Math.sin(time*26); ctx.lineWidth=3;
         ctx.beginPath(); ctx.arc(0,0,R+14+Math.sin(time*18)*4,0,6.3); ctx.stroke(); ctx.globalAlpha=1;
       }
     }
     else if(e.st==='gwind'||e.st==='gdash'){
-      // 盾として構える十字架（プレイヤー方向の前面）＋ガードの輝き
-      var ga=Math.atan2(P.y-e.y,P.x-e.x);
-      ctx.save(); ctx.translate(Math.cos(ga)*(R+16),Math.sin(ga)*(R+16)); ctx.rotate(ga+Math.PI/2);
+      // 盾として構える墓（プレイヤー方向の前面）＋ガードの輝き
+      var ga=Math.atan2(P.y-e.y,P.x-e.x), sx=Math.cos(ga)*(R+16), sy=Math.sin(ga)*(R+16);
+      ctx.save(); ctx.translate(sx,sy); ctx.rotate(ga+Math.PI/2);
       ctx.globalAlpha=0.3+0.2*Math.sin(time*10); ctx.strokeStyle='#bfe0ff'; ctx.lineWidth=4;
       ctx.beginPath(); ctx.arc(0,12,36,0,6.3); ctx.stroke(); ctx.globalAlpha=1;
-      ctx.fillStyle='#d4cbb6'; ctx.strokeStyle='#4a463c'; ctx.lineWidth=3;
-      ctx.fillRect(-11,-8,22,50); ctx.strokeRect(-11,-8,22,50);
-      ctx.fillRect(-26,4,52,17); ctx.strokeRect(-26,4,52,17);
       ctx.restore();
+      if(!drawSprRot('grave',sx,sy,ga+Math.PI/2,76)){              // 墓単体スプライト（盾構え）
+        ctx.save(); ctx.translate(sx,sy); ctx.rotate(ga+Math.PI/2);
+        ctx.fillStyle='#d4cbb6'; ctx.strokeStyle='#4a463c'; ctx.lineWidth=3;
+        ctx.fillRect(-11,-8,22,50); ctx.strokeRect(-11,-8,22,50);
+        ctx.fillRect(-26,4,52,17); ctx.strokeRect(-26,4,52,17);
+        ctx.restore();
+      }
     }
   }
 
@@ -7643,6 +7657,10 @@ Array.prototype.forEach.call(document.querySelectorAll('#setview button'),functi
 // 更新履歴：1つのお知らせ内で「バージョン見出し」ごとに変更点を並べる（新しい順）。
 // マージのたびに先頭へ新バージョンを追加し、VERSION も更新する。
 var UPDATES=[
+  {v:'α1.0.125', items:[
+    'グールの立ち絵を専用のドット絵（頭にネジ）に差し替えました。',
+    '墓守の立ち絵を「墓を持った版／持ってない版／墓単体」の3差分で構成。墓をブーメラン投げ・地面に突き刺し・盾に構える動作で、墓を手放している間は本体が墓なしの姿になります。',
+    'フレイムサークルの「間隔」強化で、火の玉の回転速度も上がるようになりました（説明どおりの挙動に修正）。']},
   {v:'α1.0.124', items:[
     '墓守・スケルトンキング・ヘカトンケイルの立ち絵を専用のドット絵に差し替えました（これまでは骸骨・マミーの流用でした）。ゲーム中・図鑑の両方に反映されます。']},
   {v:'α1.0.123', items:[
