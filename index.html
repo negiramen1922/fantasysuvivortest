@@ -118,6 +118,7 @@ canvas{display:block;width:100%;height:100%;touch-action:none}
 .rankrow{display:flex;align-items:center;gap:8px;padding:5px 8px;border-bottom:1px solid #221b3e;font-size:13px}
 .rankrow .rk{width:36px;color:var(--gold);text-align:right;font-weight:700}
 .rankrow .rn{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#e8e2ff}
+.rankrow .rttl{color:var(--gold);font-size:11px;margin-right:4px}
 .rankrow .rs{width:84px;text-align:right;color:#fff}
 .rankrow .rt{width:52px;text-align:right;color:var(--ash);font-size:11px}
 .rankrow.me{background:rgba(127,212,255,.14);border-radius:6px}
@@ -171,9 +172,31 @@ canvas{display:block;width:100%;height:100%;touch-action:none}
 #pstat b{color:#fff;font-weight:normal}
 #pstat .el{color:var(--gold)}
 
-#shop,#mast,#ban,#settings,#news,#tutorial,#dex,#mailbox,#daily{position:absolute;inset:0;display:none;align-items:center;justify-content:center;
+#shop,#mast,#ban,#settings,#news,#tutorial,#dex,#mailbox,#daily,#achieve{position:absolute;inset:0;display:none;align-items:center;justify-content:center;
   background:rgba(6,4,16,.95);padding:14px;z-index:6}
-#shop.on,#mast.on,#ban.on,#settings.on,#news.on,#tutorial.on,#dex.on,#mailbox.on,#daily.on{display:flex}
+#shop.on,#mast.on,#ban.on,#settings.on,#news.on,#tutorial.on,#dex.on,#mailbox.on,#daily.on,#achieve.on{display:flex}
+#twobox{flex:none;border:1px solid rgba(255,204,77,.35);border-radius:12px;padding:10px;background:rgba(255,204,77,.05)}
+.twolbl{font-size:11px;color:var(--ash);margin-bottom:4px}
+#twoprev{font-size:19px;color:var(--gold);font-weight:bold;text-align:center;margin:4px 0 8px;min-height:24px}
+.tworow{display:flex;gap:8px}
+.tworow label{flex:1;display:flex;flex-direction:column;gap:3px;font-size:11px;color:var(--ash)}
+.tworow select{font-family:inherit;font-size:13px;padding:6px;border-radius:8px;border:1px solid var(--line);background:#1a1330;color:#e9e2ff}
+#achlist{flex:1;min-height:0;overflow-y:auto;-webkit-overflow-scrolling:touch;display:flex;flex-direction:column;gap:9px;padding:6px 0}
+.achc{border:1px solid var(--line);border-radius:11px;padding:9px 10px;background:rgba(20,14,45,.5)}
+.achh{display:flex;align-items:center;gap:8px;margin-bottom:6px}
+.achh .ai{font-size:19px;flex:none}
+.achh .an{color:#e9e2ff;font-size:14px;font-weight:bold;flex:1;min-width:0}
+.achh .av{font-size:12px;color:#9a90c0}
+.achtiers{display:flex;flex-direction:column;gap:5px}
+.acht{display:flex;align-items:center;gap:8px;font-size:12px}
+.acht .atbar{flex:1;height:8px;border-radius:5px;background:rgba(255,255,255,.08);overflow:hidden;min-width:0}
+.acht .atbar>i{display:block;height:100%;background:linear-gradient(90deg,#7c6bff,#ffd27a)}
+.acht .atw{flex:none;color:#cbb8ff;min-width:64px}
+.acht .atg{flex:none;color:var(--gold);font-size:11px;min-width:54px;text-align:right}
+.acht.done .atw{color:#9be89b}
+.acht .atclaim{flex:none;font-family:inherit;font-size:11px;padding:4px 9px;border-radius:7px;border:1px solid rgba(255,204,77,.5);background:rgba(255,204,77,.12);color:var(--gold);cursor:pointer;white-space:nowrap}
+.acht .atclaim:disabled{opacity:.35;cursor:default}
+.acht .attag{flex:none;font-size:11px;color:#7ce08a;min-width:40px;text-align:center}
 #daily.on{z-index:8}
 #dailydays{display:grid;grid-template-columns:repeat(7,1fr);gap:6px;width:100%}
 .dday{display:flex;flex-direction:column;align-items:center;gap:3px;padding:8px 2px;border:1px solid var(--line);border-radius:9px;background:rgba(20,14,45,.5);position:relative}
@@ -639,6 +662,7 @@ img.wspr{width:1.15em;height:1.15em;object-fit:contain;image-rendering:pixelated
         <button class="btn sub2" id="mastbtn">武器熟練</button>
         <button class="btn sub2" id="chrbtn">キャラクター</button>
         <button class="btn sub2" id="banbtn">武器庫</button>
+        <button class="btn sub2" id="achbtn">実績</button>
       </div>
     </div>
     <!-- ステージ選択 -->
@@ -716,6 +740,22 @@ img.wspr{width:1.15em;height:1.15em;object-fit:contain;image-rendering:pixelated
       <div class="wuhead">🔓 新しい武器が使えるようになった！</div>
       <div id="wulist"></div>
       <button class="btn" id="wuok" style="margin-top:2px">やった！</button>
+    </div>
+  </div>
+
+  <div id="achieve">
+    <div class="shopbox">
+      <div class="shophead"><div class="title">🏅 実績</div></div>
+      <div id="twobox">
+        <div class="twolbl">二つ名（冠＋銘を組み合わせて表示）</div>
+        <div id="twoprev">— 未設定 —</div>
+        <div class="tworow">
+          <label>冠<select id="twpre"></select></label>
+          <label>銘<select id="twsuf"></select></label>
+        </div>
+      </div>
+      <div id="achlist"></div>
+      <button class="btn sub2" id="achclose" style="margin-top:0">閉じる</button>
     </div>
   </div>
 
@@ -1913,7 +1953,7 @@ var CHARS={
 var ALLCHR=0;   // 1で全キャラ解放（開発用）。製品は 0
 var UNL={}, SELCH='knight';
 (function(){ for(var k in CHARS) UNL[k]=ALLCHR?1:(k==='knight'?1:0); })();
-var ACH={lv:0, kills:0, reacts:0, clear:0, time:0};
+var ACH={lv:0, kills:0, reacts:0, clear:0, time:0, dmg:0, crit:0, survt:0, logins:0};
 function CH(){ return CHARS[SELCH]||CHARS.knight; }
 // キャラの毎レベル成長
 function achOK(id){
@@ -2019,13 +2059,52 @@ function claimDaily(){
   if(!dailyClaimable()) return 0;
   var day=dailyPendingDay(), g=dailyRewardOf(day);
   DAILY.streak=day; DAILY.last=dateStr();
+  ACH.logins=(ACH.logins||0)+1;   // 累計ログイン日数（実績用・1日1回）
   WALLET.gold+=g;
   if(typeof saveGame==='function') saveGame();
   if(typeof coinSfx==='function') coinSfx();
   if(typeof toast==='function') toast('🗓️','デイリーボーナス 金貨 +'+g+(day>=DAILY_LEN?'（7日連続達成！）':''),'#ffd27a');
   return g;
 }
-// 既にクリア済みのステージ（初回クリア報酬の実装前にクリアした人）へ、初回クリア報酬を受け取りボックスへ遡及配布する。
+
+// ============ ゲーム内 実績（二つ名＋金貨）============
+// すべての実績が「二つ名パーツ（冠=前半 / 銘=後半）＋金貨（ティアで増額）」を付与。冠1つ＋銘1つを自由に組み合わせて表示。
+var GOLD_TIER=[10,30,80,200,500];   // ティア（0始まり）ごとの金貨。ティアが上がるほど増える。
+var ACHV=[
+  {k:'kills', nm:'討伐数',       ic:'⚔', stat:'kills',  side:'suf', tiers:[1000,10000,100000,1000000],               words:['討伐者','殲滅者','虐殺者','絶滅者']},
+  {k:'dmg',   nm:'累計ダメージ', ic:'💥', stat:'dmg',    side:'pre', tiers:[10000,100000,1000000,10000000,100000000], words:['一撃の','強打の','破壊の','崩壊の','終焉の']},
+  {k:'survt', nm:'累計生存時間', ic:'⏳', stat:'survt',  side:'suf', tiers:[600,6000,30000,60000],                    words:['生存者','不屈の兵','歴戦の勇','不死身']},
+  {k:'logins',nm:'累計ログイン', ic:'🗓', stat:'logins', side:'suf', tiers:[10,50,100,300],                           words:['常連','皆勤者','ヌシ','伝説の主']},
+  {k:'crit',  nm:'累計会心',     ic:'🎯', stat:'crit',   side:'pre', tiers:[1000,10000,100000,1000000],               words:['鋭利な','痛撃の','会心の','必殺の']},
+  {k:'reacts',nm:'累計元素反応', ic:'✧', stat:'reacts', side:'pre', tiers:[1000,10000,100000,1000000],               words:['元素の','反応の','錬金の','賢者の']}
+];
+var ACLAIM={};                 // 受け取り済み実績 { 'kills:0':1, ... }
+var TWON={pre:'', suf:''};     // 選択中の二つ名パーツid（'cat:tier'）。空なら未設定
+function achDef(k){ for(var i=0;i<ACHV.length;i++) if(ACHV[i].k===k) return ACHV[i]; return null; }
+function achId(a,i){ return a.k+':'+i; }
+function achStat(a){ return ACH[a.stat]||0; }
+function achDone(a,i){ return achStat(a)>=a.tiers[i]; }
+function achClaimed(a,i){ return !!ACLAIM[achId(a,i)]; }
+function achClaimable(a,i){ return achDone(a,i)&&!achClaimed(a,i); }
+function anyAchClaim(){ for(var x=0;x<ACHV.length;x++){ var a=ACHV[x]; for(var i=0;i<a.tiers.length;i++) if(achClaimable(a,i)) return 1; } return 0; }
+function achClaimCount(){ var n=0; for(var x=0;x<ACHV.length;x++){ var a=ACHV[x]; for(var i=0;i<a.tiers.length;i++) if(achClaimable(a,i)) n++; } return n; }
+function partWord(id){ if(!id) return ''; var p=id.split(':'), a=achDef(p[0]); return (a&&a.words[p[1]|0])||''; }
+function partSide(id){ if(!id) return ''; var a=achDef(id.split(':')[0]); return a?a.side:''; }
+function partOwned(id){ if(!id) return false; var p=id.split(':'), a=achDef(p[0]); return !!(a&&achClaimed(a,p[1]|0)); }
+function twoName(){ var pre=partOwned(TWON.pre)?partWord(TWON.pre):'', suf=partOwned(TWON.suf)?partWord(TWON.suf):''; return pre+suf; }
+function achFmt(a,v){ return a.stat==='survt'?(Math.floor(v/60)+'分'):fmt(v); }
+function claimAch(a,i){
+  if(!achClaimable(a,i)) return;
+  ACLAIM[achId(a,i)]=1;
+  var g=GOLD_TIER[i]||GOLD_TIER[GOLD_TIER.length-1];
+  WALLET.gold+=g;
+  if(typeof saveGame==='function') saveGame();
+  if(typeof coinSfx==='function') coinSfx();
+  if(typeof toast==='function') toast('🏅','二つ名『'+a.words[i]+'』を獲得！ 金貨 +'+g,'#ffd27a');
+}
+// 既に達成済みで未受け取りの実績があるか（起動時バッジ用）。受け取りは実績画面のボタンで行う。
+// 既存の unlockCheck に相当する自動処理は無し（金貨＋二つ名なので必ず本人操作で受け取る）。
+
 // FCGOT で配布済みを記録し二重配布を防ぐ。起動時・クラウド同期後に呼ぶ（冪等）。
 function backfillFirstClear(){
   var granted=0;
@@ -2094,7 +2173,7 @@ function figInfo(id){
   if(BOSS[id]){ var B=BOSS[id], tt=ETYPE[B.key]||{}; return {nm:B.nm,shape:tt.shape,col:tt.col,dark:tt.dark,desc:BDEX[id]||'',boss:true}; }
   var t=ETYPE[id]||{}; return {nm:t.nm,shape:t.shape,col:t.col,dark:t.dark,desc:DEX[id]||'',boss:false};
 }
-var VERSION='α1.0.97'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
+var VERSION='α1.0.98'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
 function applySave(o){
   for(var i=0;i<UPG.length;i++) META[UPG[i].id]=0;
   try{
@@ -2133,6 +2212,8 @@ function applySave(o){
       if(o.mb instanceof Array){ MAILBOX=[]; for(var mi=0;mi<o.mb.length;mi++){ var mm=o.mb[mi]; if(mm) MAILBOX.push({t:(mm.t||'🎁'),m:(''+(mm.m||'報酬')).slice(0,60),g:mm.g|0,s:mm.s|0}); } }
       if(o.fcg) for(var fc in o.fcg){ if(o.fcg[fc]) FCGOT[fc]=1; }
       if(o.dl&&typeof o.dl==='object'){ DAILY.last=(''+(o.dl.last||'')).slice(0,12); DAILY.streak=Math.max(0,Math.min(DAILY_LEN,o.dl.streak|0)); }
+      if(o.ac) for(var acx in o.ac){ if(o.ac[acx]) ACLAIM[acx]=1; }
+      if(o.tw&&typeof o.tw==='object'){ TWON.pre=(''+(o.tw.pre||'')).slice(0,20); TWON.suf=(''+(o.tw.suf||'')).slice(0,20); }
       if(o.sgl) for(var sl in o.sgl) STGLV[sl]=o.sgl[sl]|0;
       if(o.wu){ for(var wq in o.wu){ if(o.wu[wq]&&WEAPONS[wq]) WUNL[wq]=1; } }
       else { // 旧セーブ（武器解放が無い）は移行：熟練度が付いている＝使ったことのある武器を解放して手持ちを失わせない
@@ -2144,7 +2225,7 @@ function applySave(o){
 }
 (function loadSave(){ try{ applySave(JSON.parse(localStorage.getItem('bsv_save')||'null')); }catch(e){ applySave(null); } })();
 function saveObj(){
-  return {m:META,w:WALLET,wx:WX,sel:SEL,best:best,shk:SHK,vz:VZOOM,light:LIGHT,volm:VOLM,vols:VOLS,volb:VOLB,unl:UNL,ach:ACH,ch:SELCH,stg:STGCLEAR,sgb:STGBEST,sgw:STGWAVE,eb:ENDBEST,et:ENDTIME,nk:NICK,ban:Object.keys(BAN).filter(function(k){return BAN[k];}),tut:TUTSEEN,perf:PERF,dps:SHOWDPS,dpm:SHOWDPM,rsp:RESPEC_AT,bk:BKILL,bsc:BSCORE,bs:Object.keys(BSEEN).filter(function(k){return BSEEN[k];}),bc:Object.keys(BCLAIM).filter(function(k){return BCLAIM[k];}).reduce(function(o,k){o[k]=1;return o;},{}),bsel:BSEL,mb:MAILBOX,fcg:FCGOT,dl:DAILY,sgl:STGLV,wu:WUNL};
+  return {m:META,w:WALLET,wx:WX,sel:SEL,best:best,shk:SHK,vz:VZOOM,light:LIGHT,volm:VOLM,vols:VOLS,volb:VOLB,unl:UNL,ach:ACH,ch:SELCH,stg:STGCLEAR,sgb:STGBEST,sgw:STGWAVE,eb:ENDBEST,et:ENDTIME,nk:NICK,ban:Object.keys(BAN).filter(function(k){return BAN[k];}),tut:TUTSEEN,perf:PERF,dps:SHOWDPS,dpm:SHOWDPM,rsp:RESPEC_AT,bk:BKILL,bsc:BSCORE,bs:Object.keys(BSEEN).filter(function(k){return BSEEN[k];}),bc:Object.keys(BCLAIM).filter(function(k){return BCLAIM[k];}).reduce(function(o,k){o[k]=1;return o;},{}),bsel:BSEL,mb:MAILBOX,fcg:FCGOT,dl:DAILY,sgl:STGLV,wu:WUNL,ac:ACLAIM,tw:TWON};
 }
 function saveGame(){
   try{ localStorage.setItem('bsv_save',JSON.stringify(saveObj())); }catch(e){}
@@ -6410,11 +6491,13 @@ function stageReqTx(n){ var r=STGREQ[n]; if(!r) return ''; return (STGNUM[r.stg-
 function stageReqNow(n){ var r=STGREQ[n]; if(!r) return ''; return '（現在 '+(STGLV[r.stg]||0)+' / '+r.lv+'）'; }
 var STGNUM=['①','②','③','④','⑤'];
 function syncTitle(){
+  var tw=twoName();
   document.getElementById('vpurse').innerHTML=
+    (tw?'<span style="color:var(--gold)">《'+escHtml(tw)+'》</span><br>':'')+
     '<span style="color:#fff">'+CH().glyph+' '+CH().nm+'</span>　'+purseHtml()+
     (best?'<br><span style="color:#6b5f9c">ベストスコア '+fmt(best)+'</span>':'');
   document.getElementById('mastbtn').innerHTML='武器熟練'+(anyPicks()?'<span class="badge">!</span>':'');
-  updateDexBadge(); updateMailBadge();
+  updateDexBadge(); updateMailBadge(); updateAchBadge();
   var nl=0; for(var ci in CHARS) if(!UNL[ci]&&achOK(ci)) nl++;
   document.getElementById('chrbtn').innerHTML='キャラクター'+(nl?'<span class="badge">!</span>':'');
 }
@@ -6967,6 +7050,11 @@ function finish(won){
   ACH.lv=Math.max(ACH.lv,P.lv);
   ACH.kills+=kills; ACH.reacts+=reacts;
   ACH.time=Math.max(ACH.time,Math.floor(time));
+  // 実績（ゲーム内）用の累計カウンタ
+  var runDmg=0; for(var _dk in WDMG) runDmg+=WDMG[_dk]||0;
+  ACH.dmg=(ACH.dmg||0)+Math.floor(runDmg);       // 累計与ダメージ
+  ACH.crit=(ACH.crit||0)+crits;                  // 累計会心回数
+  ACH.survt=(ACH.survt||0)+Math.floor(time);     // 累計生存時間（秒）
   var firstClear=(won&&!ENDLESS&&!STGCLEAR[curStage]);   // 初回クリア判定（STGCLEAR を立てる前に）
   if(won){ ACH.clear=1; STGCLEAR[curStage]=1; }
   var newCh=unlockCheck();
@@ -7175,6 +7263,10 @@ Array.prototype.forEach.call(document.querySelectorAll('#setview button'),functi
 // 更新履歴：1つのお知らせ内で「バージョン見出し」ごとに変更点を並べる（新しい順）。
 // マージのたびに先頭へ新バージョンを追加し、VERSION も更新する。
 var UPDATES=[
+  {v:'α1.0.98', items:[
+    'ゲーム内「実績」を追加：討伐数・累計ダメージ・累計生存時間・累計ログイン日数・累計会心・累計元素反応の6カテゴリ、各ティア達成で報酬。',
+    '実績の報酬は「二つ名パーツ＋金貨（ティアが上がるほど増額）」。冠（前半）と銘（後半）を自由に組み合わせて自分の二つ名を作れます（例：破壊の討伐者）。',
+    '作った二つ名はホーム画面とオンラインランキングに表示され、自分の進み具合を他の人に見せられます。ホームメニューの「実績」から達成報酬の受け取りと二つ名の設定ができます。']},
   {v:'α1.0.97', items:[
     '実績を達成して武器が解放されたとき、リザルト画面で「新しい武器〇〇が使えるようになった！」とポップアップで祝うようにしました。']},
   {v:'α1.0.96', items:[
@@ -7557,6 +7649,60 @@ function showWeaponUnlockPopup(ids){
 }
 document.getElementById('wuok').onclick=function(){ wunlockEl.classList.remove('on'); };
 
+/* ============ ゲーム内 実績（二つ名＋金貨）============ */
+var achieveEl=document.getElementById('achieve');
+function ownedParts(side){
+  var out=[];
+  for(var x=0;x<ACHV.length;x++){ var a=ACHV[x]; if(a.side!==side) continue;
+    for(var i=0;i<a.tiers.length;i++){ if(achClaimed(a,i)) out.push({id:achId(a,i),word:a.words[i]}); } }
+  return out;
+}
+function renderTwoName(){
+  if(TWON.pre&&!partOwned(TWON.pre)) TWON.pre='';
+  if(TWON.suf&&!partOwned(TWON.suf)) TWON.suf='';
+  document.getElementById('twoprev').textContent = twoName()||'— 未設定 —';
+  var pre=document.getElementById('twpre'), suf=document.getElementById('twsuf');
+  function fill(sel,side,cur){
+    var opts='<option value="">（なし）</option>', list=ownedParts(side);
+    for(var i=0;i<list.length;i++) opts+='<option value="'+list[i].id+'"'+(cur===list[i].id?' selected':'')+'>'+list[i].word+'</option>';
+    sel.innerHTML=opts;
+  }
+  fill(pre,'pre',TWON.pre); fill(suf,'suf',TWON.suf);
+}
+function renderAchieve(){
+  document.getElementById('twobox').style.display=(ownedParts('pre').length||ownedParts('suf').length)?'':'none';
+  renderTwoName();
+  var L=document.getElementById('achlist'); L.innerHTML='';
+  for(var x=0;x<ACHV.length;x++){
+    var a=ACHV[x], v=achStat(a), rows='';
+    for(var i=0;i<a.tiers.length;i++){
+      var done=achDone(a,i), claimed=achClaimed(a,i), can=achClaimable(a,i);
+      var prev=i>0?a.tiers[i-1]:0, pct=Math.max(0,Math.min(100,(v-prev)/(a.tiers[i]-prev)*100));
+      var g=GOLD_TIER[i]||GOLD_TIER[GOLD_TIER.length-1];
+      rows+='<div class="acht'+(done?' done':'')+'">'+
+        '<span class="atw">'+achFmt(a,a.tiers[i])+'</span>'+
+        '<span class="atbar"><i style="width:'+(done?100:pct)+'%"></i></span>'+
+        '<span class="atg">『'+a.words[i]+'』</span>'+
+        (claimed?'<span class="attag">受取済</span>':
+          can?'<button class="atclaim" data-k="'+a.k+'" data-i="'+i+'">金'+g+' 受取</button>':
+          '<span class="attag" style="color:#6b5f9c">金'+g+'</span>')+
+        '</div>';
+    }
+    var c=document.createElement('div'); c.className='achc';
+    c.innerHTML='<div class="achh"><span class="ai">'+a.ic+'</span><span class="an">'+a.nm+'</span><span class="av">現在 '+achFmt(a,v)+'</span></div>'+
+      '<div class="achtiers">'+rows+'</div>';
+    L.appendChild(c);
+  }
+  Array.prototype.forEach.call(L.querySelectorAll('.atclaim'),function(b){
+    b.onclick=function(){ var a=achDef(b.getAttribute('data-k')); claimAch(a,+b.getAttribute('data-i')); renderAchieve(); updateAchBadge(); syncTitle(); };
+  });
+}
+function updateAchBadge(){ var b=document.getElementById('achbtn'); if(b) b.innerHTML='実績'+(anyAchClaim()?'<span class="badge">'+achClaimCount()+'</span>':''); }
+document.getElementById('twpre').onchange=function(){ TWON.pre=this.value; saveGame(); renderTwoName(); syncTitle(); };
+document.getElementById('twsuf').onchange=function(){ TWON.suf=this.value; saveGame(); renderTwoName(); syncTitle(); };
+document.getElementById('achbtn').onclick=function(){ audio(); renderAchieve(); achieveEl.classList.add('on'); };
+document.getElementById('achclose').onclick=function(){ achieveEl.classList.remove('on'); syncTitle(); };
+
 /* ============ チュートリアル（遊びかた）============ */
 var tutEl=document.getElementById('tutorial');
 function openTutorial(){ audio(); tutEl.classList.add('on'); }
@@ -7781,7 +7927,7 @@ function submitRanking(sc,timeSec){
   ref.get().then(function(d){
     var prev=(d.exists?d.data():null), best=(prev&&prev.score|0)||0;
     if((sc|0)<=best) return;
-    ref.set({ uid:FBUSER.uid, name:NICK.slice(0,16), score:sc|0, timeSec:timeSec|0, v:VERSION,
+    ref.set({ uid:FBUSER.uid, name:NICK.slice(0,16), title:(twoName()||'').slice(0,24), score:sc|0, timeSec:timeSec|0, v:VERSION,
       ts:firebase.firestore.FieldValue.serverTimestamp() }).catch(function(e){ console.warn('rank set',e); });
   }).catch(function(e){ console.warn('rank get',e); });
 }
@@ -7794,7 +7940,8 @@ function openRanking(){
   fbDB.collection('rankings').orderBy('score','desc').limit(50).get().then(function(qs){
     var rows='', i=0, seen=false;
     qs.forEach(function(doc){ i++; var d=doc.data(); var me=(mine&&d.uid===mine); if(me) seen=true;
-      rows+='<div class="rankrow'+(me?' me':'')+'"><span class="rk">'+i+'</span><span class="rn">'+escHtml(d.name||'?')+'</span><span class="rs">'+fmt(d.score||0)+'</span><span class="rt">'+fmtTime(d.timeSec||0)+'</span></div>';
+      var rttl=d.title?('<span class="rttl">《'+escHtml(d.title)+'》</span>'):'';
+      rows+='<div class="rankrow'+(me?' me':'')+'"><span class="rk">'+i+'</span><span class="rn">'+rttl+escHtml(d.name||'?')+'</span><span class="rs">'+fmt(d.score||0)+'</span><span class="rt">'+fmtTime(d.timeSec||0)+'</span></div>';
     });
     list.innerHTML=rows||'<div class="dexdesc">まだ記録がありません。最初の1位を狙おう！</div>';
     if(FBUSER&&!seen&&ENDBEST>0){   // 圏外なら自分の順位を別途表示
