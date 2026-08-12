@@ -1739,7 +1739,23 @@ var MAST={
             {id:'sl_c',ic:'⌛',nm:'間隔',tx:'−5%',d:'剣を振る間隔が#短くなる',dv:'5%',ef:{cd:-.05}} ],
     major:[ {id:'sl_D',ic:'💪',nm:'剛・攻撃力',tx:'+14%',d:'剣の攻撃力が#大きく上昇する',dv:'14%',ef:{dmg:.14}},
             {id:'sl_A',ic:'🌀',nm:'大薙ぎ',tx:'+15%',d:'剣が#大きくなり広く薙ぎ払う',dv:'15%',ef:{area:.15}},
-            {id:'sl_arc',ic:'⭐',nm:'旋風斬',tx:'全方位',d:'前方だけでなく#を薙ぎ払えるようになる',dv:'全方位',ef:{fullarc:1}} ]
+            {id:'sl_cd',ic:'💥',nm:'剛撃',tx:'+10%',d:'会心（クリティカル）のダメージが#上がる',dv:'10%',ef:{critd:.10}} ]
+  },
+  scythe:{  // 鎌：dmg/area/count/rate/range
+    minor:[ {id:'sc_d',ic:'💪',nm:'攻撃力',tx:'+6%',d:'鎌の攻撃力が#上昇する',dv:'6%',ef:{dmg:.06}},
+            {id:'sc_r',ic:'📏',nm:'射程',tx:'+8%',d:'鎌が#遠くまで届く',dv:'8%',ef:{range:.08}},
+            {id:'sc_c',ic:'⌛',nm:'間隔',tx:'−5%',d:'鎌を投げる間隔が#短くなる',dv:'5%',ef:{cd:-.05}} ],
+    major:[ {id:'sc_D',ic:'💪',nm:'剛・攻撃力',tx:'+12%',d:'鎌の攻撃力が#大きく上昇する',dv:'12%',ef:{dmg:.12}},
+            {id:'sc_A',ic:'🌀',nm:'大鎌',tx:'+15%',d:'鎌が#大きくなり当たりやすくなる',dv:'15%',ef:{area:.15}},
+            {id:'sc_ct',ic:'✳️',nm:'双鎌',tx:'鎌 +1',d:'同時に飛ぶ鎌が#増える',dv:'1本',ef:{count:1}} ]
+  },
+  chakram:{  // チャクラム：dmg/area/count/rate
+    minor:[ {id:'ck_d',ic:'💪',nm:'攻撃力',tx:'+6%',d:'チャクラムの攻撃力が#上昇する',dv:'6%',ef:{dmg:.06}},
+            {id:'ck_a',ic:'🌀',nm:'軌道範囲',tx:'+6%',d:'軌道が#大きくなり当たりやすくなる',dv:'6%',ef:{area:.06}},
+            {id:'ck_c',ic:'⌛',nm:'間隔',tx:'−5%',d:'投げる間隔が#短くなる',dv:'5%',ef:{cd:-.05}} ],
+    major:[ {id:'ck_D',ic:'💪',nm:'剛・攻撃力',tx:'+12%',d:'チャクラムの攻撃力が#大きく上昇する',dv:'12%',ef:{dmg:.12}},
+            {id:'ck_C',ic:'⌛',nm:'速回',tx:'−12%',d:'投げる間隔が#大きく短くなる',dv:'12%',ef:{cd:-.12}},
+            {id:'ck_ct',ic:'✳️',nm:'双輪',tx:'+1',d:'同時に飛ぶチャクラムが#増える',dv:'1枚',ef:{count:1}} ]
   },
   bow:{  // 弓：dmg/pierce/rate（通常）＋ count/pierce大（特別）
     minor:[ {id:'bo_d',ic:'💪',nm:'攻撃力',tx:'+6%',d:'矢の威力が#上がる',dv:'6%',ef:{dmg:.06}},
@@ -1902,8 +1918,8 @@ function CRITC(){      // 会心率：武器種で基礎値が違い、キャラ
   var w=(k==='mag')?0.4:1;          // 魔法は会心の恩恵が4割
   return Math.min(0.90,b+(0.05*(P.p.crit||0)+0.03*M('crit'))*w+CH().crit+0.02*LB(SRC,'crit'));
 }
-function CRITD(){      // 会心倍率：全武器共通＋その武器の限界突破（物理系）
-  return 2+0.20*(P.p.critd||0)+0.12*M('critd')+0.15*LB(SRC,'critd');
+function CRITD(){      // 会心倍率：全武器共通＋その武器の限界突破（物理系）＋熟練度
+  return 2+0.20*(P.p.critd||0)+0.12*M('critd')+0.15*LB(SRC,'critd')+TR(SRC,'critd');
 }
 function AX(w,k){ var a=P.wa[w]; return (a&&a[k])||0; }
 // 限界突破：各軸のカンスト後に積める追加ステータス。武器ごとに「その武器の育成軸(WAX)」に沿った軸だけ出す。
@@ -1966,7 +1982,7 @@ var WRNG={
   chain:{base:460,cat:'長'}, thunder:{base:460,cat:'長'},
   fire:{base:520,cat:'長'}, ice:{base:520,cat:'長'}, bow:{base:560,cat:'長'},
   holy:{base:520,cat:'長'}, rock:{base:540,cat:'長'}, gatling:{base:560,cat:'長'} };
-function RNGM(w){ return Math.pow(1.20,AX(w,'range'))*Math.pow(1.08,LB(w,'range')); }   // 射程軸の倍率（限界突破ぶんは緩やか）
+function RNGM(w){ return Math.pow(1.20,AX(w,'range'))*Math.pow(1.08,LB(w,'range'))*(1+TR(w,'range')); }   // 射程軸の倍率（限界突破ぶんは緩やか）＋熟練度
 function RNG(w){ return (WRNG[w]?WRNG[w].base:640)*RNGM(w); }
 function axLeft(w,k){ return (WAX[w][k]||0)-AX(w,k); }
 
@@ -2237,7 +2253,7 @@ function figInfo(id){
   if(BOSS[id]){ var B=BOSS[id], tt=ETYPE[B.key]||{}; return {nm:B.nm,shape:tt.shape,col:tt.col,dark:tt.dark,desc:BDEX[id]||'',boss:true}; }
   var t=ETYPE[id]||{}; return {nm:t.nm,shape:t.shape,col:t.col,dark:t.dark,desc:DEX[id]||'',boss:false};
 }
-var VERSION='α1.0.113'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
+var VERSION='α1.0.114'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
 function applySave(o){
   for(var i=0;i<UPG.length;i++) META[UPG[i].id]=0;
   try{
@@ -7348,6 +7364,8 @@ Array.prototype.forEach.call(document.querySelectorAll('#setview button'),functi
 // 更新履歴：1つのお知らせ内で「バージョン見出し」ごとに変更点を並べる（新しい順）。
 // マージのたびに先頭へ新バージョンを追加し、VERSION も更新する。
 var UPDATES=[
+  {v:'α1.0.114', items:[
+    '熟練度リニューアル：剣技（鎌・チャクラム）を実装しました。大剣の特別枠を「旋風斬」→「剛撃（会心ダメージ+10%）」に変更。']},
   {v:'α1.0.113', items:[
     '熟練度の説明文の強調色を黄色にしました。']},
   {v:'α1.0.112', items:[
