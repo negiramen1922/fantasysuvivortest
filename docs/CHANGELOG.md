@@ -10,6 +10,9 @@
 - リザルト画面と設定画面に `VERSION` を表示。
 - お知らせ（`UPDATES` 配列）は**1枠内でバージョン見出しごとに変更点を掲載**（新しい順）。マージ時は `UPDATES` 先頭に新バージョンを追加し `VERSION` を一致させる。
 
+## ver.α1.0.115
+- 熟練度10Lv：射撃カテゴリ実装（dynamite/musket 追加）。新メカ不要（burst/count/range 配線済み）。
+
 ## ver.α1.0.114
 - 熟練度10Lv：剣技カテゴリ実装（scythe/chakram 追加、slash の major を旋風斬→剛撃(critd+10%)に）。CRITDにTR(SRC,critd)、RNGMにTR(w,range)を配線。検証：鎌/チャクラムの minor/major・大剣major・エラー無し。
 

@@ -1772,6 +1772,22 @@ var MAST={
     major:[ {id:'ga_ct',ic:'✳️',nm:'多銃身',tx:'発射数 +1',d:'一度に発射する弾が#増える',dv:'1発',ef:{count:1}},
             {id:'ga_am',ic:'🔋',nm:'大弾倉',tx:'弾倉 +2',d:'リロードまでに撃てる弾数が#増える',dv:'2発',ef:{ammo:2}},
             {id:'ga_D',ic:'💪',nm:'剛・攻撃力',tx:'+12%',d:'弾の威力が#大きく上がる',dv:'12%',ef:{dmg:.12}} ]
+  },
+  dynamite:{  // ダイナマイト：dmg/area/burst/rate/range
+    minor:[ {id:'dy_d',ic:'💪',nm:'攻撃力',tx:'+6%',d:'ダイナマイトの威力が#上がる',dv:'6%',ef:{dmg:.06}},
+            {id:'dy_a',ic:'🌀',nm:'範囲',tx:'+6%',d:'爆発の範囲が#広がる',dv:'6%',ef:{area:.06}},
+            {id:'dy_c',ic:'⌛',nm:'間隔',tx:'−5%',d:'投げる間隔が#短くなる',dv:'5%',ef:{cd:-.05}} ],
+    major:[ {id:'dy_D',ic:'💪',nm:'剛・攻撃力',tx:'+12%',d:'ダイナマイトの威力が#大きく上がる',dv:'12%',ef:{dmg:.12}},
+            {id:'dy_b',ic:'⚡',nm:'追い投げ',tx:'連射 +1',d:'続けて#多く投げる',dv:'1個',ef:{burst:1}},
+            {id:'dy_A',ic:'🌀',nm:'大爆発',tx:'+15%',d:'爆発の範囲が#大きく広がる',dv:'15%',ef:{area:.15}} ]
+  },
+  musket:{  // マスケット：dmg/rate/burst/ammo/range（散弾数はcount/ammoで増える）
+    minor:[ {id:'mu_d',ic:'💪',nm:'攻撃力',tx:'+6%',d:'弾の威力が#上がる',dv:'6%',ef:{dmg:.06}},
+            {id:'mu_c',ic:'⌛',nm:'間隔',tx:'−5%',d:'撃つ間隔が#短くなる',dv:'5%',ef:{cd:-.05}},
+            {id:'mu_r',ic:'📏',nm:'射程',tx:'+8%',d:'弾が#遠くまで届く',dv:'8%',ef:{range:.08}} ],
+    major:[ {id:'mu_D',ic:'💪',nm:'剛・攻撃力',tx:'+12%',d:'弾の威力が#大きく上がる',dv:'12%',ef:{dmg:.12}},
+            {id:'mu_ct',ic:'✳️',nm:'散弾増',tx:'発射数 +2',d:'一度に撃つ散弾が#増える',dv:'2発',ef:{count:2}},
+            {id:'mu_b',ic:'⚡',nm:'追い撃ち',tx:'連射 +1',d:'続けて#多く撃つ',dv:'1回',ef:{burst:1}} ]
   }
 };
 var MASTIDS={};   // 武器ごとの有効オプションid集合（旧SELの掃除に使う）
@@ -2253,7 +2269,7 @@ function figInfo(id){
   if(BOSS[id]){ var B=BOSS[id], tt=ETYPE[B.key]||{}; return {nm:B.nm,shape:tt.shape,col:tt.col,dark:tt.dark,desc:BDEX[id]||'',boss:true}; }
   var t=ETYPE[id]||{}; return {nm:t.nm,shape:t.shape,col:t.col,dark:t.dark,desc:DEX[id]||'',boss:false};
 }
-var VERSION='α1.0.114'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
+var VERSION='α1.0.115'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
 function applySave(o){
   for(var i=0;i<UPG.length;i++) META[UPG[i].id]=0;
   try{
@@ -7364,6 +7380,8 @@ Array.prototype.forEach.call(document.querySelectorAll('#setview button'),functi
 // 更新履歴：1つのお知らせ内で「バージョン見出し」ごとに変更点を並べる（新しい順）。
 // マージのたびに先頭へ新バージョンを追加し、VERSION も更新する。
 var UPDATES=[
+  {v:'α1.0.115', items:[
+    '熟練度リニューアル：射撃（ダイナマイト・マスケット）を実装しました。']},
   {v:'α1.0.114', items:[
     '熟練度リニューアル：剣技（鎌・チャクラム）を実装しました。大剣の特別枠を「旋風斬」→「剛撃（会心ダメージ+10%）」に変更。']},
   {v:'α1.0.113', items:[
