@@ -10,6 +10,10 @@
 - リザルト画面と設定画面に `VERSION` を表示。
 - お知らせ（`UPDATES` 配列）は**1枠内でバージョン見出しごとに変更点を掲載**（新しい順）。マージ時は `UPDATES` 先頭に新バージョンを追加し `VERSION` を一致させる。
 
+## ver.α1.0.126
+- 墓守の投げる墓を大型化：ブーメラン/突き刺しの grave スプライト 80→124、盾構え 76→104。当たり判定も `P.r+34`→`P.r+48` に拡大。
+- フレイムサークルの「間隔」回転強化を増強：`whirlA` 係数を `1/Math.max(0.2,1+TR('flame','cd'))`→`Math.min(3.4,1-TR('flame','cd')*4)`（1段=約+20%、上限3.4倍）。
+
 ## ver.α1.0.125
 - グール(ghoul)にスプライト追加（従来は S3A で goblin 図形の流用）。`assets/ghoul.png` を `SPRDATA`・`SHAPE_SPR`(`ghoul:'ghoul'`)・`SPRSZ`(`{s:3.2,oy:0.30}`) に登録。
 - 墓守(gravekeeper)を3差分スプライト化。`assets/gravekeeper.png`(墓を持った版=通常)＋`assets/gravekeeper_bare.png`(持ってない版)＋`assets/grave.png`(墓単体)。`enemySpr` で墓を手放す状態（boomerang/stab/gwind/gdash）は `gravekeeper_bare` を返す。drawBoss の墓守描画は手続き十字を廃し `drawSprRot('grave',...)` に置換（ブーメラン=回転/突き刺し=正立/盾構え=対プレイヤー回転、各々未ロード時は図形フォールバック）。図鑑ポートレートは「持った版」。

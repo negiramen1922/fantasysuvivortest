@@ -2445,7 +2445,7 @@ function figInfo(id){
   if(BOSS[id]){ var B=BOSS[id], tt=ETYPE[B.key]||{}; return {nm:B.nm,shape:tt.shape,col:tt.col,dark:tt.dark,desc:BDEX[id]||'',boss:true}; }
   var t=ETYPE[id]||{}; return {nm:t.nm,shape:t.shape,col:t.col,dark:t.dark,desc:DEX[id]||'',boss:false};
 }
-var VERSION='α1.0.125'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
+var VERSION='α1.0.126'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
 function applySave(o){
   for(var i=0;i<UPG.length;i++) META[UPG[i].id]=0;
   try{
@@ -2641,7 +2641,7 @@ function update(dt){
   // ヒットストップ：世界は止まるが演出は動く
   if(hitStop>0){ hitStop-=dt; stepFx(dt); return; }
   time+=dt;
-  whirlA+=dt*2.4/Math.max(0.2,1+TR('flame','cd'));   // フレイムサークルの「間隔」強化で回転も速くなる
+  whirlA+=dt*2.4*Math.min(3.4,1-TR('flame','cd')*4);   // フレイムサークルの「間隔」強化で回転が大きく速くなる（1段=約+20%）
   if(swingT>0){ swingT-=dt; if(swingT<0) swingT=0; }
   rtok+=dt*14; if(rtok>8) rtok=8;
   if(chainT>0){ chainT-=dt; if(chainT<=0) chain=0; }
@@ -4082,7 +4082,7 @@ function moveEnemies(dt){
         if(e.gt<0.8){ e.gx+=e.gvx*dt; e.gy+=e.gvy*dt; }        // 往路
         else{ var rdx=e.x-e.gx, rdy=e.y-e.gy, rd=Math.hypot(rdx,rdy)||1; e.gx+=rdx/rd*560*dt; e.gy+=rdy/rd*560*dt; } // 復路（墓守へ戻る）
         e.grot=(e.grot||0)+dt*3;                                // ゆっくり回転
-        if(P.hurt<=0&&P.inv<=0&&!P.god&&Math.hypot(P.x-e.gx,P.y-e.gy)<P.r+34){
+        if(P.hurt<=0&&P.inv<=0&&!P.god&&Math.hypot(P.x-e.gx,P.y-e.gy)<P.r+48){
           P.hp-=e.dmg*(1-0.04*M('armor'))*(1-0.03*(P.p.bulwark||0))*dexTakeMul(figKey(e)); P.hurt=0.55; shake=Math.min(16,shake+6);
           sfx(150,.16,'square',.09,.5);
           if(P.hp<=0){ P.hp=0; setKiller(e); die(); return; }
@@ -6183,7 +6183,7 @@ function drawEnemy(e){
     if(e.st==='boomerang'||e.st==='stab'){
       var mgx=(e.gx||e.x)-e.x, mgy=(e.gy||e.y)-e.y;
       var grot=(e.st==='boomerang')?(e.grot||0):0;
-      if(!drawSprRot('grave',mgx,mgy,grot,80)){                   // 墓単体スプライト（未ロード時は図形で代替）
+      if(!drawSprRot('grave',mgx,mgy,grot,124)){                  // 墓単体スプライト（大きめ・未ロード時は図形で代替）
         ctx.save(); ctx.translate(mgx,mgy); ctx.rotate(grot);
         ctx.fillStyle='#c2b9a6'; ctx.strokeStyle='#4a463c'; ctx.lineWidth=3;
         ctx.fillRect(-10,-7,20,46); ctx.strokeRect(-10,-7,20,46);   // 縦棒（大きく）
@@ -6202,7 +6202,7 @@ function drawEnemy(e){
       ctx.globalAlpha=0.3+0.2*Math.sin(time*10); ctx.strokeStyle='#bfe0ff'; ctx.lineWidth=4;
       ctx.beginPath(); ctx.arc(0,12,36,0,6.3); ctx.stroke(); ctx.globalAlpha=1;
       ctx.restore();
-      if(!drawSprRot('grave',sx,sy,ga+Math.PI/2,76)){              // 墓単体スプライト（盾構え）
+      if(!drawSprRot('grave',sx,sy,ga+Math.PI/2,104)){             // 墓単体スプライト（盾構え・大きめ）
         ctx.save(); ctx.translate(sx,sy); ctx.rotate(ga+Math.PI/2);
         ctx.fillStyle='#d4cbb6'; ctx.strokeStyle='#4a463c'; ctx.lineWidth=3;
         ctx.fillRect(-11,-8,22,50); ctx.strokeRect(-11,-8,22,50);
@@ -7657,6 +7657,9 @@ Array.prototype.forEach.call(document.querySelectorAll('#setview button'),functi
 // 更新履歴：1つのお知らせ内で「バージョン見出し」ごとに変更点を並べる（新しい順）。
 // マージのたびに先頭へ新バージョンを追加し、VERSION も更新する。
 var UPDATES=[
+  {v:'α1.0.126', items:[
+    '墓守が投げる墓を大きくしました（見た目・当たり判定とも）。',
+    'フレイムサークルの「間隔」強化による回転速度アップの効果を強めました（1段あたり約+20%）。']},
   {v:'α1.0.125', items:[
     'グールの立ち絵を専用のドット絵（頭にネジ）に差し替えました。',
     '墓守の立ち絵を「墓を持った版／持ってない版／墓単体」の3差分で構成。墓をブーメラン投げ・地面に突き刺し・盾に構える動作で、墓を手放している間は本体が墓なしの姿になります。',
