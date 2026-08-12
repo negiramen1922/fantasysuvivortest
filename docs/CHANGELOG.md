@@ -10,6 +10,11 @@
 - リザルト画面と設定画面に `VERSION` を表示。
 - お知らせ（`UPDATES` 配列）は**1枠内でバージョン見出しごとに変更点を掲載**（新しい順）。マージ時は `UPDATES` 先頭に新バージョンを追加し `VERSION` を一致させる。
 
+## ver.α1.0.124
+- 墓守(gravekeeper)・スケルトンキング(skeletonking)・ヘカトンケイル(hecaton)にボス専用スプライトを追加。従来は key:'skeleton'/'mummy' の流用だった。`assets/gravekeeper.png`・`assets/skeletonking.png`・`assets/hecaton.png`(各64²) を追加し `SPRDATA` に登録、`enemySpr` に `e.bkey==='...'` の専用絵分岐を追加（slimeking等と同方式）、`SPRSZ` にサイズ登録（gravekeeper `{s:3.0,oy:0.42}`／skeletonking `{s:2.9,oy:0.34}`／hecaton `{s:2.7,oy:0.42}`）。図鑑ポートレートは `SPRDATA[id]` 経由で自動反映。CLUBBER の棍棒レイヤーはボス専用絵が優先されるため不使用。
+- リポジトリ整理：ルート直下のアップロード元 `dotpict_*.png` を全削除（必要分は assets/ にコピー済み）。再発防止に `.gitignore` へ `dotpict_*.png` を追加。
+- 検証：ローカルhttpの図鑑で墓守/スケルトンキング/ヘカトンケイルの新ポートレートが透過表示・エラー無しを確認。
+
 ## ver.α1.0.123
 - 神鹿ケルビ(deer)・ジャイアントモス(moth)の立ち絵をユーザー提供のドット絵スプライトに差し替え。従来は `shape:'deer'/'moth'` のプロシージャル図形（`drawForestShape`）で描画。`assets/deer.png`(64²)・`assets/moth.png`(96²) を追加し、`SPRDATA`（読込＋`keyWhite`で白背景を透過）、`SHAPE_SPR`（`deer:'deer'`/`moth:'moth'`→`enemySpr`がスプライトを返す）、`SPRSZ`（deer `{s:3.0,oy:0.42}`／moth `{s:3.0,oy:0.22}`）に登録。ボスは `e.shape==='deer'/'moth'` 経由でスプライト描画が優先され、図鑑ポートレート(`drawPortrait`→`SHAPE_SPR`)にも反映。プロシージャル図形コードは残置（休眠）。検証：ローカルhttpでステージ2の5:00ケルビ（実機で緑鹿・透過OK）・図鑑でケルビ/モス両ポートレート表示・エラー無しを確認。
 
