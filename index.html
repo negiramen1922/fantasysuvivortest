@@ -2076,13 +2076,19 @@ var ACHV=[
   {k:'survt', nm:'累計生存時間', ic:'⏳', stat:'survt',  side:'suf', tiers:[600,6000,30000,60000],                    words:['生存者','不屈の兵','歴戦の勇','不死身']},
   {k:'logins',nm:'累計ログイン', ic:'🗓', stat:'logins', side:'suf', tiers:[10,50,100,300],                           words:['常連','皆勤者','ヌシ','伝説の主']},
   {k:'crit',  nm:'累計会心',     ic:'🎯', stat:'crit',   side:'pre', tiers:[1000,10000,100000,1000000],               words:['鋭利な','痛撃の','会心の','必殺の']},
-  {k:'reacts',nm:'累計元素反応', ic:'✧', stat:'reacts', side:'pre', tiers:[1000,10000,100000,1000000],               words:['元素の','反応の','錬金の','賢者の']}
+  {k:'reacts',nm:'累計元素反応', ic:'✧', stat:'reacts', side:'pre', tiers:[1000,10000,100000,1000000],               words:['元素の','反応の','錬金の','賢者の']},
+  {k:'stage', nm:'ステージ制覇', ic:'🏳', side:'suf', tiers:[1,2,3],           words:['開拓者','踏破者','制覇者'],
+    fn:function(){ var n=0; for(var s in STAGES) if(STGCLEAR[s]) n++; return n; }},
+  {k:'dex',   nm:'図鑑 発見数',  ic:'📖', side:'pre', tiers:[10,20,50,100],    words:['見習いの','探究の','博識の','万物の'],
+    fn:function(){ var n=0; for(var k in BSEEN) if(BSEEN[k]) n++; return n; }},
+  {k:'wpn',   nm:'使った武器の種類', ic:'⚒', side:'suf', tiers:[10,20,50,100], words:['武芸者','達人','百戦錬磨','万能の匠'],
+    fn:function(){ var n=0; for(var w in WX) if((WX[w]||0)>0&&WEAPONS[w]) n++; return n; }}
 ];
 var ACLAIM={};                 // 受け取り済み実績 { 'kills:0':1, ... }
 var TWON={pre:'', suf:''};     // 選択中の二つ名パーツid（'cat:tier'）。空なら未設定
 function achDef(k){ for(var i=0;i<ACHV.length;i++) if(ACHV[i].k===k) return ACHV[i]; return null; }
 function achId(a,i){ return a.k+':'+i; }
-function achStat(a){ return ACH[a.stat]||0; }
+function achStat(a){ return a.fn?a.fn():(ACH[a.stat]||0); }
 function achDone(a,i){ return achStat(a)>=a.tiers[i]; }
 function achClaimed(a,i){ return !!ACLAIM[achId(a,i)]; }
 function achClaimable(a,i){ return achDone(a,i)&&!achClaimed(a,i); }
@@ -2173,7 +2179,7 @@ function figInfo(id){
   if(BOSS[id]){ var B=BOSS[id], tt=ETYPE[B.key]||{}; return {nm:B.nm,shape:tt.shape,col:tt.col,dark:tt.dark,desc:BDEX[id]||'',boss:true}; }
   var t=ETYPE[id]||{}; return {nm:t.nm,shape:t.shape,col:t.col,dark:t.dark,desc:DEX[id]||'',boss:false};
 }
-var VERSION='α1.0.98'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
+var VERSION='α1.0.99'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
 function applySave(o){
   for(var i=0;i<UPG.length;i++) META[UPG[i].id]=0;
   try{
@@ -7263,6 +7269,8 @@ Array.prototype.forEach.call(document.querySelectorAll('#setview button'),functi
 // 更新履歴：1つのお知らせ内で「バージョン見出し」ごとに変更点を並べる（新しい順）。
 // マージのたびに先頭へ新バージョンを追加し、VERSION も更新する。
 var UPDATES=[
+  {v:'α1.0.99', items:[
+    '実績カテゴリを追加：「ステージ制覇」（1／2／3クリア）、「図鑑 発見数」（10／20／50／100）、「使った武器の種類」（10／20／50／100）。今後キャラや武器・モンスターが増えると上位ティアも達成できるようになります。']},
   {v:'α1.0.98', items:[
     'ゲーム内「実績」を追加：討伐数・累計ダメージ・累計生存時間・累計ログイン日数・累計会心・累計元素反応の6カテゴリ、各ティア達成で報酬。',
     '実績の報酬は「二つ名パーツ＋金貨（ティアが上がるほど増額）」。冠（前半）と銘（後半）を自由に組み合わせて自分の二つ名を作れます（例：破壊の討伐者）。',
