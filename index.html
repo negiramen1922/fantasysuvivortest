@@ -1335,15 +1335,15 @@ var MTAG={
 // ステージ1のボス。5分ごとに1体、30分のフェンリルがラストボス。
 var BOSS={
   bigslime:  { nm:'巨大スライム',       res:0.90, key:'slime',  hp:3000,   r:46, spd:40, dmg:26, xp:450,  pts:3000 },
-  greatboar: { nm:'グレーターボア',     res:0.92, key:'boar',   hp:30000,   r:44, spd:60, dmg:34, xp:860,  pts:6000,
+  greatboar: { nm:'グレーターボア',     res:0.92, key:'boar',   hp:9000,   r:44, spd:60, dmg:34, xp:860,  pts:6000,
                ai:'charge', range:520, acd:2.4, chspd:540, wind:0.65, chdur:1.1 },
   champion:  { nm:'ゴブリンチャンピオン', res:0.92, key:'goblin', hp:22000,  r:40, spd:64, dmg:36, xp:1230, pts:10000,
                ai:'slam', acd:3.6, wind:0.7, nbul:16, bspd:250, bdmg:18 },
-  slimeking: { nm:'スライムキング',     res:0.90, key:'slime',  hp:90000,  r:54, spd:46, dmg:40, xp:1520, pts:16000,
+  slimeking: { nm:'スライムキング',     res:0.90, key:'slime',  hp:45000,  r:54, spd:46, dmg:40, xp:1520, pts:16000,
                ai:'slam', acd:3.4, wind:0.9, nbul:22, bspd:205, bdmg:16, split:{k:'slimeM',n:5} },
-  goblinking:{ nm:'ゴブリンキング',     res:0.94, key:'goblin', hp:190000,  r:46, spd:58, dmg:44, xp:1830, pts:24000,
+  goblinking:{ nm:'ゴブリンキング',     res:0.94, key:'goblin', hp:85000,  r:46, spd:58, dmg:44, xp:1830, pts:24000,
                ai:'kingcombo', acd:3.4, chspd:560, chdur:1.0, wind:0.7 },
-  fenrir:    { nm:'フェンリル',         res:0.96, key:'wolf',   hp:320000, r:50, spd:104, dmg:33, xp:2160, pts:60000,
+  fenrir:    { nm:'フェンリル',         res:0.96, key:'wolf',   hp:160000, r:50, spd:104, dmg:33, xp:2160, pts:60000,
                ai:'fenrir', acd:4.0, chspd:600, chdur:1.0, wind:0.8, nbul:20, bspd:210, bdmg:16, last:1 },
   // ===== ステージ2（森）ボス =====
   kervi:      { nm:'神鹿ケルビ',       res:0.92, key:'deer',    hp:46000,  r:46, spd:60, dmg:40, xp:1200, pts:16000,
@@ -2192,7 +2192,7 @@ function figInfo(id){
   if(BOSS[id]){ var B=BOSS[id], tt=ETYPE[B.key]||{}; return {nm:B.nm,shape:tt.shape,col:tt.col,dark:tt.dark,desc:BDEX[id]||'',boss:true}; }
   var t=ETYPE[id]||{}; return {nm:t.nm,shape:t.shape,col:t.col,dark:t.dark,desc:DEX[id]||'',boss:false};
 }
-var VERSION='α1.0.104'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
+var VERSION='α1.0.105'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
 function applySave(o){
   for(var i=0;i<UPG.length;i++) META[UPG[i].id]=0;
   try{
@@ -7296,6 +7296,8 @@ Array.prototype.forEach.call(document.querySelectorAll('#setview button'),functi
 // 更新履歴：1つのお知らせ内で「バージョン見出し」ごとに変更点を並べる（新しい順）。
 // マージのたびに先頭へ新バージョンを追加し、VERSION も更新する。
 var UPDATES=[
+  {v:'α1.0.105', items:[
+    'ステージ1のボスHPが上がりすぎていたので、元の値に戻しました（グレーターボア9,000／スライムキング45,000／ゴブリンキング85,000／フェンリル160,000）。ステージ2・3はそのままです。']},
   {v:'α1.0.104', items:[
     '受け取りボックスで報酬を受け取ると、何をどれだけ受け取ったか（例：「3件を受け取りました 金貨+80 / 銀貨+300」）を表示するようにしました。',
     '通常ステージのボスHPを「倍率」ではなく基礎HPの引き上げで調整（例：フェンリル32万、スケルトンドラゴン56万）。ステージが進むほどボスも固くなります。',
