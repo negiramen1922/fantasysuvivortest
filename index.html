@@ -184,6 +184,18 @@ canvas{display:block;width:100%;height:100%;touch-action:none}
 .dday.done::after{content:'✓';position:absolute;top:2px;right:4px;color:#7ce08a;font-size:11px}
 .dday.cur{border-color:var(--gold);box-shadow:0 0 12px rgba(255,204,77,.35)}
 #dailymsg{text-align:center;color:#cbb8ff;font-size:13px;margin:2px 0}
+#wunlock{position:absolute;inset:0;display:none;align-items:center;justify-content:center;background:rgba(6,4,16,.82);z-index:12;padding:16px}
+#wunlock.on{display:flex}
+.wupop{width:100%;max-width:380px;background:linear-gradient(180deg,rgba(40,30,72,.98),rgba(22,16,44,.98));
+  border:1px solid rgba(255,204,77,.5);border-radius:16px;padding:20px 16px;text-align:center;
+  box-shadow:0 0 40px rgba(255,204,77,.18);animation:wupin .35s ease}
+@keyframes wupin{from{transform:scale(.82);opacity:0}to{transform:scale(1);opacity:1}}
+.wuhead{color:var(--gold);font-size:16px;font-weight:bold;margin-bottom:12px}
+#wulist{display:flex;flex-direction:column;gap:9px;margin-bottom:14px}
+.wurow{display:flex;align-items:center;gap:12px;padding:9px 12px;border:1px solid rgba(255,204,77,.3);border-radius:11px;background:rgba(255,204,77,.06)}
+.wurow .wg{font-size:30px;flex:none;width:40px;text-align:center}
+.wurow .wt{flex:1;min-width:0;text-align:left;color:#fff;font-size:14px}
+.wurow .wt b{color:var(--gold)}
 #maillist{width:100%;flex:1;min-height:0;overflow-y:auto;display:flex;flex-direction:column;gap:8px}
 .mailrow{display:flex;gap:10px;align-items:center;padding:10px;border:1px solid var(--line);border-radius:10px;background:rgba(20,14,45,.5)}
 .mailrow .mic{flex:none;font-size:22px;width:30px;text-align:center}
@@ -696,6 +708,14 @@ img.wspr{width:1.15em;height:1.15em;object-fit:contain;image-rendering:pixelated
       <div id="dailymsg"></div>
       <button class="btn" id="dailyclaim" style="margin-top:0">受け取る</button>
       <button class="btn sub2" id="dailyclose" style="margin-top:0">閉じる</button>
+    </div>
+  </div>
+
+  <div id="wunlock">
+    <div class="wupop">
+      <div class="wuhead">🔓 新しい武器が使えるようになった！</div>
+      <div id="wulist"></div>
+      <button class="btn" id="wuok" style="margin-top:2px">やった！</button>
     </div>
   </div>
 
@@ -1929,9 +1949,9 @@ function wAchNow(id){
   return fmt(ACH[L.cond]||0)+' / '+fmt(L.val);
 }
 // 実績条件を満たした武器を自動解放（実装前に条件達成済みの人も起動時に解放）。解放名の配列を返す。
-function weaponUnlockCheck(){
+function weaponUnlockCheck(){   // 実績を満たした武器を解放。解放した武器idの配列を返す。
   var got=[];
-  for(var id in WLOCK){ if(!WUNL[id]&&wAchOK(id)){ WUNL[id]=1; got.push(WEAPONS[id].nm); } }
+  for(var id in WLOCK){ if(!WUNL[id]&&wAchOK(id)){ WUNL[id]=1; got.push(id); } }
   return got;
 }
 
@@ -2074,7 +2094,7 @@ function figInfo(id){
   if(BOSS[id]){ var B=BOSS[id], tt=ETYPE[B.key]||{}; return {nm:B.nm,shape:tt.shape,col:tt.col,dark:tt.dark,desc:BDEX[id]||'',boss:true}; }
   var t=ETYPE[id]||{}; return {nm:t.nm,shape:t.shape,col:t.col,dark:t.dark,desc:DEX[id]||'',boss:false};
 }
-var VERSION='α1.0.96'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
+var VERSION='α1.0.97'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
 function applySave(o){
   for(var i=0;i<UPG.length;i++) META[UPG[i].id]=0;
   try{
@@ -6950,8 +6970,8 @@ function finish(won){
   var firstClear=(won&&!ENDLESS&&!STGCLEAR[curStage]);   // 初回クリア判定（STGCLEAR を立てる前に）
   if(won){ ACH.clear=1; STGCLEAR[curStage]=1; }
   var newCh=unlockCheck();
-  var newWp=weaponUnlockCheck();   // 実績を満たした武器を解放
-  for(var nwi=0;nwi<newWp.length;nwi++) toast('🔓',newWp[nwi]+' を解放！','#9be89b');
+  var newWpIds=weaponUnlockCheck();   // 実績を満たした武器を解放（idの配列）
+  var newWp=newWpIds.map(function(id){ return WEAPONS[id].nm; });
   var newUnlocks=newCh.concat(newWp);
   var firstClearGold=0;
   if(won&&!ENDLESS){
@@ -7019,6 +7039,7 @@ function finish(won){
   document.getElementById('rankbtn2').style.display=ENDLESS?'':'none';   // 無限ランのみランキングボタン表示
   showView('result');
   document.getElementById('veil').classList.remove('hide');
+  if(newWpIds.length) setTimeout(function(){ showWeaponUnlockPopup(newWpIds); },500);   // 実績で武器解放→リザルトでポップアップ
 }
 /* ============ ホーム / ステージ選択 / 結果 の画面切替 ============ */
 var homeView='home';
@@ -7154,6 +7175,8 @@ Array.prototype.forEach.call(document.querySelectorAll('#setview button'),functi
 // 更新履歴：1つのお知らせ内で「バージョン見出し」ごとに変更点を並べる（新しい順）。
 // マージのたびに先頭へ新バージョンを追加し、VERSION も更新する。
 var UPDATES=[
+  {v:'α1.0.97', items:[
+    '実績を達成して武器が解放されたとき、リザルト画面で「新しい武器〇〇が使えるようになった！」とポップアップで祝うようにしました。']},
   {v:'α1.0.96', items:[
     '武器の解放（ロック）システムを追加：武器は最初は各系統1つ・計9種が使え、残り13種はロック。ホームの「武器庫」から〈金貨10〉または〈銀貨（武器ごと1,000〜10,000）〉で解放できるほか、武器ごとの実績（累計討伐・元素反応・生存時間・ステージクリアなど）を満たすと無料で自動解放されます。',
     'キャラの解放を有効化：騎士は最初から、他4体は〈金貨10〉または各キャラの実績で解放。',
@@ -7517,6 +7540,22 @@ document.getElementById('dailyclaim').onclick=function(){
 document.getElementById('dailyclose').onclick=function(){ dailyEl.classList.remove('on'); };
 // ホームに来たとき、未受け取りなら自動で表示（チュートリアル中の初回セッションは翌回に回す）
 function maybeShowDaily(){ if(TUTSEEN && dailyClaimable()) openDaily(); }
+
+/* ============ 武器解放ポップアップ（実績で解放時にリザルトで表示）============ */
+var wunlockEl=document.getElementById('wunlock');
+function showWeaponUnlockPopup(ids){
+  if(!ids||!ids.length) return;
+  var L=document.getElementById('wulist'); if(!L) return; L.innerHTML='';
+  for(var i=0;i<ids.length;i++){
+    var id=ids[i], w=WEAPONS[id]; if(!w) continue;
+    var d=document.createElement('div'); d.className='wurow';
+    d.innerHTML='<div class="wg">'+wIcon(id)+'</div><div class="wt">新しい武器 <b>'+w.nm+'</b> が使えるようになった！</div>';
+    L.appendChild(d);
+  }
+  wunlockEl.classList.add('on');
+  [0,110,220].forEach(function(ms,i){ setTimeout(function(){ sfx([784,1047,1319][i],.18,'triangle',.08); },ms); });
+}
+document.getElementById('wuok').onclick=function(){ wunlockEl.classList.remove('on'); };
 
 /* ============ チュートリアル（遊びかた）============ */
 var tutEl=document.getElementById('tutorial');
