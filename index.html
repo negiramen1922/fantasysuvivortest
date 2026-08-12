@@ -1335,33 +1335,33 @@ var MTAG={
 // ステージ1のボス。5分ごとに1体、30分のフェンリルがラストボス。
 var BOSS={
   bigslime:  { nm:'巨大スライム',       res:0.90, key:'slime',  hp:3000,   r:46, spd:40, dmg:26, xp:450,  pts:3000 },
-  greatboar: { nm:'グレーターボア',     res:0.92, key:'boar',   hp:9000,   r:44, spd:60, dmg:34, xp:860,  pts:6000,
+  greatboar: { nm:'グレーターボア',     res:0.92, key:'boar',   hp:30000,   r:44, spd:60, dmg:34, xp:860,  pts:6000,
                ai:'charge', range:520, acd:2.4, chspd:540, wind:0.65, chdur:1.1 },
   champion:  { nm:'ゴブリンチャンピオン', res:0.92, key:'goblin', hp:22000,  r:40, spd:64, dmg:36, xp:1230, pts:10000,
                ai:'slam', acd:3.6, wind:0.7, nbul:16, bspd:250, bdmg:18 },
-  slimeking: { nm:'スライムキング',     res:0.90, key:'slime',  hp:45000,  r:54, spd:46, dmg:40, xp:1520, pts:16000,
+  slimeking: { nm:'スライムキング',     res:0.90, key:'slime',  hp:90000,  r:54, spd:46, dmg:40, xp:1520, pts:16000,
                ai:'slam', acd:3.4, wind:0.9, nbul:22, bspd:205, bdmg:16, split:{k:'slimeM',n:5} },
-  goblinking:{ nm:'ゴブリンキング',     res:0.94, key:'goblin', hp:85000,  r:46, spd:58, dmg:44, xp:1830, pts:24000,
+  goblinking:{ nm:'ゴブリンキング',     res:0.94, key:'goblin', hp:190000,  r:46, spd:58, dmg:44, xp:1830, pts:24000,
                ai:'kingcombo', acd:3.4, chspd:560, chdur:1.0, wind:0.7 },
-  fenrir:    { nm:'フェンリル',         res:0.96, key:'wolf',   hp:160000, r:50, spd:104, dmg:33, xp:2160, pts:60000,
+  fenrir:    { nm:'フェンリル',         res:0.96, key:'wolf',   hp:320000, r:50, spd:104, dmg:33, xp:2160, pts:60000,
                ai:'fenrir', acd:4.0, chspd:600, chdur:1.0, wind:0.8, nbul:20, bspd:210, bdmg:16, last:1 },
   // ===== ステージ2（森）ボス =====
-  kervi:      { nm:'神鹿ケルビ',       res:0.92, key:'deer',    hp:30000,  r:46, spd:60, dmg:40, xp:1200, pts:16000,
+  kervi:      { nm:'神鹿ケルビ',       res:0.92, key:'deer',    hp:46000,  r:46, spd:60, dmg:40, xp:1200, pts:16000,
                ai:'kervi', acd:2.4, chspd:560, chdur:0.9, wind:0.9, nbul:18, bspd:205, bdmg:15 },
-  gmoth:      { nm:'ジャイアントモス', res:0.93, key:'moth',    hp:75000,  r:50, spd:48, dmg:42, xp:1600, pts:24000,
+  gmoth:      { nm:'ジャイアントモス', res:0.93, key:'moth',    hp:125000,  r:50, spd:48, dmg:42, xp:1600, pts:24000,
                ai:'mothspray', acd:2.2, bspd:205, bdmg:15 },
-  arachnid:   { nm:'アラクネイド',     res:0.94, key:'arachne', hp:160000, r:50, spd:58, dmg:44, xp:1900, pts:40000,
+  arachnid:   { nm:'アラクネイド',     res:0.94, key:'arachne', hp:250000, r:50, spd:58, dmg:44, xp:1900, pts:40000,
                ai:'arachnid', acd:2.0, nbul:20, bspd:220, bdmg:16 },
-  eldertreant:{ nm:'エルダートレント', res:0.96, key:'wtreant', hp:300000, r:56, spd:34, dmg:50, xp:2400, pts:60000,
+  eldertreant:{ nm:'エルダートレント', res:0.96, key:'wtreant', hp:430000, r:56, spd:34, dmg:50, xp:2400, pts:60000,
                ai:'treant', acd:2.5, bdmg:15, last:1 },
   // ===== ステージ3（王墓）ボス ※AIは仮（本実装はステップ3）=====
-  gravekeeper:{ nm:'墓守',             res:0.92, key:'skeleton', hp:40000,  r:46, spd:56, dmg:42, xp:1300, pts:16000,
+  gravekeeper:{ nm:'墓守',             res:0.92, key:'skeleton', hp:64000,  r:46, spd:56, dmg:42, xp:1300, pts:16000,
                ai:'gravekeeper', acd:2.2, nbul:18, bspd:250, bdmg:18, chspd:540, chdur:0.9 },
-  skeletonking:{ nm:'スケルトンキング', res:0.94, key:'skeleton', hp:90000,  r:48, spd:60, dmg:46, xp:1700, pts:24000,
+  skeletonking:{ nm:'スケルトンキング', res:0.94, key:'skeleton', hp:175000,  r:48, spd:60, dmg:46, xp:1700, pts:24000,
                ai:'sking', acd:2.6, wind:0.8, nbul:20, bspd:250, bdmg:18, chspd:560, chdur:0.8 },
-  hecaton:    { nm:'ヘカトンケイル',   res:0.95, key:'mummy',    hp:175000, r:54, spd:44, dmg:48, xp:2000, pts:40000,
+  hecaton:    { nm:'ヘカトンケイル',   res:0.95, key:'mummy',    hp:340000, r:54, spd:44, dmg:48, xp:2000, pts:40000,
                ai:'hecaton', acd:2.8, nbul:24, bspd:230, bdmg:18 },
-  skeledragon:{ nm:'スケルトンドラゴン', res:0.96, key:'gargoyle', hp:340000, r:56, spd:100, dmg:54, xp:2600, pts:70000,
+  skeledragon:{ nm:'スケルトンドラゴン', res:0.96, key:'gargoyle', hp:560000, r:56, spd:100, dmg:54, xp:2600, pts:70000,
                ai:'sdragon', acd:2.6, chspd:600, chdur:1.0, wind:0.8, nbul:22, bspd:220, bdmg:18, last:1 }
 };
 var BOSS_AT=[[300,'greatboar'],[600,'slimeking'],[900,'goblinking'],[1200,'fenrir']];
@@ -1428,7 +1428,7 @@ var STAGES={
       wave:WAVE2, bossAt:BOSS_AT2, hpMul:1.0, req:1, swarm:1, swarmStart:360,
       ground:{ bg:'#0e1f14', grid:'rgba(70,120,74,.26)',  dot:'rgba(120,180,120,.15)' } },
   3:{ nm:'古代の王墓', sub:'20:00・アンデッド・高難度', icon:'⚰️', flavor:'死者の眠る古の王墓。地から這い出る屍、強化する術者、盾を構える不死の兵。最奥に竜の亡骸が待つ。',
-      wave:WAVE3, bossAt:BOSS_AT3, hpMul:1.15, req:2, swarm:1, swarmStart:300, swarmK:'fly',
+      wave:WAVE3, bossAt:BOSS_AT3, hpMul:1.0, req:2, swarm:1, swarmStart:300, swarmK:'fly',
       ground:{ bg:'#1c1710', grid:'rgba(150,120,70,.24)', dot:'rgba(200,170,110,.13)' } }
 };
 var ALLSTG=0;   // 1で全ステージ解放（開発用）。製品は 0
@@ -2192,7 +2192,7 @@ function figInfo(id){
   if(BOSS[id]){ var B=BOSS[id], tt=ETYPE[B.key]||{}; return {nm:B.nm,shape:tt.shape,col:tt.col,dark:tt.dark,desc:BDEX[id]||'',boss:true}; }
   var t=ETYPE[id]||{}; return {nm:t.nm,shape:t.shape,col:t.col,dark:t.dark,desc:DEX[id]||'',boss:false};
 }
-var VERSION='α1.0.103'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
+var VERSION='α1.0.104'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
 function applySave(o){
   for(var i=0;i<UPG.length;i++) META[UPG[i].id]=0;
   try{
@@ -3562,11 +3562,12 @@ function spawnBoss(key){
   var scale=1+time/60*0.63, dscale=1+time/60*0.13;   // 攻撃力の伸びを緩和（ワンパン対策）
   var a=Math.random()*6.283, dist=offR()+90;
   var bhp=B.hp*bossHpMul;
-  // ボスHPの下限（床）：常に「最強エリート級」より固くする。エリートHP = 敵HP430 × 時間スケール(1+分×0.63) × エリート倍率(3.4+時間×0.03) と同式で算出。
-  // 通常ステージはボスを固めにしたいので床倍率を高め(1.4)、無限ランは前回調整どおり(1.2)。時間で伸びるので後半でもエリートに柔らかさで負けない。
-  var fRatio=ENDLESS?1.2:1.4;
-  var floorHp=430*(1+time/60*0.63)*(3.4+time*0.03)*fRatio;
-  if(bhp<floorHp) bhp=floorHp;
+  // ボスHPの下限（床）は「無限ランのみ」。エリートが時間で無限に固くなるため、ボスが後半で柔らかく負けないよう最強エリート級×1.2を保証。
+  // 通常ステージは床を使わず、各ボスの基礎HPだけで決める（＝基礎HPを直接調整する方針）。
+  if(ENDLESS){
+    var floorHp=430*(1+time/60*0.63)*(3.4+time*0.03)*1.2;
+    if(bhp<floorHp) bhp=floorHp;
+  }
   var e={ k:B.key, bkey:key, boss:1, last:B.last||0,
     nm:B.nm, x:P.x+Math.cos(a)*dist, y:P.y+Math.sin(a)*dist,
     hp:bhp, mhp:bhp, spd:B.spd, r:B.r,
@@ -3606,7 +3607,10 @@ function makeEnemy(k){
   }
   var a=Math.random()*Math.PI*2;
   var dist=offR()+60+Math.random()*120;
-  var scale=1+time/60*0.63, dscale=1+time/60*0.13;   // 攻撃力の伸びを緩和（ワンパン対策）
+  // 無限ラン：周回(loop)ごとに敵を強化。これで「弱ステージの2周目」でも「強ステージの1周目」より難しくなる。
+  var eLoop=ENDLESS?Math.floor(Math.floor(time/ENDLESS_BLOCK)/3):0;
+  var loopMul=1+eLoop*0.6;                            // 2周目=×1.6 / 3周目=×2.2 …（敵HP）
+  var scale=(1+time/60*0.63)*loopMul, dscale=(1+time/60*0.13)*(1+eLoop*0.25);   // 攻撃力の伸びは緩め
   var e={ k:k, nm:t.nm, x:P.x+Math.cos(a)*dist, y:P.y+Math.sin(a)*dist,
     hp:t.hp*scale, mhp:t.hp*scale, spd:t.spd*(0.9+Math.random()*0.25), r:t.r,
     col:t.col, dark:t.dark, xp:t.xp, dmg:t.dmg*dscale, shape:t.shape, pts:t.pts,
@@ -7292,6 +7296,10 @@ Array.prototype.forEach.call(document.querySelectorAll('#setview button'),functi
 // 更新履歴：1つのお知らせ内で「バージョン見出し」ごとに変更点を並べる（新しい順）。
 // マージのたびに先頭へ新バージョンを追加し、VERSION も更新する。
 var UPDATES=[
+  {v:'α1.0.104', items:[
+    '受け取りボックスで報酬を受け取ると、何をどれだけ受け取ったか（例：「3件を受け取りました 金貨+80 / 銀貨+300」）を表示するようにしました。',
+    '通常ステージのボスHPを「倍率」ではなく基礎HPの引き上げで調整（例：フェンリル32万、スケルトンドラゴン56万）。ステージが進むほどボスも固くなります。',
+    '無限ラン：周回するごとに敵が強くなるようにしました。これで「弱いステージの2周目」でも「強いステージの1周目」より難しくなります。']},
   {v:'α1.0.103', items:[
     '通常ステージのボスHPを底上げしました（柔らかすぎたため）。例：フェンリル16万→約32万、スケルトンドラゴン約39万。ステージが進むほどボスも固くなります。',
     'エリートの固さ調整を微修正（時間係数 0.025→0.03）。無限ランのボスは引き続きエリートより固く保たれます。']},
@@ -7627,17 +7635,26 @@ function renderMailbox(){
   var allb=document.getElementById('mailall'); if(allb) allb.style.display=MAILBOX.length?'':'none';
 }
 function grantMail(it){ if(!it) return; WALLET.gold+=(it.g|0); WALLET.silver+=(it.s|0); }
+function mailRewardText(g,s,n){   // 受け取り内容の表示テキスト
+  var parts=[]; if(g>0) parts.push('金貨 +'+fmt(g)); if(s>0) parts.push('銀貨 +'+fmt(s));
+  var rw=parts.length?parts.join(' / '):'報酬なし';
+  return (n>1?n+'件を受け取りました　':'受け取りました　')+rw;
+}
 function claimMail(i){
   if(i<0||i>=MAILBOX.length) return;
-  grantMail(MAILBOX[i]); MAILBOX.splice(i,1);
+  var it=MAILBOX[i], g=it.g|0, s=it.s|0;
+  grantMail(it); MAILBOX.splice(i,1);
   saveGame(); coinSfx(); updateMailBadge(); renderMailbox();
+  toast('🎁',(it.m?it.m+'：':'')+mailRewardText(g,s,1),'#ffd27a');
   if(typeof syncTitle==='function') syncTitle();
 }
 function claimAllMail(){
   if(!MAILBOX.length) return;
-  for(var i=0;i<MAILBOX.length;i++) grantMail(MAILBOX[i]);
+  var g=0,s=0,n=MAILBOX.length;
+  for(var i=0;i<MAILBOX.length;i++){ g+=(MAILBOX[i].g|0); s+=(MAILBOX[i].s|0); grantMail(MAILBOX[i]); }
   MAILBOX=[];
   saveGame(); coinSfx(); updateMailBadge(); renderMailbox();
+  toast('🎁',mailRewardText(g,s,n),'#ffd27a');
   if(typeof syncTitle==='function') syncTitle();
 }
 document.getElementById('mailbtn').onclick=function(){ audio(); renderMailbox(); mailEl.classList.add('on'); };
