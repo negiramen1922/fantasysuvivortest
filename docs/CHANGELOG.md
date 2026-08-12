@@ -10,6 +10,9 @@
 - リザルト画面と設定画面に `VERSION` を表示。
 - お知らせ（`UPDATES` 配列）は**1枠内でバージョン見出しごとに変更点を掲載**（新しい順）。マージ時は `UPDATES` 先頭に新バージョンを追加し `VERSION` を一致させる。
 
+## ver.α1.0.116
+- 熟練度10Lv：新メカ不要の7武器を実装（fire/thunder/chain/laser/holy/dhand/bell）。固有効果は大爆発(explode)・感電(chain)を流用。検証：fire/dhand の minor/major・エラー無し。
+
 ## ver.α1.0.115
 - 熟練度10Lv：射撃カテゴリ実装（dynamite/musket 追加）。新メカ不要（burst/count/range 配線済み）。
 

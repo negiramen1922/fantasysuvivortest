@@ -1788,6 +1788,62 @@ var MAST={
     major:[ {id:'mu_D',ic:'💪',nm:'剛・攻撃力',tx:'+12%',d:'弾の威力が#大きく上がる',dv:'12%',ef:{dmg:.12}},
             {id:'mu_ct',ic:'✳️',nm:'散弾増',tx:'発射数 +2',d:'一度に撃つ散弾が#増える',dv:'2発',ef:{count:2}},
             {id:'mu_b',ic:'⚡',nm:'追い撃ち',tx:'連射 +1',d:'続けて#多く撃つ',dv:'1回',ef:{burst:1}} ]
+  },
+  fire:{  // ファイヤーボール：dmg/count/pierce/rate/burst/range。固有:大爆発(explode)
+    minor:[ {id:'fi_d',ic:'💪',nm:'攻撃力',tx:'+6%',d:'火球の威力が#上がる',dv:'6%',ef:{dmg:.06}},
+            {id:'fi_p',ic:'➹',nm:'貫通',tx:'+1',d:'火球が#多くの敵を貫く',dv:'1体',ef:{pierce:1}},
+            {id:'fi_c',ic:'⌛',nm:'間隔',tx:'−5%',d:'火球を放つ間隔が#短くなる',dv:'5%',ef:{cd:-.05}} ],
+    major:[ {id:'fi_ct',ic:'✳️',nm:'多重火球',tx:'火球 +1',d:'同時に飛ぶ火球が#増える',dv:'1個',ef:{count:1}},
+            {id:'fi_ex',ic:'⭐',nm:'大爆発',tx:'爆発拡大',d:'命中時の爆発が#大きく広がる',dv:'大きく',ef:{explode:1,bigboom:1}},
+            {id:'fi_D',ic:'💪',nm:'剛・攻撃力',tx:'+12%',d:'火球の威力が#大きく上がる',dv:'12%',ef:{dmg:.12}} ]
+  },
+  thunder:{  // ドラゴンボルト：dmg/count/area/rate/range。固有:感電(chain)
+    minor:[ {id:'th_d',ic:'💪',nm:'攻撃力',tx:'+6%',d:'落雷の威力が#上がる',dv:'6%',ef:{dmg:.06}},
+            {id:'th_a',ic:'🌀',nm:'範囲',tx:'+6%',d:'落雷の範囲が#広がる',dv:'6%',ef:{area:.06}},
+            {id:'th_c',ic:'⌛',nm:'間隔',tx:'−5%',d:'落雷の間隔が#短くなる',dv:'5%',ef:{cd:-.05}} ],
+    major:[ {id:'th_ct',ic:'✳️',nm:'多重落雷',tx:'落雷 +1',d:'同時に落ちる雷が#増える',dv:'1発',ef:{count:1}},
+            {id:'th_ch',ic:'⭐',nm:'感電',tx:'連鎖',d:'落雷が近くの敵へ#連鎖する',dv:'連鎖',ef:{chain:1}},
+            {id:'th_D',ic:'💪',nm:'剛・攻撃力',tx:'+12%',d:'落雷の威力が#大きく上がる',dv:'12%',ef:{dmg:.12}} ]
+  },
+  chain:{  // チェインライトニング：dmg/chain/count/rate/range
+    minor:[ {id:'cn_d',ic:'💪',nm:'攻撃力',tx:'+6%',d:'雷撃の威力が#上がる',dv:'6%',ef:{dmg:.06}},
+            {id:'cn_ch',ic:'🔗',nm:'連鎖',tx:'+2',d:'敵から敵へ#多く跳ぶ',dv:'2体',ef:{chain:2}},
+            {id:'cn_c',ic:'⌛',nm:'間隔',tx:'−5%',d:'放つ間隔が#短くなる',dv:'5%',ef:{cd:-.05}} ],
+    major:[ {id:'cn_ct',ic:'✳️',nm:'多重雷',tx:'ビーム +1',d:'同時に伸びる雷が#増える',dv:'1本',ef:{count:1}},
+            {id:'cn_C',ic:'⌛',nm:'速射',tx:'−13%',d:'放つ間隔が#大きく短くなる',dv:'13%',ef:{cd:-.13}},
+            {id:'cn_D',ic:'💪',nm:'剛・攻撃力',tx:'+12%',d:'雷撃の威力が#大きく上がる',dv:'12%',ef:{dmg:.12}} ]
+  },
+  laser:{  // セイクリッドレーザー：dmg/count/rate/area
+    minor:[ {id:'la_d',ic:'💪',nm:'攻撃力',tx:'+6%',d:'レーザーの威力が#上がる',dv:'6%',ef:{dmg:.06}},
+            {id:'la_a',ic:'🌀',nm:'範囲',tx:'+6%',d:'レーザーの範囲が#広がる',dv:'6%',ef:{area:.06}},
+            {id:'la_c',ic:'⌛',nm:'間隔',tx:'−5%',d:'照射の間隔が#短くなる',dv:'5%',ef:{cd:-.05}} ],
+    major:[ {id:'la_r',ic:'📏',nm:'射程',tx:'+15%',d:'レーザーが#遠くまで届く',dv:'15%',ef:{range:.15}},
+            {id:'la_D',ic:'💪',nm:'剛・攻撃力',tx:'+12%',d:'レーザーの威力が#大きく上がる',dv:'12%',ef:{dmg:.12}},
+            {id:'la_A',ic:'🌀',nm:'大範囲',tx:'+15%',d:'レーザーの範囲が#大きく広がる',dv:'15%',ef:{area:.15}} ]
+  },
+  holy:{  // ホーリーランス：dmg/count/split/pierce/rate/burst/range
+    minor:[ {id:'ho_d',ic:'💪',nm:'攻撃力',tx:'+6%',d:'光槍の威力が#上がる',dv:'6%',ef:{dmg:.06}},
+            {id:'ho_p',ic:'➹',nm:'貫通',tx:'+1',d:'光槍が#多くの敵を貫く',dv:'1体',ef:{pierce:1}},
+            {id:'ho_c',ic:'⌛',nm:'間隔',tx:'−5%',d:'放つ間隔が#短くなる',dv:'5%',ef:{cd:-.05}} ],
+    major:[ {id:'ho_ct',ic:'✳️',nm:'多重光槍',tx:'槍 +1',d:'同時に放つ光槍が#増える',dv:'1本',ef:{count:1}},
+            {id:'ho_sp',ic:'✂️',nm:'聖光拡散',tx:'拡散 +2',d:'命中時に飛び散る破片が#増える',dv:'2個',ef:{split:2}},
+            {id:'ho_D',ic:'💪',nm:'剛・攻撃力',tx:'+12%',d:'光槍の威力が#大きく上がる',dv:'12%',ef:{dmg:.12}} ]
+  },
+  dhand:{  // ダークハンド：dmg/count/rate/range
+    minor:[ {id:'dh_d',ic:'💪',nm:'攻撃力',tx:'+6%',d:'闇の手の威力が#上がる',dv:'6%',ef:{dmg:.06}},
+            {id:'dh_c',ic:'⌛',nm:'間隔',tx:'−5%',d:'突く間隔が#短くなる',dv:'5%',ef:{cd:-.05}},
+            {id:'dh_r',ic:'📏',nm:'射程',tx:'+8%',d:'手が#遠くまで届く',dv:'8%',ef:{range:.08}} ],
+    major:[ {id:'dh_ct',ic:'✳️',nm:'多重の手',tx:'手 +1',d:'同時に伸びる手が#増える',dv:'1本',ef:{count:1}},
+            {id:'dh_D',ic:'💪',nm:'剛・攻撃力',tx:'+12%',d:'闇の手の威力が#大きく上がる',dv:'12%',ef:{dmg:.12}},
+            {id:'dh_R',ic:'📏',nm:'遠攻',tx:'+15%',d:'手が#さらに遠くまで届く',dv:'15%',ef:{range:.15}} ]
+  },
+  bell:{  // ベル：dmg/area/count/rate
+    minor:[ {id:'be_d',ic:'💪',nm:'攻撃力',tx:'+6%',d:'音の威力が#上がる',dv:'6%',ef:{dmg:.06}},
+            {id:'be_a',ic:'🌀',nm:'範囲',tx:'+6%',d:'音の波紋が#広がる',dv:'6%',ef:{area:.06}},
+            {id:'be_c',ic:'⌛',nm:'間隔',tx:'−5%',d:'鳴らす間隔が#短くなる',dv:'5%',ef:{cd:-.05}} ],
+    major:[ {id:'be_ct',ic:'✳️',nm:'多重波紋',tx:'波紋 +1',d:'同時に広がる波紋が#増える',dv:'1つ',ef:{count:1}},
+            {id:'be_D',ic:'💪',nm:'剛・攻撃力',tx:'+12%',d:'音の威力が#大きく上がる',dv:'12%',ef:{dmg:.12}},
+            {id:'be_A',ic:'🌀',nm:'大波紋',tx:'+15%',d:'音の波紋が#大きく広がる',dv:'15%',ef:{area:.15}} ]
   }
 };
 var MASTIDS={};   // 武器ごとの有効オプションid集合（旧SELの掃除に使う）
@@ -2269,7 +2325,7 @@ function figInfo(id){
   if(BOSS[id]){ var B=BOSS[id], tt=ETYPE[B.key]||{}; return {nm:B.nm,shape:tt.shape,col:tt.col,dark:tt.dark,desc:BDEX[id]||'',boss:true}; }
   var t=ETYPE[id]||{}; return {nm:t.nm,shape:t.shape,col:t.col,dark:t.dark,desc:DEX[id]||'',boss:false};
 }
-var VERSION='α1.0.115'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
+var VERSION='α1.0.116'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
 function applySave(o){
   for(var i=0;i<UPG.length;i++) META[UPG[i].id]=0;
   try{
@@ -7380,6 +7436,8 @@ Array.prototype.forEach.call(document.querySelectorAll('#setview button'),functi
 // 更新履歴：1つのお知らせ内で「バージョン見出し」ごとに変更点を並べる（新しい順）。
 // マージのたびに先頭へ新バージョンを追加し、VERSION も更新する。
 var UPDATES=[
+  {v:'α1.0.116', items:[
+    '熟練度リニューアル：ファイヤーボール・ドラゴンボルト・チェインライトニング・セイクリッドレーザー・ホーリーランス・ダークハンド・ベル を実装しました。']},
   {v:'α1.0.115', items:[
     '熟練度リニューアル：射撃（ダイナマイト・マスケット）を実装しました。']},
   {v:'α1.0.114', items:[
