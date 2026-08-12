@@ -337,7 +337,7 @@ canvas{display:block;width:100%;height:100%;touch-action:none}
 #mastlist .card .tx{font-size:12px;line-height:1.45}
 #mastlist .card .num{margin-top:0;font-size:12px}
 #mastlist .card .nm .mval{color:var(--gold);font-size:13px;font-weight:normal}
-.mhl{color:#ff8a5c;font-weight:bold}   /* 説明文中の数値の強調（赤系の目立つ色）*/
+.mhl{color:#ffe14d;font-weight:bold}   /* 説明文中の数値の強調（黄色）*/
 .shopbox{width:100%;max-width:560px;max-height:100%;display:flex;flex-direction:column;gap:10px}
 .shophead{display:flex;align-items:baseline;justify-content:space-between;gap:10px}
 .shophead .title{font-size:23px;letter-spacing:5px}
@@ -2237,7 +2237,7 @@ function figInfo(id){
   if(BOSS[id]){ var B=BOSS[id], tt=ETYPE[B.key]||{}; return {nm:B.nm,shape:tt.shape,col:tt.col,dark:tt.dark,desc:BDEX[id]||'',boss:true}; }
   var t=ETYPE[id]||{}; return {nm:t.nm,shape:t.shape,col:t.col,dark:t.dark,desc:DEX[id]||'',boss:false};
 }
-var VERSION='α1.0.112'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
+var VERSION='α1.0.113'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
 function applySave(o){
   for(var i=0;i<UPG.length;i++) META[UPG[i].id]=0;
   try{
@@ -7348,6 +7348,8 @@ Array.prototype.forEach.call(document.querySelectorAll('#setview button'),functi
 // 更新履歴：1つのお知らせ内で「バージョン見出し」ごとに変更点を並べる（新しい順）。
 // マージのたびに先頭へ新バージョンを追加し、VERSION も更新する。
 var UPDATES=[
+  {v:'α1.0.113', items:[
+    '熟練度の説明文の強調色を黄色にしました。']},
   {v:'α1.0.112', items:[
     '熟練度の強化カードの表示を見直し：上段に「名前＋数値」、下段の説明文では強化量を目立つ色（赤系）で表示するようにしました。']},
   {v:'α1.0.111', items:[
