@@ -391,6 +391,7 @@ canvas{display:block;width:100%;height:100%;touch-action:none}
 .wbar{height:6px;background:#0e0a1f;border:1px solid var(--line);margin:5px 0 4px}
 .wbar div{height:100%;background:linear-gradient(90deg,#3a7bff,var(--arc))}
 .wtr{font-size:11px;color:var(--arc);line-height:1.55}
+.mpick{display:inline-block;font-size:16px;margin-right:2px;line-height:1.2}
 .wtr .no{color:#4d4275}
 .badge{display:inline-block;background:var(--gold);color:#1a1000;font-size:10px;
   padding:1px 6px;margin-left:6px;vertical-align:middle}
@@ -1459,7 +1460,6 @@ var lasers;
 
 /* ============ 武器熟練度・特性 ============ */
 var WTH=[4000,10000,20000,50000,100000,180000,300000,450000,650000,1000000];   // 熟練度 Lv1〜10 の到達値
-var MASTERY_WIP=true;   // 熟練度リニューアル調整中：新しい強化はまだ取得不可（画面に「調整中」を表示）。完成したら false。
 var WTRAIT={
   slash:[
     [{id:'s1a',nm:'鋭刃',tx:'ダメージ +20%',ef:{dmg:.20}},
@@ -1719,11 +1719,47 @@ var TMAP={};
 (function(){ for(var w in WTRAIT) for(var t=0;t<3;t++) for(var i=0;i<3;i++){
   var o=WTRAIT[w][t][i]; TMAP[o.id]=o; } })();
 
+// ===== 熟練度リデザイン（10レベル制）=====
+// 各武器の「通常プール(minor)」＝Lv1,2,4,5,7,8,10で提示 / 「特別プール(major)」＝Lv3,6,9で提示。
+// 選択肢は各武器の意味ある軸(WAX)だけで構成。効果は ef（TRに合算）。ic＝取得アイコン。
+// MAST[w] がある武器＝新システム有効。無い武器＝「調整中」表示（順次追加）。
+var MAST={
+  slash:{  // 大剣：dmg/area/rate（近接薙ぎ・count無し）
+    minor:[ {id:'sl_d',ic:'💪',nm:'攻撃力',tx:'攻撃力 +6%',ef:{dmg:.06}},
+            {id:'sl_a',ic:'🌀',nm:'範囲',tx:'薙ぎの範囲・角度 +6%',ef:{area:.06}},
+            {id:'sl_c',ic:'⌛',nm:'間隔',tx:'振りの間隔 −5%',ef:{cd:-.05}} ],
+    major:[ {id:'sl_D',ic:'💪',nm:'剛・攻撃力',tx:'攻撃力 +14%',ef:{dmg:.14}},
+            {id:'sl_A',ic:'🌀',nm:'大薙ぎ',tx:'範囲・角度 +15%',ef:{area:.15}},
+            {id:'sl_arc',ic:'⭐',nm:'旋風斬',tx:'全方位を薙ぎ払う',ef:{fullarc:1}} ]
+  },
+  bow:{  // 弓：dmg/pierce/rate（通常）＋ count/pierce大（特別）
+    minor:[ {id:'bo_d',ic:'💪',nm:'攻撃力',tx:'攻撃力 +6%',ef:{dmg:.06}},
+            {id:'bo_p',ic:'➹',nm:'貫通',tx:'貫通 +1',ef:{pierce:1}},
+            {id:'bo_c',ic:'⌛',nm:'間隔',tx:'射撃の間隔 −5%',ef:{cd:-.05}} ],
+    major:[ {id:'bo_ct',ic:'✳️',nm:'多重射',tx:'矢（発射数）+1',ef:{count:1}},
+            {id:'bo_P',ic:'➹',nm:'剛貫通',tx:'貫通 +3',ef:{pierce:3}},
+            {id:'bo_D',ic:'💪',nm:'剛・攻撃力',tx:'攻撃力 +12%',ef:{dmg:.12}} ]
+  },
+  gatling:{  // ガトリング：dmg/rate/pierce（通常）＋ count/ammo（特別）。※範囲(area)は無し
+    minor:[ {id:'ga_d',ic:'💪',nm:'攻撃力',tx:'攻撃力 +6%',ef:{dmg:.06}},
+            {id:'ga_c',ic:'⌛',nm:'間隔',tx:'連射の間隔 −5%',ef:{cd:-.05}},
+            {id:'ga_p',ic:'➹',nm:'貫通',tx:'貫通 +1',ef:{pierce:1}} ],
+    major:[ {id:'ga_ct',ic:'✳️',nm:'多銃身',tx:'発射数 +1',ef:{count:1}},
+            {id:'ga_am',ic:'🔋',nm:'大弾倉',tx:'弾倉（撃てる弾数）+2',ef:{ammo:2}},
+            {id:'ga_D',ic:'💪',nm:'剛・攻撃力',tx:'攻撃力 +12%',ef:{dmg:.12}} ]
+  }
+};
+var MASTIDS={};   // 武器ごとの有効オプションid集合（旧SELの掃除に使う）
+(function(){ for(var w in MAST){ MASTIDS[w]={};
+  ['minor','major'].forEach(function(pool){ MAST[w][pool].forEach(function(o){ TMAP[o.id]=o; MASTIDS[w][o.id]=1; }); });
+} })();
+function masMajorLevel(lv){ return lv===3||lv===6||lv===9; }   // 特別強化のレベル
+
 var WX={}, SEL={}, wxRun={}, lastCd={};
 var WDMG={};   // このランの武器別 与ダメージ集計
 function wtier(id){ var x=WX[id]||0,n=0; for(var i=0;i<WTH.length;i++) if(x>=WTH[i]) n++; return n; }
-function picksLeft(id){ if(MASTERY_WIP) return 0; return Math.max(0,wtier(id)-((SEL[id]||[]).length)); }
-function anyPicks(){ for(var w in WTRAIT) if(picksLeft(w)) return 1; return 0; }
+function picksLeft(id){ if(!MAST[id]) return 0; return Math.max(0,wtier(id)-((SEL[id]||[]).length)); }   // 新システム有効な武器のみ
+function anyPicks(){ for(var w in MAST) if(picksLeft(w)) return 1; return 0; }
 // 選択済み特性の効果を合計する
 function TR(wid,key){
   var s=0, t=SEL[wid]||[];
@@ -1903,12 +1939,12 @@ function DMG(w){ return RCM(w)*Math.pow(1.45,AX(w,'dmg'))*(1+TR(w,'dmg'))*(1+0.0
 function AREA(w){ return Math.pow(1.18,AX(w,'area'))*(1+TR(w,'area'))*(1+0.04*LB(w,'area'))*CH().area*(1+0.05*(P.p.reach||0)); }
 function RATE(w){ return Math.max(0.20,Math.pow(0.85,AX(w,'rate'))*(1+TR(w,'cd'))*(1-0.015*LB(w,'rate'))); }
 function CNT(w){ return AX(w,'count')+TR(w,'count')+LB(w,'count'); }
-function BST(w){ return AX(w,'burst')+LB(w,'burst'); }
+function BST(w){ return AX(w,'burst')+TR(w,'burst')+LB(w,'burst'); }
 function PRC(w){ return AX(w,'pierce')*2+TR(w,'pierce')+LB(w,'pierce'); }
 function SLW(w){ return AX(w,'slow')*1.0+TR(w,'slow'); }
 // 持続軸：効果の持続時間（鈍足の時間・延焼・ランプ上限など）。旧「鈍足」軸/特性＋限界突破ぶんも加算。
 function DURV(w){ return AX(w,'dur')+TR(w,'dur')+AX(w,'slow')+TR(w,'slow')+LB(w,'dur'); }
-function AMMO(w){ return AX(w,'ammo')+LB(w,'ammo'); }
+function AMMO(w){ return AX(w,'ammo')+TR(w,'ammo')+LB(w,'ammo'); }
 function CHN(w){ return AX(w,'chain')*2+TR(w,'chain')+LB(w,'chain'); }
 function SPL(w){ return AX(w,'split')*2+TR(w,'split')+LB(w,'split'); }
 // 射程：基本距離（カテゴリ）×射程軸の倍率。ここに無い武器は近接/自己中心（射程軸なし）。
@@ -2190,7 +2226,7 @@ function figInfo(id){
   if(BOSS[id]){ var B=BOSS[id], tt=ETYPE[B.key]||{}; return {nm:B.nm,shape:tt.shape,col:tt.col,dark:tt.dark,desc:BDEX[id]||'',boss:true}; }
   var t=ETYPE[id]||{}; return {nm:t.nm,shape:t.shape,col:t.col,dark:t.dark,desc:DEX[id]||'',boss:false};
 }
-var VERSION='α1.0.109'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
+var VERSION='α1.0.110'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
 function applySave(o){
   for(var i=0;i<UPG.length;i++) META[UPG[i].id]=0;
   try{
@@ -2199,6 +2235,8 @@ function applySave(o){
       if(o.w){ WALLET.silver=o.w.silver|0; WALLET.gold=o.w.gold|0; }
       if(o.wx) for(var k2 in WTRAIT){ if(typeof o.wx[k2]==='number') WX[k2]=Math.max(0,o.wx[k2]); }
       if(o.sel) for(var k3 in WTRAIT){ if(o.sel[k3] instanceof Array) SEL[k3]=o.sel[k3].filter(function(x){ return TMAP[x]; }); }
+      // リデザイン済み武器は旧特性idを掃除し、新オプションidのみ・最大10個に正規化
+      for(var mw in MAST){ if(SEL[mw]) SEL[mw]=SEL[mw].filter(function(id){ return MASTIDS[mw][id]; }).slice(0,10); }
       best=o.best|0;
       if(typeof o.shk==='number') SHK=o.shk;
       if(typeof o.vz==='number'&&o.vz>=0.5&&o.vz<=1) VZOOM=o.vz;
@@ -6574,60 +6612,37 @@ document.getElementById('chrclose').onclick=function(){ document.getElementById(
 var mastEl=document.getElementById('mast'), mlistEl=document.getElementById('mastlist');
 function renderMast(){
   document.getElementById('masttitle').textContent='武器熟練';
-  if(MASTERY_WIP){   // 調整中：新しい強化は取得不可。熟練度(WX)の蓄積とレベルだけ表示する。
-    document.getElementById('mastnote').innerHTML=
-      '<span style="color:var(--gold)">🔧 熟練度は現在リニューアル調整中です</span><br>'+
-      '<span style="font-size:12px;color:var(--ash)">近日、10レベル制の新しい強化（武器ごとに最適化）が選べるようになります。熟練度は今も貯まっています。</span>';
-    mlistEl.innerHTML='';
-    Object.keys(WTRAIT).forEach(function(w){
-      if(!WEAPONS[w]) return;
-      var x=WX[w]||0, lv=wtier(w), open=x>0;
-      var nx=lv<WTH.length?WTH[lv]:0, pv=lv>0?WTH[lv-1]:0;
-      var pct=nx?Math.max(0,Math.min(100,(x-pv)/(nx-pv)*100)):100;
-      var row=document.createElement('div'); row.className='wm';
-      row.innerHTML='<div class="ug">'+wIcon(w)+'</div>'+
-        '<div class="wmb">'+
-          '<div class="wmn">'+WEAPONS[w].nm+
-            '<span>'+WCAT[w]+'　Lv '+lv+'/10　'+fmt(x)+(nx?' / '+fmt(nx):' — MAX')+'</span>'+
-            (open?'':'<span class="badge" style="background:#3b2d6b;color:#a99fd0">未使用</span>')+
-          '</div>'+
-          '<div style="margin:3px 0">'+tagChips(WTAG[w])+'</div>'+
-          '<div class="wbar"><div style="width:'+pct+'%"></div></div>'+
-          '<div class="wtr"><span class="no">強化内容は調整中（近日実装）</span></div>'+
-        '</div>';
-      mlistEl.appendChild(row);
-    });
-    return;
-  }
-  var n=0; for(var w in WTRAIT) n+=picksLeft(w);
+  var n=0; for(var mw in MAST) n+=picksLeft(mw);
   document.getElementById('mastnote').innerHTML=
-    n?'<span style="color:var(--gold)">特性を '+n+' 個選べます</span>'
-     :'使うと熟練度が溜まる。解放済みの他武器にも波及（同系統20% / 他10%）';
+    n?'<span style="color:var(--gold)">強化を '+n+' 個選べます</span>'
+     :'使うほど熟練度が溜まり、レベルが上がると強化を選べます（Lv3・6・9は特別枠）。武器は順次リニューアル中です。';
   mlistEl.innerHTML='';
   Object.keys(WTRAIT).forEach(function(w){
-    if(!WEAPONS[w]) return;                 // 退避中の武器（chainsaw等）は熟練一覧に出さない
-    var x=WX[w]||0, tier=wtier(w), sel=SEL[w]||[], left=picksLeft(w), open=x>0;
-    var nx=tier<3?WTH[tier]:0, pv=tier>0?WTH[tier-1]:0;
+    if(!WEAPONS[w]) return;                 // 退避中の武器（chainsaw等）は出さない
+    var x=WX[w]||0, lv=wtier(w), open=x>0, redesigned=!!MAST[w], left=picksLeft(w);
+    var nx=lv<WTH.length?WTH[lv]:0, pv=lv>0?WTH[lv-1]:0;
     var pct=nx?Math.max(0,Math.min(100,(x-pv)/(nx-pv)*100)):100;
-    var row=document.createElement('div');
-    row.className='wm'+(left?' rdy':'');
-    var trs=[];
-    for(var i=0;i<3;i++){
-      if(sel[i]) trs.push(TMAP[sel[i]].nm);
-      else if(i<tier) trs.push('<span style="color:var(--gold)">未選択</span>');
-      else trs.push('<span class="no">???</span>');
+    var picks=SEL[w]||[];
+    var body;
+    if(redesigned){
+      var icons=picks.length
+        ? picks.map(function(id){ var o=TMAP[id]; return '<span class="mpick" title="'+(o?o.nm:'')+'">'+(o&&o.ic?o.ic:'•')+'</span>'; }).join('')
+        : '<span class="no">まだ強化なし</span>';
+      body='<div class="wtr">'+icons+'　<span style="color:#6b5f9c">'+picks.length+'/10</span></div>';
+    } else {
+      body='<div class="wtr"><span class="no">強化内容は調整中（近日実装）</span></div>';
     }
+    var row=document.createElement('div'); row.className='wm'+(left?' rdy':'');
     row.innerHTML='<div class="ug">'+wIcon(w)+'</div>'+
       '<div class="wmb">'+
         '<div class="wmn">'+WEAPONS[w].nm+
-          '<span>'+WCAT[w]+'　'+fmt(x)+(nx?' / '+fmt(nx):' — MAX')+'</span>'+
+          '<span>'+WCAT[w]+'　Lv '+lv+'/10　'+fmt(x)+(nx?' / '+fmt(nx):' — MAX')+'</span>'+
           (left?'<span class="badge">選択可</span>':'')+
           (open?'':'<span class="badge" style="background:#3b2d6b;color:#a99fd0">未使用</span>')+
         '</div>'+
         '<div style="margin:3px 0">'+tagChips(WTAG[w])+'</div>'+
         '<div class="wbar"><div style="width:'+pct+'%"></div></div>'+
-        '<div class="wtr">'+trs.join('　/　')+
-          (AWK[w]?'<br><span style="color:var(--gold)">覚醒 Lv10：'+AWK[w]+'</span> <span class="no">'+AWT[w]+'</span>':'')+'</div>'+
+        body+
       '</div>'+
       (left?'<button class="ubuy gd" data-w="'+w+'">選ぶ</button>':'');
     mlistEl.appendChild(row);
@@ -6637,16 +6652,17 @@ function renderMast(){
   });
 }
 function openTraitPick(w){
-  var tier=(SEL[w]||[]).length;
-  var opts=WTRAIT[w][tier];
-  document.getElementById('masttitle').textContent=WEAPONS[w].nm+' 特性 '+(tier+1);
+  if(!MAST[w]||picksLeft(w)<=0) return;
+  var lv=(SEL[w]||[]).length+1, major=masMajorLevel(lv);
+  var opts=major?MAST[w].major:MAST[w].minor;
+  document.getElementById('masttitle').textContent=WEAPONS[w].nm+' Lv'+lv+(major?'（特別強化）':'');
   document.getElementById('mastnote').innerHTML=
-    '<span style="color:var(--gold)">1つ選ぶと確定します</span>';
+    '<span style="color:var(--gold)">1つ選ぶと確定します'+(major?'　★Lv3・6・9は強力な強化枠':'')+'</span>';
   mlistEl.innerHTML='';
   opts.forEach(function(o){
     var d=document.createElement('div');
     d.className='card gold'; d.tabIndex=0;
-    d.innerHTML='<div class="glyph">'+wIcon(w)+'</div>'+
+    d.innerHTML='<div class="glyph">'+(o.ic||wIcon(w))+'</div>'+
       '<div class="body"><div class="nm">'+o.nm+'</div>'+
       '<div class="tx">'+o.tx+'</div></div>';
     d.onclick=function(){ takeTrait(w,o.id); };
@@ -7127,7 +7143,7 @@ function finish(won){
     if(wxRun[wk]<1) continue;
     var wtB=wtier(wk);
     WX[wk]=(WX[wk]||0)+wxRun[wk];
-    if(!MASTERY_WIP&&WEAPONS[wk]&&wtier(wk)>wtB) toast('⭐',WEAPONS[wk].nm+' 熟練度アップ！特性を選べます','#ffd27a');
+    if(MAST[wk]&&WEAPONS[wk]&&wtier(wk)>wtB) toast('⭐',WEAPONS[wk].nm+' 熟練度アップ！強化を選べます','#ffd27a');
   }
   saveGame();
   var killK=won?'':(KILLER?KILLER.k:'timeup');
@@ -7319,6 +7335,9 @@ Array.prototype.forEach.call(document.querySelectorAll('#setview button'),functi
 // 更新履歴：1つのお知らせ内で「バージョン見出し」ごとに変更点を並べる（新しい順）。
 // マージのたびに先頭へ新バージョンを追加し、VERSION も更新する。
 var UPDATES=[
+  {v:'α1.0.110', items:[
+    '武器熟練を10レベル制に刷新（まずは 大剣・弓・ガトリング から）。レベルが上がるたびに強化を1つ選択。Lv3・6・9は「特別強化」で発射数・弾倉などの強力な枠、それ以外は控えめな強化から選べます。',
+    '選択肢は武器ごとに最適化（例：ガトリングに「範囲」は出ません）。取得した強化はアイコンで一覧表示されます。残りの武器は順次リニューアルします（それまで「調整中」表示）。']},
   {v:'α1.0.109', items:[
     '用語をさらに調整：武器の「弾数」→「発射数」、リロード式の弾倉/散弾→「弾倉」。限界突破の軸名も同じ用語に統一しました。',
     '武器熟練をリニューアルするため、いったん「調整中」にしました。熟練度（経験）は今も貯まりますが、新しい強化の取得は一時停止しています。近日、10レベル制の新しい熟練強化を実装します。']},

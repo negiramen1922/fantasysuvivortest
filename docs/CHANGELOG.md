@@ -10,6 +10,15 @@
 - リザルト画面と設定画面に `VERSION` を表示。
 - お知らせ（`UPDATES` 配列）は**1枠内でバージョン見出しごとに変更点を掲載**（新しい順）。マージ時は `UPDATES` 先頭に新バージョンを追加し `VERSION` を一致させる。
 
+## ver.α1.0.110
+- 武器熟練 10レベル制を実装（第1バッチ：slash/bow/gatling）。
+  - `MAST[w]={minor:[...],major:[...]}`（各opt `{id,ic,nm,tx,ef}`）を追加。minor=Lv1,2,4,5,7,8,10 / major=Lv3,6,9（`masMajorLevel`）。選択肢は各武器のWAX軸だけで構成し無意味軸を排除（例：gatlingにarea無し）。
+  - `MAST` の全optを `TMAP` に登録（TRで効果合算）。`MASTIDS` で有効id集合を保持。`AMMO`/`BST` に `TR` を追加（弾倉・連射の熟練を反映）。
+  - `MAST[w]` の有無で新システム/「調整中」を切替（`MASTERY_WIP` 廃止）。`picksLeft`＝`MAST[w]?max(0,wtier-SEL長):0`、`wtier` は10段階WTHでLv0-10。
+  - `renderMast`：Lv X/10・WX進捗・取得アイコン横並び（`.mpick`）・選ぶボタン。`openTraitPick`：次Lvがmajorならmajorプールを提示。`takeTrait` は従来どおり SEL push（軸は重ね取り可）。
+  - セーブ移行：`applySave` で `MAST` 武器の SEL を有効id(`MASTIDS`)のみ・最大10に正規化（旧特性id s1a等は破棄＝選び直し）。
+  - 検証：slash Lv6/10・選択可、Lv1=minor(攻撃力/範囲/間隔)→Lv3=major(剛攻撃力/大薙ぎ/旋風斬)、gatling minorに範囲無し、鎌=調整中、旧SEL破棄、エラー無し。
+
 ## ver.α1.0.109
 - 用語の追加調整と熟練度リニューアルの下準備。
   - AXN count 弾数→発射数、ammo 装填→弾倉（AXTも追随）。LBN/LBT も同様に統一（rate→間隔、count→発射数、ammo→弾倉、crit→会心、critd→剛撃、burst desc「同時発射」→「連射」）。
