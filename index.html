@@ -1192,19 +1192,19 @@ var WLOCK={
 var WUNL={};   // 解放済み武器 {id:1}
 (function(){ for(var k in WSTART) WUNL[k]=1; if(ALLWPN) for(var w in WEAPONS) WUNL[w]=1; })();
 var PASSIVES={
-  power:{ nm:'力', glyph:'💪', tag:'能力', max:5, tx:'与ダメージ +12%' },
-  swift:{ nm:'疾風', glyph:'👣', tag:'能力', max:5, tx:'移動速度 +10%' },
-  magnet:{ nm:'魔力吸引', glyph:'🜁', tag:'能力', max:5, tx:'経験値の吸引範囲 +40%' },
-  haste:{ nm:'集中', glyph:'⏳', tag:'能力', max:5, tx:'技の再使用時間 -8%' },
-  vital:{ nm:'生命', glyph:'❤', tag:'能力', max:5, tx:'最大HP +30 / 即座に回復' },
+  power:{ nm:'攻撃力', glyph:'💪', tag:'能力', max:5, tx:'与ダメージ +12%' },
+  swift:{ nm:'移動速度', glyph:'👣', tag:'能力', max:5, tx:'移動速度 +10%' },
+  magnet:{ nm:'回収範囲', glyph:'🜁', tag:'能力', max:5, tx:'経験値の吸引範囲 +40%' },
+  haste:{ nm:'間隔', glyph:'⌛', tag:'能力', max:5, tx:'技の再使用時間 -8%' },
+  vital:{ nm:'体力', glyph:'❤', tag:'能力', max:5, tx:'最大HP +30 / 即座に回復' },
   crit:{ nm:'会心', glyph:'🎯', tag:'物理', max:5, tx:'会心率 +5%（物理武器に強く作用）' },
   critd:{ nm:'剛撃', glyph:'💥', tag:'物理', max:5, tx:'会心ダメージ +20%' },
-  affinity:{ nm:'元素親和', glyph:'◈', tag:'元素', max:5, tx:'元素の付与率 +10%' },
+  affinity:{ nm:'元素付着', glyph:'◈', tag:'元素', max:5, tx:'元素の付与率 +10%' },
   mastery:{ nm:'元素熟知', glyph:'✧', tag:'元素', max:5, tx:'元素反応のダメージ +25%' },
   bulwark:{ nm:'防護', glyph:'🛡', tag:'能力', max:5, tx:'受けるダメージ −3%' },
-  heal:{ nm:'治癒', glyph:'💗', tag:'能力', max:5, tx:'毎秒 HP +0.5' },
+  heal:{ nm:'再生', glyph:'✚', tag:'能力', max:5, tx:'毎秒 HP +0.5' },
   exp:{ nm:'経験', glyph:'📖', tag:'能力', max:5, tx:'経験値の取得 +8%' },
-  reach:{ nm:'拡大', glyph:'🌀', tag:'能力', max:5, tx:'武器の範囲 +5%' },
+  reach:{ nm:'範囲', glyph:'🌀', tag:'能力', max:5, tx:'武器の範囲 +5%' },
   greed:{ nm:'宝探し', glyph:'💰', tag:'能力', max:5, tx:'銀貨の落ちやすさ +10%' },
   fortune:{ nm:'幸運', glyph:'🍀', tag:'能力', max:5, tx:'宝箱の当たり枠が増えやすい' }
 };
@@ -1775,9 +1775,9 @@ function wgain(id,hits){
 /* ============ 武器の育成軸 ============ */
 // 1回の強化で必ずレベルが1上がり、選んだ軸に1点入る。
 // 軸ごとに上限があり、上限の合計は取得可能な点数(7)より多いので必ず取捨選択になる。
-var AXN={ dmg:'攻撃力', area:'範囲', rate:'頻度', count:'数', dur:'持続',
-          pierce:'貫通', slow:'鈍足', chain:'連鎖', split:'拡散', burst:'連射', ammo:'弾数', range:'射程' };
-var AXT={ dmg:'ダメージ +45%', area:'範囲 +18%', rate:'間隔 −15%', count:'発生数 +1', dur:'効果の持続が伸びる（鈍足の時間／延焼／インフェルノの熱容量・冷却速度UP）',
+var AXN={ dmg:'攻撃力', area:'範囲', rate:'間隔', count:'弾数', dur:'持続',
+          pierce:'貫通', slow:'鈍足', chain:'連鎖', split:'拡散', burst:'連射', ammo:'装填', range:'射程' };
+var AXT={ dmg:'ダメージ +45%', area:'範囲 +18%', rate:'間隔 −15%', count:'弾数 +1', dur:'効果の持続が伸びる（鈍足の時間／延焼／インフェルノの熱容量・冷却速度UP）',
           pierce:'貫通 +2', slow:'鈍足の持続 +1.0秒', chain:'連鎖 +2', split:'拡散 +2',
           burst:'同じ方向へ続けて撃つ回数 +1', ammo:'装填数が増える', range:'届く距離・飛距離 +20%' };
 // 物理は会心で殲滅、魔法は元素反応で連鎖させる
@@ -2003,16 +2003,16 @@ function weaponUnlockCheck(){   // 実績を満たした武器を解放。解放
 
 /* ============ 永続強化（メタ進行） ============ */
 var UPG=[
-  { id:'might',    nm:'力',       g:'💪', per:6,    unit:'%', tx:'与えるダメージが上がる' },
-  { id:'armor',    nm:'守り',     g:'🛡', per:4,    unit:'%', tx:'受けるダメージが減る', neg:1 },
+  { id:'might',    nm:'攻撃力',    g:'💪', per:6,    unit:'%', tx:'与えるダメージが上がる' },
+  { id:'armor',    nm:'防護',     g:'🛡', per:4,    unit:'%', tx:'受けるダメージが減る', neg:1 },
   { id:'health',   nm:'体力',     g:'❤', per:10,   unit:'%', tx:'最大HPが増える' },
   { id:'recovery', nm:'再生',     g:'✚', per:0.15, unit:'/秒', tx:'HPが少しずつ自動回復する' },
-  { id:'magnet',   nm:'回収',     g:'🜁', per:10,   unit:'%', tx:'経験値の回収範囲が広がる' },
-  { id:'speed',    nm:'俊敏',     g:'👣', per:5,    unit:'%', tx:'移動速度が上がる' },
-  { id:'haste',    nm:'集中',     g:'⏳', per:4,    unit:'%', tx:'技の再使用時間が短くなる', neg:1 },
+  { id:'magnet',   nm:'回収範囲', g:'🜁', per:10,   unit:'%', tx:'経験値の回収範囲が広がる' },
+  { id:'speed',    nm:'移動速度', g:'👣', per:5,    unit:'%', tx:'移動速度が上がる' },
+  { id:'haste',    nm:'間隔',     g:'⌛', per:4,    unit:'%', tx:'技の再使用時間が短くなる', neg:1 },
   { id:'crit',     nm:'会心',     g:'🎯', per:3,    unit:'%', tx:'会心率が上がる（物理武器に強く）' },
   { id:'critd',    nm:'剛撃',     g:'💥', per:12,   unit:'%', tx:'会心ダメージが上がる' },
-  { id:'affinity', nm:'元素親和', g:'◈', per:4,    unit:'%', tx:'属性の付与率が上がる' },
+  { id:'affinity', nm:'元素付着', g:'◈', per:4,    unit:'%', tx:'属性の付与率が上がる' },
   { id:'mastery',  nm:'元素熟知', g:'✧', per:10,   unit:'%', tx:'元素反応のダメージが上がる' },
   { id:'luck',     nm:'宝探し',   g:'💰', per:15,   unit:'%', tx:'銀貨の落ちやすさが上がる' },
   { id:'ban',      nm:'排他',     g:'🚫', per:1,    unit:'枠', tx:'ラン開始前に武器を1つBANできる（ラン中の新規提示に出ない）', max:5 },
@@ -2189,7 +2189,7 @@ function figInfo(id){
   if(BOSS[id]){ var B=BOSS[id], tt=ETYPE[B.key]||{}; return {nm:B.nm,shape:tt.shape,col:tt.col,dark:tt.dark,desc:BDEX[id]||'',boss:true}; }
   var t=ETYPE[id]||{}; return {nm:t.nm,shape:t.shape,col:t.col,dark:t.dark,desc:DEX[id]||'',boss:false};
 }
-var VERSION='α1.0.107'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
+var VERSION='α1.0.108'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
 function applySave(o){
   for(var i=0;i<UPG.length;i++) META[UPG[i].id]=0;
   try{
@@ -7293,6 +7293,8 @@ Array.prototype.forEach.call(document.querySelectorAll('#setview button'),functi
 // 更新履歴：1つのお知らせ内で「バージョン見出し」ごとに変更点を並べる（新しい順）。
 // マージのたびに先頭へ新バージョンを追加し、VERSION も更新する。
 var UPDATES=[
+  {v:'α1.0.108', items:[
+    '用語を統一しました。武器の軸・パッシブ・永続強化で同じ効果は同じ名前に：与ダメージ＝攻撃力／間隔（発射間隔の短縮）／移動速度／体力／再生／防護（被ダメ軽減）／回収範囲／範囲／元素付着（付与率）。武器の「数」は「弾数」、リロード式の弾倉/散弾は「装填」に改名。']},
   {v:'α1.0.107', items:[
     '未使用だったボス「巨大スライム」「ゴブリンチャンピオン」を削除しました（通常プレイに影響はありません）。']},
   {v:'α1.0.106', items:[

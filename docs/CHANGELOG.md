@@ -10,6 +10,13 @@
 - リザルト画面と設定画面に `VERSION` を表示。
 - お知らせ（`UPDATES` 配列）は**1枠内でバージョン見出しごとに変更点を掲載**（新しい順）。マージ時は `UPDATES` 先頭に新バージョンを追加し `VERSION` を一致させる。
 
+## ver.α1.0.108
+- 効果名称を3系統（軸AXN／パッシブ／永続強化）で統一。同一効果は同一名に。
+  - AXN：rate 頻度→間隔、count 数→弾数、ammo 弾数→装填。AXT count「発生数+1」→「弾数+1」。
+  - PASSIVES：power 力→攻撃力、swift 疾風→移動速度、magnet 魔力吸引→回収範囲、haste 集中→間隔（glyph ⏳→⌛）、vital 生命→体力、affinity 元素親和→元素付着、heal 治癒→再生（glyph 💗→✚）、reach 拡大→範囲。
+  - UPG：might 力→攻撃力、armor 守り→防護、magnet 回収→回収範囲、speed 俊敏→移動速度、haste 集中→間隔（g ⏳→⌛）、affinity 元素親和→元素付着。
+  - idは不変（表示名のみ変更）＝セーブ・ロジック非影響。検証：永続強化画面に統一名が表示・エラーなし。
+
 ## ver.α1.0.107
 - 未使用ボス bigslime（巨大スライム）/ champion（ゴブリンチャンピオン）を BOSS 表と家系マップから削除。BOSS_AT/BOSSDEX には元々未登録で挙動への影響なし。
 
