@@ -336,6 +336,8 @@ canvas{display:block;width:100%;height:100%;touch-action:none}
 #mastlist .card .nm{font-size:16px}
 #mastlist .card .tx{font-size:12px;line-height:1.45}
 #mastlist .card .num{margin-top:0;font-size:12px}
+#mastlist .card .nm .mval{color:var(--gold);font-size:13px;font-weight:normal}
+.mhl{color:#ff8a5c;font-weight:bold}   /* 説明文中の数値の強調（赤系の目立つ色）*/
 .shopbox{width:100%;max-width:560px;max-height:100%;display:flex;flex-direction:column;gap:10px}
 .shophead{display:flex;align-items:baseline;justify-content:space-between;gap:10px}
 .shophead .title{font-size:23px;letter-spacing:5px}
@@ -1732,28 +1734,28 @@ var TMAP={};
 // MAST[w] がある武器＝新システム有効。無い武器＝「調整中」表示（順次追加）。
 var MAST={
   slash:{  // 大剣：dmg/area/rate（近接薙ぎ・count無し）
-    minor:[ {id:'sl_d',ic:'💪',nm:'攻撃力',d:'剣の攻撃力が上昇する',tx:'+6%',ef:{dmg:.06}},
-            {id:'sl_a',ic:'🌀',nm:'範囲',d:'剣が大きくなり攻撃が当たりやすくなる',tx:'+6%',ef:{area:.06}},
-            {id:'sl_c',ic:'⌛',nm:'間隔',d:'剣を振る間隔が短くなる',tx:'−5%',ef:{cd:-.05}} ],
-    major:[ {id:'sl_D',ic:'💪',nm:'剛・攻撃力',d:'剣の攻撃力が大きく上昇する',tx:'+14%',ef:{dmg:.14}},
-            {id:'sl_A',ic:'🌀',nm:'大薙ぎ',d:'剣がさらに大きくなり広く薙ぎ払う',tx:'+15%',ef:{area:.15}},
-            {id:'sl_arc',ic:'⭐',nm:'旋風斬',d:'前方だけでなく全方位を薙ぎ払う',tx:'全方位',ef:{fullarc:1}} ]
+    minor:[ {id:'sl_d',ic:'💪',nm:'攻撃力',tx:'+6%',d:'剣の攻撃力が#上昇する',dv:'6%',ef:{dmg:.06}},
+            {id:'sl_a',ic:'🌀',nm:'範囲',tx:'+6%',d:'剣が#大きくなり攻撃が当たりやすくなる',dv:'6%',ef:{area:.06}},
+            {id:'sl_c',ic:'⌛',nm:'間隔',tx:'−5%',d:'剣を振る間隔が#短くなる',dv:'5%',ef:{cd:-.05}} ],
+    major:[ {id:'sl_D',ic:'💪',nm:'剛・攻撃力',tx:'+14%',d:'剣の攻撃力が#大きく上昇する',dv:'14%',ef:{dmg:.14}},
+            {id:'sl_A',ic:'🌀',nm:'大薙ぎ',tx:'+15%',d:'剣が#大きくなり広く薙ぎ払う',dv:'15%',ef:{area:.15}},
+            {id:'sl_arc',ic:'⭐',nm:'旋風斬',tx:'全方位',d:'前方だけでなく#を薙ぎ払えるようになる',dv:'全方位',ef:{fullarc:1}} ]
   },
   bow:{  // 弓：dmg/pierce/rate（通常）＋ count/pierce大（特別）
-    minor:[ {id:'bo_d',ic:'💪',nm:'攻撃力',d:'矢の威力が上がる',tx:'+6%',ef:{dmg:.06}},
-            {id:'bo_p',ic:'➹',nm:'貫通',d:'矢がより多くの敵を貫く',tx:'+1',ef:{pierce:1}},
-            {id:'bo_c',ic:'⌛',nm:'間隔',d:'矢を放つ間隔が短くなる',tx:'−5%',ef:{cd:-.05}} ],
-    major:[ {id:'bo_ct',ic:'✳️',nm:'多重射',d:'一度に放つ矢が増える',tx:'矢 +1',ef:{count:1}},
-            {id:'bo_P',ic:'➹',nm:'剛貫通',d:'矢が敵をさらに多く貫く',tx:'+3',ef:{pierce:3}},
-            {id:'bo_D',ic:'💪',nm:'剛・攻撃力',d:'矢の威力が大きく上がる',tx:'+12%',ef:{dmg:.12}} ]
+    minor:[ {id:'bo_d',ic:'💪',nm:'攻撃力',tx:'+6%',d:'矢の威力が#上がる',dv:'6%',ef:{dmg:.06}},
+            {id:'bo_p',ic:'➹',nm:'貫通',tx:'+1',d:'矢が#多くの敵を貫く',dv:'1体',ef:{pierce:1}},
+            {id:'bo_c',ic:'⌛',nm:'間隔',tx:'−5%',d:'矢を放つ間隔が#短くなる',dv:'5%',ef:{cd:-.05}} ],
+    major:[ {id:'bo_ct',ic:'✳️',nm:'多重射',tx:'矢 +1',d:'一度に放つ矢が#増える',dv:'1本',ef:{count:1}},
+            {id:'bo_P',ic:'➹',nm:'剛貫通',tx:'+3',d:'矢が敵を#多く貫く',dv:'3体',ef:{pierce:3}},
+            {id:'bo_D',ic:'💪',nm:'剛・攻撃力',tx:'+12%',d:'矢の威力が#大きく上がる',dv:'12%',ef:{dmg:.12}} ]
   },
   gatling:{  // ガトリング：dmg/rate/pierce（通常）＋ count/ammo（特別）。※範囲(area)は無し
-    minor:[ {id:'ga_d',ic:'💪',nm:'攻撃力',d:'弾の威力が上がる',tx:'+6%',ef:{dmg:.06}},
-            {id:'ga_c',ic:'⌛',nm:'間隔',d:'連射のテンポが速くなる',tx:'−5%',ef:{cd:-.05}},
-            {id:'ga_p',ic:'➹',nm:'貫通',d:'弾がより多くの敵を貫く',tx:'+1',ef:{pierce:1}} ],
-    major:[ {id:'ga_ct',ic:'✳️',nm:'多銃身',d:'一度に発射する弾が増える',tx:'発射数 +1',ef:{count:1}},
-            {id:'ga_am',ic:'🔋',nm:'大弾倉',d:'リロードまでに撃てる弾数が増える',tx:'弾倉 +2',ef:{ammo:2}},
-            {id:'ga_D',ic:'💪',nm:'剛・攻撃力',d:'弾の威力が大きく上がる',tx:'+12%',ef:{dmg:.12}} ]
+    minor:[ {id:'ga_d',ic:'💪',nm:'攻撃力',tx:'+6%',d:'弾の威力が#上がる',dv:'6%',ef:{dmg:.06}},
+            {id:'ga_c',ic:'⌛',nm:'間隔',tx:'−5%',d:'連射のテンポが#速くなる',dv:'5%',ef:{cd:-.05}},
+            {id:'ga_p',ic:'➹',nm:'貫通',tx:'+1',d:'弾が#多くの敵を貫く',dv:'1体',ef:{pierce:1}} ],
+    major:[ {id:'ga_ct',ic:'✳️',nm:'多銃身',tx:'発射数 +1',d:'一度に発射する弾が#増える',dv:'1発',ef:{count:1}},
+            {id:'ga_am',ic:'🔋',nm:'大弾倉',tx:'弾倉 +2',d:'リロードまでに撃てる弾数が#増える',dv:'2発',ef:{ammo:2}},
+            {id:'ga_D',ic:'💪',nm:'剛・攻撃力',tx:'+12%',d:'弾の威力が#大きく上がる',dv:'12%',ef:{dmg:.12}} ]
   }
 };
 var MASTIDS={};   // 武器ごとの有効オプションid集合（旧SELの掃除に使う）
@@ -1761,6 +1763,8 @@ var MASTIDS={};   // 武器ごとの有効オプションid集合（旧SELの掃
   ['minor','major'].forEach(function(pool){ MAST[w][pool].forEach(function(o){ TMAP[o.id]=o; MASTIDS[w][o.id]=1; }); });
 } })();
 function masMajorLevel(lv){ return lv===3||lv===6||lv===9; }   // 特別強化のレベル
+// 説明文：テンプレの「#」を強調色の数値に置換（例：剣の攻撃力が[6%]上昇する）
+function mastFlavor(o){ if(!o.d) return o.tx||''; return o.d.replace('#','<span class="mhl">'+(o.dv||'')+'</span>'); }
 
 var WX={}, SEL={}, wxRun={}, lastCd={};
 var WDMG={};   // このランの武器別 与ダメージ集計
@@ -2233,7 +2237,7 @@ function figInfo(id){
   if(BOSS[id]){ var B=BOSS[id], tt=ETYPE[B.key]||{}; return {nm:B.nm,shape:tt.shape,col:tt.col,dark:tt.dark,desc:BDEX[id]||'',boss:true}; }
   var t=ETYPE[id]||{}; return {nm:t.nm,shape:t.shape,col:t.col,dark:t.dark,desc:DEX[id]||'',boss:false};
 }
-var VERSION='α1.0.111'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
+var VERSION='α1.0.112'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
 function applySave(o){
   for(var i=0;i<UPG.length;i++) META[UPG[i].id]=0;
   try{
@@ -6670,9 +6674,10 @@ function openTraitPick(w){
     var d=document.createElement('div');
     d.className='card gold'; d.tabIndex=0;
     d.innerHTML='<div class="glyph">'+(o.ic||wIcon(w))+'</div>'+
-      '<div class="body"><div class="nm">'+o.nm+'</div>'+
-      '<div class="tx">'+(o.d||'')+'</div>'+
-      '<div class="num">'+o.tx+'</div></div>';
+      '<div class="body">'+
+        '<div class="nm">'+o.nm+'　<span class="mval">'+o.tx+'</span></div>'+
+        '<div class="tx">'+mastFlavor(o)+'</div>'+
+      '</div>';
     d.onclick=function(){ takeTrait(w,o.id); };
     d.onkeydown=function(ev){ if(ev.key==='Enter'||ev.key===' ') takeTrait(w,o.id); };
     mlistEl.appendChild(d);
@@ -7343,6 +7348,8 @@ Array.prototype.forEach.call(document.querySelectorAll('#setview button'),functi
 // 更新履歴：1つのお知らせ内で「バージョン見出し」ごとに変更点を並べる（新しい順）。
 // マージのたびに先頭へ新バージョンを追加し、VERSION も更新する。
 var UPDATES=[
+  {v:'α1.0.112', items:[
+    '熟練度の強化カードの表示を見直し：上段に「名前＋数値」、下段の説明文では強化量を目立つ色（赤系）で表示するようにしました。']},
   {v:'α1.0.111', items:[
     '熟練度の強化選択に「どう強くなるか」の説明文を追加しました（例：範囲＝剣が大きくなり攻撃が当たりやすくなる）。',
     'PCで熟練度の選択ボタンが大きすぎたので、コンパクトな横並び表示に調整しました。']},
