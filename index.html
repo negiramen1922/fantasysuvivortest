@@ -1346,22 +1346,22 @@ var BOSS={
   fenrir:    { nm:'フェンリル',         res:0.96, key:'wolf',   hp:160000, r:50, spd:104, dmg:33, xp:2160, pts:60000,
                ai:'fenrir', acd:4.0, chspd:600, chdur:1.0, wind:0.8, nbul:20, bspd:210, bdmg:16, last:1 },
   // ===== ステージ2（森）ボス =====
-  kervi:      { nm:'神鹿ケルビ',       res:0.92, key:'deer',    hp:46000,  r:46, spd:60, dmg:40, xp:1200, pts:16000,
+  kervi:      { nm:'神鹿ケルビ',       res:0.92, key:'deer',    hp:40000,  r:46, spd:60, dmg:40, xp:1200, pts:16000,
                ai:'kervi', acd:2.4, chspd:560, chdur:0.9, wind:0.9, nbul:18, bspd:205, bdmg:15 },
-  gmoth:      { nm:'ジャイアントモス', res:0.93, key:'moth',    hp:125000,  r:50, spd:48, dmg:42, xp:1600, pts:24000,
+  gmoth:      { nm:'ジャイアントモス', res:0.93, key:'moth',    hp:95000,  r:50, spd:48, dmg:42, xp:1600, pts:24000,
                ai:'mothspray', acd:2.2, bspd:205, bdmg:15 },
-  arachnid:   { nm:'アラクネイド',     res:0.94, key:'arachne', hp:250000, r:50, spd:58, dmg:44, xp:1900, pts:40000,
+  arachnid:   { nm:'アラクネイド',     res:0.94, key:'arachne', hp:230000, r:50, spd:58, dmg:44, xp:1900, pts:40000,
                ai:'arachnid', acd:2.0, nbul:20, bspd:220, bdmg:16 },
-  eldertreant:{ nm:'エルダートレント', res:0.96, key:'wtreant', hp:430000, r:56, spd:34, dmg:50, xp:2400, pts:60000,
+  eldertreant:{ nm:'エルダートレント', res:0.96, key:'wtreant', hp:400000, r:56, spd:34, dmg:50, xp:2400, pts:60000,
                ai:'treant', acd:2.5, bdmg:15, last:1 },
   // ===== ステージ3（王墓）ボス ※AIは仮（本実装はステップ3）=====
-  gravekeeper:{ nm:'墓守',             res:0.92, key:'skeleton', hp:64000,  r:46, spd:56, dmg:42, xp:1300, pts:16000,
+  gravekeeper:{ nm:'墓守',             res:0.92, key:'skeleton', hp:46000,  r:46, spd:56, dmg:42, xp:1300, pts:16000,
                ai:'gravekeeper', acd:2.2, nbul:18, bspd:250, bdmg:18, chspd:540, chdur:0.9 },
-  skeletonking:{ nm:'スケルトンキング', res:0.94, key:'skeleton', hp:175000,  r:48, spd:60, dmg:46, xp:1700, pts:24000,
+  skeletonking:{ nm:'スケルトンキング', res:0.94, key:'skeleton', hp:130000,  r:48, spd:60, dmg:46, xp:1700, pts:24000,
                ai:'sking', acd:2.6, wind:0.8, nbul:20, bspd:250, bdmg:18, chspd:560, chdur:0.8 },
-  hecaton:    { nm:'ヘカトンケイル',   res:0.95, key:'mummy',    hp:340000, r:54, spd:44, dmg:48, xp:2000, pts:40000,
+  hecaton:    { nm:'ヘカトンケイル',   res:0.95, key:'mummy',    hp:270000, r:54, spd:44, dmg:48, xp:2000, pts:40000,
                ai:'hecaton', acd:2.8, nbul:24, bspd:230, bdmg:18 },
-  skeledragon:{ nm:'スケルトンドラゴン', res:0.96, key:'gargoyle', hp:560000, r:56, spd:100, dmg:54, xp:2600, pts:70000,
+  skeledragon:{ nm:'スケルトンドラゴン', res:0.96, key:'gargoyle', hp:450000, r:56, spd:100, dmg:54, xp:2600, pts:70000,
                ai:'sdragon', acd:2.6, chspd:600, chdur:1.0, wind:0.8, nbul:22, bspd:220, bdmg:18, last:1 }
 };
 var BOSS_AT=[[300,'greatboar'],[600,'slimeking'],[900,'goblinking'],[1200,'fenrir']];
@@ -2192,7 +2192,7 @@ function figInfo(id){
   if(BOSS[id]){ var B=BOSS[id], tt=ETYPE[B.key]||{}; return {nm:B.nm,shape:tt.shape,col:tt.col,dark:tt.dark,desc:BDEX[id]||'',boss:true}; }
   var t=ETYPE[id]||{}; return {nm:t.nm,shape:t.shape,col:t.col,dark:t.dark,desc:DEX[id]||'',boss:false};
 }
-var VERSION='α1.0.105'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
+var VERSION='α1.0.106'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
 function applySave(o){
   for(var i=0;i<UPG.length;i++) META[UPG[i].id]=0;
   try{
@@ -7296,6 +7296,8 @@ Array.prototype.forEach.call(document.querySelectorAll('#setview button'),functi
 // 更新履歴：1つのお知らせ内で「バージョン見出し」ごとに変更点を並べる（新しい順）。
 // マージのたびに先頭へ新バージョンを追加し、VERSION も更新する。
 var UPDATES=[
+  {v:'α1.0.106', items:[
+    'ステージ2・3のボスHPを再調整（少し軽めに）。② 森：ケルビ40,000／モス95,000／アラクネイド230,000／エルダートレント400,000。③ 王墓：墓守46,000／スケルトンキング130,000／ヘカトン270,000／スケルトンドラゴン450,000。ステージ1は据え置きです。']},
   {v:'α1.0.105', items:[
     'ステージ1のボスHPが上がりすぎていたので、元の値に戻しました（グレーターボア9,000／スライムキング45,000／ゴブリンキング85,000／フェンリル160,000）。ステージ2・3はそのままです。']},
   {v:'α1.0.104', items:[
