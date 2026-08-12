@@ -10,6 +10,9 @@
 - リザルト画面と設定画面に `VERSION` を表示。
 - お知らせ（`UPDATES` 配列）は**1枠内でバージョン見出しごとに変更点を掲載**（新しい順）。マージ時は `UPDATES` 先頭に新バージョンを追加し `VERSION` を一致させる。
 
+## ver.α1.0.123
+- 神鹿ケルビ(deer)・ジャイアントモス(moth)の立ち絵をユーザー提供のドット絵スプライトに差し替え。従来は `shape:'deer'/'moth'` のプロシージャル図形（`drawForestShape`）で描画。`assets/deer.png`(64²)・`assets/moth.png`(96²) を追加し、`SPRDATA`（読込＋`keyWhite`で白背景を透過）、`SHAPE_SPR`（`deer:'deer'`/`moth:'moth'`→`enemySpr`がスプライトを返す）、`SPRSZ`（deer `{s:3.0,oy:0.42}`／moth `{s:3.0,oy:0.22}`）に登録。ボスは `e.shape==='deer'/'moth'` 経由でスプライト描画が優先され、図鑑ポートレート(`drawPortrait`→`SHAPE_SPR`)にも反映。プロシージャル図形コードは残置（休眠）。検証：ローカルhttpでステージ2の5:00ケルビ（実機で緑鹿・透過OK）・図鑑でケルビ/モス両ポートレート表示・エラー無しを確認。
+
 ## ver.α1.0.122
 - 武器詳細画面を実装。武器熟練一覧の各行(`.wm`)をタップで `openWeaponDetail(w)` を開く（行に `.clk`＋`›` 追加、既存「選ぶ」ボタンは `stopPropagation`）。詳細＝アイコン(`wIcon`)＋武器名＋カテゴリ(`WCAT`)＋タグ(`WTAG`/`tagChips`)＋特徴(`WEAPONS.tx`)／端から端の熟練度バー(`.wbar`)＋Lv/WX／取得済み強化を id ごとに集計して `.wdrow`（アイコン＋名前＋×回数＋効果値）で列挙／金枠 `.wdawk` で覚醒名(`AWK`)＋効果(`AWT`)＋注記。選択可能なら「強化を選ぶ（残りN）」ボタンで `openTraitPick`。`.wdback` で `renderMast()` に戻る。検証：`?dev` で大剣詳細（Lv2/10・攻撃力×2・覚醒「飛翔斬撃」）表示・戻る・エラー無しを確認。
 

@@ -2445,7 +2445,7 @@ function figInfo(id){
   if(BOSS[id]){ var B=BOSS[id], tt=ETYPE[B.key]||{}; return {nm:B.nm,shape:tt.shape,col:tt.col,dark:tt.dark,desc:BDEX[id]||'',boss:true}; }
   var t=ETYPE[id]||{}; return {nm:t.nm,shape:t.shape,col:t.col,dark:t.dark,desc:DEX[id]||'',boss:false};
 }
-var VERSION='α1.0.122'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
+var VERSION='α1.0.123'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
 function applySave(o){
   for(var i=0;i<UPG.length;i++) META[UPG[i].id]=0;
   try{
@@ -5395,7 +5395,9 @@ var SPRDATA={
   shieldman:'assets/shieldman.png',
   wraith:'assets/wraith.png',
   mummy:'assets/mummy.png',
-  shadow:'assets/shadow.png'
+  shadow:'assets/shadow.png',
+  deer:'assets/deer.png',
+  moth:'assets/moth.png'
 };
 var SPR={}, SPRT={}, SPRRDY={};
 // 端に接する白（不透明な白背景）だけをフラッドフィルで透過に。内部の白ハイライトは残す。
@@ -5469,7 +5471,7 @@ function wIcon(id){ return WSPR[id]?('<img class="wspr" src="assets/'+WSPR[id]+'
 var SHAPE_SPR={blob:'blob',goblin:'goblin',orc:'orc',bat:'bat',spirit:'spirit',ogre:'cyclops',
   wolf:'wolf',turtle:'turtle',harpy:'harpy',rider:'goat',
   bird:'bird',myconid:'myconid',bee:'bee',spider:'spider',beetle:'beetle',dryad:'maneater',
-  panther:'panther',mantis:'mantis',treant:'treant',
+  panther:'panther',mantis:'mantis',treant:'treant',deer:'deer',moth:'moth',
   skeleton:'skeleton',shieldman:'shieldman',wraith:'wraith',mummy:'mummy',shadow:'shadow'};
 // 棍棒持ち（素体＋棍棒レイヤーで攻撃時に棍棒を振る）。値＝棍棒レイヤーの握り位置（フレーム比 0..1）
 var CLUBBER={goblin:[0.34,0.77], orc:[0.31,0.67], cyclops:[0.34,0.75], skeleton:[0.78,0.72]};
@@ -5915,6 +5917,7 @@ var SPRSZ={blob:{s:3.0,oy:0.35}, goblin:{s:3.2,oy:0.55}, orc:{s:3.0,oy:0.50},
   bird:{s:3.0,oy:0.30}, myconid:{s:3.1,oy:0.40}, bee:{s:3.2,oy:0.15}, spider:{s:3.2,oy:0.25},
   beetle:{s:2.8,oy:0.30}, maneater:{s:3.2,oy:0.42}, goblinking:{s:2.7,oy:0.42},
   panther:{s:3.4,oy:0.28}, mantis:{s:3.2,oy:0.40}, treant:{s:2.7,oy:0.48}, eldertreant:{s:2.5,oy:0.48},
+  deer:{s:3.0,oy:0.42}, moth:{s:3.0,oy:0.22},
   skeleton:{s:3.2,oy:0.42}, shieldman:{s:3.1,oy:0.42}, wraith:{s:3.4,oy:0.16}, mummy:{s:3.0,oy:0.42}, shadow:{s:3.4,oy:0.28}};
 // 毒の沼（ブーマー）：緑の沼＋泡。消える直前にフェード。
 function drawPuddle(q){
@@ -7633,6 +7636,8 @@ Array.prototype.forEach.call(document.querySelectorAll('#setview button'),functi
 // 更新履歴：1つのお知らせ内で「バージョン見出し」ごとに変更点を並べる（新しい順）。
 // マージのたびに先頭へ新バージョンを追加し、VERSION も更新する。
 var UPDATES=[
+  {v:'α1.0.123', items:[
+    '神鹿ケルビとジャイアントモスの立ち絵を新しいドット絵に差し替えました（これまでの簡易図形からユーザー提供のスプライトへ）。ゲーム中・図鑑の両方に反映されます。']},
   {v:'α1.0.122', items:[
     '武器熟練の一覧から各武器をタップすると「武器詳細」画面が開くようになりました。武器アイコン・名前・特徴・タグ、端から端までの熟練度バー、取得済みの強化内容、そして金枠で覚醒（Lv10で挙動が変わる特別強化）の名前と効果を確認できます。']},
   {v:'α1.0.121', items:[
