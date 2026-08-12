@@ -10,6 +10,10 @@
 - リザルト画面と設定画面に `VERSION` を表示。
 - お知らせ（`UPDATES` 配列）は**1枠内でバージョン見出しごとに変更点を掲載**（新しい順）。マージ時は `UPDATES` 先頭に新バージョンを追加し `VERSION` を一致させる。
 
+## ver.α1.0.111
+- 熟練度の強化カードに説明文（flavor）を追加。MAST各optに `d` を持たせ、`openTraitPick` で「名前＋説明＋数値(.num)」を表示。
+- 熟練度選択カードをコンパクト横並びに（`#mastlist .card` を row/min-height:0 で上書き）。PCで縦長になりすぎる問題を修正。検証：PC幅でカード高さ196→78px、説明文表示、エラー無し。
+
 ## ver.α1.0.110
 - 武器熟練 10レベル制を実装（第1バッチ：slash/bow/gatling）。
   - `MAST[w]={minor:[...],major:[...]}`（各opt `{id,ic,nm,tx,ef}`）を追加。minor=Lv1,2,4,5,7,8,10 / major=Lv3,6,9（`masMajorLevel`）。選択肢は各武器のWAX軸だけで構成し無意味軸を排除（例：gatlingにarea無し）。
