@@ -1193,8 +1193,12 @@ var WEAPONS={
     tx:'鎌を前方へ投げ、手元へ引き戻す。戻りは威力が落ちる。' },
   chakram:{ nm:'チャクラム', glyph:'\u25CE', tag:'剣技', max:10,
     tx:'手元から円を描いて飛び出し、大きく回って戻る。行きは重く、戻りは軽い。' },
+  katana:{ nm:'刀', glyph:'\u{1F5E1}️', tag:'剣技', max:10,
+    tx:'前方を斬り払う近接剣。斬った敵を出血させる。数秒ごとにカウンター状態になり、飛んでくる敵弾を弾く。' },
   bow:{ nm:'弓', glyph:'\u{1F3F9}', tag:'射撃', max:10,
     tx:'矢を速射する。貫通力が高く、遠くの敵まで届く。' },
+  shuriken:{ nm:'手裏剣', glyph:'✴️', tag:'射撃', max:10,
+    tx:'手裏剣を高速で投げる。貫通し、当てた敵を出血させる。' },
   dynamite:{ nm:'ダイナマイト', glyph:'\u{1F9E8}', tag:'射撃', max:10,
     tx:'放物線を描いて投げ、着弾地点で爆発する。' },
   fire:{ nm:'ファイヤーボール', glyph:'\u{1F525}', tag:'炎', max:10,
@@ -1247,6 +1251,8 @@ var WLOCK={
   flame:   {s:2000, cond:'reacts',val:400,   condTx:'元素反応 400 回'},
   rock:    {s:2000, cond:'time',  val:600,   condTx:'10:00 まで生存'},
   chakram: {s:3000, cond:'kills', val:4000,  condTx:'累計討伐 4,000'},
+  katana:  {s:3000, cond:'kills', val:3500,  condTx:'累計討伐 3,500'},
+  shuriken:{s:2500, cond:'time',  val:900,   condTx:'15:00 まで生存'},
   blizzard:{s:3000, cond:'reacts',val:700,   condTx:'元素反応 700 回'},
   chain:   {s:3000, cond:'kills', val:3500,  condTx:'累計討伐 3,500'},
   musket:  {s:5000, cond:'kills', val:6000,  condTx:'累計討伐 6,000'},
@@ -1814,6 +1820,14 @@ var MAST={
             {id:'ck_C',ic:'⌛',nm:'速回',tx:'−12%',d:'投げる間隔が#大きく短くなる',dv:'12%',ef:{cd:-.12}},
             {id:'ck_ct',ic:'✳️',nm:'双輪',tx:'+1',d:'同時に飛ぶチャクラムが#増える',dv:'1枚',ef:{count:1}} ]
   },
+  katana:{  // 刀：dmg/area/rate（近接）＋出血・カウンター
+    minor:[ {id:'kt_d',ic:'💪',nm:'攻撃力',tx:'+6%',d:'斬撃の威力が#上がる',dv:'6%',ef:{dmg:.06}},
+            {id:'kt_a',ic:'🌀',nm:'範囲',tx:'+6%',d:'斬撃の届く範囲が#広がる',dv:'6%',ef:{area:.06}},
+            {id:'kt_c',ic:'⌛',nm:'間隔',tx:'−5%',d:'刀を振る間隔が#短くなる',dv:'5%',ef:{cd:-.05}} ],
+    major:[ {id:'kt_D',ic:'💪',nm:'剛・攻撃力',tx:'+12%',d:'斬撃の威力が#大きく上がる',dv:'12%',ef:{dmg:.12}},
+            {id:'kt_bl',ic:'🩸',nm:'深手',tx:'出血+40%',d:'斬った敵の出血ダメージが#増える',dv:'40%',ef:{bleed:.40}},
+            {id:'kt_ct',ic:'🛡️',nm:'心眼',tx:'間隔−20%',d:'カウンター状態になる間隔が#短くなる',dv:'20%',ef:{counter:.20}} ]
+  },
   bow:{  // 弓：dmg/pierce/rate（通常）＋ count/pierce大（特別）
     minor:[ {id:'bo_d',ic:'💪',nm:'攻撃力',tx:'+6%',d:'矢の威力が#上がる',dv:'6%',ef:{dmg:.06}},
             {id:'bo_p',ic:'➹',nm:'貫通',tx:'+1',d:'矢が#多くの敵を貫く',dv:'1体',ef:{pierce:1}},
@@ -1821,6 +1835,14 @@ var MAST={
     major:[ {id:'bo_ct',ic:'✳️',nm:'多重射',tx:'矢 +1',d:'一度に放つ矢が#増える',dv:'1本',ef:{count:1}},
             {id:'bo_P',ic:'➹',nm:'剛貫通',tx:'+3',d:'矢が敵を#多く貫く',dv:'3体',ef:{pierce:3}},
             {id:'bo_D',ic:'💪',nm:'剛・攻撃力',tx:'+12%',d:'矢の威力が#大きく上がる',dv:'12%',ef:{dmg:.12}} ]
+  },
+  shuriken:{  // 手裏剣：dmg/pierce/rate（通常）＋ count/dmg/出血（特別）
+    minor:[ {id:'sh_d',ic:'💪',nm:'攻撃力',tx:'+6%',d:'手裏剣の威力が#上がる',dv:'6%',ef:{dmg:.06}},
+            {id:'sh_p',ic:'➹',nm:'貫通',tx:'+1',d:'手裏剣が#多くの敵を貫く',dv:'1体',ef:{pierce:1}},
+            {id:'sh_c',ic:'⌛',nm:'間隔',tx:'−5%',d:'投げる間隔が#短くなる',dv:'5%',ef:{cd:-.05}} ],
+    major:[ {id:'sh_ct',ic:'✳️',nm:'多重手裏剣',tx:'発射数 +1',d:'一度に投げる手裏剣が#増える',dv:'1枚',ef:{count:1}},
+            {id:'sh_bl',ic:'🩸',nm:'裂傷',tx:'出血+40%',d:'当てた敵の出血ダメージが#増える',dv:'40%',ef:{bleed:.40}},
+            {id:'sh_D',ic:'💪',nm:'剛・攻撃力',tx:'+12%',d:'手裏剣の威力が#大きく上がる',dv:'12%',ef:{dmg:.12}} ]
   },
   gatling:{  // ガトリング：dmg/rate/pierce（通常）＋ count/ammo（特別）。※範囲(area)は無し
     minor:[ {id:'ga_d',ic:'💪',nm:'攻撃力',tx:'+6%',d:'弾の威力が#上がる',dv:'6%',ef:{dmg:.06}},
@@ -1988,13 +2010,14 @@ function TR(wid,key){
 }
 function TF(wid,key){ return TR(wid,key)>0; }
 // 武器の系統。同系統は波及が厚くなる
-var WCAT={ slash:'剣技', scythe:'剣技', chakram:'剣技', bow:'射撃', dynamite:'射撃',
+var WCAT={ slash:'剣技', scythe:'剣技', chakram:'剣技', katana:'剣技', shuriken:'射撃', bow:'射撃', dynamite:'射撃',
            fire:'炎', flame:'炎', inferno:'炎', ice:'氷', thunder:'雷', chain:'雷',
            quake:'土', rock:'土', voidh:'闇', dhand:'闇', holy:'光', aura:'光',
            bell:'音', chainsaw:'剣技', musket:'射撃', blizzard:'氷', laser:'光', gatling:'射撃' };
 // 武器タグ（間合い・手段・属性）。ナイトメアの属性強化カード等の土台。
 var WTAG={
   slash:['近接','斬撃','物理'], chainsaw:['近接','斬撃','物理'],
+  katana:['近接','斬撃','物理','出血'], shuriken:['遠距離','投擲','物理','出血'],
   scythe:['中距離','斬撃','物理'], chakram:['自己','斬撃','物理'],
   bow:['遠距離','射撃','物理'], gatling:['遠距離','射撃','物理'], musket:['中距離','射撃','物理'],
   dynamite:['中距離','爆発','物理'],
@@ -2038,7 +2061,7 @@ var AXT={ dmg:'ダメージ +45%', area:'範囲 +18%', rate:'間隔 −15%', cou
           pierce:'貫通 +2', slow:'鈍足の持続 +1.0秒', chain:'連鎖 +2', split:'拡散 +2',
           burst:'同じ方向へ続けて撃つ回数 +1', ammo:'弾倉（撃てる弾数）が増える', range:'届く距離・飛距離 +20%' };
 // 物理は会心で殲滅、魔法は元素反応で連鎖させる
-var WKIND={ slash:'phys', scythe:'phys', chakram:'phys', bow:'phys', dynamite:'phys',
+var WKIND={ slash:'phys', scythe:'phys', chakram:'phys', katana:'phys', shuriken:'phys', bow:'phys', dynamite:'phys',
             quake:'phys', rock:'phys', bell:'phys', chainsaw:'phys', musket:'phys',
             blizzard:'mag', laser:'mag',
             fire:'mag', flame:'mag', ice:'mag', thunder:'mag', chain:'mag', inferno:'mag',
@@ -2047,6 +2070,8 @@ var WAX={
   slash:   { dmg:5, area:4, rate:3 },
   scythe:  { dmg:4, area:4, count:3, rate:3, range:2 },
   chakram: { dmg:4, area:4, count:3, rate:3 },
+  katana:  { dmg:5, area:4, rate:3, range:2 },
+  shuriken:{ dmg:4, count:3, pierce:3, rate:3, range:2 },
   bow:     { dmg:4, pierce:3, count:3, rate:3, burst:3, range:3 },
   dynamite:{ dmg:4, area:4, burst:4, rate:3, range:2 },
   quake:   { dmg:4, area:4, rate:3, range:3 },
@@ -2070,7 +2095,7 @@ var WAX={
 };
 // Lv10 到達で覚醒。数値ではなく挙動が変わる。
 var AWK={ chainsaw:'暴走鋸', musket:'貫通弾', blizzard:'絶対氷結', laser:'追尾光線', inferno:'業炎照射',
-  slash:'飛翔斬撃', scythe:'死神の鎌', chakram:'二重円', bow:'貫き矢',
+  slash:'飛翔斬撃', scythe:'死神の鎌', chakram:'二重円', bow:'貫き矢', katana:'無双', shuriken:'秘刃',
   dynamite:'連鎖爆破', bell:'共鳴', quake:'地割れ', rock:'巨岩',
   fire:'爆炎弾', flame:'業火輪', ice:'氷結槍', thunder:'落雷嵐',
   chain:'無限連鎖', holy:'聖裁', aura:'審判の剣', voidh:'特異点', dhand:'深淵の手',
@@ -2078,6 +2103,7 @@ var AWK={ chainsaw:'暴走鋸', musket:'貫通弾', blizzard:'絶対氷結', las
 var AWT={ chainsaw:'前方だけでなく全方位を削るようになる', musket:'弾が敵を貫通する', inferno:'ビームが太く強くなり、当てている敵を延焼させ続ける',
   blizzard:'吹雪の中の敵をときどき凍結させる', laser:'光線が回転しながら残り続ける',
   slash:'斬撃が飛ぶようになる', scythe:'戻りの威力減衰がなくなる',
+  katana:'常にカウンター状態になり、飛んでくる敵弾を弾き続ける', shuriken:'出血の威力が大きく上がる',
   chakram:'軌道が内外2重になり、内側は逆回転', bow:'貫通するたび威力が上がる（最大3倍）',
   dynamite:'爆発が巻き込んだ敵を起点にもう一度爆発', bell:'最大半径で反射し収縮しながら戻る',
   quake:'隆起点に亀裂が残り、通る敵に継続ダメージ', rock:'敵に当たるたび大きくなる',
@@ -2148,7 +2174,7 @@ function lbOK(w,k){
   return 1;
 }
 // 間合いによる火力補正：近接ほど高く、遠距離ほど低い（射程との住み分け）
-var WCLASS={ slash:'melee', chainsaw:'melee',
+var WCLASS={ slash:'melee', chainsaw:'melee', katana:'melee', shuriken:'mid',
   chakram:'self', flame:'self', blizzard:'self', bell:'self', laser:'self', aura:'self', voidh:'self',
   scythe:'mid', dhand:'mid', dynamite:'mid', quake:'mid', musket:'mid', inferno:'mid',
   fire:'long', ice:'long', bow:'long', holy:'long', thunder:'long', chain:'long', rock:'long', gatling:'long' };
@@ -2170,7 +2196,7 @@ function SPL(w){ return AX(w,'split')*2+TR(w,'split')+LB(w,'split'); }
 // 射程：基本距離（カテゴリ）×射程軸の倍率。ここに無い武器は近接/自己中心（射程軸なし）。
 // 基本射程は「おおむね画面内」に収める（射程軸を伸ばすと画面外まで届く）。
 var WRNG={
-  scythe:{base:380,cat:'中'},
+  scythe:{base:380,cat:'中'}, shuriken:{base:420,cat:'中'},
   dhand:{base:300,cat:'中'}, dynamite:{base:360,cat:'中'}, quake:{base:400,cat:'中'}, musket:{base:320,cat:'中'}, inferno:{base:360,cat:'中'},
   chain:{base:460,cat:'長'}, thunder:{base:460,cat:'長'},
   fire:{base:520,cat:'長'}, ice:{base:520,cat:'長'}, bow:{base:560,cat:'長'},
@@ -2446,7 +2472,7 @@ function figInfo(id){
   if(BOSS[id]){ var B=BOSS[id], tt=ETYPE[B.key]||{}; return {nm:B.nm,shape:tt.shape,col:tt.col,dark:tt.dark,desc:BDEX[id]||'',boss:true}; }
   var t=ETYPE[id]||{}; return {nm:t.nm,shape:t.shape,col:t.col,dark:t.dark,desc:DEX[id]||'',boss:false};
 }
-var VERSION='α1.0.129'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
+var VERSION='α1.0.130'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
 function applySave(o){
   for(var i=0;i<UPG.length;i++) META[UPG[i].id]=0;
   try{
@@ -2778,6 +2804,8 @@ function runWeapons(dt){
   if(P.w.slash&&ready('slash',0.85*RATE('slash'),dt)) doSlash();
   if(P.w.scythe  &&ready('scythe',  1.45*RATE('scythe'),dt))   doScythe();
   if(P.w.chakram &&ready('chakram', 1.65*RATE('chakram'),dt))  doChakram();
+  if(P.w.katana){ if(ready('katana', 0.80*RATE('katana'),dt)) doKatana(); katanaCounter(dt); }
+  if(P.w.shuriken&&ready('shuriken',0.42*RATE('shuriken'),dt)) doShuriken();
   if(P.w.bow     &&ready('bow',     0.58*RATE('bow'),dt)){     doBow(); queueVolley('bow',0.10); }
   if(P.w.dynamite&&ready('dynamite',1.85*RATE('dynamite'),dt)){ doDyna(); queueVolley('dynamite',0.12); }
   if(P.w.fire    &&ready('fire',    1.00*RATE('fire'),dt)){    doFire(); queueVolley('fire',0.12); }
@@ -3061,6 +3089,51 @@ function doSlash(){
   sfx(520,.06,'square',.05,.6);
   if(n){ shake=Math.min(9,shake+1.6); hitStop=Math.max(hitStop,.022); }
   wgain('slash',n); SRC=null;
+}
+function doKatana(){
+  SRC='katana';
+  var ar=AREA('katana');
+  var arc=TF('katana','fullarc')?6.3:Math.min(3.2,1.5*ar), r2=90*ar*RNGM('katana');
+  var dmg=20*DMG('katana')*pw('katana');
+  var bl=dmg*0.30*(1+TR('katana','bleed'));
+  var n=arcHit(r2,arc,dmg,null,function(e){ dot(e,bl,3,'#ff4d5e'); });
+  fx.push({k:'slash',x:P.x,y:P.y,a:P.face,arc:arc,rad:r2,t:0,life:.16,col:'#ffd0d6'});
+  swingT=SWDUR; swingDir=(swingDir>0?-1:1);
+  if(n){ shake=Math.min(8,shake+1.4); hitStop=Math.max(hitStop,.02); }
+  sfx(600,.05,'square',.05,.6);
+  wgain('katana',n); SRC=null;
+}
+// 刀のカウンター：数秒ごと（覚醒で常時）に短時間、周囲の敵弾を弾く
+function katanaCounter(dt){
+  var perm=AW('katana');
+  if(perm){ P.ctrT=0.2; }
+  else{
+    P.ctrCd=(P.ctrCd==null?4.5:P.ctrCd)-dt;
+    if(P.ctrCd<=0){ P.ctrT=0.9; P.ctrCd=Math.max(2.2,5.0*(1-TR('katana','counter')));
+      sfx(760,.12,'square',.05,1.1); fx.push({k:'ring',x:P.x,y:P.y,r:0,to:P.r+48,t:0,life:.35,col:'#ffd0d6'}); }
+    if(P.ctrT>0) P.ctrT-=dt;
+  }
+  if(P.ctrT>0||perm){
+    var r2=(P.r+48)*(P.r+48), got=0;
+    for(var i=ebul.length-1;i>=0;i--){ var b=ebul[i], dx=b.x-P.x, dy=b.y-P.y;
+      if(dx*dx+dy*dy<r2){ ebul.splice(i,1); got++;
+        parts.push({x:b.x,y:b.y,vx:(dx)*2,vy:(dy)*2,t:0,life:.25,col:'#ffe0a0',s:3}); } }
+    if(got) sfx(1000,.03,'square',.03,1.4);
+  }
+}
+function doShuriken(){
+  var e=nearest(P.x,P.y,RNG('shuriken')); if(!e) return;
+  var a=Math.atan2(e.y-P.y,e.x-P.x), cnt=1+CNT('shuriken');
+  var dmg=9*DMG('shuriken')*pw('shuriken');
+  var bl=dmg*0.5*(1+TR('shuriken','bleed'));
+  for(var i=0;i<cnt;i++){
+    var an=a+(i-(cnt-1)/2)*0.17;
+    shots.push({x:P.x,y:P.y,vx:Math.cos(an)*680,vy:Math.sin(an)*680,r:9,
+      src:'shuriken',kind:'shuriken',ang:an,spin:0,dmg:dmg,
+      pierce:2+PRC('shuriken'),life:RNG('shuriken')/680,col:'#e6f2ff',col2:'#6a8fb0',el:null,hit:[],bleed:bl});
+  }
+  sfx(900,.04,'square',.03,1.4);
+  wgain('shuriken',cnt);
 }
 function flameOrbs(){
   // 拡大(範囲/reach)で玉が大きくなるぶん、回転半径も少し広げて自キャラに被らないようにする
@@ -4675,6 +4748,7 @@ function moveShots(dt){
   for(var i=shots.length-1;i>=0;i--){
     var s=shots[i];
     s.x+=s.vx*dt; s.y+=s.vy*dt; s.life-=dt;
+    if(s.kind==='shuriken') s.spin=(s.spin||0)+dt*24;
     parts.push({x:s.x,y:s.y,vx:0,vy:0,t:0,life:.22,col:s.col,s:3});
     for(var j=enemies.length-1;j>=0;j--){
       var e=enemies[j];
@@ -4684,6 +4758,7 @@ function moveShots(dt){
         SRC=s.src;
         hurt(e,s.dmg,s.vx/d,s.vy/d,s.el);
         SRC=null;
+        if(s.bleed) dot(e,s.bleed*(s.src==='shuriken'&&AW('shuriken')?1.8:1),2.5,'#ff4d5e');   // 出血付与（覚醒で強化）
         if(s.slow){ e.slow=Math.max(e.slow,s.slow); if(s.slowMul!=null) e.slowMul=Math.min(e.slowMul||0.45,s.slowMul); }
         if(s.src==='ice'&&AW('ice')) addZone(e.x,e.y,44,s.dmg*0.18,3.0,'ice',1.6,'#7fd8ff','ice');
         s.hit.push(e); s.pierce--;
@@ -6478,6 +6553,12 @@ function drawShot(s){
       ctx.globalAlpha=.3; ctx.fillStyle=s.col;
       ctx.beginPath(); ctx.arc(0,0,10,0,6.3); ctx.fill(); ctx.globalAlpha=1;
     }
+  }else if(s.kind==='shuriken'){
+    ctx.rotate(s.spin||0);
+    ctx.fillStyle=s.col;
+    for(var sp=0;sp<4;sp++){ ctx.save(); ctx.rotate(sp*1.5708);
+      ctx.beginPath(); ctx.moveTo(0,-2.5); ctx.lineTo(s.r+3,0); ctx.lineTo(0,2.5); ctx.closePath(); ctx.fill(); ctx.restore(); }
+    ctx.fillStyle=s.col2; ctx.beginPath(); ctx.arc(0,0,3,0,6.3); ctx.fill();
   }else{
     ctx.fillStyle=s.col; ctx.beginPath(); ctx.arc(0,0,s.r,0,6.3); ctx.fill();
     ctx.fillStyle=s.col2; ctx.beginPath(); ctx.arc(0,0,s.r*0.55,0,6.3); ctx.fill();
@@ -7672,6 +7753,10 @@ Array.prototype.forEach.call(document.querySelectorAll('#setview button'),functi
 // 更新履歴：1つのお知らせ内で「バージョン見出し」ごとに変更点を並べる（新しい順）。
 // マージのたびに先頭へ新バージョンを追加し、VERSION も更新する。
 var UPDATES=[
+  {v:'α1.0.130', items:[
+    '新武器「刀」を追加！ 前方を斬り払う近接剣で、斬った敵を出血させます。数秒ごとにカウンター状態になり、飛んでくる敵弾を弾きます（覚醒で常時カウンター）。解放条件：累計討伐3,500 or 金貨10 or 銀貨3,000。',
+    '新武器「手裏剣」を追加！ 高速で投げて貫通し、当てた敵を出血させます。解放条件：15:00まで生存 or 金貨10 or 銀貨2,500。',
+    '新メカ「出血」を実装（時間経過で継続ダメージ）。刀・手裏剣で付与できます。']},
   {v:'α1.0.129', items:[
     '魔道士と聖女の立ち絵が入れ替わっていたのを修正しました（魔道士＝とんがり帽子、聖女＝黒髪）。']},
   {v:'α1.0.128', items:[

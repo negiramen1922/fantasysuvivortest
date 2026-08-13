@@ -10,6 +10,14 @@
 - リザルト画面と設定画面に `VERSION` を表示。
 - お知らせ（`UPDATES` 配列）は**1枠内でバージョン見出しごとに変更点を掲載**（新しい順）。マージ時は `UPDATES` 先頭に新バージョンを追加し `VERSION` を一致させる。
 
+## ver.α1.0.130
+- 新武器2種を追加（刀 katana／手裏剣 shuriken）。既存の全登録ポイントに反映：WEAPONS/WCAT/WTAG/WKIND/WAX/WCLASS/WRNG/AWK/AWT/MAST。実績解除ロックを WLOCK に追加（katana=累計討伐3,500、shuriken=15:00生存。金貨10/銀貨でも解放）。WSTART には入れない＝初期ロック。
+  - 出血(bleed)：既存の `dot(e,dps,sec,col)`（`e.dotT/dotD`）を流用。刀は `arcHit` の onHit で `dot(...,'#ff4d5e')`、手裏剣は shot に `s.bleed` を持たせ命中時に `dot`。熟練 `bleed` 効果で威力増（`TR(w,'bleed')`）。手裏剣覚醒『秘刃』で出血×1.8。
+  - 刀：`doKatana`（`arcHit` 近接薙ぎ、melee×1.15）＋カウンター `katanaCounter(dt)`（既定4.5秒毎に0.9秒、`P.r+48`内の `ebul` を消去して弾く。熟練 `counter` で間隔短縮、覚醒『無双』で常時）。
+  - 手裏剣：`doShuriken`（`shots` に kind:'shuriken'、貫通、回転描画 `s.spin`）。
+  - dispatch：`fireWeapons` に katana/shuriken を追加。shot衝突(4685付近)に `s.bleed` 適用を追加。
+- 検証：docs/check.py 通過。ローカルhttpで dev パネルから両武器を装備し、刀=斬撃+出血(赤ダメ)、手裏剣=貫通弾+出血、ボア戦でもエラー無しを確認。
+
 ## ver.α1.0.129
 - 魔道士(mage)と聖女(saint)の立ち絵が逆だったのを修正。魔道士=とんがり帽子(旧102743)、聖女=黒髪(旧100032)。`assets/mage.png`/`assets/saint.png` を入れ替え、`assets/witch.png` は廃止。`SPRDATA` を witch→saint、`CHAR_SPR.saint` を `'witch'`→`'saint'` に。キャラ名の変更はなし（聖女/魔道士のまま）。
 
