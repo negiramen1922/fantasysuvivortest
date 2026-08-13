@@ -2520,7 +2520,7 @@ function figInfo(id){
   if(BOSS[id]){ var B=BOSS[id], tt=ETYPE[B.key]||{}; return {nm:B.nm,shape:tt.shape,col:tt.col,dark:tt.dark,desc:BDEX[id]||'',boss:true}; }
   var t=ETYPE[id]||{}; return {nm:t.nm,shape:t.shape,col:t.col,dark:t.dark,desc:DEX[id]||'',boss:false};
 }
-var VERSION='α1.0.140'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
+var VERSION='α1.0.141'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
 function applySave(o){
   for(var i=0;i<UPG.length;i++) META[UPG[i].id]=0;
   try{
@@ -2845,12 +2845,26 @@ function doGatling(dt){
 function runWeapons(dt){
   if(P.w.gatling) doGatling(dt);
   if(P.w.inferno) infernoTick(dt);
-  if(P.w.chainsaw){                              // たまに暴走（加速）する
-    P.sawCd=(P.sawCd==null?4.5:P.sawCd)-dt;
-    if(P.sawCd<=0){ P.sawRev=1.4; P.sawCd=5.5+Math.random()*2; sfx(90,.22,'sawtooth',.06,.5); }
-    if(P.sawRev>0) P.sawRev-=dt;
-    var csRev=P.sawRev>0;
-    if(ready('chainsaw',(csRev?0.09:0.20)*RATE('chainsaw'),dt)) doChain2(csRev);
+  if(P.w.chainsaw){                              // しばらく出す→しまう→また出す、を繰り返す
+    if(P.sawOn==null){ P.sawOn=true; P.sawPh=2.6; P.sawRev=0; P.sawRevCd=1.2; }  // 取得直後は出しっぱなしから
+    P.sawPh-=dt;
+    if(P.sawPh<=0){
+      P.sawOn=!P.sawOn;
+      P.sawPh=P.sawOn?2.6:1.4;                   // 稼働2.6秒 / 収納1.4秒
+      if(P.sawOn){ P.sawRev=0; P.sawRevCd=1.2+Math.random(); sfx(120,.14,'sawtooth',.05,.6); }
+    }
+    if(P.sawOn){
+      P.sawRevCd=(P.sawRevCd==null?1.5:P.sawRevCd)-dt;   // 稼働中はたまに暴走（加速）
+      if(P.sawRevCd<=0){ P.sawRev=1.2; P.sawRevCd=2.6+Math.random()*2; sfx(90,.20,'sawtooth',.06,.5); }
+      if(P.sawRev>0) P.sawRev-=dt;
+      var csRev=P.sawRev>0, ar=AREA('chainsaw');
+      var fa=(P.mvdir!=null?P.mvdir:P.face);
+      var arc=AW('chainsaw')?6.3:Math.min(1.0,0.6*ar), rad=62*ar*(csRev?1.25:1);
+      // 持続表示（点滅させない）: 単一の長寿命 fx を毎フレーム更新
+      if(!P.sawFx || fx.indexOf(P.sawFx)<0){ P.sawFx={k:'saw',sustain:1}; fx.push(P.sawFx); }
+      P.sawFx.x=P.x; P.sawFx.y=P.y; P.sawFx.a=fa; P.sawFx.arc=arc; P.sawFx.rad=rad; P.sawFx.rev=csRev?1:0; P.sawFx.t=0; P.sawFx.life=0.2;
+      if(ready('chainsaw',(csRev?0.10:0.18)*RATE('chainsaw'),dt)) doChainHit(csRev,fa,arc,rad);
+    } else if(P.sawFx){ P.sawFx.life=0; P.sawFx=null; }   // しまう
   }
   if(P.w.musket  &&ready('musket',  1.50*RATE('musket'),dt)){  doMusket(); queueVolley('musket',0.13); }
   if(P.w.blizzard&&ready('blizzard',1.10*RATE('blizzard'),dt)) doBlizzard();
@@ -2895,14 +2909,10 @@ function arcHit(rad,arc,dmg,el,onHit,face){
   return n;
 }
 // チェンソー：前方を削り続ける。覚醒で全方位になる。
-function doChain2(rev){
+function doChainHit(rev,fa,arc,rad){                       // ダメージのみ（描画は runWeapons が持続管理）
   SRC='chainsaw';
-  var ar=AREA('chainsaw');
-  var fa=(P.mvdir!=null?P.mvdir:P.face);                  // 向いている（移動）方向へ削る
-  var arc=AW('chainsaw')?6.3:Math.min(1.0,0.6*ar), rad=62*ar*(rev?1.25:1);
-  var dmg=5*DMG('chainsaw')*pw('chainsaw')*(rev?1.8:1);   // 暴走中は威力・範囲アップ
+  var dmg=5*DMG('chainsaw')*pw('chainsaw')*(rev?1.8:1);   // 暴走中は威力アップ
   var n=arcHit(rad,arc,dmg,null,null,fa);
-  fx.push({k:'saw',x:P.x,y:P.y,a:fa,arc:arc,rad:rad,t:0,life:.16,rev:rev?1:0});
   if(n) sfx((rev?200:120)+Math.random()*40,.05,'sawtooth',.03,1.1);
   wgain('chainsaw',n); SRC=null;
 }
@@ -3077,7 +3087,7 @@ function drawInferno(){
 }
 function drawSaw(f){
   var k=f.t/f.life;
-  ctx.save(); ctx.translate(f.x,f.y); ctx.globalAlpha=0.92*(1-k*0.35);
+  ctx.save(); ctx.translate(f.x,f.y); ctx.globalAlpha=f.sustain?0.9:0.92*(1-k*0.35);
   ctx.lineCap='round';
   if(f.arc>=6){                                  // 覚醒：全方位の丸ノコ
     ctx.rotate((time*12)%6.283);
@@ -7968,6 +7978,9 @@ Array.prototype.forEach.call(document.querySelectorAll('#setview button'),functi
 // 更新履歴：1つのお知らせ内で「バージョン見出し」ごとに変更点を並べる（新しい順）。
 // マージのたびに先頭へ新バージョンを追加し、VERSION も更新する。
 var UPDATES=[
+  {v:'α1.0.141', items:[
+    'チェンソーがチカチカして眩しかったのを解消。「しばらく出し続ける→しまう→また出す」を繰り返す動作になり、稼働中は点滅せず一定の見た目で表示されます。',
+  ]},
   {v:'α1.0.140', items:[
     'チェンソーの当たり範囲・見た目が大きすぎたので、ひと回り小さく調整しました。',
   ]},
