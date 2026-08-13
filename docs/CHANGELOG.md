@@ -10,6 +10,11 @@
 - リザルト画面と設定画面に `VERSION` を表示。
 - お知らせ（`UPDATES` 配列）は**1枠内でバージョン見出しごとに変更点を掲載**（新しい順）。マージ時は `UPDATES` 先頭に新バージョンを追加し `VERSION` を一致させる。
 
+## ver.α1.0.138
+- 錨(anchor)をブーメラン化。`doAnchor` に `ox/oy/range/ret/spd` を持たせ pierce:99・life:5。`moveShots` で最大距離(range)到達→`ret=1`＆`s.hit=[]`（帰りも再ヒット）、以降プレイヤーへ homing、手元(32px)で消滅。`s.ang` を毎フレーム速度方向に更新（尖り先行）。往復でダメージ＋スタン判定。
+- 出血の追加ダメージを赤字表示。`hurt()` で `bfrac=bleedPer*bleedStk` を保持し、通常ダメージ表示の後に出血ぶん `d*bfrac/(1+bfrac)` を赤(`#ff4d5e`, rx)で「+N」表示。
+- 検証：docs/check.py 通過。出血中の敵に赤い「+4」表示、錨往復・エラー無しを確認。
+
 ## ver.α1.0.137
 - 錨(anchor)を調整。引き寄せを廃止し確率スタンのみに（shot衝突の `s.anchor` 分岐から pull 処理を削除）。回転(spin)をやめ、描画を `ctx.rotate(s.ang)` で進行方向へ向け、爪(V字の尖り)を +x=前方に、リング/ストックを後方に描く「まっすぐ飛ぶ」形状に変更。WEAPONS.tx／AWT／STATUS_DESC の引き寄せ記述を除去。
 
