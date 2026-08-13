@@ -10,6 +10,13 @@
 - リザルト画面と設定画面に `VERSION` を表示。
 - お知らせ（`UPDATES` 配列）は**1枠内でバージョン見出しごとに変更点を掲載**（新しい順）。マージ時は `UPDATES` 先頭に新バージョンを追加し `VERSION` を一致させる。
 
+## ver.α1.0.128
+- キャラ立ち絵を実装。`assets/hunter.png`(狩人)・`bomber.png`(爆弾魔)・`mage.png`(魔道士)・`witch.png`(魔女＝saintスロット) を追加（白背景はflood-fillで透過処理済み）。`SPRDATA` 登録＋`CHAR_SPR={knight,hunter,bomber,mage,saint:'witch'}` を新設。
+- プレイヤー描画：knight以外の簡易円描画を廃し、`CHAR_SPR[SELCH]` の立ち絵を `drawSpr`（左右反転＋歩行ゆれ、未ロード時は従来の円にフォールバック）。
+- キャラ一覧アイコン：`renderChr` の `.cwg` を絵文字→`<img class="cwspr" src="assets/…">` に変更（`.cwg` を 46px 幅、img 44px・pixelated）。
+- 注：5番目のキャラは内部キー `saint`（表示名『聖女』）のまま魔女の立ち絵を適用。名称変更は要確認。
+- 検証：ローカルhttpでキャラ一覧に5体の立ち絵アイコン、狩人選択でゲーム内プレイヤーが狩人立ち絵、エラー無しを確認。
+
 ## ver.α1.0.127
 - フレイムサークルの回転を「実効攻撃間隔」連動に修正。旧: `TR('flame','cd')`（武器熟練の間隔のみ）に連動→ラン中の `AX(rate)` やパッシブ `cdr()` が反映されず「バーは速いのに回転が変わらない」状態だった。新: `whirlA+=dt*2.4*Math.min(5,1/Math.max(0.12,RATE('flame')*cdr()))`。`ready()` の実周期 `0.30*RATE('flame')*cdr()` と同じ係数なので右下ゲージと回転が常に一致。基準(無強化)は RATE=cdr=1 で従来と同じ2.4rad/s、上限5倍。
 

@@ -541,7 +541,8 @@ canvas{display:block;width:100%;height:100%;touch-action:none}
   border:1px solid var(--line);padding:9px 10px}
 .cw.sel{border-color:var(--arc);box-shadow:0 0 14px rgba(86,224,255,.25)}
 .cw.lock{opacity:.72}
-.cwg{font-size:22px;flex:0 0 30px;text-align:center}
+.cwg{font-size:22px;flex:0 0 46px;text-align:center}
+.cwg .cwspr{width:44px;height:44px;image-rendering:pixelated;vertical-align:middle}
 .cwb{flex:1;min-width:0;text-align:left}
 .cwn{font-size:15px;color:#fff}
 .cwn span{font-size:11px;color:var(--ash);margin-left:7px}
@@ -2445,7 +2446,7 @@ function figInfo(id){
   if(BOSS[id]){ var B=BOSS[id], tt=ETYPE[B.key]||{}; return {nm:B.nm,shape:tt.shape,col:tt.col,dark:tt.dark,desc:BDEX[id]||'',boss:true}; }
   var t=ETYPE[id]||{}; return {nm:t.nm,shape:t.shape,col:t.col,dark:t.dark,desc:DEX[id]||'',boss:false};
 }
-var VERSION='α1.0.127'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
+var VERSION='α1.0.128'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
 function applySave(o){
   for(var i=0;i<UPG.length;i++) META[UPG[i].id]=0;
   try{
@@ -5403,8 +5404,14 @@ var SPRDATA={
   grave:'assets/grave.png',
   skeletonking:'assets/skeletonking.png',
   hecaton:'assets/hecaton.png',
-  ghoul:'assets/ghoul.png'
+  ghoul:'assets/ghoul.png',
+  hunter:'assets/hunter.png',
+  bomber:'assets/bomber.png',
+  mage:'assets/mage.png',
+  witch:'assets/witch.png'
 };
+// キャラID→立ち絵スプライト名（プレイヤー描画＆キャラリストのアイコン）
+var CHAR_SPR={ knight:'knight', hunter:'hunter', bomber:'bomber', mage:'mage', saint:'witch' };
 var SPR={}, SPRT={}, SPRRDY={};
 // 端に接する白（不透明な白背景）だけをフラッドフィルで透過に。内部の白ハイライトは残す。
 // Pages（同一オリジン）では実行時に効き、file:// 等で getImageData が使えない時は例外を握って
@@ -5598,8 +5605,16 @@ function drawPlayer(){
       }
     }
     ctx.restore();
+  }else if(CHAR_SPR[SELCH]&&sprReady(CHAR_SPR[SELCH])){
+    // その他のキャラ：立ち絵（画像）。進行/照準方向へ左右反転のみ（上下は反転しない）
+    var cfl=Math.cos(P.face)<0?-1:1;
+    var cbob=P.moving?Math.sin(time*11)*1.2:0;
+    var cpt=P.hurt>0?'#ff9db3':null, cpa=P.hurt>0?0.55:0;
+    ctx.save(); ctx.translate(0,cbob); ctx.scale(cfl,1);
+    drawSpr(CHAR_SPR[SELCH],P.r*3.4,P.r*3.4,cpt,cpa);
+    ctx.restore();
   }else{
-    // その他のキャラ：従来の簡易表示（照準方向を向く丸い本体＋武器線）
+    // 立ち絵が未ロードのときの簡易表示（照準方向を向く丸い本体＋武器線）
     ctx.rotate(P.face);
     ctx.fillStyle=P.hurt>0?'#ff9db3':'#f2ecff';
     ctx.beginPath(); ctx.arc(0,0,P.r,0,6.3); ctx.fill();
@@ -6847,7 +6862,7 @@ function renderChr(){
     else if(un) btn='<button class="ubuy" data-c="'+id+'" data-a="sel">選ぶ</button>';
     else if(WALLET.gold>=c.cost) btn='<button class="ubuy gd" data-c="'+id+'" data-a="buy">金 '+c.cost+'</button>';
     else btn='<button class="ubuy gd" disabled>金 '+c.cost+'</button>';
-    d.innerHTML='<div class="cwg">'+c.glyph+'</div>'+
+    d.innerHTML='<div class="cwg">'+(CHAR_SPR[id]?'<img class="cwspr" src="assets/'+CHAR_SPR[id]+'.png" alt="">':c.glyph)+'</div>'+
       '<div class="cwb">'+
         '<div class="cwn">'+c.nm+'<span>初期武器：'+WEAPONS[c.w].nm+'</span></div>'+
         '<div class="cwt">'+c.tx+'</div>'+
@@ -7657,6 +7672,9 @@ Array.prototype.forEach.call(document.querySelectorAll('#setview button'),functi
 // 更新履歴：1つのお知らせ内で「バージョン見出し」ごとに変更点を並べる（新しい順）。
 // マージのたびに先頭へ新バージョンを追加し、VERSION も更新する。
 var UPDATES=[
+  {v:'α1.0.128', items:[
+    '狩人・爆弾魔・魔道士・魔女（5番目のキャラ）の立ち絵を専用ドット絵に差し替えました。ゲーム中のプレイヤーもそのキャラの立ち絵で表示されます。',
+    'キャラクター一覧のアイコンを、絵文字から各キャラの立ち絵に変更しました。']},
   {v:'α1.0.127', items:[
     'フレイムサークルの回転速度が「実際の攻撃間隔」に連動するようになりました。ラン中の間隔（攻撃速度）強化・熟練の間隔・攻撃速度パッシブなど、右下のゲージが速くなる要素すべてで火の玉の回転も速くなります。']},
   {v:'α1.0.126', items:[
