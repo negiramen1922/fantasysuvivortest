@@ -1229,9 +1229,8 @@ var WEAPONS={
     tx:'地面を隆起させて突き上げる。敵を大きく弾き飛ばす。' },
   rock:{ nm:'ロックボール', glyph:'\u26AB', tag:'土', max:10,
     tx:'巨大な岩を転がす。盤面に残り続け、進路の敵をなぎ倒す。' },
-  // [一時退避] チェンソー：挙動が不安定なため一旦プールから除外。復帰時は下2行のコメントを外す。
-  // chainsaw:{ nm:'チェンソー', glyph:'\u{1FA9A}', tag:'剣技', max:10,
-  //   tx:'前方を削り続ける。一撃は軽いが刃は止まらない。' },
+  chainsaw:{ nm:'チェンソー', glyph:'\u{1FA9A}', tag:'剣技', max:10,
+    tx:'向いている方向を削り続ける。一撃は軽いが刃は止まらず、たまに高速回転（暴走）してダメージが跳ね上がる。' },
   musket:{ nm:'マスケット', glyph:'\u{1F52B}', tag:'射撃', max:10,
     tx:'散弾を撒き散らす。近いほど多くの玉が突き刺さる。' },
   blizzard:{ nm:'アイスブリザード', glyph:'\u{1F32A}', tag:'氷', max:10,
@@ -1267,6 +1266,7 @@ var WLOCK={
   shuriken:{s:2500, cond:'time',  val:900,   condTx:'15:00 まで生存'},
   toxin:   {s:3000, cond:'kills', val:4500,  condTx:'累計討伐 4,500'},
   anchor:  {s:3000, cond:'kills', val:4000,  condTx:'累計討伐 4,000'},
+  chainsaw:{s:4000, cond:'kills', val:5000,  condTx:'累計討伐 5,000'},
   blizzard:{s:3000, cond:'reacts',val:700,   condTx:'元素反応 700 回'},
   chain:   {s:3000, cond:'kills', val:3500,  condTx:'累計討伐 3,500'},
   musket:  {s:5000, cond:'kills', val:6000,  condTx:'累計討伐 6,000'},
@@ -1892,6 +1892,14 @@ var MAST={
             {id:'an_A',ic:'🌀',nm:'大範囲',tx:'+15%',d:'錨が#さらに大きくなる',dv:'15%',ef:{area:.15}},
             {id:'an_s',ic:'💫',nm:'重撃',tx:'スタン率+15%',d:'スタンの発生率が#上がる',dv:'15%',ef:{stun:.15}} ]
   },
+  chainsaw:{  // チェンソー：dmg/area/rate（近接・前方持続）
+    minor:[ {id:'cs_d',ic:'💪',nm:'攻撃力',tx:'+6%',d:'刃の威力が#上がる',dv:'6%',ef:{dmg:.06}},
+            {id:'cs_a',ic:'🌀',nm:'範囲',tx:'+6%',d:'削る範囲が#広がる',dv:'6%',ef:{area:.06}},
+            {id:'cs_c',ic:'⌛',nm:'間隔',tx:'−5%',d:'刃の回転が#速くなる',dv:'5%',ef:{cd:-.05}} ],
+    major:[ {id:'cs_D',ic:'💪',nm:'剛・攻撃力',tx:'+12%',d:'刃の威力が#大きく上がる',dv:'12%',ef:{dmg:.12}},
+            {id:'cs_A',ic:'🌀',nm:'大範囲',tx:'+15%',d:'削る範囲が#大きく広がる',dv:'15%',ef:{area:.15}},
+            {id:'cs_cr',ic:'💥',nm:'剛撃',tx:'+10%',d:'会心（クリティカル）のダメージが#上がる',dv:'10%',ef:{critd:.10}} ]
+  },
   musket:{  // マスケット：dmg/rate/burst/ammo/range（散弾数はcount/ammoで増える）
     minor:[ {id:'mu_d',ic:'💪',nm:'攻撃力',tx:'+6%',d:'弾の威力が#上がる',dv:'6%',ef:{dmg:.06}},
             {id:'mu_c',ic:'⌛',nm:'間隔',tx:'−5%',d:'撃つ間隔が#短くなる',dv:'5%',ef:{cd:-.05}},
@@ -2510,7 +2518,7 @@ function figInfo(id){
   if(BOSS[id]){ var B=BOSS[id], tt=ETYPE[B.key]||{}; return {nm:B.nm,shape:tt.shape,col:tt.col,dark:tt.dark,desc:BDEX[id]||'',boss:true}; }
   var t=ETYPE[id]||{}; return {nm:t.nm,shape:t.shape,col:t.col,dark:t.dark,desc:DEX[id]||'',boss:false};
 }
-var VERSION='α1.0.135'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
+var VERSION='α1.0.136'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
 function applySave(o){
   for(var i=0;i<UPG.length;i++) META[UPG[i].id]=0;
   try{
@@ -2835,7 +2843,13 @@ function doGatling(dt){
 function runWeapons(dt){
   if(P.w.gatling) doGatling(dt);
   if(P.w.inferno) infernoTick(dt);
-  if(P.w.chainsaw&&ready('chainsaw',0.20*RATE('chainsaw'),dt)) doChain2();
+  if(P.w.chainsaw){                              // たまに暴走（加速）する
+    P.sawCd=(P.sawCd==null?4.5:P.sawCd)-dt;
+    if(P.sawCd<=0){ P.sawRev=1.4; P.sawCd=5.5+Math.random()*2; sfx(90,.22,'sawtooth',.06,.5); }
+    if(P.sawRev>0) P.sawRev-=dt;
+    var csRev=P.sawRev>0;
+    if(ready('chainsaw',(csRev?0.09:0.20)*RATE('chainsaw'),dt)) doChain2(csRev);
+  }
   if(P.w.musket  &&ready('musket',  1.50*RATE('musket'),dt)){  doMusket(); queueVolley('musket',0.13); }
   if(P.w.blizzard&&ready('blizzard',1.10*RATE('blizzard'),dt)) doBlizzard();
   if(P.w.laser   &&ready('laser',   2.00*RATE('laser'),dt))    doLaser();
@@ -2879,13 +2893,14 @@ function arcHit(rad,arc,dmg,el,onHit){
   return n;
 }
 // チェンソー：前方を削り続ける。覚醒で全方位になる。
-function doChain2(){
+function doChain2(rev){
   SRC='chainsaw';
   var ar=AREA('chainsaw');
-  var arc=AW('chainsaw')?6.3:Math.min(2.2,0.95*ar), rad=90*ar;
-  var n=arcHit(rad,arc,5*DMG('chainsaw')*pw('chainsaw'),null);
-  fx.push({k:'saw',x:P.x,y:P.y,a:P.face,arc:arc,rad:rad,t:0,life:.16});
-  if(n) sfx(120+Math.random()*40,.05,'sawtooth',.03,1.1);
+  var arc=AW('chainsaw')?6.3:Math.min(2.2,0.95*ar), rad=90*ar*(rev?1.25:1);
+  var dmg=5*DMG('chainsaw')*pw('chainsaw')*(rev?1.8:1);   // 暴走中は威力・範囲アップ
+  var n=arcHit(rad,arc,dmg,null);
+  fx.push({k:'saw',x:P.x,y:P.y,a:P.face,arc:arc,rad:rad,t:0,life:.16,rev:rev?1:0});
+  if(n) sfx((rev?200:120)+Math.random()*40,.05,'sawtooth',.03,1.1);
   wgain('chainsaw',n); SRC=null;
 }
 // マスケット：短射程の散弾
@@ -3299,17 +3314,25 @@ function doAnchor(){
 }
 function doToxin(){
   var e=nearest(P.x,P.y,RNG('toxin')); if(!e) return;
-  var ar=AREA('toxin'), rad=70*ar, dmg=4*DMG('toxin')*pw('toxin');
-  addZone(e.x,e.y,rad,dmg,3.2,'grass',0,'#5fae4a','toxin');   // 毒の沼：内部の敵に継続ダメ＋草（毒）付与→拡散
-  fx.push({k:'ring',x:e.x,y:e.y,r:0,to:rad,t:0,life:.4,col:'#7ac74f'});
-  sfx(300,.12,'sine',.05,.5);
-  wgain('toxin',2);
+  var ar=AREA('toxin');
+  // 瓶を放物線で投げ、着弾地点(bomb landing)で毒沼が発生する
+  bombs.push({ sx:P.x, sy:P.y, tx:e.x+(Math.random()-.5)*44, ty:e.y+(Math.random()-.5)*44,
+    t:0, dur:0.58, spin:0, x:P.x, y:P.y, h:0,
+    pois:1, prad:70*ar, pdmg:4*DMG('toxin')*pw('toxin') });
+  sfx(300,.08,'sine',.045,.6);
+  wgain('toxin',1);
 }
 function moveBombs(dt){
   for(var i=bombs.length-1;i>=0;i--){
     var b=bombs[i];
     b.t+=dt/b.dur; b.spin+=dt*10;
     if(b.t>=1){
+      if(b.pois){                               // 毒瓶：着弾地点に毒沼を発生
+        addZone(b.x,b.y,b.prad,b.pdmg,3.2,'grass',0,'#5fae4a','toxin');
+        fx.push({k:'ring',x:b.x,y:b.y,r:0,to:b.prad,t:0,life:.4,col:'#7ac74f'});
+        sfx(260,.14,'sine',.05,.5);
+        bombs.splice(i,1); continue;
+      }
       SRC='dynamite';
       boom(b.x,b.y,b.rad,b.dmg,'#ffa53c',0);
       if(AW('dynamite')){                       // 覚醒「連鎖爆破」
@@ -6534,6 +6557,13 @@ function drawBomb(b){
   ctx.globalAlpha=.3; ctx.fillStyle='#000';
   ctx.beginPath(); ctx.ellipse(b.x,b.y,9,4,0,0,6.3); ctx.fill();
   ctx.globalAlpha=1; ctx.restore();
+  if(b.pois){                                   // 毒瓶：緑の瓶
+    ctx.save(); ctx.translate(b.x,b.y-(b.h||0)); ctx.rotate(b.spin);
+    ctx.fillStyle='#5fae4a'; ctx.fillRect(-5,-7,10,14);
+    ctx.fillStyle='#3f7a33'; ctx.fillRect(-3,-11,6,4);
+    ctx.fillStyle='#9be86a'; ctx.beginPath(); ctx.arc(-1,-1,2.4,0,6.3); ctx.fill();
+    ctx.restore(); return;
+  }
   if(sprReady('dynamite')){ drawSprRot('dynamite',b.x,b.y-(b.h||0),b.spin,30); return; }
   ctx.save();
   ctx.translate(b.x,b.y-(b.h||0)); ctx.rotate(b.spin);
@@ -6906,9 +6936,10 @@ function updateSlotRings(){
       r.hr.style.setProperty('--h',(Math.max(0,Math.min(1,INF.heat))*100).toFixed(1)+'%');
       if(INF.over) r.el.classList.add('over'); else r.el.classList.remove('over');
     }
-    if(r.cr){   // 刀：カウンター・ストック（緑枠。覚醒時は最大3で2本線＝3分割）
-      var ms=AW('katana')?3:1, chg=(P.ctrChg==null?ms:P.ctrChg);
-      r.cr.style.setProperty('--c',(Math.max(0,Math.min(1,chg/ms))*100).toFixed(1)+'%');
+    if(r.cr){   // 刀：カウンター・ストック（緑枠。次のチャージまで徐々に埋まる。覚醒時は最大3で2本線＝3分割）
+      var ms=AW('katana')?3:1, chg=(P.ctrChg==null?ms:P.ctrChg), iv=5.0;
+      var part=(chg<ms)?Math.max(0,Math.min(1,1-(P.ctrCd==null?iv:P.ctrCd)/iv)):0;   // 次の1個までの充填率
+      r.cr.style.setProperty('--c',(Math.max(0,Math.min(1,(chg+part)/ms))*100).toFixed(1)+'%');
       if(ms===3) r.cr.classList.add('seg3'); else r.cr.classList.remove('seg3');
     }
   }
@@ -7895,6 +7926,10 @@ Array.prototype.forEach.call(document.querySelectorAll('#setview button'),functi
 // 更新履歴：1つのお知らせ内で「バージョン見出し」ごとに変更点を並べる（新しい順）。
 // マージのたびに先頭へ新バージョンを追加し、VERSION も更新する。
 var UPDATES=[
+  {v:'α1.0.136', items:[
+    '武器「チェンソー」が復活！ 向いている方向を削り続け、たまに暴走（加速）して威力と範囲が跳ね上がります。解放条件：累計討伐5,000 or 金貨10 or 銀貨4,000。',
+    '毒瓶を「瓶を投げて着弾地点に毒沼が発生する」挙動に変更しました。',
+    '刀のカウンターの緑ゲージが、次のストックがたまるまで徐々に充填されるようになりました（あとどれくらいで溜まるか分かりやすく）。']},
   {v:'α1.0.135', items:[
     '新武器「錨」を追加！ 重い錨を投げて当てた敵を自分の方へ引き寄せ、確率でスタン（動きを止める）させます。攻撃力・間隔・範囲で強化（発射数は増えません）。「付与率」強化でスタン率アップ、覚醒『大錨』で引き寄せた敵を必ずスタン。解放条件：累計討伐4,000 or 金貨10 or 銀貨3,000。']},
   {v:'α1.0.134', items:[

@@ -10,6 +10,13 @@
 - リザルト画面と設定画面に `VERSION` を表示。
 - お知らせ（`UPDATES` 配列）は**1枠内でバージョン見出しごとに変更点を掲載**（新しい順）。マージ時は `UPDATES` 先頭に新バージョンを追加し `VERSION` を一致させる。
 
+## ver.α1.0.136
+- チェンソー(chainsaw)を復活（プールへ再投入）。WEAPONS のコメントを解除、`WLOCK`（討伐5,000）追加、`MAST.chainsaw`（dmg/area/rate＋大範囲/剛撃）追加。既存の WCAT/WTAG/WKIND/WAX/WCLASS/AWK/AWT はそのまま流用。renderMast は MAST 列挙なので一覧に出る。
+  - 「たまに加速（暴走）」：dispatchで `P.sawCd`(≈5.5+乱数秒毎)→`P.sawRev=1.4s`。暴走中は tick 0.20→0.09s、`doChain2(rev)` で dmg×1.8・rad×1.25。saw fx に rev フラグ。
+- 毒瓶を投擲式に変更。`doToxin` は `bombs.push({pois:1,prad,pdmg,...})` で放物線投擲。`moveBombs` 着弾時に `b.pois` なら `addZone(...'grass'...'toxin')` で毒沼発生。`drawBomb` に緑の瓶描画を追加。
+- 刀カウンターの緑ゲージを漸次充填表示に。`updateSlotRings` の cr で `part=1-P.ctrCd/iv`（iv=5）を用い `--c=(chg+part)/ms`。次ストックまでの進捗が見える。
+- 検証：docs/check.py 通過。チェンソー前方削り＋暴走、毒瓶が着弾地点に毒沼、エラー無しを確認。
+
 ## ver.α1.0.135
 - 新武器「錨(anchor)」を追加。投擲弾(kind:'anchor', pierce:2, 発射数/貫通の強化軸なし)。命中時に即時「引き寄せ」（`e.x/e.y` をプレイヤー方向へ `min(100, dist-(P.r+e.r+30))` 移動＝接触手前で停止、`e.kb=0`）＋確率スタン（`e.frz` 流用。確率=`0.35+0.08*debuff+TR('anchor','stun')`、覚醒『大錨』で必中）。回転描画の錨スプライト（procedural）。
 - 登録：WEAPONS/WLOCK(討伐4,000)/WCAT打撃/WTAG[中距離,投擲,物理,スタン]/WKIND phys/WAX{dmg,area,rate,range}/WCLASS mid/WRNG420/AWK大錨/AWT/MAST(dmg,area,rate＋大範囲,重撃stun+15%)。dispatch追加。
