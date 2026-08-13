@@ -10,6 +10,13 @@
 - リザルト画面と設定画面に `VERSION` を表示。
 - お知らせ（`UPDATES` 配列）は**1枠内でバージョン見出しごとに変更点を掲載**（新しい順）。マージ時は `UPDATES` 先頭に新バージョンを追加し `VERSION` を一致させる。
 
+## ver.α1.0.132
+- 出血を DoT → 被ダメージ増幅にリワーク（燃焼/毒と差別化）。`applyBleed(e,perMul)`：`e.bleedStk`(最大`BLEED_MAX=5`)＋`e.bleedT=4`＋`e.bleedPer`(=`BLEED_PER=0.08`×perMul、Math.maxで保持)。`hurt()` で `if(e.bleedStk>0) d*=1+e.bleedPer*e.bleedStk`。敵更新で `bleedT` 減衰→0でスタック解除。刀onHit/手裏剣命中で `applyBleed`（`perMul=1+TR(w,'bleed')`、手裏剣覚醒×1.8）。旧 `dot()` 出血は撤去。
+- 刀カウンターの弾き演出：弾のある平均方向へ薄緑 `#bff5b0` の斬撃fx（`k:'slash'`）＋リングを追加。
+- 右下スロットにカウンター・ストック枠 `.cring`（`inset:-5px` の外周リング、conic `--c`）。覚醒(最大3)で `.seg3`（120°/240°に区切り線）。`rebuildSlots` で刀スロットに追加、`updateSlotRings` で `--c=chg/maxStock`・seg3切替。
+- 手裏剣覚醒『秘刃』は出血perを×1.8。刀熟練 major は 剛・攻撃力/深手(bleed)/剛撃(critd)。
+- 検証：docs/check.py 通過。ステージ3で HUD 緑枠（覚醒=3分割/通常=1周）・出血で被ダメ増（大きい数字）・エラー無しを確認。
+
 ## ver.α1.0.131
 - 刀のカウンターをストック制に変更。`katanaCounter`：5秒ごとに1チャージ、通常は最大1・覚醒『無双』で最大3。チャージ≥1で `P.r+52` 内の `ebul` を消去し1消費（0.4秒ロック）。弾きエフェクトを黄→**うす緑 `#bff5b0`**（リング＋粒子）に。覚醒テキストを「常時」→「最大3ストック」に更新。
 - 刀の熟練 major から「心眼(カウンター間隔短縮 counter)」を廃止→「剛撃(critd +10%)」に差し替え（id `kt_ct`→`kt_cr`）。`TR('katana','counter')` 参照も除去。
