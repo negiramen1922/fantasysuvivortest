@@ -10,6 +10,12 @@
 - リザルト画面と設定画面に `VERSION` を表示。
 - お知らせ（`UPDATES` 配列）は**1枠内でバージョン見出しごとに変更点を掲載**（新しい順）。マージ時は `UPDATES` 先頭に新バージョンを追加し `VERSION` を一致させる。
 
+## ver.α1.0.135
+- 新武器「錨(anchor)」を追加。投擲弾(kind:'anchor', pierce:2, 発射数/貫通の強化軸なし)。命中時に即時「引き寄せ」（`e.x/e.y` をプレイヤー方向へ `min(100, dist-(P.r+e.r+30))` 移動＝接触手前で停止、`e.kb=0`）＋確率スタン（`e.frz` 流用。確率=`0.35+0.08*debuff+TR('anchor','stun')`、覚醒『大錨』で必中）。回転描画の錨スプライト（procedural）。
+- 登録：WEAPONS/WLOCK(討伐4,000)/WCAT打撃/WTAG[中距離,投擲,物理,スタン]/WKIND phys/WAX{dmg,area,rate,range}/WCLASS mid/WRNG420/AWK大錨/AWT/MAST(dmg,area,rate＋大範囲,重撃stun+15%)。dispatch追加。
+- 武器詳細 `STATUS_DESC` に「スタン」を追加。
+- 検証：docs/check.py 通過。錨装備でボスが手前まで引き寄せられる・エラー無しを確認。
+
 ## ver.α1.0.134
 - 新属性「草(grass)」＋新武器「毒瓶(toxin)」を追加。`ELEM.grass`/`ELW.grass=['toxin']`。反応は最小限（草は `applyElem` 冒頭で分岐し `react()` を通さず毒を付与＝空振り無し。反応は今後追加可）。
   - 毒（拡散DoT）：`applyPois(e,dps,dur)`（`e.poisD/poisT/poisSp`）。敵更新で毎フレームDoT（緑ダメージ表示）＋`poisSp`(0.7秒毎)で `spreadPoison` により周囲96px・最大2体へ伝播（拡散ぶんは持続を`min(src.poisT,3)`に抑制）。
