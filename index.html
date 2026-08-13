@@ -1212,7 +1212,7 @@ var WEAPONS={
   toxin:{ nm:'毒瓶', glyph:'\u{1F9EA}', tag:'草', max:10,
     tx:'毒の瓶を投げ、その場に毒の沼を作る。毒（草属性）は継続ダメージを与え、時間とともに周囲の敵へ拡散していく。' },
   anchor:{ nm:'錨', glyph:'⚓', tag:'打撃', max:10,
-    tx:'重い錨をぶん投げる。当てた敵を自分の方へ引き寄せ、確率でスタン（動きを止める）させる。攻撃力・間隔・範囲を伸ばして扱う。' },
+    tx:'とがった錨を敵へまっすぐ投げる。当てた敵を確率でスタン（動きを止める）させる。攻撃力・間隔・範囲を伸ばして扱う。' },
   fire:{ nm:'ファイヤーボール', glyph:'\u{1F525}', tag:'炎', max:10,
     tx:'最寄りの敵へ火球を放つ。当たると爆発し、貫通しながら数が増えていく。' },
   inferno:{ nm:'インフェルノビーム', glyph:'☄', tag:'炎', max:10,
@@ -2149,7 +2149,7 @@ var AWT={ chainsaw:'前方だけでなく全方位を削るようになる', mus
   slash:'斬撃が飛ぶようになる', scythe:'戻りの威力減衰がなくなる',
   katana:'カウンターを最大3回までストックできるようになる', shuriken:'出血の威力が大きく上がる',
   toxin:'毒の威力と拡散が大きく強くなる',
-  anchor:'引き寄せた敵を必ずスタンさせる',
+  anchor:'当てた敵を必ずスタンさせる',
   chakram:'軌道が内外2重になり、内側は逆回転', bow:'貫通するたび威力が上がる（最大3倍）',
   dynamite:'爆発が巻き込んだ敵を起点にもう一度爆発', bell:'最大半径で反射し収縮しながら戻る',
   quake:'隆起点に亀裂が残り、通る敵に継続ダメージ', rock:'敵に当たるたび大きくなる',
@@ -2518,7 +2518,7 @@ function figInfo(id){
   if(BOSS[id]){ var B=BOSS[id], tt=ETYPE[B.key]||{}; return {nm:B.nm,shape:tt.shape,col:tt.col,dark:tt.dark,desc:BDEX[id]||'',boss:true}; }
   var t=ETYPE[id]||{}; return {nm:t.nm,shape:t.shape,col:t.col,dark:t.dark,desc:DEX[id]||'',boss:false};
 }
-var VERSION='α1.0.136'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
+var VERSION='α1.0.137'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
 function applySave(o){
   for(var i=0;i<UPG.length;i++) META[UPG[i].id]=0;
   try{
@@ -4883,7 +4883,6 @@ function moveShots(dt){
     var s=shots[i];
     s.x+=s.vx*dt; s.y+=s.vy*dt; s.life-=dt;
     if(s.kind==='shuriken') s.spin=(s.spin||0)+dt*24;
-    if(s.kind==='anchor') s.spin=(s.spin||0)+dt*9;
     parts.push({x:s.x,y:s.y,vx:0,vy:0,t:0,life:.22,col:s.col,s:3});
     for(var j=enemies.length-1;j>=0;j--){
       var e=enemies[j];
@@ -4894,14 +4893,10 @@ function moveShots(dt){
         hurt(e,s.dmg,s.vx/d,s.vy/d,s.el);
         SRC=null;
         if(s.bleed&&Math.random()<ccChance(BLEED_CHANCE)) applyBleed(e,s.bleed*(s.src==='shuriken'&&AW('shuriken')?1.8:1));   // 出血スタック付与（確率・覚醒で強化）
-        if(s.anchor){                                        // 錨：引き寄せ＋確率スタン
-          var pdd=Math.hypot(P.x-e.x,P.y-e.y)||1;
-          var pull=Math.max(0,Math.min(100,pdd-(P.r+e.r+30)));
-          e.x+=(P.x-e.x)/pdd*pull; e.y+=(P.y-e.y)/pdd*pull; e.kb=0;
+        if(s.anchor){                                        // 錨：確率スタン（引き寄せなし）
           var stunC=AW('anchor')?1:(0.35+0.08*(P.p.debuff||0)+TR('anchor','stun'));
           if(Math.random()<stunC){ e.frz=Math.max(e.frz||0,1.1*(1-(e.res||0)));
             fx.push({k:'ring',x:e.x,y:e.y,r:0,to:e.r+16,t:0,life:.3,col:'#ffe14d'}); }
-          fx.push({k:'ring',x:e.x,y:e.y,r:0,to:e.r+12,t:0,life:.22,col:'#cdd6e0'});
         }
         if(s.slow){ e.slow=Math.max(e.slow,s.slow); if(s.slowMul!=null) e.slowMul=Math.min(e.slowMul||0.45,s.slowMul); }
         if(s.src==='ice'&&AW('ice')) addZone(e.x,e.y,44,s.dmg*0.18,3.0,'ice',1.6,'#7fd8ff','ice');
@@ -6711,14 +6706,15 @@ function drawShot(s){
       ctx.beginPath(); ctx.moveTo(0,-2.5); ctx.lineTo(s.r+3,0); ctx.lineTo(0,2.5); ctx.closePath(); ctx.fill(); ctx.restore(); }
     ctx.fillStyle=s.col2; ctx.beginPath(); ctx.arc(0,0,3,0,6.3); ctx.fill();
   }else if(s.kind==='anchor'){
-    ctx.rotate(s.spin||0);
+    ctx.rotate(s.ang);                       // とがった方（爪）を進行方向へ向けてまっすぐ
     var R=s.r;
     ctx.strokeStyle=s.col; ctx.lineWidth=4; ctx.lineCap='round';
-    ctx.beginPath(); ctx.moveTo(0,-R); ctx.lineTo(0,R*0.9); ctx.stroke();                 // 縦棒
-    ctx.beginPath(); ctx.moveTo(-R*0.7,-R*0.45); ctx.lineTo(R*0.7,-R*0.45); ctx.stroke();  // 横棒
-    ctx.beginPath(); ctx.arc(0,R*0.2,R*0.75,0.18*Math.PI,0.82*Math.PI); ctx.stroke();      // 下の爪
+    ctx.beginPath(); ctx.moveTo(-R,0); ctx.lineTo(R*0.55,0); ctx.stroke();                 // 柄（進行方向＝+x）
+    ctx.beginPath(); ctx.moveTo(-R*0.45,-R*0.65); ctx.lineTo(-R*0.45,R*0.65); ctx.stroke();// ストック（後方の横棒）
+    ctx.beginPath(); ctx.moveTo(R,0); ctx.lineTo(R*0.3,-R*0.7);                            // 前方の爪（V字の尖り）
+    ctx.moveTo(R,0); ctx.lineTo(R*0.3,R*0.7); ctx.stroke();
     ctx.strokeStyle=s.col2; ctx.lineWidth=2;
-    ctx.beginPath(); ctx.arc(0,-R,R*0.22,0,6.3); ctx.stroke();                             // 上のリング
+    ctx.beginPath(); ctx.arc(-R,0,R*0.22,0,6.3); ctx.stroke();                             // 後方のリング
   }else{
     ctx.fillStyle=s.col; ctx.beginPath(); ctx.arc(0,0,s.r,0,6.3); ctx.fill();
     ctx.fillStyle=s.col2; ctx.beginPath(); ctx.arc(0,0,s.r*0.55,0,6.3); ctx.fill();
@@ -7215,7 +7211,7 @@ function openWeaponDetail(w){
   // 状態異常の効果説明（武器タグに応じて表示）
   var STATUS_DESC={ '出血':'命中時に確率で付与（基本30%）。出血中の敵は受けるダメージが増加し、最大5回まで重なる。「付与率」の強化で発生率が上がる。',
     '毒':'草属性。継続ダメージを与え、時間とともに周囲の敵へ拡散していく。',
-    'スタン':'当てた敵を自分の方へ引き寄せ、確率で一定時間動きを止める。「付与率」の強化で発生率が上がる。' };
+    'スタン':'当てた敵を確率で一定時間動きを止める。「付与率」の強化で発生率が上がる。' };
   var stxt=(WTAG[w]||[]).map(function(t){ return STATUS_DESC[t]?('<div class="wdst"><b>'+t+'</b>'+STATUS_DESC[t]+'</div>'):''; }).join('');
   var statusHtml=stxt?('<div class="wdsec">状態異常</div>'+stxt):'';
   mlistEl.innerHTML=
@@ -7926,6 +7922,8 @@ Array.prototype.forEach.call(document.querySelectorAll('#setview button'),functi
 // 更新履歴：1つのお知らせ内で「バージョン見出し」ごとに変更点を並べる（新しい順）。
 // マージのたびに先頭へ新バージョンを追加し、VERSION も更新する。
 var UPDATES=[
+  {v:'α1.0.137', items:[
+    '錨を調整：引き寄せを廃止し「確率スタンのみ」に。また、回転せず、とがった方（爪）を敵に向けてまっすぐ飛ぶようになりました。']},
   {v:'α1.0.136', items:[
     '武器「チェンソー」が復活！ 向いている方向を削り続け、たまに暴走（加速）して威力と範囲が跳ね上がります。解放条件：累計討伐5,000 or 金貨10 or 銀貨4,000。',
     '毒瓶を「瓶を投げて着弾地点に毒沼が発生する」挙動に変更しました。',

@@ -10,6 +10,9 @@
 - リザルト画面と設定画面に `VERSION` を表示。
 - お知らせ（`UPDATES` 配列）は**1枠内でバージョン見出しごとに変更点を掲載**（新しい順）。マージ時は `UPDATES` 先頭に新バージョンを追加し `VERSION` を一致させる。
 
+## ver.α1.0.137
+- 錨(anchor)を調整。引き寄せを廃止し確率スタンのみに（shot衝突の `s.anchor` 分岐から pull 処理を削除）。回転(spin)をやめ、描画を `ctx.rotate(s.ang)` で進行方向へ向け、爪(V字の尖り)を +x=前方に、リング/ストックを後方に描く「まっすぐ飛ぶ」形状に変更。WEAPONS.tx／AWT／STATUS_DESC の引き寄せ記述を除去。
+
 ## ver.α1.0.136
 - チェンソー(chainsaw)を復活（プールへ再投入）。WEAPONS のコメントを解除、`WLOCK`（討伐5,000）追加、`MAST.chainsaw`（dmg/area/rate＋大範囲/剛撃）追加。既存の WCAT/WTAG/WKIND/WAX/WCLASS/AWK/AWT はそのまま流用。renderMast は MAST 列挙なので一覧に出る。
   - 「たまに加速（暴走）」：dispatchで `P.sawCd`(≈5.5+乱数秒毎)→`P.sawRev=1.4s`。暴走中は tick 0.20→0.09s、`doChain2(rev)` で dmg×1.8・rad×1.25。saw fx に rev フラグ。
