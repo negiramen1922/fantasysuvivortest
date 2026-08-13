@@ -10,6 +10,13 @@
 - リザルト画面と設定画面に `VERSION` を表示。
 - お知らせ（`UPDATES` 配列）は**1枠内でバージョン見出しごとに変更点を掲載**（新しい順）。マージ時は `UPDATES` 先頭に新バージョンを追加し `VERSION` を一致させる。
 
+## ver.α1.0.133
+- 出血を確率付与化：`BLEED_CHANCE=0.30`。付与判定 `Math.random()<ccChance(BLEED_CHANCE)`（刀onHit／手裏剣命中）。`ccChance(base)=base+0.08*(P.p.debuff||0)`。
+- 新パッシブ `debuff`（付与率、glyph☠、max3、+8%/Lv）を PASSIVES に追加。状態異常の付与率を上げる。
+- 武器詳細に「状態異常」欄を追加。`STATUS_DESC` で WTAG に応じた説明（出血）を `.wdst` 表示。
+- **バグ修正**：`renderMast`/XP波及/セーブ WX・SEL 読込が `WTRAIT`（旧特性・katana/shuriken 未登録）を列挙していたため新武器がマスタリーに出ず WX/SEL も保存されなかった。これらを `MAST`（全24武器）列挙に変更（旧特性の TMAP 登録＝1800行は WTRAIT のまま）。
+- 検証：docs/check.py 通過。刀の詳細に出血説明・状態異常欄表示、マスタリー一覧に刀/手裏剣が出現、エラー無しを確認。
+
 ## ver.α1.0.132
 - 出血を DoT → 被ダメージ増幅にリワーク（燃焼/毒と差別化）。`applyBleed(e,perMul)`：`e.bleedStk`(最大`BLEED_MAX=5`)＋`e.bleedT=4`＋`e.bleedPer`(=`BLEED_PER=0.08`×perMul、Math.maxで保持)。`hurt()` で `if(e.bleedStk>0) d*=1+e.bleedPer*e.bleedStk`。敵更新で `bleedT` 減衰→0でスタック解除。刀onHit/手裏剣命中で `applyBleed`（`perMul=1+TR(w,'bleed')`、手裏剣覚醒×1.8）。旧 `dot()` 出血は撤去。
 - 刀カウンターの弾き演出：弾のある平均方向へ薄緑 `#bff5b0` の斬撃fx（`k:'slash'`）＋リングを追加。

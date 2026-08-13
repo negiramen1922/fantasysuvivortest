@@ -435,6 +435,9 @@ canvas{display:block;width:100%;height:100%;touch-action:none}
 .wdtags .wdcat{display:inline-block;font-size:10px;padding:1px 8px;margin-right:5px;border-radius:8px;
   background:var(--gold);color:#2a1f00;font-weight:bold}
 .wdtx{font-size:12.5px;line-height:1.7;color:#cfc7ea;margin:6px 0 12px}
+.wdst{font-size:12px;line-height:1.6;color:#e8c7cf;background:rgba(255,77,94,.10);
+  border:1px solid rgba(255,77,94,.35);border-radius:8px;padding:7px 10px;margin-bottom:6px}
+.wdst b{color:#ff6b7d;margin-right:6px}
 .wdbarlabel{font-size:12px;color:#fff;margin-bottom:4px}
 .wdbarlabel span{color:var(--ash);margin-left:6px;font-size:11px}
 .wdsec{font-size:13px;color:var(--gold);margin:14px 0 7px;border-bottom:1px solid var(--line);padding-bottom:3px}
@@ -1284,7 +1287,8 @@ var PASSIVES={
   exp:{ nm:'経験', glyph:'📖', tag:'能力', max:5, tx:'経験値の取得 +8%' },
   reach:{ nm:'範囲', glyph:'🌀', tag:'能力', max:5, tx:'武器の範囲 +5%' },
   greed:{ nm:'宝探し', glyph:'💰', tag:'能力', max:5, tx:'銀貨の落ちやすさ +10%' },
-  fortune:{ nm:'幸運', glyph:'🍀', tag:'能力', max:5, tx:'宝箱の当たり枠が増えやすい' }
+  fortune:{ nm:'幸運', glyph:'🍀', tag:'能力', max:5, tx:'宝箱の当たり枠が増えやすい' },
+  debuff:{ nm:'付与率', glyph:'☠', tag:'能力', max:3, tx:'出血などの状態異常の付与率 +8%' }
 };
 var ELEM={
   fire:{ nm:'炎', col:'#ff7a2f' },
@@ -2050,7 +2054,7 @@ function wgain(id,hits){
   var amt=cd*5*Math.min(1,0.4+hits*0.2);
   wxRun[id]=(wxRun[id]||0)+amt;
   // 解放済みの他武器へ波及させる
-  for(var w in WTRAIT){
+  for(var w in MAST){
     if(w===id||!wOpened(w)) continue;
     wxRun[w]=(wxRun[w]||0)+amt*(WCAT[w]===WCAT[id]?SPILL_SAME:SPILL_OTHER);
   }
@@ -2477,15 +2481,15 @@ function figInfo(id){
   if(BOSS[id]){ var B=BOSS[id], tt=ETYPE[B.key]||{}; return {nm:B.nm,shape:tt.shape,col:tt.col,dark:tt.dark,desc:BDEX[id]||'',boss:true}; }
   var t=ETYPE[id]||{}; return {nm:t.nm,shape:t.shape,col:t.col,dark:t.dark,desc:DEX[id]||'',boss:false};
 }
-var VERSION='α1.0.132'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
+var VERSION='α1.0.133'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
 function applySave(o){
   for(var i=0;i<UPG.length;i++) META[UPG[i].id]=0;
   try{
     if(o){
       if(o.m) for(var k in META){ if(typeof o.m[k]==='number') META[k]=Math.min(umax(k),Math.max(0,o.m[k]|0)); }
       if(o.w){ WALLET.silver=o.w.silver|0; WALLET.gold=o.w.gold|0; }
-      if(o.wx) for(var k2 in WTRAIT){ if(typeof o.wx[k2]==='number') WX[k2]=Math.max(0,o.wx[k2]); }
-      if(o.sel) for(var k3 in WTRAIT){ if(o.sel[k3] instanceof Array) SEL[k3]=o.sel[k3].filter(function(x){ return TMAP[x]; }); }
+      if(o.wx) for(var k2 in MAST){ if(typeof o.wx[k2]==='number') WX[k2]=Math.max(0,o.wx[k2]); }
+      if(o.sel) for(var k3 in MAST){ if(o.sel[k3] instanceof Array) SEL[k3]=o.sel[k3].filter(function(x){ return TMAP[x]; }); }
       // リデザイン済み武器は旧特性idを掃除し、新オプションidのみ・最大10個に正規化
       for(var mw in MAST){ if(SEL[mw]) SEL[mw]=SEL[mw].filter(function(id){ return MASTIDS[mw][id]; }).slice(0,10); }
       best=o.best|0;
@@ -3101,7 +3105,7 @@ function doKatana(){
   var arc=TF('katana','fullarc')?6.3:Math.min(3.2,1.5*ar), r2=90*ar*RNGM('katana');
   var dmg=20*DMG('katana')*pw('katana');
   var bmul=1+TR('katana','bleed');
-  var n=arcHit(r2,arc,dmg,null,function(e){ applyBleed(e,bmul); });
+  var n=arcHit(r2,arc,dmg,null,function(e){ if(Math.random()<ccChance(BLEED_CHANCE)) applyBleed(e,bmul); });
   fx.push({k:'slash',x:P.x,y:P.y,a:P.face,arc:arc,rad:r2,t:0,life:.16,col:'#ffd0d6'});
   swingT=SWDUR; swingDir=(swingDir>0?-1:1);
   if(n){ shake=Math.min(8,shake+1.4); hitStop=Math.max(hitStop,.02); }
@@ -3762,7 +3766,9 @@ function dot(e,dps,sec,col){
   e.dotD=Math.max(e.dotD||0,dps); e.dotT=Math.max(e.dotT||0,sec); e.dotC=col;
 }
 // 出血：DoTではなく「被弾ダメージ増幅」。最大5スタック、被弾のたびに (per×スタック) ぶん上乗せ。
-var BLEED_MAX=5, BLEED_PER=0.08;   // 1スタックあたり被ダメ+8%（最大5で+40%）
+var BLEED_MAX=5, BLEED_PER=0.08, BLEED_CHANCE=0.30;   // 1スタックあたり被ダメ+8%（最大5で+40%）／基本付与率30%
+// 状態異常の付与率（付与率パッシブ debuff で +8%/Lv・最大3＝+24%）
+function ccChance(base){ return (base||0)+0.08*(P.p.debuff||0); }
 function applyBleed(e,perMul){
   e.bleedStk=Math.min(BLEED_MAX,(e.bleedStk||0)+1);
   e.bleedT=4;
@@ -4777,7 +4783,7 @@ function moveShots(dt){
         SRC=s.src;
         hurt(e,s.dmg,s.vx/d,s.vy/d,s.el);
         SRC=null;
-        if(s.bleed) applyBleed(e,s.bleed*(s.src==='shuriken'&&AW('shuriken')?1.8:1));   // 出血スタック付与（覚醒で強化）
+        if(s.bleed&&Math.random()<ccChance(BLEED_CHANCE)) applyBleed(e,s.bleed*(s.src==='shuriken'&&AW('shuriken')?1.8:1));   // 出血スタック付与（確率・覚醒で強化）
         if(s.slow){ e.slow=Math.max(e.slow,s.slow); if(s.slowMul!=null) e.slowMul=Math.min(e.slowMul||0.45,s.slowMul); }
         if(s.src==='ice'&&AW('ice')) addZone(e.x,e.y,44,s.dmg*0.18,3.0,'ice',1.6,'#7fd8ff','ice');
         s.hit.push(e); s.pierce--;
@@ -7004,7 +7010,7 @@ function renderMast(){
     n?'<span style="color:var(--gold)">強化を '+n+' 個選べます</span>'
      :'使うほど熟練度が溜まり、レベルが上がると強化を選べます（Lv3・6・9は特別枠）。武器は順次リニューアル中です。';
   mlistEl.innerHTML='';
-  Object.keys(WTRAIT).forEach(function(w){
+  Object.keys(MAST).forEach(function(w){
     if(!WEAPONS[w]) return;                 // 退避中の武器（chainsaw等）は出さない
     var x=WX[w]||0, lv=wtier(w), open=x>0, redesigned=!!MAST[w], left=picksLeft(w);
     var nx=lv<WTH.length?WTH[lv]:0, pv=lv>0?WTH[lv-1]:0;
@@ -7070,6 +7076,10 @@ function openWeaponDetail(w){
       '<div class="wdawk-d">'+(AWT[w]||'')+'</div>'+
       '<div class="wdawk-note">ラン中に武器レベルを10まで上げると覚醒します</div>'+
     '</div>') : '';
+  // 状態異常の効果説明（武器タグに応じて表示）
+  var STATUS_DESC={ '出血':'命中時に確率で付与（基本30%）。出血中の敵は受けるダメージが増加し、最大5回まで重なる。「付与率」の強化で発生率が上がる。' };
+  var stxt=(WTAG[w]||[]).map(function(t){ return STATUS_DESC[t]?('<div class="wdst"><b>'+t+'</b>'+STATUS_DESC[t]+'</div>'):''; }).join('');
+  var statusHtml=stxt?('<div class="wdsec">状態異常</div>'+stxt):'';
   mlistEl.innerHTML=
     '<div class="wd">'+
       '<button class="wdback" type="button">← 一覧へ戻る</button>'+
@@ -7082,6 +7092,7 @@ function openWeaponDetail(w){
       '<div class="wdtx">'+(WEAPONS[w].tx||'')+'</div>'+
       '<div class="wdbarlabel">熟練度 Lv '+lv+'/10<span>'+fmt(x)+(nx?' / '+fmt(nx):' — MAX')+'</span></div>'+
       '<div class="wbar"><div style="width:'+pct+'%"></div></div>'+
+      statusHtml+
       '<div class="wdsec">強化内容</div>'+
       '<div class="wdpicks">'+picksHtml+'</div>'+
       (left?'<button class="wdpickbtn" type="button">強化を選ぶ（残り'+left+'）</button>':'')+
@@ -7777,6 +7788,10 @@ Array.prototype.forEach.call(document.querySelectorAll('#setview button'),functi
 // 更新履歴：1つのお知らせ内で「バージョン見出し」ごとに変更点を並べる（新しい順）。
 // マージのたびに先頭へ新バージョンを追加し、VERSION も更新する。
 var UPDATES=[
+  {v:'α1.0.133', items:[
+    '出血を確率付与に変更（基本30%）。強化「付与率」を追加し、状態異常の付与率を1枚+8%・最大3枚（＋24%）まで上げられます。',
+    '武器詳細画面に「状態異常」の説明欄を追加（出血の効果と付与率を明記）。',
+    '刀・手裏剣が武器熟練の一覧に正しく表示・保存されるよう内部を修正しました。']},
   {v:'α1.0.132', items:[
     '出血を「継続ダメージ（DoT）」から「被ダメージ増幅」に変更しました。出血中の敵は受けるダメージが増え、最大5スタックまで重なります（燃焼・毒とは別枠の効果に）。',
     '刀のカウンターで弾いた時、弾のある方向へ薄緑の斬撃エフェクトが出るようになりました。',
