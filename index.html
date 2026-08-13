@@ -2520,7 +2520,7 @@ function figInfo(id){
   if(BOSS[id]){ var B=BOSS[id], tt=ETYPE[B.key]||{}; return {nm:B.nm,shape:tt.shape,col:tt.col,dark:tt.dark,desc:BDEX[id]||'',boss:true}; }
   var t=ETYPE[id]||{}; return {nm:t.nm,shape:t.shape,col:t.col,dark:t.dark,desc:DEX[id]||'',boss:false};
 }
-var VERSION='α1.0.139'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
+var VERSION='α1.0.140'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
 function applySave(o){
   for(var i=0;i<UPG.length;i++) META[UPG[i].id]=0;
   try{
@@ -2899,7 +2899,7 @@ function doChain2(rev){
   SRC='chainsaw';
   var ar=AREA('chainsaw');
   var fa=(P.mvdir!=null?P.mvdir:P.face);                  // 向いている（移動）方向へ削る
-  var arc=AW('chainsaw')?6.3:Math.min(1.2,0.7*ar), rad=95*ar*(rev?1.25:1);
+  var arc=AW('chainsaw')?6.3:Math.min(1.0,0.6*ar), rad=62*ar*(rev?1.25:1);
   var dmg=5*DMG('chainsaw')*pw('chainsaw')*(rev?1.8:1);   // 暴走中は威力・範囲アップ
   var n=arcHit(rad,arc,dmg,null,null,fa);
   fx.push({k:'saw',x:P.x,y:P.y,a:fa,arc:arc,rad:rad,t:0,life:.16,rev:rev?1:0});
@@ -7968,6 +7968,9 @@ Array.prototype.forEach.call(document.querySelectorAll('#setview button'),functi
 // 更新履歴：1つのお知らせ内で「バージョン見出し」ごとに変更点を並べる（新しい順）。
 // マージのたびに先頭へ新バージョンを追加し、VERSION も更新する。
 var UPDATES=[
+  {v:'α1.0.140', items:[
+    'チェンソーの当たり範囲・見た目が大きすぎたので、ひと回り小さく調整しました。',
+  ]},
   {v:'α1.0.139', items:[
     'チェンソーの見た目を、先の丸いガイドバー（チェーンの歯が流れる）に刷新しました。また、キャラの向いている（移動している）方向へ出るようになりました。',
     'リザルトの与ダメージ内訳に「出血」の総ダメージを追加。さらに元素反応を起こしていれば、どの反応が一番ダメージを出したかの内訳も表示されます。',
