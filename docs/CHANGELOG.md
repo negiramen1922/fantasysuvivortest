@@ -10,6 +10,9 @@
 - リザルト画面と設定画面に `VERSION` を表示。
 - お知らせ（`UPDATES` 配列）は**1枠内でバージョン見出しごとに変更点を掲載**（新しい順）。マージ時は `UPDATES` 先頭に新バージョンを追加し `VERSION` を一致させる。
 
+## ver.α1.0.129
+- 魔道士(mage)と聖女(saint)の立ち絵が逆だったのを修正。魔道士=とんがり帽子(旧102743)、聖女=黒髪(旧100032)。`assets/mage.png`/`assets/saint.png` を入れ替え、`assets/witch.png` は廃止。`SPRDATA` を witch→saint、`CHAR_SPR.saint` を `'witch'`→`'saint'` に。キャラ名の変更はなし（聖女/魔道士のまま）。
+
 ## ver.α1.0.128
 - キャラ立ち絵を実装。`assets/hunter.png`(狩人)・`bomber.png`(爆弾魔)・`mage.png`(魔道士)・`witch.png`(魔女＝saintスロット) を追加（白背景はflood-fillで透過処理済み）。`SPRDATA` 登録＋`CHAR_SPR={knight,hunter,bomber,mage,saint:'witch'}` を新設。
 - プレイヤー描画：knight以外の簡易円描画を廃し、`CHAR_SPR[SELCH]` の立ち絵を `drawSpr`（左右反転＋歩行ゆれ、未ロード時は従来の円にフォールバック）。

@@ -2446,7 +2446,7 @@ function figInfo(id){
   if(BOSS[id]){ var B=BOSS[id], tt=ETYPE[B.key]||{}; return {nm:B.nm,shape:tt.shape,col:tt.col,dark:tt.dark,desc:BDEX[id]||'',boss:true}; }
   var t=ETYPE[id]||{}; return {nm:t.nm,shape:t.shape,col:t.col,dark:t.dark,desc:DEX[id]||'',boss:false};
 }
-var VERSION='α1.0.128'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
+var VERSION='α1.0.129'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
 function applySave(o){
   for(var i=0;i<UPG.length;i++) META[UPG[i].id]=0;
   try{
@@ -5408,10 +5408,10 @@ var SPRDATA={
   hunter:'assets/hunter.png',
   bomber:'assets/bomber.png',
   mage:'assets/mage.png',
-  witch:'assets/witch.png'
+  saint:'assets/saint.png'
 };
 // キャラID→立ち絵スプライト名（プレイヤー描画＆キャラリストのアイコン）
-var CHAR_SPR={ knight:'knight', hunter:'hunter', bomber:'bomber', mage:'mage', saint:'witch' };
+var CHAR_SPR={ knight:'knight', hunter:'hunter', bomber:'bomber', mage:'mage', saint:'saint' };
 var SPR={}, SPRT={}, SPRRDY={};
 // 端に接する白（不透明な白背景）だけをフラッドフィルで透過に。内部の白ハイライトは残す。
 // Pages（同一オリジン）では実行時に効き、file:// 等で getImageData が使えない時は例外を握って
@@ -7672,8 +7672,10 @@ Array.prototype.forEach.call(document.querySelectorAll('#setview button'),functi
 // 更新履歴：1つのお知らせ内で「バージョン見出し」ごとに変更点を並べる（新しい順）。
 // マージのたびに先頭へ新バージョンを追加し、VERSION も更新する。
 var UPDATES=[
+  {v:'α1.0.129', items:[
+    '魔道士と聖女の立ち絵が入れ替わっていたのを修正しました（魔道士＝とんがり帽子、聖女＝黒髪）。']},
   {v:'α1.0.128', items:[
-    '狩人・爆弾魔・魔道士・魔女（5番目のキャラ）の立ち絵を専用ドット絵に差し替えました。ゲーム中のプレイヤーもそのキャラの立ち絵で表示されます。',
+    '狩人・爆弾魔・魔道士・聖女の立ち絵を専用ドット絵に差し替えました。ゲーム中のプレイヤーもそのキャラの立ち絵で表示されます。',
     'キャラクター一覧のアイコンを、絵文字から各キャラの立ち絵に変更しました。']},
   {v:'α1.0.127', items:[
     'フレイムサークルの回転速度が「実際の攻撃間隔」に連動するようになりました。ラン中の間隔（攻撃速度）強化・熟練の間隔・攻撃速度パッシブなど、右下のゲージが速くなる要素すべてで火の玉の回転も速くなります。']},
