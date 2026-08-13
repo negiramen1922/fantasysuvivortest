@@ -10,6 +10,15 @@
 - リザルト画面と設定画面に `VERSION` を表示。
 - お知らせ（`UPDATES` 配列）は**1枠内でバージョン見出しごとに変更点を掲載**（新しい順）。マージ時は `UPDATES` 先頭に新バージョンを追加し `VERSION` を一致させる。
 
+## ver.α1.0.134
+- 新属性「草(grass)」＋新武器「毒瓶(toxin)」を追加。`ELEM.grass`/`ELW.grass=['toxin']`。反応は最小限（草は `applyElem` 冒頭で分岐し `react()` を通さず毒を付与＝空振り無し。反応は今後追加可）。
+  - 毒（拡散DoT）：`applyPois(e,dps,dur)`（`e.poisD/poisT/poisSp`）。敵更新で毎フレームDoT（緑ダメージ表示）＋`poisSp`(0.7秒毎)で `spreadPoison` により周囲96px・最大2体へ伝播（拡散ぶんは持続を`min(src.poisT,3)`に抑制）。
+  - `applyElem` grass：`elemChance('grass')` 判定で `applyPois(e, 5*DMG(SRC)*pw(SRC)*(覚醒1.6), 4.0)`。
+  - `doToxin`：`addZone(...,'grass',...,'toxin')` で毒沼設置（内部の敵に継続ダメ＋草付与→拡散）。dispatch追加。
+  - 登録：WEAPONS/WLOCK(討伐4,500)/WCAT草/WTAG[中距離,投擲,草,毒]/WKIND mag/WAX{dmg,area,rate,range}/WCLASS mid/WRNG400/AWK瘴気/AWT/MAST(dmg,area,rate＋大範囲,元素付着)。
+  - 武器詳細 `STATUS_DESC` に「毒」を追加。
+- 検証：docs/check.py 通過。毒瓶装備で緑の毒沼・緑DoT・遠方の敵への拡散・エラー無しを確認。
+
 ## ver.α1.0.133
 - 出血を確率付与化：`BLEED_CHANCE=0.30`。付与判定 `Math.random()<ccChance(BLEED_CHANCE)`（刀onHit／手裏剣命中）。`ccChance(base)=base+0.08*(P.p.debuff||0)`。
 - 新パッシブ `debuff`（付与率、glyph☠、max3、+8%/Lv）を PASSIVES に追加。状態異常の付与率を上げる。
