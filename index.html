@@ -1857,7 +1857,7 @@ var MAST={
             {id:'sh_p',ic:'➹',nm:'貫通',tx:'+1',d:'手裏剣が#多くの敵を貫く',dv:'1体',ef:{pierce:1}},
             {id:'sh_c',ic:'⌛',nm:'間隔',tx:'−5%',d:'投げる間隔が#短くなる',dv:'5%',ef:{cd:-.05}} ],
     major:[ {id:'sh_ct',ic:'✳️',nm:'多重手裏剣',tx:'発射数 +1',d:'一度に投げる手裏剣が#増える',dv:'1枚',ef:{count:1}},
-            {id:'sh_bl',ic:'🩸',nm:'裂傷',tx:'出血+40%',d:'出血中の敵が受ける追加ダメージが#強くなる',dv:'40%',ef:{bleed:.40}},
+            {id:'sh_bl',ic:'🩸',nm:'深手',tx:'出血+40%',d:'出血中の敵が受ける追加ダメージが#強くなる',dv:'40%',ef:{bleed:.40}},
             {id:'sh_D',ic:'💪',nm:'剛・攻撃力',tx:'+12%',d:'手裏剣の威力が#大きく上がる',dv:'12%',ef:{dmg:.12}} ]
   },
   gatling:{  // ガトリング：dmg/rate/pierce（通常）＋ count/ammo（特別）。※範囲(area)は無し
@@ -2520,7 +2520,7 @@ function figInfo(id){
   if(BOSS[id]){ var B=BOSS[id], tt=ETYPE[B.key]||{}; return {nm:B.nm,shape:tt.shape,col:tt.col,dark:tt.dark,desc:BDEX[id]||'',boss:true}; }
   var t=ETYPE[id]||{}; return {nm:t.nm,shape:t.shape,col:t.col,dark:t.dark,desc:DEX[id]||'',boss:false};
 }
-var VERSION='α1.0.141'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
+var VERSION='α1.0.142'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
 function applySave(o){
   for(var i=0;i<UPG.length;i++) META[UPG[i].id]=0;
   try{
@@ -7978,6 +7978,9 @@ Array.prototype.forEach.call(document.querySelectorAll('#setview button'),functi
 // 更新履歴：1つのお知らせ内で「バージョン見出し」ごとに変更点を並べる（新しい順）。
 // マージのたびに先頭へ新バージョンを追加し、VERSION も更新する。
 var UPDATES=[
+  {v:'α1.0.142', items:[
+    '手裏剣の特別強化「裂傷」を、刀と同じ「深手」に名称統一しました（効果は変わりません）。',
+  ]},
   {v:'α1.0.141', items:[
     'チェンソーがチカチカして眩しかったのを解消。「しばらく出し続ける→しまう→また出す」を繰り返す動作になり、稼働中は点滅せず一定の見た目で表示されます。',
   ]},
