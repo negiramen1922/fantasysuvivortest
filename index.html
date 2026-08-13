@@ -2038,7 +2038,9 @@ function masMajorLevel(lv){ return lv===3||lv===6||lv===9; }   // 特別強化�
 function mastFlavor(o){ if(!o.d) return o.tx||''; return o.d.replace('#','<span class="mhl">'+(o.dv||'')+'</span>'); }
 
 var WX={}, SEL={}, wxRun={}, lastCd={};
-var WDMG={};   // このランの武器別 与ダメージ集計
+var WDMG={};   // このランの武器別 与ダメージ集計（_react=元素反応合計 / _bleed=出血合計）
+var REACTDMG={}, RK=null;   // 元素反応の種類別ダメージ（RK=現在の反応名）
+var RNAME={'fire+thunder':'過負荷','fire+ice':'融解','ice+thunder':'超電導','dark+fire':'炎症','dark+ice':'凍結','dark+thunder':'感電','dark+holy':'消滅'};
 function wtier(id){ var x=WX[id]||0,n=0; for(var i=0;i<WTH.length;i++) if(x>=WTH[i]) n++; return n; }
 function picksLeft(id){ if(!MAST[id]) return 0; return Math.max(0,wtier(id)-((SEL[id]||[]).length)); }   // 新システム有効な武器のみ
 function anyPicks(){ for(var w in MAST) if(picksLeft(w)) return 1; return 0; }
@@ -2518,7 +2520,7 @@ function figInfo(id){
   if(BOSS[id]){ var B=BOSS[id], tt=ETYPE[B.key]||{}; return {nm:B.nm,shape:tt.shape,col:tt.col,dark:tt.dark,desc:BDEX[id]||'',boss:true}; }
   var t=ETYPE[id]||{}; return {nm:t.nm,shape:t.shape,col:t.col,dark:t.dark,desc:DEX[id]||'',boss:false};
 }
-var VERSION='α1.0.138'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
+var VERSION='α1.0.139'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
 function applySave(o){
   for(var i=0;i<UPG.length;i++) META[UPG[i].id]=0;
   try{
@@ -2626,7 +2628,7 @@ function reset(){
   whirlA=0; marks=[1140]; reacts=0; crits=0; rdep=0; rtok=8; pending=0; swingT=0; swingDir=1;
   dpsVal=0; dpmVal=0; dmgSec=0; dmgRing=[]; dmgRingI=0; dpsClock=1;
   dexQueue.length=0;
-  score=0; silver=0; gold=0; magFx=0; chakSpin=0; wxRun={}; lastCd={}; coolMax={}; WDMG={};
+  score=0; silver=0; gold=0; magFx=0; chakSpin=0; wxRun={}; lastCd={}; coolMax={}; WDMG={}; REACTDMG={}; RK=null;
   KILLER=null; INF={tgt:0,ramp:0,tick:0,on:false,ex:0,ey:0,extra:[],heat:0,over:false};
   contUsed=0; contFlag=0;
   if(ENDLESS){ ENDBLK=0; endBossDone={}; marks=[]; }   // 無限ラン：分経過バナー無し・ブロック管理を初期化
@@ -2775,7 +2777,7 @@ function movePlayer(dt){
   }
   var d=Math.hypot(dx,dy);
   P.moving=d>0?1:0;
-  if(d>0){ P.x+=dx/d*spd()*dt; P.y+=dy/d*spd()*dt; }
+  if(d>0){ P.x+=dx/d*spd()*dt; P.y+=dy/d*spd()*dt; P.mvdir=Math.atan2(dy,dx); }   // 移動方向を記録（チェンソー等の向きに使う）
   if(P.hurt>0) P.hurt-=dt;
   if(P.inv>0) P.inv-=dt;
 }
@@ -2875,14 +2877,14 @@ function runWeapons(dt){
   if(P.w.holy    &&ready('holy',    1.20*RATE('holy'),dt)){    doHoly(); queueVolley('holy',0.11); }
   if(P.w.aura    &&ready('aura',    1.60*RATE('aura'),dt))     doAura();
 }
-function arcHit(rad,arc,dmg,el,onHit){
-  var n=0;
+function arcHit(rad,arc,dmg,el,onHit,face){
+  var n=0, fc=(face!=null?face:P.face);
   for(var i=enemies.length-1;i>=0;i--){
     var e=enemies[i];
     var dx=e.x-P.x, dy=e.y-P.y, d=Math.hypot(dx,dy);
     if(d>rad+e.r) continue;
     if(arc<6.2){
-      var a=Math.atan2(dy,dx)-P.face;
+      var a=Math.atan2(dy,dx)-fc;
       a=Math.atan2(Math.sin(a),Math.cos(a));
       if(Math.abs(a)>arc/2) continue;
     }
@@ -2896,10 +2898,11 @@ function arcHit(rad,arc,dmg,el,onHit){
 function doChain2(rev){
   SRC='chainsaw';
   var ar=AREA('chainsaw');
-  var arc=AW('chainsaw')?6.3:Math.min(2.2,0.95*ar), rad=90*ar*(rev?1.25:1);
+  var fa=(P.mvdir!=null?P.mvdir:P.face);                  // 向いている（移動）方向へ削る
+  var arc=AW('chainsaw')?6.3:Math.min(1.2,0.7*ar), rad=95*ar*(rev?1.25:1);
   var dmg=5*DMG('chainsaw')*pw('chainsaw')*(rev?1.8:1);   // 暴走中は威力・範囲アップ
-  var n=arcHit(rad,arc,dmg,null);
-  fx.push({k:'saw',x:P.x,y:P.y,a:P.face,arc:arc,rad:rad,t:0,life:.16,rev:rev?1:0});
+  var n=arcHit(rad,arc,dmg,null,null,fa);
+  fx.push({k:'saw',x:P.x,y:P.y,a:fa,arc:arc,rad:rad,t:0,life:.16,rev:rev?1:0});
   if(n) sfx((rev?200:120)+Math.random()*40,.05,'sawtooth',.03,1.1);
   wgain('chainsaw',n); SRC=null;
 }
@@ -3074,20 +3077,28 @@ function drawInferno(){
 }
 function drawSaw(f){
   var k=f.t/f.life;
-  ctx.save(); ctx.translate(f.x,f.y); ctx.rotate(f.a);
-  ctx.globalAlpha=.22*(1-k*0.5);
-  ctx.fillStyle='#cfd8e8';
-  ctx.beginPath(); ctx.moveTo(0,0); ctx.arc(0,0,f.rad,-f.arc/2,f.arc/2); ctx.closePath(); ctx.fill();
-  ctx.globalAlpha=.9;
-  ctx.strokeStyle='#f2f6ff'; ctx.lineWidth=3;
-  var teeth=10;
-  for(var i=0;i<teeth;i++){
-    var a=-f.arc/2+f.arc*(i+((time*9)%1))/teeth;
-    ctx.beginPath();
-    ctx.moveTo(Math.cos(a)*f.rad*0.55,Math.sin(a)*f.rad*0.55);
-    ctx.lineTo(Math.cos(a)*f.rad,Math.sin(a)*f.rad);
-    ctx.stroke();
+  ctx.save(); ctx.translate(f.x,f.y); ctx.globalAlpha=0.92*(1-k*0.35);
+  ctx.lineCap='round';
+  if(f.arc>=6){                                  // 覚醒：全方位の丸ノコ
+    ctx.rotate((time*12)%6.283);
+    ctx.strokeStyle='#8a94a4'; ctx.lineWidth=8; ctx.beginPath(); ctx.arc(0,0,f.rad*0.78,0,6.283); ctx.stroke();
+    ctx.strokeStyle='#eef3fb'; ctx.lineWidth=2;
+    var tn=Math.max(8,Math.round(f.rad/9));
+    for(var i=0;i<tn;i++){ var a=i/tn*6.283, rr=f.rad*0.78;
+      ctx.beginPath(); ctx.moveTo(Math.cos(a)*rr,Math.sin(a)*rr); ctx.lineTo(Math.cos(a)*(rr+6),Math.sin(a)*(rr+6)); ctx.stroke(); }
+    ctx.globalAlpha=1; ctx.restore(); return;
   }
+  ctx.rotate(f.a);
+  var L=f.rad, w=Math.max(10, L*Math.sin(Math.min(f.arc,3)/2));   // 当たり判定の扇に合わせた太さ
+  // 丸い先端のバー（チェンソーのガイドバー）
+  ctx.strokeStyle='#5a6472'; ctx.lineWidth=w*2;   ctx.beginPath(); ctx.moveTo(12,0); ctx.lineTo(L,0); ctx.stroke();
+  ctx.strokeStyle='#c8d2e0'; ctx.lineWidth=w*2-6; ctx.beginPath(); ctx.moveTo(12,0); ctx.lineTo(L,0); ctx.stroke();
+  // 回転するチェーンの歯（バーの縁を流れる）
+  ctx.strokeStyle='#f2f6ff'; ctx.lineWidth=2;
+  var teeth=Math.max(5,Math.round(L/12)), off=(time*18)%1;
+  for(var i=0;i<teeth;i++){ var tx=14+(L-18)*((i+off)/teeth);
+    ctx.beginPath(); ctx.moveTo(tx,-w); ctx.lineTo(tx+4,-w-4); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(tx,w);  ctx.lineTo(tx-4,w+4);  ctx.stroke(); }
   ctx.globalAlpha=1; ctx.restore();
 }
 function drawBliz(f){
@@ -3799,7 +3810,7 @@ function applyElem(e,el,dmg){
   if(el==='grass'){                            // 草＝毒。反応系には通さず（最小限）、毒（拡散DoT）を付与
     if(Math.random()<elemChance('grass')){
       var w=SRC||'toxin';
-      applyPois(e, 5*DMG(w)*pw(w)*(AW('toxin')?1.6:1), 4.0);
+      applyPois(e, 5*DMG(w)*pw(w)*(AW('toxin')?1.6:1), 5.0);   // 沼を出た後もこの秒数だけDoTが継続
     }
     return;
   }
@@ -3876,6 +3887,7 @@ function spreadPoison(src){
 function react(e,a,b,dmg){
   var key=[a,b].sort().join('+'), d=dmg||0, ep=elemPow();
   var keep=SRC; SRC=null;                    // 反応ダメージは武器の会心を継がない
+  RK=RNAME[key]||'拡散';                      // リザルトの反応別集計用
   e.el=0; e.elT=0; e.rcd=0.55; reacts++; score+=PTS_REACT;
   if(key==='fire+thunder'){                 // 過負荷：爆発
     label(e,'過負荷','#ffb066');
@@ -3931,7 +3943,7 @@ function react(e,a,b,dmg){
     spread(e,other,(d*0.6+14)*ep);
     sfx(880,.15,'sine',.06,1.7);
   }
-  SRC=keep;
+  SRC=keep; RK=null;
 }
 
 /* ============ 敵 ============ */
@@ -4761,11 +4773,15 @@ function hurt(e,dmg,nx,ny,el){
   e.hp-=d; e.ht=0.12; dmgSec+=d;   // DPS/DPM 集計
   // ベル・ホーリージャッジ（十字架AoE）・アイスブリザード・インフェルノビームはノックバックさせない
   if(SRC!=='bell'&&SRC!=='aura'&&SRC!=='blizzard'&&SRC!=='inferno'){ e.kb=Math.max(e.kb,(crit?4:2.2)*(1+TR(SRC,'knock'))); e.kbx=nx||0; e.kby=ny||0; }
-  if(SRC) WDMG[SRC]=(WDMG[SRC]||0)+d; else WDMG._react=(WDMG._react||0)+d;   // 与ダメージ集計
+  var bb=(bfrac>0)?d*bfrac/(1+bfrac):0;                    // このヒットの出血ぶん
+  if(bb>0) WDMG._bleed=(WDMG._bleed||0)+bb;                // リザルト内訳：出血の総量
+  var credit=d-bb;
+  if(SRC) WDMG[SRC]=(WDMG[SRC]||0)+credit;                 // 与ダメージ集計（出血ぶんは別枠へ）
+  else { WDMG._react=(WDMG._react||0)+credit; if(RK) REACTDMG[RK]=(REACTDMG[RK]||0)+credit; }
   if(dmgs.length>110) dmgs.shift();
   dmgs.push({x:e.x,y:e.y-e.r-4,v:-52,t:0,life:.65,txt:Math.round(d),crit:crit});
-  if(bfrac>0){ var bb=d*bfrac/(1+bfrac); if(bb>=1&&dmgs.length<=110)   // 出血ぶんを赤字で別表示
-    dmgs.push({x:e.x+12,y:e.y-e.r-20,v:-46,t:0,life:.6,txt:'+'+Math.round(bb),crit:false,col:'#ff4d5e',rx:1}); }
+  if(bb>=1&&dmgs.length<=110)   // 出血ぶんを赤字で別表示
+    dmgs.push({x:e.x+12,y:e.y-e.r-20,v:-46,t:0,life:.6,txt:'+'+Math.round(bb),crit:false,col:'#ff4d5e',rx:1});
   if(el) applyElem(e,el,d);
   if(e.hp<=0) kill(e);
 }
@@ -7673,6 +7689,7 @@ function damageBreakdownHtml(){
     var barw=Math.max(3,Math.round(dm/mx*100));   // バーは1位基準（見やすさ）、%は全体比
     var nm,gl;
     if(id==='_react'){ nm='元素反応'; gl='✦'; }
+    else if(id==='_bleed'){ nm='出血'; gl='🩸'; }
     else if(WEAPONS[id]){ nm=WEAPONS[id].nm; gl=WEAPONS[id].glyph; }
     else { nm=id; gl='•'; }
     rows+='<div class="dmgrow">'+
@@ -7683,7 +7700,21 @@ function damageBreakdownHtml(){
       '<span class="dval">'+fmt(dm)+'</span>'+
     '</div>';
   }
-  return '<div class="dmgtitle">与ダメージ内訳</div><div class="dmglist">'+rows+'</div>';
+  // 元素反応の種類別内訳（どの反応が一番ダメージを出したか）
+  var rk=[], rt=0, rkk;
+  for(rkk in REACTDMG){ if(REACTDMG[rkk]>0){ rk.push([rkk,REACTDMG[rkk]]); rt+=REACTDMG[rkk]; } }
+  var reactHtml='';
+  if(rk.length){
+    rk.sort(function(a,b){ return b[1]-a[1]; });
+    var rrows='';
+    for(var j=0;j<rk.length;j++){
+      rrows+='<div class="dmgrow"><span class="dg">✦</span><span class="dn">'+rk[j][0]+'</span>'+
+        '<span class="dbar"><span class="dfill" style="width:'+Math.max(3,Math.round(rk[j][1]/rk[0][1]*100))+'%"></span></span>'+
+        '<span class="dpct">'+Math.round(rk[j][1]/rt*100)+'%</span><span class="dval">'+fmt(rk[j][1])+'</span></div>';
+    }
+    reactHtml='<div class="dmgtitle">元素反応の内訳</div><div class="dmglist">'+rrows+'</div>';
+  }
+  return '<div class="dmgtitle">与ダメージ内訳</div><div class="dmglist">'+rows+'</div>'+reactHtml;
 }
 function finish(won){
   if(state==='dead') return;
@@ -7937,6 +7968,10 @@ Array.prototype.forEach.call(document.querySelectorAll('#setview button'),functi
 // 更新履歴：1つのお知らせ内で「バージョン見出し」ごとに変更点を並べる（新しい順）。
 // マージのたびに先頭へ新バージョンを追加し、VERSION も更新する。
 var UPDATES=[
+  {v:'α1.0.139', items:[
+    'チェンソーの見た目を、先の丸いガイドバー（チェーンの歯が流れる）に刷新しました。また、キャラの向いている（移動している）方向へ出るようになりました。',
+    'リザルトの与ダメージ内訳に「出血」の総ダメージを追加。さらに元素反応を起こしていれば、どの反応が一番ダメージを出したかの内訳も表示されます。',
+    '毒瓶の毒は、沼から出たあとも一定時間DoTが継続します（持続時間を延長）。']},
   {v:'α1.0.138', items:[
     '錨がブーメランのように飛んで行って手元へ戻ってくるようになりました。行きだけでなく帰りにもダメージ（＆スタン判定）が発生します。',
     '出血による追加ダメージを赤い数字で表示するようにしました（出血が効いているか分かりやすく）。']},
