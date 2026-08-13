@@ -1826,7 +1826,7 @@ var MAST={
             {id:'kt_c',ic:'⌛',nm:'間隔',tx:'−5%',d:'刀を振る間隔が#短くなる',dv:'5%',ef:{cd:-.05}} ],
     major:[ {id:'kt_D',ic:'💪',nm:'剛・攻撃力',tx:'+12%',d:'斬撃の威力が#大きく上がる',dv:'12%',ef:{dmg:.12}},
             {id:'kt_bl',ic:'🩸',nm:'深手',tx:'出血+40%',d:'斬った敵の出血ダメージが#増える',dv:'40%',ef:{bleed:.40}},
-            {id:'kt_ct',ic:'🛡️',nm:'心眼',tx:'間隔−20%',d:'カウンター状態になる間隔が#短くなる',dv:'20%',ef:{counter:.20}} ]
+            {id:'kt_cr',ic:'💥',nm:'剛撃',tx:'+10%',d:'会心（クリティカル）のダメージが#上がる',dv:'10%',ef:{critd:.10}} ]
   },
   bow:{  // 弓：dmg/pierce/rate（通常）＋ count/pierce大（特別）
     minor:[ {id:'bo_d',ic:'💪',nm:'攻撃力',tx:'+6%',d:'矢の威力が#上がる',dv:'6%',ef:{dmg:.06}},
@@ -2103,7 +2103,7 @@ var AWK={ chainsaw:'暴走鋸', musket:'貫通弾', blizzard:'絶対氷結', las
 var AWT={ chainsaw:'前方だけでなく全方位を削るようになる', musket:'弾が敵を貫通する', inferno:'ビームが太く強くなり、当てている敵を延焼させ続ける',
   blizzard:'吹雪の中の敵をときどき凍結させる', laser:'光線が回転しながら残り続ける',
   slash:'斬撃が飛ぶようになる', scythe:'戻りの威力減衰がなくなる',
-  katana:'常にカウンター状態になり、飛んでくる敵弾を弾き続ける', shuriken:'出血の威力が大きく上がる',
+  katana:'カウンターを最大3回までストックできるようになる', shuriken:'出血の威力が大きく上がる',
   chakram:'軌道が内外2重になり、内側は逆回転', bow:'貫通するたび威力が上がる（最大3倍）',
   dynamite:'爆発が巻き込んだ敵を起点にもう一度爆発', bell:'最大半径で反射し収縮しながら戻る',
   quake:'隆起点に亀裂が残り、通る敵に継続ダメージ', rock:'敵に当たるたび大きくなる',
@@ -2472,7 +2472,7 @@ function figInfo(id){
   if(BOSS[id]){ var B=BOSS[id], tt=ETYPE[B.key]||{}; return {nm:B.nm,shape:tt.shape,col:tt.col,dark:tt.dark,desc:BDEX[id]||'',boss:true}; }
   var t=ETYPE[id]||{}; return {nm:t.nm,shape:t.shape,col:t.col,dark:t.dark,desc:DEX[id]||'',boss:false};
 }
-var VERSION='α1.0.130'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
+var VERSION='α1.0.131'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
 function applySave(o){
   for(var i=0;i<UPG.length;i++) META[UPG[i].id]=0;
   try{
@@ -3103,22 +3103,24 @@ function doKatana(){
   sfx(600,.05,'square',.05,.6);
   wgain('katana',n); SRC=null;
 }
-// 刀のカウンター：数秒ごと（覚醒で常時）に短時間、周囲の敵弾を弾く
+// 刀のカウンター：ストック制。5秒ごとに1チャージ（通常は最大1、覚醒『無双』で最大3）。
+// チャージが1以上あるとき、周囲の敵弾を弾いてチャージを1消費する（うす緑の弾きエフェクト）。
 function katanaCounter(dt){
-  var perm=AW('katana');
-  if(perm){ P.ctrT=0.2; }
-  else{
-    P.ctrCd=(P.ctrCd==null?4.5:P.ctrCd)-dt;
-    if(P.ctrCd<=0){ P.ctrT=0.9; P.ctrCd=Math.max(2.2,5.0*(1-TR('katana','counter')));
-      sfx(760,.12,'square',.05,1.1); fx.push({k:'ring',x:P.x,y:P.y,r:0,to:P.r+48,t:0,life:.35,col:'#ffd0d6'}); }
-    if(P.ctrT>0) P.ctrT-=dt;
-  }
-  if(P.ctrT>0||perm){
-    var r2=(P.r+48)*(P.r+48), got=0;
+  var maxStock=AW('katana')?3:1, iv=5.0;
+  if(P.ctrChg==null) P.ctrChg=maxStock;
+  if(P.ctrCd==null) P.ctrCd=iv;
+  if(P.ctrChg>maxStock) P.ctrChg=maxStock;
+  P.ctrLock=(P.ctrLock||0)-dt;
+  if(P.ctrChg<maxStock){ P.ctrCd-=dt; if(P.ctrCd<=0){ P.ctrChg++; P.ctrCd=iv; sfx(720,.09,'square',.04,1.0); } }
+  else P.ctrCd=iv;
+  if(P.ctrChg>=1&&P.ctrLock<=0){
+    var rad=P.r+52, r2=rad*rad, got=0;
     for(var i=ebul.length-1;i>=0;i--){ var b=ebul[i], dx=b.x-P.x, dy=b.y-P.y;
       if(dx*dx+dy*dy<r2){ ebul.splice(i,1); got++;
-        parts.push({x:b.x,y:b.y,vx:(dx)*2,vy:(dy)*2,t:0,life:.25,col:'#ffe0a0',s:3}); } }
-    if(got) sfx(1000,.03,'square',.03,1.4);
+        for(var q=0;q<3;q++) parts.push({x:b.x,y:b.y,vx:dx*1.8+(Math.random()-.5)*180,vy:dy*1.8+(Math.random()-.5)*180,t:0,life:.32,col:'#bff5b0',s:3}); } }
+    if(got){ P.ctrChg--; P.ctrLock=0.4;
+      fx.push({k:'ring',x:P.x,y:P.y,r:0,to:rad,t:0,life:.30,col:'#bff5b0'});   // うす緑の弾きリング
+      sfx(1100,.05,'square',.04,1.3); }
   }
 }
 function doShuriken(){
@@ -3130,7 +3132,7 @@ function doShuriken(){
     var an=a+(i-(cnt-1)/2)*0.17;
     shots.push({x:P.x,y:P.y,vx:Math.cos(an)*680,vy:Math.sin(an)*680,r:9,
       src:'shuriken',kind:'shuriken',ang:an,spin:0,dmg:dmg,
-      pierce:2+PRC('shuriken'),life:RNG('shuriken')/680,col:'#e6f2ff',col2:'#6a8fb0',el:null,hit:[],bleed:bl});
+      pierce:PRC('shuriken'),life:RNG('shuriken')/680,col:'#e6f2ff',col2:'#6a8fb0',el:null,hit:[],bleed:bl});
   }
   sfx(900,.04,'square',.03,1.4);
   wgain('shuriken',cnt);
@@ -7753,6 +7755,11 @@ Array.prototype.forEach.call(document.querySelectorAll('#setview button'),functi
 // 更新履歴：1つのお知らせ内で「バージョン見出し」ごとに変更点を並べる（新しい順）。
 // マージのたびに先頭へ新バージョンを追加し、VERSION も更新する。
 var UPDATES=[
+  {v:'α1.0.131', items:[
+    '刀のカウンターで敵弾を弾いた時、うす緑のエフェクトが出るようにしました。',
+    '刀の覚醒『無双』を「常時カウンター」から「カウンターを最大3回までストックできる」に変更しました（5秒ごとに1回チャージ）。',
+    '刀の熟練から「カウンター間隔短縮」を廃止し、代わりに「剛撃（会心ダメージ+10%）」を追加しました。',
+    '手裏剣の初期の貫通数を0にしました（強化で増やせます）。']},
   {v:'α1.0.130', items:[
     '新武器「刀」を追加！ 前方を斬り払う近接剣で、斬った敵を出血させます。数秒ごとにカウンター状態になり、飛んでくる敵弾を弾きます（覚醒で常時カウンター）。解放条件：累計討伐3,500 or 金貨10 or 銀貨3,000。',
     '新武器「手裏剣」を追加！ 高速で投げて貫通し、当てた敵を出血させます。解放条件：15:00まで生存 or 金貨10 or 銀貨2,500。',
