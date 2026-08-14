@@ -10,6 +10,10 @@
 - リザルト画面と設定画面に `VERSION` を表示。
 - お知らせ（`UPDATES` 配列）は**1枠内でバージョン見出しごとに変更点を掲載**（新しい順）。マージ時は `UPDATES` 先頭に新バージョンを追加し `VERSION` を一致させる。
 
+## ver.α1.0.150
+- 氷術師(cryo)/雷鳴使い(thundr) の解放条件を属性別キル数に変更。cryo `cond:'killIc' val:3000`、thundr `cond:'killTh' val:3000`。`ACH` に `killTh/killIc` を追加（`for(var av in ACH)` 読込・`ach:ACH` 保存のため自動永続）。`kill(e)` で、とどめの `SRC` が `ELW.thunder`/`ELW.ice` に属せば該当カウンタを+1（弾は命中時 `SRC=s.src`、即着弾武器は各 do* で `SRC` 設定済み）。`condMet` は未知condを `(ACH[cond]||0)>=val` で判定するため新condに追加対応不要。
+- `renderChr` 冒頭で `unlockCheck()` を実行し、条件達成済みキャラを画面表示時に即解放（従来 `unlockCheck` は `finish` 時のみで、銃士が「39,654/7,000 達成なのに未解放」のまま残る問題を修正）。新規解放時は `saveGame()`＋`syncTitle()` でバッジ更新。
+
 ## ver.α1.0.149
 - 農夫の鎌成長を「毎レベル+1本」→「20レベルごと+1本」に緩和（強すぎたため）。`grow` を `{k:'scythe_cnt', per:20, unit:'本'}` に変更。`GROW`（線形）では階段状にできないため専用関数 `scytheLvBonus()=Math.floor(P.lv/g.per)` を新設し、`doScythe` の本数計算を `1+CNT('scythe')+scytheLvBonus()` に変更（ラン内 count 軸とは引き続き加算）。`buildText` の成長表示も `grow.per` 対応（`+floor(P.lv/per)本`）。
 

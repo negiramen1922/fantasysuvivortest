@@ -2297,13 +2297,13 @@ var CHARS={
     st:'元素付与 +12%／移動速度 −5%',
     grow:{k:'icep', v:0.01, tx:'毎レベル 氷属性の武器の攻撃力 +1%'},
     hp:1.00, spd:0.95, pw:1.00, area:1.00, ele:0.12, elp:0, crit:0, regen:0,
-    cost:10, cond:'stage',  val:2,     condTx:'ステージ2をクリアする' },
+    cost:10, cond:'killIc', val:3000,  condTx:'氷属性の武器で 3,000 体を討伐する' },
   thundr:{ nm:'雷鳴使い', glyph:'⚡', w:'thunder',
     tx:'龍の雷を落とす。感電と超電導で一気に畳みかける。',
     st:'会心率 +8%／最大HP −10%',
     grow:{k:'thunp', v:0.01, tx:'毎レベル 雷属性の武器の攻撃力 +1%'},
     hp:0.90, spd:1.00, pw:1.00, area:1.00, ele:0, elp:0, crit:0.08, regen:0,
-    cost:10, cond:'stage',  val:3,     condTx:'ステージ3をクリアする' },
+    cost:10, cond:'killTh', val:3000,  condTx:'雷属性の武器で 3,000 体を討伐する' },
   gunner:{ nm:'銃士', glyph:'\u{1F52B}', w:'musket',
     tx:'銃を撃ち込む遠距離の手練れ。撃つほどに手が速くなる。',
     st:'会心率 +10%／移動速度 +5%／最大HP −15%',
@@ -2332,7 +2332,7 @@ var CHARS={
 var ALLCHR=0;   // 1で全キャラ解放（開発用）。製品は 0
 var UNL={}, SELCH='knight';
 (function(){ for(var k in CHARS) UNL[k]=ALLCHR?1:(k==='knight'?1:0); })();
-var ACH={lv:0, kills:0, reacts:0, clear:0, time:0, dmg:0, crit:0, survt:0, logins:0};
+var ACH={lv:0, kills:0, reacts:0, clear:0, time:0, dmg:0, crit:0, survt:0, logins:0, killTh:0, killIc:0};
 function CH(){ return CHARS[SELCH]||CHARS.knight; }
 // キャラの毎レベル成長
 function achOK(id){
@@ -2562,7 +2562,7 @@ function figInfo(id){
   if(BOSS[id]){ var B=BOSS[id], tt=ETYPE[B.key]||{}; return {nm:B.nm,shape:tt.shape,col:tt.col,dark:tt.dark,desc:BDEX[id]||'',boss:true}; }
   var t=ETYPE[id]||{}; return {nm:t.nm,shape:t.shape,col:t.col,dark:t.dark,desc:DEX[id]||'',boss:false};
 }
-var VERSION='α1.0.149'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
+var VERSION='α1.0.150'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
 function applySave(o){
   for(var i=0;i<UPG.length;i++) META[UPG[i].id]=0;
   try{
@@ -4853,6 +4853,11 @@ function hurt(e,dmg,nx,ny,el){
 function kill(e){
   if(e.dead) return;
   e.dead=1; kills++;
+  // 属性別キル数（解放条件用）：とどめの武器(SRC)が雷/氷属性なら加算
+  if(SRC){
+    if(ELW.thunder.indexOf(SRC)>=0) ACH.killTh=(ACH.killTh||0)+1;
+    else if(ELW.ice.indexOf(SRC)>=0) ACH.killIc=(ACH.killIc||0)+1;
+  }
   // ブーマー：死亡時に毒の沼を残す（乗ると継続ダメージ）
   if(e.puddle){
     puddles.push({x:e.x,y:e.y,r:(e.r||18)+34,life:6,t:0});
@@ -7189,6 +7194,8 @@ function syncTitle(){
 var chrEl=null;
 function renderChr(){
   chrEl=chrEl||document.getElementById('chr');
+  var _nu=unlockCheck();                                  // 画面を開いた時点で条件達成キャラを即解放（銃士等が「達成なのに未解放」を防ぐ）
+  if(_nu&&_nu.length){ saveGame(); syncTitle(); }
   document.getElementById('chrpurse').innerHTML=purseHtml();
   var L=document.getElementById('chrlist');
   L.innerHTML='';
@@ -8035,6 +8042,10 @@ Array.prototype.forEach.call(document.querySelectorAll('#setview button'),functi
 // 更新履歴：1つのお知らせ内で「バージョン見出し」ごとに変更点を並べる（新しい順）。
 // マージのたびに先頭へ新バージョンを追加し、VERSION も更新する。
 var UPDATES=[
+  {v:'α1.0.150', items:[
+    '氷術師・雷鳴使いの解放条件を変更しました。氷術師＝「氷属性の武器で3,000体討伐」、雷鳴使い＝「雷属性の武器で3,000体討伐」（新カウンタのため0からのカウントです）。',
+    'キャラクター画面を開いた時点で、解放条件を満たしているキャラが即座に解放されるよう修正しました（銃士などが「達成なのに未解放」のままになる問題を解消）。',
+  ]},
   {v:'α1.0.149', items:[
     '農夫の鎌の増え方を調整。「毎レベル+1本」は増えすぎだったため、「20レベルごとに+1本」に変更しました（ラン中の鎌+1強化は従来どおり加算）。',
   ]},
