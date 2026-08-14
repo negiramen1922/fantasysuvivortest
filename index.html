@@ -2562,7 +2562,7 @@ function figInfo(id){
   if(BOSS[id]){ var B=BOSS[id], tt=ETYPE[B.key]||{}; return {nm:B.nm,shape:tt.shape,col:tt.col,dark:tt.dark,desc:BDEX[id]||'',boss:true}; }
   var t=ETYPE[id]||{}; return {nm:t.nm,shape:t.shape,col:t.col,dark:t.dark,desc:DEX[id]||'',boss:false};
 }
-var VERSION='α1.0.150'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
+var VERSION='α1.0.151'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
 function applySave(o){
   for(var i=0;i<UPG.length;i++) META[UPG[i].id]=0;
   try{
@@ -5042,16 +5042,14 @@ function moveVacs(dt){
 function drawVac(v){
   ctx.save(); ctx.translate(v.x,v.y);
   var p=0.6+Math.sin(v.t*5)*0.4;
-  ctx.globalAlpha=.14+p*.16;
-  ctx.fillStyle='#56e0ff'; ctx.beginPath(); ctx.arc(0,0,30,0,6.3); ctx.fill();
-  ctx.globalAlpha=1; ctx.rotate(v.t*3);
-  ctx.strokeStyle='#7fe6ff'; ctx.lineWidth=3; ctx.lineCap='round';
-  for(var i=0;i<3;i++){
-    var a=i/3*6.283;
-    ctx.beginPath();
-    ctx.arc(0,0,14,a,a+1.6); ctx.stroke();
-  }
-  ctx.fillStyle='#eafaff'; ctx.beginPath(); ctx.arc(0,0,5,0,6.3); ctx.fill();
+  // 視認用の青いグロー（引き寄せを連想）
+  ctx.globalAlpha=.16+p*.18;
+  ctx.fillStyle='#56e0ff'; ctx.beginPath(); ctx.arc(0,0,26,0,6.3); ctx.fill();
+  ctx.globalAlpha=1;
+  // 磁石アイコン🧲（ふわりと上下に浮遊）
+  var by=Math.sin(v.t*3)*2.5;
+  ctx.font='30px serif'; ctx.textAlign='center'; ctx.textBaseline='middle';
+  ctx.fillText('🧲',0,by);
   ctx.restore();
 }
 // 地面に残る効果（亀裂・氷柱・炎の帯）をまとめて扱う
@@ -5573,7 +5571,6 @@ function render(){
   for(i=0;i<relics.length;i++) drawRelic(relics[i]);
   for(i=0;i<chests.length;i++) drawChest(chests[i]);
   for(i=0;i<coins.length;i++) drawCoin(coins[i]);
-  for(i=0;i<vacs.length;i++) drawVac(vacs[i]);
   for(i=0;i<gems.length;i++) drawGem(gems[i]);
   for(i=0;i<zones.length;i++) drawZone(zones[i]);
   for(i=0;i<holes.length;i++) drawHole(holes[i]);
@@ -5626,6 +5623,8 @@ function render(){
   for(i=0;i<bolts.length;i++) drawChain(bolts[i]);
   // 敵弾は自機エフェクトより最前面に描く：何が当たるか常に見えるように（弾幕の視認性対策）
   for(i=0;i<ebul.length;i++) drawEbul(ebul[i]);
+  for(i=0;i<enemies.length;i++) if(!enemies[i].dead) drawTele(enemies[i]);   // 敵の攻撃予告を最前面に（自機エフェクトで隠さない）
+  for(i=0;i<vacs.length;i++) drawVac(vacs[i]);                               // 磁石も最前面に（拾い逃さないように）
   drawEnemyOutlines();
   for(i=0;i<dmgs.length;i++) drawDmg(dmgs[i]);
 
@@ -6407,6 +6406,29 @@ function drawEnemy(e){
     ctx.fillStyle='#c89ce0'; ctx.fillRect(-bw/2,-R-14,bw*Math.max(0,e.hp/e.mhp),5);
   }
 
+  if(e.el&&ELEM[e.el]){
+    var ec=ELEM[e.el].col, pulse=0.6+Math.sin(time*12+e.ph)*0.4;
+    ctx.globalAlpha=0.30*pulse;
+    ctx.fillStyle=ec; ctx.beginPath(); ctx.arc(0,0,R+6,0,6.3); ctx.fill();
+    ctx.globalAlpha=1;
+    ctx.fillStyle=ec; ctx.beginPath(); ctx.arc(0,-R-10,4.5,0,6.3); ctx.fill();
+  }
+  if(e.boss){
+    ctx.strokeStyle='#ff4d6d'; ctx.lineWidth=3;
+    ctx.beginPath(); ctx.arc(0,0,R+10,0,6.3); ctx.stroke();
+  }else if(e.elite){
+    ctx.strokeStyle='#ffcc4d'; ctx.lineWidth=2;
+    ctx.beginPath(); ctx.arc(0,0,R+7,0,6.3); ctx.stroke();
+    var bw2=R*2.4;
+    ctx.fillStyle='#000'; ctx.fillRect(-bw2/2,-R-16,bw2,5);
+    ctx.fillStyle='#ff4d6d'; ctx.fillRect(-bw2/2,-R-16,bw2*Math.max(0,e.hp/e.mhp),5);
+  }
+  ctx.restore();
+}
+// 敵の攻撃予告（突進線・拳・ブレス等）は自機エフェクトより最前面に描く（自分の攻撃で隠れないように）
+function drawTele(e){
+  ctx.save(); ctx.translate(e.x,e.y);
+  var R=e.r;
   // 突進の予告：溜め中はプレイヤー方向へ、実際の突進距離ぶんの赤いラインを伸ばす
   if((e.st==='wind'||e.st==='gwind'||e.st==='kcwind')&&e.chspd>0){
     // ケルビ・墓守・スケルトンキングは予告開始時に方向固定なのでその向きを表示
@@ -6542,23 +6564,6 @@ function drawEnemy(e){
     }
   }
 
-  if(e.el&&ELEM[e.el]){
-    var ec=ELEM[e.el].col, pulse=0.6+Math.sin(time*12+e.ph)*0.4;
-    ctx.globalAlpha=0.30*pulse;
-    ctx.fillStyle=ec; ctx.beginPath(); ctx.arc(0,0,R+6,0,6.3); ctx.fill();
-    ctx.globalAlpha=1;
-    ctx.fillStyle=ec; ctx.beginPath(); ctx.arc(0,-R-10,4.5,0,6.3); ctx.fill();
-  }
-  if(e.boss){
-    ctx.strokeStyle='#ff4d6d'; ctx.lineWidth=3;
-    ctx.beginPath(); ctx.arc(0,0,R+10,0,6.3); ctx.stroke();
-  }else if(e.elite){
-    ctx.strokeStyle='#ffcc4d'; ctx.lineWidth=2;
-    ctx.beginPath(); ctx.arc(0,0,R+7,0,6.3); ctx.stroke();
-    var bw=R*2.4;
-    ctx.fillStyle='#000'; ctx.fillRect(-bw/2,-R-16,bw,5);
-    ctx.fillStyle='#ff4d6d'; ctx.fillRect(-bw/2,-R-16,bw*Math.max(0,e.hp/e.mhp),5);
-  }
   ctx.restore();
 }
 // エフェクトに埋もれても敵の位置が分かるよう、最前面に輪郭だけを描く
@@ -8042,6 +8047,10 @@ Array.prototype.forEach.call(document.querySelectorAll('#setview button'),functi
 // 更新履歴：1つのお知らせ内で「バージョン見出し」ごとに変更点を並べる（新しい順）。
 // マージのたびに先頭へ新バージョンを追加し、VERSION も更新する。
 var UPDATES=[
+  {v:'α1.0.151', items:[
+    '敵の攻撃予告（突進の赤い線、ヘカトンケイルの拳、ドラゴンのブレスなど）を最前面に描くようにしました。自分の攻撃エフェクトで予告が隠れて避けられない、ということがなくなります。',
+    '磁石（マグネット）も最前面に描くようにし、見た目を🧲アイコンに変更しました。攻撃エフェクトに埋もれて拾い逃すことがなくなります。',
+  ]},
   {v:'α1.0.150', items:[
     '氷術師・雷鳴使いの解放条件を変更しました。氷術師＝「氷属性の武器で3,000体討伐」、雷鳴使い＝「雷属性の武器で3,000体討伐」（新カウンタのため0からのカウントです）。',
     'キャラクター画面を開いた時点で、解放条件を満たしているキャラが即座に解放されるよう修正しました（銃士などが「達成なのに未解放」のままになる問題を解消）。',

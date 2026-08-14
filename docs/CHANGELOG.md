@@ -10,6 +10,10 @@
 - リザルト画面と設定画面に `VERSION` を表示。
 - お知らせ（`UPDATES` 配列）は**1枠内でバージョン見出しごとに変更点を掲載**（新しい順）。マージ時は `UPDATES` 先頭に新バージョンを追加し `VERSION` を一致させる。
 
+## ver.α1.0.151
+- 敵の攻撃予告を最前面化。`drawEnemy` 末尾にあった予告描画ブロック（突進線/slam警告/ゴブキング扇/卵設置/射撃リング/sdragonブレス/sking墓落下/hecaton拳/hecatonレーザー/墓守）を新関数 `drawTele(e)` に切り出し（`ctx.save→translate(e.x,e.y)→var R=e.r→…→restore`）、`render` の自機エフェクト・敵弾の後（`drawEnemyOutlines` 前）で全生存敵に対し描画。これにより自機の攻撃エフェクトで予告が隠れなくなる。移設に伴い element/boss/elite の装飾描画を予告ブロックの前へ移動（elite の一時変数 `bw`→`bw2` で重複回避）。
+- 磁石(vacs)を最前面化＆見た目を🧲に変更。`drawVac` を青いグロー＋`ctx.fillText('🧲')`（30px・上下に浮遊）に刷新し、`render` の描画呼び出しを地面レイヤーから最前面パスへ移動。判定(34px)・引き寄せ挙動は据え置き。
+
 ## ver.α1.0.150
 - 氷術師(cryo)/雷鳴使い(thundr) の解放条件を属性別キル数に変更。cryo `cond:'killIc' val:3000`、thundr `cond:'killTh' val:3000`。`ACH` に `killTh/killIc` を追加（`for(var av in ACH)` 読込・`ach:ACH` 保存のため自動永続）。`kill(e)` で、とどめの `SRC` が `ELW.thunder`/`ELW.ice` に属せば該当カウンタを+1（弾は命中時 `SRC=s.src`、即着弾武器は各 do* で `SRC` 設定済み）。`condMet` は未知condを `(ACH[cond]||0)>=val` で判定するため新condに追加対応不要。
 - `renderChr` 冒頭で `unlockCheck()` を実行し、条件達成済みキャラを画面表示時に即解放（従来 `unlockCheck` は `finish` 時のみで、銃士が「39,654/7,000 達成なのに未解放」のまま残る問題を修正）。新規解放時は `saveGame()`＋`syncTitle()` でバッジ更新。
