@@ -3833,9 +3833,9 @@ function sheepStampede(count, dmg){
   var cx=P.x+Math.cos(a)*SWR, cy=P.y+Math.sin(a)*SWR;   // 画面外の一辺
   var dx=P.x-cx, dy=P.y-cy, dd=Math.hypot(dx,dy)||1;
   var vx=dx/dd, vy=dy/dd, px=-vy, py=vx;                // vx,vy＝進行方向（プレイヤー越しに横切る）／px,py＝横並び
-  var sp=340, spread=190;                               // 横幅を絞って高密度に。中心線はプレイヤーを通過する
+  var sp=340, spread=55;                                // 横幅を細く＝進行方向に縦長の列。中心線はプレイヤーを通過する
   for(var i=0;i<count;i++){
-    var side=(Math.random()-0.5)*spread*2, along=Math.random()*440;   // 奥行きを広げて分厚い群れにする
+    var side=(Math.random()-0.5)*spread*2, along=Math.random()*900;   // 奥行きを長く伸ばして縦一列のスタンピードにする
     sheep.push({ x:cx+px*side-vx*along, y:cy+py*side-vy*along,
       dirx:vx, diry:vy, sp:sp*(0.9+Math.random()*0.2),
       r:15, dmg:dmg, life:2*SWR/sp+1.2, hop:Math.random()*6.283, hit:[] });
