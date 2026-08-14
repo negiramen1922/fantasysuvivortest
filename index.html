@@ -2118,7 +2118,7 @@ var WAX={
   shuriken:{ dmg:4, count:3, pierce:3, rate:3, range:2 },
   bow:     { dmg:4, pierce:3, count:3, rate:3, burst:3, range:3 },
   dynamite:{ dmg:4, area:4, burst:4, rate:3, range:2 },
-  toxin:   { dmg:4, area:4, rate:3, range:2 },
+  toxin:   { dmg:4, area:4, count:2, rate:3, range:2 },
   anchor:  { dmg:5, area:4, rate:3, range:2 },
   quake:   { dmg:4, area:4, rate:3, range:3 },
   rock:    { dmg:4, area:4, count:2, rate:3, burst:3, range:3 },
@@ -2321,7 +2321,13 @@ var CHARS={
     st:'最大HP +10%／元素付与 +10%／移動速度 −6%',
     grow:{k:'darkp', v:0.01, tx:'毎レベル 闇属性の武器の攻撃力 +1%'},
     hp:1.10, spd:0.94, pw:1.00, area:1.00, ele:0.10, elp:0, crit:0, regen:0,
-    cost:15, cond:'stage',  val:3,     condTx:'ステージ3（古代の王墓）をクリアする' }
+    cost:15, cond:'stage',  val:3,     condTx:'ステージ3（古代の王墓）をクリアする' },
+  apoth:{  nm:'調剤師', glyph:'⚗️', w:'toxin',
+    tx:'毒の瓶を調合して投げる術者。毒を極め、じわじわと戦場を蝕む。',
+    st:'元素付与 +10%／範囲 +8%／攻撃力 −5%',
+    grow:{k:'grassp', v:0.01, tx:'毎レベル 草属性の武器の攻撃力 +1%'},
+    hp:1.00, spd:1.00, pw:0.95, area:1.08, ele:0.10, elp:0, crit:0, regen:0,
+    cost:10, cond:'kills',  val:12000, condTx:'累計 12,000 体を討伐する' }
 };
 var ALLCHR=0;   // 1で全キャラ解放（開発用）。製品は 0
 var UNL={}, SELCH='knight';
@@ -2556,7 +2562,7 @@ function figInfo(id){
   if(BOSS[id]){ var B=BOSS[id], tt=ETYPE[B.key]||{}; return {nm:B.nm,shape:tt.shape,col:tt.col,dark:tt.dark,desc:BDEX[id]||'',boss:true}; }
   var t=ETYPE[id]||{}; return {nm:t.nm,shape:t.shape,col:t.col,dark:t.dark,desc:DEX[id]||'',boss:false};
 }
-var VERSION='α1.0.147'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
+var VERSION='α1.0.148'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
 function applySave(o){
   for(var i=0;i<UPG.length;i++) META[UPG[i].id]=0;
   try{
@@ -2685,6 +2691,7 @@ function pw(w){
     if(GROW('icep')   &&ELW.ice.indexOf(w)>=0)     m*=(1+GROW('icep'));
     if(GROW('thunp')  &&ELW.thunder.indexOf(w)>=0) m*=(1+GROW('thunp'));
     if(GROW('darkp')  &&ELW.dark.indexOf(w)>=0)    m*=(1+GROW('darkp'));
+    if(GROW('grassp') &&ELW.grass.indexOf(w)>=0)   m*=(1+GROW('grassp'));
   }
   return m;
 }
@@ -3379,12 +3386,17 @@ function doAnchor(){
 function doToxin(){
   var e=nearest(P.x,P.y,RNG('toxin')); if(!e) return;
   var ar=AREA('toxin');
+  var cnt=1+CNT('toxin'), prad=70*ar, pdmg=4*DMG('toxin')*pw('toxin');   // 発射数（毒瓶の count 軸／最大3本）
   // 瓶を放物線で投げ、着弾地点(bomb landing)で毒沼が発生する
-  bombs.push({ sx:P.x, sy:P.y, tx:e.x+(Math.random()-.5)*44, ty:e.y+(Math.random()-.5)*44,
-    t:0, dur:0.58, spin:0, x:P.x, y:P.y, h:0,
-    pois:1, prad:70*ar, pdmg:4*DMG('toxin')*pw('toxin') });
+  for(var i=0;i<cnt;i++){
+    var sp=(i===0)?0:(40+Math.random()*70), sa=Math.random()*6.283;      // 2本目以降は着弾点を散らして毒沼を広く展開
+    bombs.push({ sx:P.x, sy:P.y,
+      tx:e.x+Math.cos(sa)*sp+(Math.random()-.5)*44, ty:e.y+Math.sin(sa)*sp+(Math.random()-.5)*44,
+      t:0, dur:0.58, spin:0, x:P.x, y:P.y, h:0,
+      pois:1, prad:prad, pdmg:pdmg });
+  }
   sfx(300,.08,'sine',.045,.6);
-  wgain('toxin',1);
+  wgain('toxin',cnt);
 }
 function moveBombs(dt){
   for(var i=bombs.length-1;i>=0;i--){
@@ -8020,6 +8032,10 @@ Array.prototype.forEach.call(document.querySelectorAll('#setview button'),functi
 // 更新履歴：1つのお知らせ内で「バージョン見出し」ごとに変更点を並べる（新しい順）。
 // マージのたびに先頭へ新バージョンを追加し、VERSION も更新する。
 var UPDATES=[
+  {v:'α1.0.148', items:[
+    '新キャラクター「調剤師」を追加！ 初期武器は毒瓶。元素付与+10%・範囲+8%の毒の専門家で、レベルアップごとに草属性の武器の攻撃力+1%。解放条件：累計 12,000 体を討伐。',
+    '毒瓶に強化軸「発射数」を追加。ラン中の強化で最大＋2（合計3本）まで同時に投げられるようになり、着弾点が散って毒沼を広く展開します。',
+  ]},
   {v:'α1.0.147', items:[
     '新キャラクター「死霊術師」を追加！ 初期武器はダークハンド。最大HP+10%・元素付与+10%の闇の術者で、レベルアップごとに闇属性の武器の攻撃力+1%。解放条件：ステージ3（古代の王墓）をクリアする。',
     'あわせて、氷術師（ステージ2）・雷鳴使い（ステージ3）が「ステージクリアで自動解放」されるよう内部処理を修正しました（従来は条件表示のみで自動解放されていませんでした）。',

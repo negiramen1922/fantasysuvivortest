@@ -10,6 +10,10 @@
 - リザルト画面と設定画面に `VERSION` を表示。
 - お知らせ（`UPDATES` 配列）は**1枠内でバージョン見出しごとに変更点を掲載**（新しい順）。マージ時は `UPDATES` 先頭に新バージョンを追加し `VERSION` を一致させる。
 
+## ver.α1.0.148
+- 新キャラ「調剤師(apoth)」を追加。初期武器 `toxin`（毒瓶）、glyph ⚗️。`hp:1.00 pw:0.95 area:1.08 ele:0.10`。`grow:{k:'grassp',v:0.01}`＝毎レベル草属性武器+1%（`pw(w)` に `GROW('grassp')&&ELW.grass.indexOf(w)>=0` を配線。草武器=toxin）。解放条件 `cond:'kills' val:12000`、`cost:10`。
+- 毒瓶(toxin)に count 軸を追加：`WAX.toxin` に `count:2`。`rollChoices` は `WAX[id]` の軸を上限まで提示するため、ラン中に「毒瓶・発射数」を最大+2（合計3本）まで取得可能。`doToxin` を `cnt=1+CNT('toxin')` 本ループに変更し、2本目以降は着弾点を `40〜110px` ランダム方向へ散らして毒沼(`addZone`)を広く展開。`wgain('toxin',cnt)`。検証：`check.py` OK。
+
 ## ver.α1.0.147
 - 新キャラ「死霊術師(necro)」を追加。初期武器 `dhand`（ダークハンド）、glyph 💀。`hp:1.10 spd:0.94 ele:0.10`。`grow:{k:'darkp',v:0.01}`＝毎レベル闇属性武器+1%（`pw(w)` に `GROW('darkp')&&ELW.dark.indexOf(w)>=0` を配線。闇武器=voidh/dhand）。解放条件 `cond:'stage' val:3`、`cost:15`。
 - `achOK` を `condMet(c.cond,c.val)` へ委譲して `'stage'` 条件に対応。従来 `achOK` は `(ACH[cond]||0)>=val` で 'stage' を判定できず、cryo(stage2)/thundr(stage3) が実績で自動解放されないバグがあった（購入は可能）。これを修正し、necro含めステージクリアで自動解放されるようにした。`achNow` に `'stage'`→`STGCLEAR[val]` の達成/未達成表示を追加。
