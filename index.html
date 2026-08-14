@@ -2606,7 +2606,7 @@ function figInfo(id){
   if(BOSS[id]){ var B=BOSS[id], tt=ETYPE[B.key]||{}; return {nm:B.nm,shape:tt.shape,col:tt.col,dark:tt.dark,desc:BDEX[id]||'',boss:true}; }
   var t=ETYPE[id]||{}; return {nm:t.nm,shape:t.shape,col:t.col,dark:t.dark,desc:DEX[id]||'',boss:false};
 }
-var VERSION='α1.0.161'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
+var VERSION='α1.0.162'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
 function applySave(o){
   for(var i=0;i<UPG.length;i++) META[UPG[i].id]=0;
   try{
@@ -4942,7 +4942,7 @@ function hurt(e,dmg,nx,ny,el){
   if(e.shield>0){                            // 盾の戦士：割れるまで本体HPに通さない（この一撃も本体には行かない）
     e.shield-=d; if(e.shield<0) e.shield=0;
     e.ht=0.12; dmgSec+=d;
-    if(SRC!=='bell'&&SRC!=='aura'&&SRC!=='blizzard'&&SRC!=='inferno'){ e.kb=Math.max(e.kb,(crit?4:2.2)*(1+TR(SRC,'knock'))); e.kbx=nx||0; e.kby=ny||0; }
+    if(SRC!=='bell'&&SRC!=='aura'&&SRC!=='blizzard'&&SRC!=='inferno'&&SRC!=='toxin'){ e.kb=Math.max(e.kb,(crit?4:2.2)*(1+TR(SRC,'knock'))); e.kbx=nx||0; e.kby=ny||0; }
     if(SRC) WDMG[SRC]=(WDMG[SRC]||0)+d; else WDMG._react=(WDMG._react||0)+d;
     if(dmgs.length>110) dmgs.shift();
     dmgs.push({x:e.x,y:e.y-e.r-4,v:-52,t:0,life:.6,txt:Math.round(d),crit:crit,col:'#8fd4ff'});
@@ -4951,7 +4951,7 @@ function hurt(e,dmg,nx,ny,el){
   }
   e.hp-=d; e.ht=0.12; dmgSec+=d;   // DPS/DPM 集計
   // ベル・ホーリージャッジ（十字架AoE）・アイスブリザード・インフェルノビームはノックバックさせない
-  if(SRC!=='bell'&&SRC!=='aura'&&SRC!=='blizzard'&&SRC!=='inferno'){ e.kb=Math.max(e.kb,(crit?4:2.2)*(1+TR(SRC,'knock'))); e.kbx=nx||0; e.kby=ny||0; }
+  if(SRC!=='bell'&&SRC!=='aura'&&SRC!=='blizzard'&&SRC!=='inferno'&&SRC!=='toxin'){ e.kb=Math.max(e.kb,(crit?4:2.2)*(1+TR(SRC,'knock'))); e.kbx=nx||0; e.kby=ny||0; }
   var bb=(bfrac>0)?d*bfrac/(1+bfrac):0;                    // このヒットの出血ぶん
   if(bb>0) WDMG._bleed=(WDMG._bleed||0)+bb;                // リザルト内訳：出血の総量
   var credit=d-bb;
@@ -8278,6 +8278,9 @@ Array.prototype.forEach.call(document.querySelectorAll('#setview button'),functi
 // 更新履歴：1つのお知らせ内で「バージョン見出し」ごとに変更点を並べる（新しい順）。
 // マージのたびに先頭へ新バージョンを追加し、VERSION も更新する。
 var UPDATES=[
+  {v:'α1.0.162', items:[
+    '毒瓶の毒沼で敵がノックバックしなくなりました。これまで毒沼のダメージで敵が押し出され、毒が乗り切らないことがありましたが、押し戻さずにその場で毒を蓄積させられるようになりました。',
+  ]},
   {v:'α1.0.161', items:[
     '毒瓶の毒が重ねがけ（スタック）できるようになりました。毒を受け続けた敵は最大5スタックまで毒が濃くなり、スタックの数だけ継続ダメージが増えます（毒沼に留まる敵ほど強く効く）。毒が切れるとスタックはリセットされます。',
   ]},
