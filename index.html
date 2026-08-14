@@ -2138,7 +2138,7 @@ var WAX={
   slash:   { dmg:5, area:4, rate:3 },
   scythe:  { dmg:4, area:4, count:3, rate:3, range:2 },
   chakram: { dmg:4, area:4, count:3, rate:3 },
-  katana:  { dmg:5, area:4, rate:3, range:2 },
+  katana:  { dmg:5, area:4, rate:3 },
   shuriken:{ dmg:4, count:3, pierce:3, rate:3, range:2 },
   bow:     { dmg:4, pierce:3, count:3, rate:3, burst:3, range:3 },
   dynamite:{ dmg:4, area:4, burst:4, rate:3, range:2 },
@@ -3251,7 +3251,7 @@ function doSlash(){
 function doKatana(){
   SRC='katana';
   var ar=AREA('katana');
-  var arc=TF('katana','fullarc')?6.3:Math.min(3.2,1.5*ar), r2=90*ar*RNGM('katana');
+  var arc=TF('katana','fullarc')?6.3:Math.min(3.2,1.5*ar), r2=90*ar;   // 刀は射程軸なし（範囲arのみが間合いを決める）
   var dmg=20*DMG('katana')*pw('katana');
   var bmul=1+TR('katana','bleed');
   var n=arcHit(r2,arc,dmg,null,function(e){ if(Math.random()<ccChance(BLEED_CHANCE)) applyBleed(e,bmul); });
@@ -3326,9 +3326,10 @@ function doFlame(dt){
 function doScythe(){
   var e=nearest(P.x,P.y,RNG('scythe'));
   var base=e?Math.atan2(e.y-P.y,e.x-P.x):P.face;
-  var cnt=1+CNT('scythe')+scytheLvBonus(), rng=210*AREA('scythe')*RNGM('scythe'), dmg=20*DMG('scythe')*pw('scythe');   // 農夫：20レベルごと+1本（ラン内強化と加算）
+  var ar=AREA('scythe');   // 範囲＝当たり判定と見た目の大きさ（飛距離は射程RNGMのみが担う）
+  var cnt=1+CNT('scythe')+scytheLvBonus(), rng=210*RNGM('scythe'), dmg=20*DMG('scythe')*pw('scythe');   // 農夫：20レベルごと+1本（ラン内強化と加算）
   for(var i=0;i<cnt;i++){
-    scys.push({ a:base+(i-(cnt-1)/2)*0.55, t:0, dur:0.95, rng:rng, dmg:dmg,
+    scys.push({ a:base+(i-(cnt-1)/2)*0.55, t:0, dur:0.95, rng:rng, dmg:dmg, ar:ar,
                 x:P.x, y:P.y, spin:0, back:0, hit:[] });
   }
   sfx(300,.09,'square',.05,1.7);
@@ -3348,7 +3349,7 @@ function moveScys(dt){
       var e=enemies[j];
       if(e.dead||c.hit.indexOf(e)>=0) continue;
       var dx=e.x-c.x, dy=e.y-c.y, d=Math.hypot(dx,dy);
-      if(d<e.r+17){ SRC='scythe'; hurt(e,c.dmg*mul,dx/(d||1),dy/(d||1),null); SRC=null; c.hit.push(e); }
+      if(d<e.r+17*(c.ar||1)){ SRC='scythe'; hurt(e,c.dmg*mul,dx/(d||1),dy/(d||1),null); SRC=null; c.hit.push(e); }
     }
   }
 }
@@ -6681,8 +6682,9 @@ function drawFlame(lv){
   }
 }
 function drawScy(c){
-  if(sprReady('scythe')){ drawSprRot('scythe',c.x,c.y,c.spin,46,c.back?0.72:1); return; }
-  ctx.save(); ctx.translate(c.x,c.y); ctx.rotate(c.spin);
+  var ar=c.ar||1;   // 範囲強化で刃を大きく描く
+  if(sprReady('scythe')){ drawSprRot('scythe',c.x,c.y,c.spin,46*ar,c.back?0.72:1); return; }
+  ctx.save(); ctx.translate(c.x,c.y); ctx.rotate(c.spin); ctx.scale(ar,ar);
   ctx.globalAlpha=c.back?0.72:1;
   ctx.strokeStyle='#cfd7e8'; ctx.lineWidth=3.5; ctx.lineCap='round';
   ctx.beginPath(); ctx.moveTo(-13,7); ctx.lineTo(9,7); ctx.stroke();
