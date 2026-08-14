@@ -1385,7 +1385,6 @@ var ETYPE={
   flyingfish:{ nm:'トビウオ',   res:0.00, hp:26,  spd:220, r:9,  col:'#8fd4ff', dark:'#2a5a7a', xp:1, dmg:9,  shape:'flyingfish', pts:6,  sv:0.03, ai:'dash' },
   sahagin:  { nm:'サハギン',     res:0.12, hp:120, spd:78,  r:14, col:'#5aa0a0', dark:'#1f4a4a', xp:3, dmg:16, shape:'sahagin',   pts:34, sv:0.10 },
   crab:     { nm:'カニ',         res:0.25, hp:150, spd:66,  r:16, col:'#e07a4a', dark:'#5a281a', xp:4, dmg:20, shape:'crab',      pts:46, sv:0.12, shield:170 },
-  seaturtle:{ nm:'ウミガメ',     res:0.55, hp:320, spd:38,  r:19, col:'#5a9a6a', dark:'#1f4530', xp:6, dmg:20, shape:'seaturtle', pts:64, sv:0.15, flat:5 },
   kelpie:   { nm:'ケルピー',     res:0.18, hp:150, spd:150, r:15, col:'#7ab0d8', dark:'#2a4a63', xp:4, dmg:20, shape:'kelpie',    pts:46, sv:0.12, ai:'charge', range:300, acd:2.8, chspd:540, wind:0.5, chdur:1.0 },
   shark:    { nm:'サメ',         res:0.30, hp:210, spd:92,  r:18, col:'#9aa8b8', dark:'#37414f', xp:6, dmg:30, shape:'shark',     pts:66, sv:0.15, ai:'charge', range:360, acd:3.2, chspd:620, wind:0.7, chdur:1.1 },
   manta:    { nm:'マンタ',       res:0.25, hp:220, spd:140, r:28, col:'#5a6a8a', dark:'#20283a', xp:5, dmg:20, shape:'manta',     pts:56, sv:0.14, ai:'fly' },
@@ -1451,7 +1450,6 @@ var DEX={
   flyingfish:'群れで飛び跳ねるトビウオ。まっすぐ突進して画面外へ抜ける・群れで出現。',
   sahagin:'半魚人の戦士。銛を手に、まっすぐ間合いを詰めてくる近接兵。',
   crab:'大きなハサミを盾にする蟹。ハサミを割らないと本体に届かない。',
-  seaturtle:'分厚い甲羅の海亀。遅いが頑丈で、軽い攻撃は通らない。',
   kelpie:'水面を駆ける魔馬。高速で一気に距離を詰めてくる。',
   shark:'獰猛な鮫。長い助走から予告つきで大きく突進する。',
   manta:'海を舞う大鬼えい。ゆったり滑空して迫る。',
@@ -1465,7 +1463,7 @@ var DEX={
 var DEXLIST=['slime','goblin','bat','boar','wolf','orc','rider','harpy','ogre','turtle','slimeM','slimeS',
   'spirit','bird','myconid','bee','panther','dryad','mantis','spider','beetle','gnat','treant',
   'skeleton','mummy','wraith','fly','shadow','gargoyle','ghoul','lich','shieldman','sarcher','necro','dullahan','boomer',
-  'flyingfish','sahagin','crab','seaturtle','kelpie','shark','manta',
+  'flyingfish','sahagin','crab','kelpie','shark','manta',
   'hermit','clam','serpent','jelly','siren','umibozu'];
 // モンスターの種族タグ（ナイトメアの属性強化カード等の土台）。ザコ＝ETYPEキー、ボス＝BOSSキー。
 var MTAG={
@@ -1479,7 +1477,7 @@ var MTAG={
   skeleton:['アンデッド'], mummy:['アンデッド'], ghoul:['アンデッド'], lich:['アンデッド'],
   shieldman:['アンデッド'], sarcher:['アンデッド'], necro:['アンデッド'], dullahan:['アンデッド'], boomer:['アンデッド'],
   wraith:['アンデッド','ファントム'], shadow:['ファントム'], gargoyle:['アンデッド','飛行'],
-  flyingfish:['ビースト','飛行'], sahagin:['亜人'], crab:['ビースト'], seaturtle:['ビースト'],
+  flyingfish:['ビースト','飛行'], sahagin:['亜人'], crab:['ビースト'],
   kelpie:['ビースト'], shark:['ビースト'], manta:['ビースト','飛行'],
   hermit:['ビースト'], clam:['ビースト'], serpent:['竜','ビースト'], jelly:['ビースト'], siren:['亜人'], umibozu:['ファントム'],
   slimeking:['スライム'],
@@ -1592,11 +1590,11 @@ var WAVE4=[
   { t:150,  mix:[['sahagin',0.30],['jelly',0.52],['crab',0.76],['serpent',1.00]] },
   { t:240,  mix:[['jelly',0.22],['crab',0.44],['serpent',0.64],['hermit',0.82],['kelpie',1.00]] },
   { t:330,  mix:[['crab',0.20],['serpent',0.40],['hermit',0.58],['kelpie',0.78],['clam',1.00]] },
-  { t:420,  mix:[['serpent',0.18],['hermit',0.36],['kelpie',0.54],['clam',0.70],['seaturtle',0.85],['manta',1.00]] },
-  { t:540,  mix:[['hermit',0.18],['kelpie',0.36],['clam',0.52],['seaturtle',0.68],['manta',0.84],['siren',1.00]] },
-  { t:720,  mix:[['kelpie',0.18],['clam',0.34],['seaturtle',0.50],['manta',0.66],['siren',0.82],['shark',1.00]] },
-  { t:960,  mix:[['seaturtle',0.20],['manta',0.38],['siren',0.54],['shark',0.74],['hermit',0.88],['serpent',1.00]] },
-  { t:1140, mix:[['shark',0.24],['siren',0.44],['manta',0.62],['kelpie',0.80],['seaturtle',0.92],['crab',1.00]] }
+  { t:420,  mix:[['serpent',0.20],['hermit',0.40],['kelpie',0.58],['clam',0.78],['manta',1.00]] },
+  { t:540,  mix:[['hermit',0.20],['kelpie',0.40],['clam',0.58],['manta',0.80],['siren',1.00]] },
+  { t:720,  mix:[['kelpie',0.20],['clam',0.40],['manta',0.62],['siren',0.82],['shark',1.00]] },
+  { t:960,  mix:[['manta',0.22],['siren',0.44],['shark',0.66],['hermit',0.84],['serpent',1.00]] },
+  { t:1140, mix:[['shark',0.26],['siren',0.48],['manta',0.66],['kelpie',0.84],['crab',1.00]] }
 ];
 // ステージ4ボス：ホエール→クラーケン→トルネードシャーク→リヴァイアサン。※2〜4体目は実装まで王墓ボスを仮流用。
 var BOSS_AT4=[[300,'whale',22000],[600,'kraken',150000],[900,'tornadoshark',340000],[1200,'leviathan',560000]];
@@ -2683,7 +2681,7 @@ function figInfo(id){
   if(BOSS[id]){ var B=BOSS[id], tt=ETYPE[B.key]||{}; return {nm:B.nm,shape:tt.shape,col:tt.col,dark:tt.dark,desc:BDEX[id]||'',boss:true}; }
   var t=ETYPE[id]||{}; return {nm:t.nm,shape:t.shape,col:t.col,dark:t.dark,desc:DEX[id]||'',boss:false};
 }
-var VERSION='α1.0.175'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
+var VERSION='α1.0.176'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
 function applySave(o){
   for(var i=0;i<UPG.length;i++) META[UPG[i].id]=0;
   try{
@@ -6578,7 +6576,7 @@ function drawForestShape(s,R,col,dark,t){
   }
 }
 // ステージ4（海）の手続き描画。ctx は敵中心へ translate 済み。頭は左向き（-x）を基本とする。
-var OCEAN={flyingfish:1,sahagin:1,crab:1,seaturtle:1,kelpie:1,shark:1,manta:1,hermit:1,clam:1,serpent:1,jelly:1,siren:1,umibozu:1,whale:1,kraken:1,tornadoshark:1,leviathan:1,sharkmissile:1};
+var OCEAN={flyingfish:1,sahagin:1,crab:1,kelpie:1,shark:1,manta:1,hermit:1,clam:1,serpent:1,jelly:1,siren:1,umibozu:1,whale:1,kraken:1,tornadoshark:1,leviathan:1,sharkmissile:1};
 function drawOceanShape(s,R,col,dark,t){
   ctx.fillStyle=col; ctx.strokeStyle=dark;
   if(s==='flyingfish'){
@@ -6602,16 +6600,6 @@ function drawOceanShape(s,R,col,dark,t){
     ctx.moveTo(R*0.5,R*0.35); ctx.lineTo(R*1.0,R*0.9); ctx.moveTo(R*0.2,R*0.5); ctx.lineTo(R*0.6,R*1.05); ctx.stroke(); ctx.lineWidth=2;
     ctx.fillStyle=col; ctx.beginPath(); ctx.ellipse(0,0,R*1.0,R*0.7,0,0,6.3); ctx.fill(); ctx.stroke();     // 甲羅
     ctx.fillStyle='#0a1a2a'; ctx.beginPath(); ctx.arc(-R*0.3,-R*0.68,R*0.12,0,6.3); ctx.fill(); ctx.beginPath(); ctx.arc(R*0.3,-R*0.68,R*0.12,0,6.3); ctx.fill();
-  }else if(s==='seaturtle'){
-    ctx.fillStyle=dark;                                                                                     // ヒレ
-    ctx.beginPath(); ctx.ellipse(-R*0.85,R*0.35,R*0.42,R*0.22,-0.6,0,6.3); ctx.fill();
-    ctx.beginPath(); ctx.ellipse(R*0.85,R*0.35,R*0.42,R*0.22,0.6,0,6.3); ctx.fill();
-    ctx.fillStyle=col; ctx.beginPath(); ctx.arc(0,-R*0.9,R*0.3,0,6.3); ctx.fill(); ctx.stroke();            // 頭
-    ctx.beginPath(); ctx.ellipse(0,0,R*1.0,R*0.82,0,0,6.3); ctx.fill(); ctx.stroke();                       // 甲羅
-    ctx.strokeStyle=dark; ctx.lineWidth=R*0.08;
-    ctx.beginPath(); ctx.arc(0,0,R*0.48,0,6.3); ctx.stroke();
-    ctx.beginPath(); ctx.moveTo(0,-R*0.82); ctx.lineTo(0,R*0.82); ctx.moveTo(-R*0.82,0); ctx.lineTo(R*0.82,0); ctx.stroke(); ctx.lineWidth=2;
-    ctx.fillStyle='#0a1a2a'; ctx.beginPath(); ctx.arc(0,-R*0.95,R*0.08,0,6.3); ctx.fill();
   }else if(s==='kelpie'){
     ctx.beginPath(); ctx.ellipse(R*0.2,R*0.2,R*0.8,R*0.55,0,0,6.3); ctx.fill(); ctx.stroke();               // 胴
     ctx.beginPath(); ctx.moveTo(-R*0.4,-R*0.1); ctx.quadraticCurveTo(-R*1.15,-R*0.6,-R*1.1,-R*1.05);          // 首＋頭
@@ -8884,6 +8872,9 @@ Array.prototype.forEach.call(document.querySelectorAll('#setview button'),functi
 // 更新履歴：1つのお知らせ内で「バージョン見出し」ごとに変更点を並べる（新しい順）。
 // マージのたびに先頭へ新バージョンを追加し、VERSION も更新する。
 var UPDATES=[
+  {v:'α1.0.176', items:[
+    'ステージ④の「ウミガメ」を削除しました（出現ロスターを調整）。',
+  ]},
   {v:'α1.0.175', items:[
     '新ステージ④「大海原」を正式に追加しました！ ステージ③（古代の王墓）で Lv60 に到達すると解放されます。トビウオの群れ、盾の蟹やヤドカリ、砂から奇襲する貝、毒のクラゲ、光線を放つ海妖セイレーン、そして5体で壁を成す巨大な海坊主など、海の魔物が押し寄せます。ボスはホエール・クラーケン・トルネードシャーク、そして最奥に潜む主「リヴァイアサン」。',
   ]},
