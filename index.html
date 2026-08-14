@@ -1111,6 +1111,19 @@ function sfx(freq,dur,type,vol,slide){
 }
 // コイン獲得の「チャリン♪」：高い2音を続けて鳴らす
 function coinSfx(){ sfx(1318,.07,'square',.09); setTimeout(function(){ sfx(1975,.16,'triangle',.09,1.0); },70); }
+// ベルの「チリーン」：高い澄んだ音＋倍音を重ね、余韻でもう一粒キラッと
+function bellChime(){
+  sfx(2637,.5,'sine',.05,.72);                                   // 本鳴り（E7、ゆっくり下がる）
+  sfx(3951,.42,'sine',.026,.7);                                  // 倍音を重ねてキラッと
+  setTimeout(function(){ sfx(3136,.5,'sine',.03,.72); },70);     // 余韻の一粒
+}
+// 羊の「メーー」：鼻にかかった揺れる声。細かく震えながら少し下がる
+function sheepBleat(){
+  sfx(430,.11,'sawtooth',.06,0.95);
+  setTimeout(function(){ sfx(400,.11,'sawtooth',.06,1.06); },95);
+  setTimeout(function(){ sfx(412,.11,'sawtooth',.055,0.9); },190);
+  setTimeout(function(){ sfx(378,.18,'sawtooth',.05,0.85); },285);
+}
 function noise(dur,vol){
   var a=audio(); if(!a) return;
   var n=a.sampleRate*dur, b=a.createBuffer(1,n,a.sampleRate), d=b.getChannelData(0);
@@ -3769,8 +3782,7 @@ function doBell(){
   var n=1+CNT('bell'), mx=155*AREA('bell'), dmg=7*DMG('bell')*pw('bell');
   for(var i=0;i<n;i++)
     bells.push({ x:P.x, y:P.y, r:0, pr:0, max:mx, dmg:dmg, t:-i*0.18, hit:[] });
-  sfx(1568,.32,'sine',.055,.42);
-  setTimeout(function(){ sfx(2093,.22,'sine',.03,.5); },40);
+  bellChime();   // チリーン
   // 羊飼い：鳴らすたび画面端から羊の群れが突進する（発生率＝土台5%＋レベル×0.15%）
   if(CH().grow&&CH().grow.k==='sheep'){                       // 羊飼い限定（他のベル使いには出ない）
     var sc=0.05+GROW('sheep');
@@ -3828,7 +3840,7 @@ function sheepStampede(count, dmg){
       dirx:vx, diry:vy, sp:sp*(0.9+Math.random()*0.2),
       r:15, dmg:dmg, life:2*SWR/sp+1.2, hop:Math.random()*6.283, hit:[] });
   }
-  sfx(680,.18,'triangle',.03,1.6);
+  sheepBleat();   // メーー
 }
 function moveSheep(dt){
   if(!sheep.length) return;
