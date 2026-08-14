@@ -1545,16 +1545,23 @@ var STAGES={
       ground:{ bg:'#0e1f14', grid:'rgba(70,120,74,.26)',  dot:'rgba(120,180,120,.15)' } },
   3:{ nm:'古代の王墓', sub:'20:00・アンデッド・高難度', icon:'⚰️', flavor:'死者の眠る古の王墓。地から這い出る屍、強化する術者、盾を構える不死の兵。最奥に竜の亡骸が待つ。',
       wave:WAVE3, bossAt:BOSS_AT3, hpMul:1.0, req:2, swarm:1, swarmStart:300, swarmK:'fly',
-      ground:{ bg:'#1c1710', grid:'rgba(150,120,70,.24)', dot:'rgba(200,170,110,.13)' } }
+      ground:{ bg:'#1c1710', grid:'rgba(150,120,70,.24)', dot:'rgba(200,170,110,.13)' } },
+  // ステージ4「海」：開発中。dev:1 のため ?dev=1 のときだけ選択可（一般公開はまだ）。
+  // ※ wave/bossAt は海の魔物・ボスを実装するまで既存ロスターを仮流用（見た目確認用のプレースホルダ）。
+  4:{ nm:'大海原', sub:'開発中・海', icon:'🌊', flavor:'（開発中）深く青い大海原。海の魔物たちはまだ調整中。', dev:1,
+      wave:WAVE3, bossAt:BOSS_AT3, hpMul:1.0, req:3, swarm:1, swarmStart:360,
+      ground:{ bg:'#08131f', grid:'rgba(60,130,150,.26)', dot:'rgba(90,180,200,.14)' } }
 };
 var ALLSTG=0;   // 1で全ステージ解放（開発用）。製品は 0
+// 開発モード：URLに ?dev=1 が付いている時だけ true。未公開ステージ（dev:1）のテスト用。
+var DEV=false; try{ DEV=/[?&]dev=1\b/.test((typeof location!=='undefined'&&location.search)||''); }catch(e){}
 var curStage=1, bossHpMul=1, curGround=STAGES[1].ground;
 var STGCLEAR={};
 var STGBEST={};   // ステージ別の最高スコア
 var STGWAVE={};   // ステージ別の到達ウェーブ最高
 var STGLV={};     // ステージ別の到達最高レベル（次ステージ解放条件に使う）
 // ステージ解放条件：指定ステージで指定レベルに到達すると次が解放（②＝①でLv20 / ③＝②でLv40）
-var STGREQ={ 2:{stg:1,lv:20}, 3:{stg:2,lv:40} };
+var STGREQ={ 2:{stg:1,lv:20}, 3:{stg:2,lv:40}, 4:{stg:3,lv:40} };
 var WLIMIT=6;     // ラン前設定：装備できる武器の最大数（1〜6）。1にすると単一武器の縛りプレイ。
 var W1CLEAR={};   // 武器1つ（単一武器）でクリアしたステージ {stage:1}（実績用）
 // 無限ラン：5分ごとに舞台（＝ステージのロスター）が循環し、ボスも出る。死亡のみで終了・コンティニュー無し。
@@ -2607,7 +2614,7 @@ function figInfo(id){
   if(BOSS[id]){ var B=BOSS[id], tt=ETYPE[B.key]||{}; return {nm:B.nm,shape:tt.shape,col:tt.col,dark:tt.dark,desc:BDEX[id]||'',boss:true}; }
   var t=ETYPE[id]||{}; return {nm:t.nm,shape:t.shape,col:t.col,dark:t.dark,desc:DEX[id]||'',boss:false};
 }
-var VERSION='α1.0.163'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
+var VERSION='α1.0.164'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
 function applySave(o){
   for(var i=0;i<UPG.length;i++) META[UPG[i].id]=0;
   try{
@@ -7294,6 +7301,7 @@ document.getElementById('respecbtn').onclick=function(){
 };
 function stageUnlocked(n){
   if(!STAGES[n]) return false;
+  if(STAGES[n].dev) return !!DEV;   // 開発中ステージは ?dev=1 のときだけ解放（そのときは無条件で遊べる）
   if(ALLSTG) return true;
   var r=STGREQ[n]; if(!r) return true;                 // 条件のないステージ（①）は常に解放
   return (STGLV[r.stg]||0)>=r.lv;                       // 指定ステージで指定レベル到達
@@ -8188,6 +8196,7 @@ function renderStageSelect(){
   var ns=Object.keys(STAGES).map(Number).sort(function(a,b){return a-b;}), h='';
   for(var i=0;i<ns.length;i++){
     var n=ns[i], st=STAGES[n], un=stageUnlocked(n), cl=STGCLEAR[n];
+    if(st.dev&&!DEV) continue;   // 開発中ステージは通常の一覧に出さない（?dev=1 のときだけ表示）
     if(!un){
       h+='<button class="stbtn lock" data-stg="'+n+'" disabled><b>🔒 '+st.nm+'</b><span>'+stageReqTx(n)+' '+stageReqNow(n)+'</span></button>';
       continue;
@@ -8280,6 +8289,9 @@ Array.prototype.forEach.call(document.querySelectorAll('#setview button'),functi
 // 更新履歴：1つのお知らせ内で「バージョン見出し」ごとに変更点を並べる（新しい順）。
 // マージのたびに先頭へ新バージョンを追加し、VERSION も更新する。
 var UPDATES=[
+  {v:'α1.0.164', items:[
+    '次の新ステージに向けた内部準備を行いました（通常のプレイ内容に変更はありません）。',
+  ]},
   {v:'α1.0.163', items:[
     'リザルトの与ダメージ内訳で、羊飼いの「羊」の与ダメージをベルとは別枠（🐑 羊）で集計・表示するようにしました。',
   ]},
