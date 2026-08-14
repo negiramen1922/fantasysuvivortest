@@ -1402,7 +1402,8 @@ var ETYPE={
   deer:    { nm:'神鹿',   res:0.9, hp:100, spd:60, r:20, col:'#c8b48a', dark:'#5a4a2c', xp:1, dmg:10, shape:'deer',   pts:10, sv:0 },
   moth:    { nm:'蛾',     res:0.9, hp:100, spd:44, r:20, col:'#8a6ab0', dark:'#3a2a50', xp:1, dmg:10, shape:'moth',   pts:10, sv:0 },
   arachne: { nm:'蜘蛛女王', res:0.9, hp:100, spd:58, r:20, col:'#7a3a7a', dark:'#2a1030', xp:1, dmg:10, shape:'spider', pts:10, sv:0 },
-  wtreant: { nm:'古樹',   res:0.9, hp:100, spd:34, r:20, col:'#6e5636', dark:'#332512', xp:1, dmg:10, shape:'treant', pts:10, sv:0 }
+  wtreant: { nm:'古樹',   res:0.9, hp:100, spd:34, r:20, col:'#6e5636', dark:'#332512', xp:1, dmg:10, shape:'treant', pts:10, sv:0 },
+  whale:   { nm:'ホエール', res:0.9, hp:100, spd:40, r:52, col:'#3a5a8a', dark:'#16283f', xp:1, dmg:10, shape:'whale',  pts:10, sv:0 }
 };
 // 図鑑：説明文と、図鑑に載せる敵の並び順
 var DEX={
@@ -1480,7 +1481,8 @@ var MTAG={
   greatboar:['ビースト'], fenrir:['ビースト'],
   goblinking:['亜人'],
   kervi:['精霊','ビースト'], gmoth:['昆虫','飛行'], arachnid:['昆虫'], eldertreant:['植物'],
-  gravekeeper:['アンデッド'], skeletonking:['アンデッド'], hecaton:['巨人','アンデッド'], skeledragon:['竜','アンデッド']
+  gravekeeper:['アンデッド'], skeletonking:['アンデッド'], hecaton:['巨人','アンデッド'], skeledragon:['竜','アンデッド'],
+  whale:['ビースト']
 };
 
 // ステージ1のボス。5分ごとに1体、30分のフェンリルがラストボス。
@@ -1510,7 +1512,10 @@ var BOSS={
   hecaton:    { nm:'ヘカトンケイル',   res:0.95, key:'mummy',    hp:270000, r:54, spd:44, dmg:48, xp:2000, pts:40000,
                ai:'hecaton', acd:2.8, nbul:24, bspd:230, bdmg:18 },
   skeledragon:{ nm:'スケルトンドラゴン', res:0.96, key:'gargoyle', hp:450000, r:56, spd:100, dmg:54, xp:2600, pts:70000,
-               ai:'sdragon', acd:2.6, chspd:600, chdur:1.0, wind:0.8, nbul:22, bspd:220, bdmg:18, last:1 }
+               ai:'sdragon', acd:2.6, chspd:600, chdur:1.0, wind:0.8, nbul:22, bspd:220, bdmg:18, last:1 },
+  // ===== ステージ4（海）ボス ※順次実装 =====
+  whale:      { nm:'ホエール',         res:0.94, key:'whale',   hp:70000,  r:52, spd:40, dmg:44, xp:1500, pts:22000,
+               ai:'whale', acd:2.8, nbul:26, bspd:200, bdmg:16 }
 };
 // 各要素 [出現時間s, ボスkey, 討伐スコア閾値]。時間 or スコアの早い方で出現（ぐだり防止）。スコア閾値はステージごとに調整。
 var BOSS_AT=[[300,'greatboar',16000],[600,'slimeking',90000],[900,'goblinking',220000],[1200,'fenrir',420000]];
@@ -1582,6 +1587,8 @@ var WAVE4=[
   { t:960,  mix:[['seaturtle',0.20],['manta',0.38],['siren',0.54],['shark',0.74],['hermit',0.88],['serpent',1.00]] },
   { t:1140, mix:[['shark',0.24],['siren',0.44],['manta',0.62],['kelpie',0.80],['seaturtle',0.92],['crab',1.00]] }
 ];
+// ステージ4ボス：ホエール→クラーケン→トルネードシャーク→リヴァイアサン。※2〜4体目は実装まで王墓ボスを仮流用。
+var BOSS_AT4=[[300,'whale',22000],[600,'skeletonking',130000],[900,'hecaton',340000],[1200,'skeledragon',550000]];
 
 // ステージ定義。req をクリア済みで次ステージが解放される。
 var STAGES={
@@ -1597,7 +1604,7 @@ var STAGES={
   // ステージ4「海」：開発中。dev:1 のため ?dev=1 のときだけ選択可（一般公開はまだ）。
   // ※ wave/bossAt は海の魔物・ボスを実装するまで既存ロスターを仮流用（見た目確認用のプレースホルダ）。
   4:{ nm:'大海原', sub:'開発中・海', icon:'🌊', flavor:'（開発中）深く青い大海原。海の魔物が押し寄せる。ボスは実装中。', dev:1,
-      wave:WAVE4, bossAt:BOSS_AT3, hpMul:1.0, req:3, swarm:1, swarmStart:300, swarmK:'flyingfish', umibozu:1, umibozuStart:960,
+      wave:WAVE4, bossAt:BOSS_AT4, hpMul:1.0, req:3, swarm:1, swarmStart:300, swarmK:'flyingfish', umibozu:1, umibozuStart:960,
       ground:{ bg:'#08131f', grid:'rgba(60,130,150,.26)', dot:'rgba(90,180,200,.14)' } }
 };
 var ALLSTG=0;   // 1で全ステージ解放（開発用）。製品は 0
@@ -2653,16 +2660,17 @@ var BDEX={
   gravekeeper:'十字の墓を抱えた人形のアンデッド。墓を投げ、突き立てて全方位弾幕を放つ。',
   skeletonking:'骨の王。全方位の骨弾を撒き、配下を召喚し、剣を担いで突進する。',
   hecaton:'百手の巨人。無数の拳を落とし、着弾点から弾幕を撒く。',
-  skeledragon:'王墓の主たる竜の亡骸。滞空突進と弾幕、そして極太のブレスを放つ。'
+  skeledragon:'王墓の主たる竜の亡骸。滞空突進と弾幕、そして極太のブレスを放つ。',
+  whale:'大海原の巨鯨。跳ねて波紋のような円形弾幕を撒き、青い潮吹きビームを薙ぎ放つ。'
 };
 var BOSSDEX=['greatboar','slimeking','goblinking','fenrir','kervi','gmoth','arachnid','eldertreant',
-  'gravekeeper','skeletonking','hecaton','skeledragon'];
+  'gravekeeper','skeletonking','hecaton','skeledragon','whale'];
 // 図鑑エントリの見た目・名前・説明を種別問わず返す
 function figInfo(id){
   if(BOSS[id]){ var B=BOSS[id], tt=ETYPE[B.key]||{}; return {nm:B.nm,shape:tt.shape,col:tt.col,dark:tt.dark,desc:BDEX[id]||'',boss:true}; }
   var t=ETYPE[id]||{}; return {nm:t.nm,shape:t.shape,col:t.col,dark:t.dark,desc:DEX[id]||'',boss:false};
 }
-var VERSION='α1.0.167'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
+var VERSION='α1.0.168'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
 function applySave(o){
   for(var i=0;i<UPG.length;i++) META[UPG[i].id]=0;
   try{
@@ -4937,6 +4945,39 @@ function moveEnemies(dt){
         trails.push({x:e.x,y:e.y,r:e.r*0.9,life:3,t:0,dmg:e.dmg*0.4});
         if(trails.length>90) trails.shift(); }
     }
+    else if(e.ai==='whale'){
+      // ホエール：跳ねて波紋のような円形弾幕（小/大を交互）→ 直後に予告線→青い潮吹きビーム（追尾・太さはドラゴン同等）
+      if(e.st!=='hop') e.hopY=0;
+      if(e.st==='hop'){
+        moved=1; e.stT-=dt;
+        e.hopT=(e.hopT||0)-dt;
+        e.hopY=Math.abs(Math.sin((0.55-Math.max(0,e.hopT))/0.55*Math.PI))*28;   // ぴょんぴょん跳ねる見た目
+        if(e.hopT<=0){ e.hopT=0.55; e.hc=(e.hc||0)+1;
+          var big=(e.hc%2===0), n=big?e.nbul:Math.floor(e.nbul*0.6), sp=big?e.bspd*1.2:e.bspd*0.8;
+          for(var wb=0;wb<n;wb++) eshoot(e, wb/n*6.283+e.hc*0.15, sp, e.bdmg, big?11:6);   // 波紋（円形弾幕）
+          fx.push({k:'ring',x:e.x,y:e.y,r:0,to:big?160:96,t:0,life:.4,col:'#8fd0ff'});
+          shake=Math.min(16,shake+(big?5:3)); sfx(big?150:260,.1,'sine',.05,.5);
+          if(e.hc>=4){ e.st='beamwind'; e.stT=1.1; e.hopY=0; e.beamA=Math.atan2(dy,dx); }
+        }
+      }
+      else if(e.st==='beamwind'){ moved=1; e.stT-=dt;                              // 潮吹きビームの予告線
+        if(e.stT<=0){ e.st='beam'; e.stT=1.8; shake=Math.min(24,shake+12); sfx(80,.5,'sawtooth',.1,.4); noise(.5,.12); }
+      }
+      else if(e.st==='beam'){ moved=1; e.stT-=dt;                                  // 青い潮吹きビーム（追尾・極太）
+        var bwant=Math.atan2(P.y-e.y,P.x-e.x);
+        var bda=Math.atan2(Math.sin(bwant-e.beamA),Math.cos(bwant-e.beamA));
+        var bturn=0.45*dt; e.beamA+=Math.max(-bturn,Math.min(bturn,bda));          // 追尾速度はドラゴンと同等
+        var brel=Math.atan2(P.y-e.y,P.x-e.x)-e.beamA; brel=Math.atan2(Math.sin(brel),Math.cos(brel));
+        var balong=d*Math.cos(brel), bperp=Math.abs(d*Math.sin(brel));
+        if(!P.god&&P.hurt<=0&&P.inv<=0&&balong>-e.r&&balong<1700&&bperp<100){       // 太さもドラゴンと同等（±100）
+          P.hp-=e.dmg*(1-0.04*M('armor'))*(1-0.03*(P.p.bulwark||0))*dexTakeMul(figKey(e))*2.0*dt;
+          shake=Math.min(20,shake+2);
+          if(P.hp<=0){ P.hp=0; setKiller(e); die(); return; }
+        }
+        if(e.stT<=0){ e.st=''; e.at=e.acd; }
+      }
+      else if(e.at<=0&&d<900){ e.st='hop'; e.stT=3.0; e.hc=0; e.hopT=0.2; sfx(200,.12,'sine',.05,.6); }
+    }
     else if(e.ai==='burrow'){
       // グール：地面から出現。予告(ぼこぼこ)中は動かず・無害、時間経過で出現して以後は追尾。
       if(e.st==='burrow'){ e.stT-=dt; moved=1;
@@ -6370,7 +6411,7 @@ function drawForestShape(s,R,col,dark,t){
   }
 }
 // ステージ4（海）の手続き描画。ctx は敵中心へ translate 済み。頭は左向き（-x）を基本とする。
-var OCEAN={flyingfish:1,sahagin:1,crab:1,seaturtle:1,kelpie:1,shark:1,manta:1,hermit:1,clam:1,serpent:1,jelly:1,siren:1,umibozu:1};
+var OCEAN={flyingfish:1,sahagin:1,crab:1,seaturtle:1,kelpie:1,shark:1,manta:1,hermit:1,clam:1,serpent:1,jelly:1,siren:1,umibozu:1,whale:1};
 function drawOceanShape(s,R,col,dark,t){
   ctx.fillStyle=col; ctx.strokeStyle=dark;
   if(s==='flyingfish'){
@@ -6480,6 +6521,13 @@ function drawOceanShape(s,R,col,dark,t){
     ctx.fillStyle='#ffe24a'; ctx.beginPath(); ctx.arc(-R*0.32,-R*0.15,R*0.15,0,6.3); ctx.fill(); ctx.beginPath(); ctx.arc(R*0.32,-R*0.15,R*0.15,0,6.3); ctx.fill();  // 光る目
     ctx.fillStyle='#1a0000'; ctx.beginPath(); ctx.arc(-R*0.32,-R*0.12,R*0.06,0,6.3); ctx.fill(); ctx.beginPath(); ctx.arc(R*0.32,-R*0.12,R*0.06,0,6.3); ctx.fill();
     ctx.strokeStyle='#ffe24a'; ctx.lineWidth=R*0.06; ctx.beginPath(); ctx.arc(0,R*0.22,R*0.36,0.2,Math.PI-0.2); ctx.stroke(); ctx.lineWidth=2;  // 口
+  }else if(s==='whale'){
+    ctx.fillStyle=col; ctx.beginPath(); ctx.ellipse(0,0,R*1.1,R*0.7,0,0,6.3); ctx.fill(); ctx.stroke();   // 体
+    ctx.beginPath(); ctx.moveTo(R*0.95,0); ctx.lineTo(R*1.5,-R*0.5); ctx.lineTo(R*1.35,0); ctx.lineTo(R*1.5,R*0.5); ctx.closePath(); ctx.fill(); ctx.stroke();  // 尾
+    ctx.fillStyle='#cfe4f5'; ctx.beginPath(); ctx.ellipse(-R*0.1,R*0.38,R*0.8,R*0.28,0,0,6.3); ctx.fill();  // 腹
+    ctx.fillStyle='#0a1a2a'; ctx.beginPath(); ctx.arc(-R*0.72,-R*0.08,R*0.1,0,6.3); ctx.fill();             // 目
+    ctx.strokeStyle='#16283f'; ctx.lineWidth=R*0.05; ctx.beginPath(); ctx.moveTo(-R*1.05,R*0.05); ctx.lineTo(-R*0.35,R*0.22); ctx.stroke();  // 口
+    ctx.strokeStyle='#8fd0ff'; ctx.lineWidth=R*0.08; ctx.beginPath(); ctx.moveTo(-R*0.2,-R*0.66); ctx.lineTo(-R*0.2,-R*0.98); ctx.stroke(); ctx.lineWidth=2;  // 潮吹き穴
   }
 }
 // ステージ1の手続き描画（刷新）。ctx は敵中心へ translate 済み。
@@ -6684,6 +6732,7 @@ function drawEnemy(e){
   var sprN=enemySpr(e);                                  // 画像があればそれを使う
   ctx.fillStyle='rgba(0,0,0,.3)';
   ctx.beginPath(); ctx.ellipse(0,e.r*0.85,e.r*0.85*(1-slAir*0.3),e.r*0.32*(1-slAir*0.3),0,0,6.3); ctx.fill();
+  if(e.hopY) ctx.translate(0,-e.hopY);   // ホエールの跳ね（影は地面、本体だけ持ち上げる）
   // エフェクトに埋もれないよう、まず暗い縁で敵の形を抜く（手続き描画のときだけ。スプライトは自前で輪郭を持つ）
   if(!sprN){
     ctx.globalAlpha=.85; ctx.fillStyle='#0a0714';
@@ -6863,6 +6912,21 @@ function drawTele(e){
     ctx.beginPath(); ctx.arc(0,0,R+7,0,6.3); ctx.stroke(); ctx.globalAlpha=1;
   }
   // スケルトンドラゴン：根本から極太の直線ブレス（予告＝細い赤線／発射＝極太ビーム）
+  // ホエールの潮吹きビーム：予告線（beamwind）→ 照射（beam）※青
+  if(e.ai==='whale'&&(e.st==='beamwind'||e.st==='beam')){
+    var wbL=1700, wba=e.beamA||0;
+    ctx.save(); ctx.rotate(wba);
+    if(e.st==='beamwind'){
+      ctx.globalAlpha=0.20+0.14*Math.sin(time*26); ctx.fillStyle='#3a7aff'; ctx.fillRect(0,-117,wbL,234);
+      ctx.globalAlpha=0.7; ctx.strokeStyle='#bfe0ff'; ctx.lineWidth=2; ctx.beginPath(); ctx.moveTo(0,0); ctx.lineTo(wbL,0); ctx.stroke(); ctx.globalAlpha=1;
+    }else{
+      ctx.globalAlpha=0.55; ctx.fillStyle='#2f8aff'; ctx.fillRect(0,-117,wbL,234);
+      ctx.globalAlpha=0.9;  ctx.fillStyle='#7ac0ff'; ctx.fillRect(0,-78,wbL,156);
+      ctx.globalAlpha=0.98; ctx.fillStyle='#dff2ff'; ctx.fillRect(0,-45,wbL,90);
+      ctx.globalAlpha=1;
+    }
+    ctx.restore();
+  }
   if(e.ai==='sdragon'&&(e.st==='beamwind'||e.st==='beam')){
     var bL=1700, ba2=e.beamA||0;
     ctx.save(); ctx.rotate(ba2);
@@ -8555,7 +8619,7 @@ Array.prototype.forEach.call(document.querySelectorAll('#setview button'),functi
 // 更新履歴：1つのお知らせ内で「バージョン見出し」ごとに変更点を並べる（新しい順）。
 // マージのたびに先頭へ新バージョンを追加し、VERSION も更新する。
 var UPDATES=[
-  {v:'α1.0.167', items:[
+  {v:'α1.0.168', items:[
     '次の新ステージに向けた内部準備を進めています（通常のプレイ内容に変更はありません）。',
   ]},
   {v:'α1.0.163', items:[
