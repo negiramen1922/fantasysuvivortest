@@ -10,6 +10,9 @@
 - リザルト画面と設定画面に `VERSION` を表示。
 - お知らせ（`UPDATES` 配列）は**1枠内でバージョン見出しごとに変更点を掲載**（新しい順）。マージ時は `UPDATES` 先頭に新バージョンを追加し `VERSION` を一致させる。
 
+## ver.α1.0.145
+- 描画のカメラ座標 `camx/camy` を `Math.round()` で整数ピクセルに丸めた（`render`）。画面全体をピクセルグリッドに載せることで、揺れ(`shake*SHK`)有効時の全描画要素のサブピクセル・アンチエイリアスを削減し、描画負荷を軽減＆映像をくっきり化。揺れ強度設定（なし/弱/標準/強＝`SHK`）は据え置き。HUD等の画面座標描画は `ctx.restore()` 後なので影響なし。
+
 ## ver.α1.0.144
 - 既存武器キャラを3体追加。`cryo`(氷術師/ice, ele:0.12, spd:0.95, grow icep, cond stage2)、`thundr`(雷鳴使い/thunder, crit:0.08, grow thunp, cond stage3)、`gunner`(銃士/musket, crit:0.10, spd:1.05, hp:0.85, grow rof, cond kills7000)。
 - 属性別・攻速の固有成長を配線。`pw()`: `GROW('icep')`/`GROW('thunp')` をそれぞれ `ELW.ice`/`ELW.thunder` の武器に乗算（聖女の `light` と同パターン）。`cdr()`: `*(1-GROW('rof'))` を追加（銃士のレベルアップで全体クールダウン短縮）。

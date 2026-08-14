@@ -2544,7 +2544,7 @@ function figInfo(id){
   if(BOSS[id]){ var B=BOSS[id], tt=ETYPE[B.key]||{}; return {nm:B.nm,shape:tt.shape,col:tt.col,dark:tt.dark,desc:BDEX[id]||'',boss:true}; }
   var t=ETYPE[id]||{}; return {nm:t.nm,shape:t.shape,col:t.col,dark:t.dark,desc:DEX[id]||'',boss:false};
 }
-var VERSION='α1.0.144'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
+var VERSION='α1.0.145'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
 function applySave(o){
   for(var i=0;i<UPG.length;i++) META[UPG[i].id]=0;
   try{
@@ -5529,7 +5529,7 @@ function render(){
   var sx=(Math.random()-.5)*sh, sy=(Math.random()-.5)*sh;
   ctx.save();
   if(VZOOM!==1){ ctx.translate(W/2,H/2); ctx.scale(VZOOM,VZOOM); ctx.translate(-W/2,-H/2); }   // 視野：自機中心にズームアウト
-  var camx=P.x-W/2-sx, camy=P.y-H/2-sy;
+  var camx=Math.round(P.x-W/2-sx), camy=Math.round(P.y-H/2-sy);   // 整数に丸めてサブピクセル描画を避ける（軽量化＋くっきり）
   ctx.translate(-camx,-camy);
 
   drawGround(camx,camy);
@@ -8006,6 +8006,9 @@ Array.prototype.forEach.call(document.querySelectorAll('#setview button'),functi
 // 更新履歴：1つのお知らせ内で「バージョン見出し」ごとに変更点を並べる（新しい順）。
 // マージのたびに先頭へ新バージョンを追加し、VERSION も更新する。
 var UPDATES=[
+  {v:'α1.0.145', items:[
+    'カメラの描画位置を整数ピクセルに丸めて軽量化しました。画面の揺れ演出時にサブピクセル描画が減り、動作が軽く・映像がくっきりします（揺れの強さ設定「なし〜強」は従来どおり）。',
+  ]},
   {v:'α1.0.144', items:[
     '既存武器を使う新キャラを3体追加しました。氷術師（アイスジャベリン／元素付与+12%・移動-5%・毎Lv氷武器+1%／解放:ステージ2クリア）、雷鳴使い（ドラゴンボルト／会心+8%・HP-10%・毎Lv雷武器+1%／解放:ステージ3クリア）、銃士（マスケット／会心+10%・移動+5%・HP-15%・毎Lv攻撃間隔-0.5%／解放:累計7,000討伐）。※立ち絵は後日追加予定です。',
   ]},
