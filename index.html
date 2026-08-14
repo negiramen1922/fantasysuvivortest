@@ -1451,7 +1451,7 @@ var BOSS={
                ai:'sdragon', acd:2.6, chspd:600, chdur:1.0, wind:0.8, nbul:22, bspd:220, bdmg:18, last:1 }
 };
 // 各要素 [出現時間s, ボスkey, 討伐スコア閾値]。時間 or スコアの早い方で出現（ぐだり防止）。スコア閾値はステージごとに調整。
-var BOSS_AT=[[300,'greatboar',16000],[600,'slimeking',44000],[900,'goblinking',84000],[1200,'fenrir',140000]];
+var BOSS_AT=[[300,'greatboar',16000],[600,'slimeking',44000],[900,'goblinking',120000],[1200,'fenrir',220000]];
 
 // ステージ1の出現構成
 var WAVE=[
@@ -1485,7 +1485,7 @@ var WAVE2=[
   { t:1080, mix:[['dryad',0.20],['spider',0.42],['mantis',0.62],['beetle',0.84],['treant',1.00]] }  // 18:00 終盤混成
 ];
 // ステージ2のボス（HPは hpMul 倍で出す）。締めは森の主フェンリル。
-var BOSS_AT2=[[300,'kervi',20000],[600,'gmoth',54000],[900,'arachnid',104000],[1200,'eldertreant',172000]];
+var BOSS_AT2=[[300,'kervi',20000],[600,'gmoth',54000],[900,'arachnid',146000],[1200,'eldertreant',240000]];
 
 // ステージ3（古代の王墓）の出現構成。弱い敵→強い敵を段階投入。フライはスウォーム専用。
 var WAVE3=[
@@ -1504,7 +1504,7 @@ var WAVE3=[
   { t:1110, mix:[['shadow',0.16],['mummy',0.31],['dullahan',0.40],['necro',0.58],['gargoyle',0.78],['boomer',1.00]] }  // 18:30 終盤混成
 ];
 // ステージ3のボス。締めはスケルトンドラゴン。
-var BOSS_AT3=[[300,'gravekeeper',26000],[600,'skeletonking',68000],[900,'hecaton',128000],[1200,'skeledragon',210000]];
+var BOSS_AT3=[[300,'gravekeeper',26000],[600,'skeletonking',68000],[900,'hecaton',180000],[1200,'skeledragon',290000]];
 
 // ステージ定義。req をクリア済みで次ステージが解放される。
 var STAGES={
@@ -2563,7 +2563,7 @@ function figInfo(id){
   if(BOSS[id]){ var B=BOSS[id], tt=ETYPE[B.key]||{}; return {nm:B.nm,shape:tt.shape,col:tt.col,dark:tt.dark,desc:BDEX[id]||'',boss:true}; }
   var t=ETYPE[id]||{}; return {nm:t.nm,shape:t.shape,col:t.col,dark:t.dark,desc:DEX[id]||'',boss:false};
 }
-var VERSION='α1.0.152'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
+var VERSION='α1.0.153'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
 function applySave(o){
   for(var i=0;i<UPG.length;i++) META[UPG[i].id]=0;
   try{
@@ -8050,6 +8050,9 @@ Array.prototype.forEach.call(document.querySelectorAll('#setview button'),functi
 // 更新履歴：1つのお知らせ内で「バージョン見出し」ごとに変更点を並べる（新しい順）。
 // マージのたびに先頭へ新バージョンを追加し、VERSION も更新する。
 var UPDATES=[
+  {v:'α1.0.153', items:[
+    'ボスの討伐スコア出現の閾値を調整。3体目・4体目のスコア閾値を約1.4倍に引き上げ、火力の低い“広く浅い”ビルドでも最難関ボスが早く来すぎないようにしました（1体目・2体目は据え置き）。',
+  ]},
   {v:'α1.0.152', items:[
     'ボスの出現条件に「討伐スコア」を追加しました。これまでの時間（5:00/10:00/15:00/20:00）に加えて、討伐スコアが一定に達しても出現します（早い方を採用）。速く沢山倒す強い立ち回りでは、待たずにボスが出て試合がぐだりません。スコア閾値はステージごとに設定（後半ほど高め）。前のボスが健在の間は次は出ません。',
   ]},
