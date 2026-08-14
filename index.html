@@ -1383,7 +1383,7 @@ var ETYPE={
   boomer:   { nm:'ブーマー',             res:0.10, hp:300, spd:60,  r:19, col:'#8a9a5a', dark:'#3a4520', xp:6, dmg:14, shape:'boomer',   pts:56, sv:0.15, boom:1, boomR:110, boomDmg:40, puddle:1, cap:3 },
   // ===== ステージ4（海）モンスター =====
   flyingfish:{ nm:'トビウオ',   res:0.00, hp:26,  spd:220, r:9,  col:'#8fd4ff', dark:'#2a5a7a', xp:1, dmg:9,  shape:'flyingfish', pts:6,  sv:0.03, ai:'dash' },
-  sahagin:  { nm:'サハギン',     res:0.12, hp:120, spd:72,  r:14, col:'#5aa0a0', dark:'#1f4a4a', xp:3, dmg:16, shape:'sahagin',   pts:34, sv:0.10, ai:'shoot', range:330, acd:3.2, bspd:230, bdmg:15 },
+  sahagin:  { nm:'サハギン',     res:0.12, hp:120, spd:78,  r:14, col:'#5aa0a0', dark:'#1f4a4a', xp:3, dmg:16, shape:'sahagin',   pts:34, sv:0.10 },
   crab:     { nm:'カニ',         res:0.25, hp:150, spd:66,  r:16, col:'#e07a4a', dark:'#5a281a', xp:4, dmg:20, shape:'crab',      pts:46, sv:0.12, shield:170 },
   seaturtle:{ nm:'ウミガメ',     res:0.55, hp:320, spd:38,  r:19, col:'#5a9a6a', dark:'#1f4530', xp:6, dmg:20, shape:'seaturtle', pts:64, sv:0.15, flat:5 },
   kelpie:   { nm:'ケルピー',     res:0.18, hp:150, spd:150, r:15, col:'#7ab0d8', dark:'#2a4a63', xp:4, dmg:20, shape:'kelpie',    pts:46, sv:0.12, ai:'charge', range:300, acd:2.8, chspd:540, wind:0.5, chdur:1.0 },
@@ -1447,7 +1447,7 @@ var DEX={
   dullahan:'首なしの騎士。長い助走から予告つきで突進する。',
   boomer:'肥大した屍食鬼。近づくと自爆し、倒すと毒の沼を残す。',
   flyingfish:'群れで飛び跳ねるトビウオ。まっすぐ突進して画面外へ抜ける・群れで出現。',
-  sahagin:'半魚人の戦士。距離を取って銛を投げてくる。',
+  sahagin:'半魚人の戦士。銛を手に、まっすぐ間合いを詰めてくる近接兵。',
   crab:'大きなハサミを盾にする蟹。ハサミを割らないと本体に届かない。',
   seaturtle:'分厚い甲羅の海亀。遅いが頑丈で、軽い攻撃は通らない。',
   kelpie:'水面を駆ける魔馬。高速で一気に距離を詰めてくる。',
@@ -2682,7 +2682,7 @@ function figInfo(id){
   if(BOSS[id]){ var B=BOSS[id], tt=ETYPE[B.key]||{}; return {nm:B.nm,shape:tt.shape,col:tt.col,dark:tt.dark,desc:BDEX[id]||'',boss:true}; }
   var t=ETYPE[id]||{}; return {nm:t.nm,shape:t.shape,col:t.col,dark:t.dark,desc:DEX[id]||'',boss:false};
 }
-var VERSION='α1.0.171'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
+var VERSION='α1.0.172'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
 function applySave(o){
   for(var i=0;i<UPG.length;i++) META[UPG[i].id]=0;
   try{
@@ -8861,7 +8861,7 @@ Array.prototype.forEach.call(document.querySelectorAll('#setview button'),functi
 // 更新履歴：1つのお知らせ内で「バージョン見出し」ごとに変更点を並べる（新しい順）。
 // マージのたびに先頭へ新バージョンを追加し、VERSION も更新する。
 var UPDATES=[
-  {v:'α1.0.171', items:[
+  {v:'α1.0.172', items:[
     '次の新ステージに向けた内部準備を進めています（通常のプレイ内容に変更はありません）。',
   ]},
   {v:'α1.0.163', items:[
