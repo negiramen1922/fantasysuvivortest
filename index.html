@@ -2355,7 +2355,7 @@ var CHARS={
   shepd:{  nm:'羊飼い', glyph:'\u{1F411}', w:'bell',
     tx:'鈴で群れを呼ぶ者。ベルを鳴らすたび、まれに羊の群れが画面の外から駆け抜けて敵を踏み荒らす。',
     st:'攻撃力 −10%',
-    grow:{k:'sheep', v:0.0015, tx:'毎レベル 羊の群れ出現率 +0.15%（数＝ベル×14／威力＝ベル×0.7）'},
+    grow:{k:'sheep', v:0.0015, tx:'毎レベル 羊の群れ出現率 +0.15%（土台5%／数＝ベル×14／威力＝ベル×0.7）'},
     hp:1.00, spd:1.00, pw:0.90, area:1.00, ele:0, elp:0, crit:0, regen:0,
     cost:10, cond:'stage',  val:2,     condTx:'ステージ2（森）をクリアする' }
 };
@@ -3771,9 +3771,11 @@ function doBell(){
     bells.push({ x:P.x, y:P.y, r:0, pr:0, max:mx, dmg:dmg, t:-i*0.18, hit:[] });
   sfx(1568,.32,'sine',.055,.42);
   setTimeout(function(){ sfx(2093,.22,'sine',.03,.5); },40);
-  // 羊飼い：鳴らすたび低確率で画面端から羊の群れが突進する（発生率＝レベル×0.15%）
-  var sc=GROW('sheep');
-  if(sc>0&&Math.random()<sc) sheepStampede(n*14, dmg*0.7);   // 数＝ベル数×14（高密度）／ダメージ＝ベル×0.7
+  // 羊飼い：鳴らすたび画面端から羊の群れが突進する（発生率＝土台5%＋レベル×0.15%）
+  if(CH().grow&&CH().grow.k==='sheep'){                       // 羊飼い限定（他のベル使いには出ない）
+    var sc=0.05+GROW('sheep');
+    if(Math.random()<sc) sheepStampede(n*14, dmg*0.7);        // 数＝ベル数×14（高密度）／ダメージ＝ベル×0.7
+  }
   wgain('bell',n);
 }
 var BELL_W=13;              // 輪の太さ（片側）
