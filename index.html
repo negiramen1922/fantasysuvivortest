@@ -2541,7 +2541,8 @@ function dexDealMul(id){ return 1+0.01*Math.min(FIG_CAP,(BSEL[id]&&BSEL[id].d)||
 // 被ダメージ −1%/pt。上限10ptでも最大−10%。古いセーブ等で過剰でも0.9未満にしない（被ダメ0バグ防止）
 function dexTakeMul(id){ return Math.max(0.9,1-0.01*Math.min(FIG_CAP,(BSEL[id]&&BSEL[id].t)||0)); }
 function resetFig(){ BSEL={}; saveGame(); }   // 図鑑の割り振りを全リセット（稼いだポイントは保持）
-function resetMast(){ SEL={}; saveGame(); }   // 武器熟練の特性選択をリセット（熟練度は保持）
+function resetMast(){ SEL={}; saveGame(); }   // 武器熟練の特性選択を全リセット（熟練度は保持）
+function resetMastOne(w){ SEL[w]=[]; saveGame(); }   // 指定した武器だけ特性選択をリセット（熟練度は保持）
 // ゲームの完全リセット：ローカルセーブ削除＋（ログイン中なら）クラウドセーブも削除して再読込
 function hardReset(){
   try{ if(fbDB&&FBUSER) fbDB.collection('saves').doc(FBUSER.uid).delete().catch(function(){}); }catch(e){}
@@ -2579,7 +2580,7 @@ function figInfo(id){
   if(BOSS[id]){ var B=BOSS[id], tt=ETYPE[B.key]||{}; return {nm:B.nm,shape:tt.shape,col:tt.col,dark:tt.dark,desc:BDEX[id]||'',boss:true}; }
   var t=ETYPE[id]||{}; return {nm:t.nm,shape:t.shape,col:t.col,dark:t.dark,desc:DEX[id]||'',boss:false};
 }
-var VERSION='α1.0.154'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
+var VERSION='α1.0.155'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
 function applySave(o){
   for(var i=0;i<UPG.length;i++) META[UPG[i].id]=0;
   try{
@@ -7357,10 +7358,14 @@ function openWeaponDetail(w){
       '<div class="wdsec">強化内容</div>'+
       '<div class="wdpicks">'+picksHtml+'</div>'+
       (left?'<button class="wdpickbtn" type="button">強化を選ぶ（残り'+left+'）</button>':'')+
+      (order.length?'<button class="btn sub2 wdreset" type="button" style="margin-top:8px;color:#ff8a7a;border-color:#7a2a2a">この武器の特性をリセット</button>':'')+
       awkHtml+
     '</div>';
   mlistEl.querySelector('.wdback').onclick=function(){ audio(); renderMast(); };
   var pb=mlistEl.querySelector('.wdpickbtn'); if(pb) pb.onclick=function(){ openTraitPick(w); };
+  var rb=mlistEl.querySelector('.wdreset'); if(rb) rb.onclick=function(){
+    if(window.confirm(WEAPONS[w].nm+' の特性選択をリセットしますか？\n（熟練度レベルは保持され、強化を選び直せます）')){ resetMastOne(w); openWeaponDetail(w); syncTitle(); }
+  };
 }
 function openTraitPick(w){
   if(!MAST[w]||picksLeft(w)<=0) return;
@@ -8068,6 +8073,9 @@ Array.prototype.forEach.call(document.querySelectorAll('#setview button'),functi
 // 更新履歴：1つのお知らせ内で「バージョン見出し」ごとに変更点を並べる（新しい順）。
 // マージのたびに先頭へ新バージョンを追加し、VERSION も更新する。
 var UPDATES=[
+  {v:'α1.0.155', items:[
+    '武器ごとに特性（熟練の強化）をリセットできるようにしました。武器熟練→武器を選んで詳細を開くと「この武器の特性をリセット」ボタンが出ます（熟練度レベルは保持され、強化を選び直せます）。全部まとめてリセットしたいときは従来の「特性リセット」もそのまま使えます。',
+  ]},
   {v:'α1.0.154', items:[
     'リザルト画面に「💡 ヒント」を追加。毎回ランダムに豆知識や攻略のコツが表示されます。',
     'ホーム右上に「💡 攻略のコツ」ボタンを追加。ビルドの指針（物理→会心／魔法→元素反応）、元素反応の一覧（融解・過負荷・超電導・炎症・凍結・感電・消滅・拡散の効果）、豆知識をまとめて確認できます。詰まったときの参考にどうぞ。',

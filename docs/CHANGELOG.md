@@ -10,6 +10,9 @@
 - リザルト画面と設定画面に `VERSION` を表示。
 - お知らせ（`UPDATES` 配列）は**1枠内でバージョン見出しごとに変更点を掲載**（新しい順）。マージ時は `UPDATES` 先頭に新バージョンを追加し `VERSION` を一致させる。
 
+## ver.α1.0.155
+- 武器ごとの特性リセットを追加。`resetMastOne(w){ SEL[w]=[]; saveGame(); }` を新設。`openWeaponDetail` の強化内容欄に、取得済み強化がある場合のみ「この武器の特性をリセット」ボタン(`.wdreset`)を表示し、confirm後に `resetMastOne(w)`→`openWeaponDetail(w)` 再描画＋`syncTitle()`。熟練度レベル(`WX`)は保持し選択(`SEL[w]`)のみクリア。既存の一括リセット(`resetMast`/`#mastreset`)は据え置き。検証：`check.py` OK。
+
 ## ver.α1.0.154
 - 攻略ヒント/豆知識システムを追加。`TIPS`配列（ビルド指針・元素反応・操作/UIの豆知識）＋`REACTBL`（反応表：融解/過負荷/超電導/炎症/凍結/感電/消滅/拡散）。リザルト画面末尾に `resTipHtml()` でランダムなヒント枠＋「攻略のコツをもっと見る」ボタンを表示。ホーム右上に💡ボタン(`helpbtn`)を追加し、`#help` パネル(`renderHelp`/`helpHtml`)で「ビルドの指針（物理→会心／魔法→元素反応）」「元素反応一覧」「豆知識全文」を表示。反応内容は `react()` 実装から正確に転記。
 - CSS：`#help` をオーバーレイパネル群に追加、`.tipbox`/`.hsec`/`.hrow` を追加。HTML：`#help` パネルとホームヘッダーの💡ボタンを追加。検証：`check.py` OK。
