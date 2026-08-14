@@ -2355,7 +2355,7 @@ var CHARS={
   shepd:{  nm:'羊飼い', glyph:'\u{1F411}', w:'bell',
     tx:'鈴で群れを呼ぶ者。ベルを鳴らすたび、まれに羊の群れが画面の外から駆け抜けて敵を踏み荒らす。',
     st:'攻撃力 −10%',
-    grow:{k:'sheep', v:0.0015, tx:'毎レベル 羊の群れ出現率 +0.15%（数＝ベル×5／威力＝ベル×0.7）'},
+    grow:{k:'sheep', v:0.0015, tx:'毎レベル 羊の群れ出現率 +0.15%（数＝ベル×14／威力＝ベル×0.7）'},
     hp:1.00, spd:1.00, pw:0.90, area:1.00, ele:0, elp:0, crit:0, regen:0,
     cost:10, cond:'stage',  val:2,     condTx:'ステージ2（森）をクリアする' }
 };
@@ -3773,7 +3773,7 @@ function doBell(){
   setTimeout(function(){ sfx(2093,.22,'sine',.03,.5); },40);
   // 羊飼い：鳴らすたび低確率で画面端から羊の群れが突進する（発生率＝レベル×0.15%）
   var sc=GROW('sheep');
-  if(sc>0&&Math.random()<sc) sheepStampede(n*5, dmg*0.7);   // 数＝ベル数×5／ダメージ＝ベル×0.7
+  if(sc>0&&Math.random()<sc) sheepStampede(n*14, dmg*0.7);   // 数＝ベル数×14（高密度）／ダメージ＝ベル×0.7
   wgain('bell',n);
 }
 var BELL_W=13;              // 輪の太さ（片側）
@@ -3819,9 +3819,9 @@ function sheepStampede(count, dmg){
   var cx=P.x+Math.cos(a)*SWR, cy=P.y+Math.sin(a)*SWR;   // 画面外の一辺
   var dx=P.x-cx, dy=P.y-cy, dd=Math.hypot(dx,dy)||1;
   var vx=dx/dd, vy=dy/dd, px=-vy, py=vx;                // vx,vy＝進行方向（プレイヤー越しに横切る）／px,py＝横並び
-  var sp=340, spread=Math.max(W,H)/VZOOM*0.6+120;
+  var sp=340, spread=190;                               // 横幅を絞って高密度に。中心線はプレイヤーを通過する
   for(var i=0;i<count;i++){
-    var side=(Math.random()-0.5)*spread*2, along=Math.random()*280;
+    var side=(Math.random()-0.5)*spread*2, along=Math.random()*440;   // 奥行きを広げて分厚い群れにする
     sheep.push({ x:cx+px*side-vx*along, y:cy+py*side-vy*along,
       dirx:vx, diry:vy, sp:sp*(0.9+Math.random()*0.2),
       r:15, dmg:dmg, life:2*SWR/sp+1.2, hop:Math.random()*6.283, hit:[] });
