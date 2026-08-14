@@ -10,6 +10,11 @@
 - リザルト画面と設定画面に `VERSION` を表示。
 - お知らせ（`UPDATES` 配列）は**1枠内でバージョン見出しごとに変更点を掲載**（新しい順）。マージ時は `UPDATES` 先頭に新バージョンを追加し `VERSION` を一致させる。
 
+## ver.α1.0.144
+- 既存武器キャラを3体追加。`cryo`(氷術師/ice, ele:0.12, spd:0.95, grow icep, cond stage2)、`thundr`(雷鳴使い/thunder, crit:0.08, grow thunp, cond stage3)、`gunner`(銃士/musket, crit:0.10, spd:1.05, hp:0.85, grow rof, cond kills7000)。
+- 属性別・攻速の固有成長を配線。`pw()`: `GROW('icep')`/`GROW('thunp')` をそれぞれ `ELW.ice`/`ELW.thunder` の武器に乗算（聖女の `light` と同パターン）。`cdr()`: `*(1-GROW('rof'))` を追加（銃士のレベルアップで全体クールダウン短縮）。
+- 立ち絵は未登録のためグリフ(❄/⚡/🔫)表示。PNG アップ後に `CHAR_SPR` へ追加予定。
+
 ## ver.α1.0.143
 - 新キャラ「忍者」(`ninja`)を追加。`CHARS.ninja`={w:'shuriken', hp:0.85, spd:1.15, crit:0.12, grow:{k:'debuff',v:0.005}, cost:10, cond:'crit', val:3000}。移動速度+15%／会心率+12%／最大HP−15%、毎Lv 付与率+0.5%、解放=累計会心3,000回。
 - 固有成長を反映：`ccChance()` に `GROW('debuff')` を加算（忍者のレベルアップで出血/毒/スタンの付与率が上がる）。

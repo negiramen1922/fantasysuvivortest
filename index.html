@@ -2291,7 +2291,25 @@ var CHARS={
     st:'移動速度 +15%／会心率 +12%／最大HP −15%',
     grow:{k:'debuff', v:0.005, tx:'毎レベル 状態異常の付与率 +0.5%'},
     hp:0.85, spd:1.15, pw:1.00, area:1.00, ele:0, elp:0, crit:0.12, regen:0,
-    cost:10, cond:'crit',   val:3000,  condTx:'累計 3,000 回の会心を出す' }
+    cost:10, cond:'crit',   val:3000,  condTx:'累計 3,000 回の会心を出す' },
+  cryo:{   nm:'氷術師', glyph:'❄', w:'ice',
+    tx:'氷の投槍で敵を穿つ。減速と凍結で戦場を制する。',
+    st:'元素付与 +12%／移動速度 −5%',
+    grow:{k:'icep', v:0.01, tx:'毎レベル 氷属性の武器の攻撃力 +1%'},
+    hp:1.00, spd:0.95, pw:1.00, area:1.00, ele:0.12, elp:0, crit:0, regen:0,
+    cost:10, cond:'stage',  val:2,     condTx:'ステージ2をクリアする' },
+  thundr:{ nm:'雷鳴使い', glyph:'⚡', w:'thunder',
+    tx:'龍の雷を落とす。感電と超電導で一気に畳みかける。',
+    st:'会心率 +8%／最大HP −10%',
+    grow:{k:'thunp', v:0.01, tx:'毎レベル 雷属性の武器の攻撃力 +1%'},
+    hp:0.90, spd:1.00, pw:1.00, area:1.00, ele:0, elp:0, crit:0.08, regen:0,
+    cost:10, cond:'stage',  val:3,     condTx:'ステージ3をクリアする' },
+  gunner:{ nm:'銃士', glyph:'\u{1F52B}', w:'musket',
+    tx:'銃を撃ち込む遠距離の手練れ。撃つほどに手が速くなる。',
+    st:'会心率 +10%／移動速度 +5%／最大HP −15%',
+    grow:{k:'rof', v:0.005, tx:'毎レベル 攻撃の間隔 −0.5%'},
+    hp:0.85, spd:1.05, pw:1.00, area:1.00, ele:0, elp:0, crit:0.10, regen:0,
+    cost:10, cond:'kills',  val:7000,  condTx:'累計 7,000 体を討伐する' }
 };
 var ALLCHR=0;   // 1で全キャラ解放（開発用）。製品は 0
 var UNL={}, SELCH='knight';
@@ -2526,7 +2544,7 @@ function figInfo(id){
   if(BOSS[id]){ var B=BOSS[id], tt=ETYPE[B.key]||{}; return {nm:B.nm,shape:tt.shape,col:tt.col,dark:tt.dark,desc:BDEX[id]||'',boss:true}; }
   var t=ETYPE[id]||{}; return {nm:t.nm,shape:t.shape,col:t.col,dark:t.dark,desc:DEX[id]||'',boss:false};
 }
-var VERSION='α1.0.143'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
+var VERSION='α1.0.144'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
 function applySave(o){
   for(var i=0;i<UPG.length;i++) META[UPG[i].id]=0;
   try{
@@ -2649,11 +2667,15 @@ function GROW(k){ var g=CH().grow; return (g&&g.k===k)?g.v*(P.lv-1):0; }
 // 爆弾魔：武器由来の爆発だけを伸ばす（元素反応の爆発は対象外）
 function pw(w){
   var m=(1+0.12*(P.p.power||0)+0.06*M('might'))*CH().pw;
-  // 聖女：光属性の武器だけが伸びる
-  if(w&&GROW('light')&&ELW.holy.indexOf(w)>=0) m*=(1+GROW('light'));
+  // 属性キャラ：その属性の武器だけが伸びる（聖女=光／氷術師=氷／雷鳴使い=雷）
+  if(w){
+    if(GROW('light')  &&ELW.holy.indexOf(w)>=0)    m*=(1+GROW('light'));
+    if(GROW('icep')   &&ELW.ice.indexOf(w)>=0)     m*=(1+GROW('icep'));
+    if(GROW('thunp')  &&ELW.thunder.indexOf(w)>=0) m*=(1+GROW('thunp'));
+  }
   return m;
 }
-function cdr(){ return Math.pow(0.92,(P.p.haste||0))*(1-0.04*M('haste')); }
+function cdr(){ return Math.pow(0.92,(P.p.haste||0))*(1-0.04*M('haste'))*(1-GROW('rof')); }
 function mag(){ return 96*(1+0.40*(P.p.magnet||0)+0.10*M('magnet')); }
 function spd(){ return P.spd*(1+0.10*(P.p.swift||0)+0.05*M('speed')); }
 // 元素の付与率：武器レベル・元素親和（ラン内＋永続）で伸びる
@@ -7984,6 +8006,9 @@ Array.prototype.forEach.call(document.querySelectorAll('#setview button'),functi
 // 更新履歴：1つのお知らせ内で「バージョン見出し」ごとに変更点を並べる（新しい順）。
 // マージのたびに先頭へ新バージョンを追加し、VERSION も更新する。
 var UPDATES=[
+  {v:'α1.0.144', items:[
+    '既存武器を使う新キャラを3体追加しました。氷術師（アイスジャベリン／元素付与+12%・移動-5%・毎Lv氷武器+1%／解放:ステージ2クリア）、雷鳴使い（ドラゴンボルト／会心+8%・HP-10%・毎Lv雷武器+1%／解放:ステージ3クリア）、銃士（マスケット／会心+10%・移動+5%・HP-15%・毎Lv攻撃間隔-0.5%／解放:累計7,000討伐）。※立ち絵は後日追加予定です。',
+  ]},
   {v:'α1.0.143', items:[
     '新キャラ「忍者」を追加しました。初期武器は手裏剣。移動速度+15%／会心率+12%／最大HP−15%、毎レベル 状態異常の付与率+0.5%（出血が乗りやすい）。解放条件：累計3,000回の会心。※立ち絵は後日追加予定です。',
   ]},
