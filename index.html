@@ -177,9 +177,9 @@ canvas{display:block;width:100%;height:100%;touch-action:none}
 #pstat b{color:#fff;font-weight:normal}
 #pstat .el{color:var(--gold)}
 
-#shop,#mast,#ban,#settings,#news,#tutorial,#dex,#mailbox,#daily,#achieve{position:absolute;inset:0;display:none;align-items:center;justify-content:center;
+#shop,#mast,#ban,#settings,#news,#tutorial,#dex,#mailbox,#daily,#achieve,#help{position:absolute;inset:0;display:none;align-items:center;justify-content:center;
   background:rgba(6,4,16,.95);padding:14px;z-index:6}
-#shop.on,#mast.on,#ban.on,#settings.on,#news.on,#tutorial.on,#dex.on,#mailbox.on,#daily.on,#achieve.on{display:flex}
+#shop.on,#mast.on,#ban.on,#settings.on,#news.on,#tutorial.on,#dex.on,#mailbox.on,#daily.on,#achieve.on,#help.on{display:flex}
 #twobox{flex:none;border:1px solid rgba(255,204,77,.35);border-radius:12px;padding:10px;background:rgba(255,204,77,.05)}
 .twolbl{font-size:11px;color:var(--ash);margin-bottom:4px}
 #twoprev{font-size:19px;color:var(--gold);font-weight:bold;text-align:center;margin:4px 0 8px;min-height:24px}
@@ -294,9 +294,16 @@ canvas{display:block;width:100%;height:100%;touch-action:none}
 .setrow>span:first-child{color:#e9e2ff;flex:none}
 .setval{color:var(--arc);width:52px;text-align:right;flex:none}
 #volm,#vols,#volb{flex:1;accent-color:#56e0ff}
-#setbody,#newslist{width:100%;max-width:440px;margin:0 auto;text-align:left;
+#setbody,#newslist,#helpbody{width:100%;max-width:440px;margin:0 auto;text-align:left;
   flex:1 1 auto;min-height:0;overflow-y:auto;-webkit-overflow-scrolling:touch}
-#newslist{flex:1;min-height:0;overflow-y:auto}
+#newslist,#helpbody{flex:1;min-height:0;overflow-y:auto}
+.tipbox{border:1px solid rgba(255,204,77,.35);border-radius:12px;padding:11px 13px;margin:12px 0 4px;
+  background:rgba(255,204,77,.06);text-align:left;font-size:13px;line-height:1.6;color:#e9e2ff}
+.tipbox b{color:var(--gold);font-weight:normal}
+.hsec{color:var(--gold);font-size:14px;margin:14px 0 6px;border-bottom:1px solid var(--line);padding-bottom:4px}
+.hrow{display:flex;gap:9px;padding:7px 2px;border-bottom:1px solid var(--line);font-size:13px;line-height:1.55;color:#e9e2ff}
+.hrow .hk{flex:none;min-width:96px;color:#ffd870}
+.hrow b{color:var(--gold);font-weight:normal}
 .newsitem{padding:11px 4px;border-bottom:1px solid var(--line)}
 .newsitem .nt{color:var(--gold);font-size:14px}
 .newsitem .nd{color:#6b5f9c;font-size:11px;margin-left:8px}
@@ -722,6 +729,7 @@ img.wspr{width:1.15em;height:1.15em;object-fit:contain;image-rendering:pixelated
           <button id="dexbtn" class="hicon" aria-label="図鑑">📖</button>
           <button id="rankbtn" class="hicon" aria-label="ランキング">🏆</button>
           <button id="tutbtn" class="hicon" aria-label="遊びかた">❓</button>
+          <button id="helpbtn" class="hicon" aria-label="攻略のコツ">💡</button>
           <button id="newsbtn" class="hicon" aria-label="お知らせ">✉</button>
           <button id="setbtn" class="hicon" aria-label="設定">⚙</button>
         </div>
@@ -785,6 +793,14 @@ img.wspr{width:1.15em;height:1.15em;object-fit:contain;image-rendering:pixelated
       <div class="shophead"><div class="title">お知らせ</div></div>
       <div id="newslist"></div>
       <button class="btn sub2" id="newsclose" style="margin-top:0">閉じる</button>
+    </div>
+  </div>
+
+  <div id="help">
+    <div class="shopbox">
+      <div class="shophead"><div class="title">💡 攻略のコツ</div></div>
+      <div id="helpbody"></div>
+      <button class="btn sub2" id="helpclose" style="margin-top:0">閉じる</button>
     </div>
   </div>
 
@@ -2563,7 +2579,7 @@ function figInfo(id){
   if(BOSS[id]){ var B=BOSS[id], tt=ETYPE[B.key]||{}; return {nm:B.nm,shape:tt.shape,col:tt.col,dark:tt.dark,desc:BDEX[id]||'',boss:true}; }
   var t=ETYPE[id]||{}; return {nm:t.nm,shape:t.shape,col:t.col,dark:t.dark,desc:DEX[id]||'',boss:false};
 }
-var VERSION='α1.0.153'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
+var VERSION='α1.0.154'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
 function applySave(o){
   for(var i=0;i<UPG.length;i++) META[UPG[i].id]=0;
   try{
@@ -7904,8 +7920,10 @@ function finish(won){
     (anyPicks()?'<span style="color:var(--gold)">★ 武器熟練で特性を選べます</span><br>':'')+
     (newUnlocks.length?'<span style="color:var(--gold)">★ '+newUnlocks.join('・')+' が解放されました</span><br>':'')+
     '<div class="psec">構成</div>'+(comp||'—')+
-    damageBreakdownHtml();
+    damageBreakdownHtml()+
+    resTipHtml();
   document.getElementById('rankbtn2').style.display=ENDLESS?'':'none';   // 無限ランのみランキングボタン表示
+  var rtb=document.getElementById('restipbtn'); if(rtb) rtb.onclick=function(){ audio(); renderHelp(); helpEl.classList.add('on'); };
   showView('result');
   document.getElementById('veil').classList.remove('hide');
   if(newWpIds.length) setTimeout(function(){ showWeaponUnlockPopup(newWpIds); },500);   // 実績で武器解放→リザルトでポップアップ
@@ -8050,6 +8068,10 @@ Array.prototype.forEach.call(document.querySelectorAll('#setview button'),functi
 // 更新履歴：1つのお知らせ内で「バージョン見出し」ごとに変更点を並べる（新しい順）。
 // マージのたびに先頭へ新バージョンを追加し、VERSION も更新する。
 var UPDATES=[
+  {v:'α1.0.154', items:[
+    'リザルト画面に「💡 ヒント」を追加。毎回ランダムに豆知識や攻略のコツが表示されます。',
+    'ホーム右上に「💡 攻略のコツ」ボタンを追加。ビルドの指針（物理→会心／魔法→元素反応）、元素反応の一覧（融解・過負荷・超電導・炎症・凍結・感電・消滅・拡散の効果）、豆知識をまとめて確認できます。詰まったときの参考にどうぞ。',
+  ]},
   {v:'α1.0.153', items:[
     'ボスの討伐スコア出現の閾値を調整。3体目・4体目のスコア閾値を約1.4倍に引き上げ、火力の低い“広く浅い”ビルドでも最難関ボスが早く来すぎないようにしました（1体目・2体目は据え置き）。',
   ]},
@@ -8507,6 +8529,56 @@ function renderNews(){
 }
 document.getElementById('newsbtn').onclick=function(){ audio(); renderNews(); newsEl.classList.add('on'); };
 document.getElementById('newsclose').onclick=function(){ newsEl.classList.remove('on'); };
+
+/* ============ 攻略のコツ / 豆知識 ============ */
+var TIPS=[
+  '物理武器（大剣・鎌・弓・銃など）は<b>会心</b>が乗りやすい。パッシブ「会心」「剛撃」や永続の会心系を重ねると火力がぐっと伸びる。',
+  '魔法武器（炎・氷・雷・闇・光・毒）は敵に<b>元素</b>を付ける。別の属性の武器と混ぜて<b>元素反応</b>を起こすと大ダメージ。',
+  '元素反応のダメージは攻撃力ではなく<b>元素熟知</b>で伸びる（会心は乗らない）。反応ビルドなら「元素付着」「元素熟知」を優先。',
+  '迷ったら軸を1つに寄せると強い。<b>会心特化</b>（物理中心）か<b>元素反応特化</b>（魔法中心）を選ぼう。',
+  '画面の揺れが重い・見づらいときは、設定の<b>「画面の揺れ＝なし」</b>で軽く＆見やすくなる。',
+  '床の<b>光る柱（床の装備）</b>は、パッシブ枠の上限を無視して取れる。見つけたら回収を。',
+  'レベルアップの選択肢がイマイチなら<b>「引き直す」</b>で再抽選できる。',
+  'ボスは時間だけでなく<b>討伐スコア</b>でも出現する。速く沢山倒すほど早く出る。',
+  '<b>磁石🧲</b>を拾うと、画面中の経験値と銀貨を一気に回収できる。',
+  '敵の攻撃予告（<b>赤い線</b>や拳）は自分の攻撃より前面に出る。線の外へ動けば避けやすい。',
+  '打たれ弱いと感じたら、パッシブ「再生」「防護」や永続「体力」、キャラ「聖女」で耐久を確保しよう。',
+  '武器を使い込むと<b>武器熟練</b>が上がり、次のランに最初から強化を持ち込める。',
+  '融解（炎＋氷）は<b>単体に特大</b>。ボスや硬い敵には炎×氷の2属性が刺さる。',
+  '超電導（氷＋雷）は<b>範囲ダメージ＋鈍足</b>。群れの足を止めながら削れる。',
+  '闇属性（ダークハンド・ブラックホール）は多くの属性と反応する万能枠。<b>凍結・感電・炎症・消滅</b>の起点になれる。'
+];
+function pickTip(){ return TIPS[Math.floor(Math.random()*TIPS.length)]; }
+function resTipHtml(){
+  return '<div class="tipbox" style="text-align:center">💡 <b>ヒント</b>　<span style="display:inline">'+pickTip()+'</span>'+
+    '<div style="margin-top:9px"><button class="btn sub2" id="restipbtn" style="margin-top:0;display:inline-block;width:auto;padding:6px 18px">攻略のコツをもっと見る</button></div></div>';
+}
+var REACTBL=[
+  ['融解','炎 ＋ 氷','単体に特大ダメージ。ボスや硬い敵に。'],
+  ['過負荷','炎 ＋ 雷','着弾点で爆発（範囲ダメージ）。'],
+  ['超電導','氷 ＋ 雷','範囲ダメージ＋鈍足。群れの足止めに。'],
+  ['炎症','闇 ＋ 炎','単体に強い継続ダメージ（燃焼）。'],
+  ['凍結','闇 ＋ 氷','敵を完全停止＋ダメージ（硬い敵ほど短い）。'],
+  ['感電','闇 ＋ 雷','周囲へ広がる継続ダメージ。'],
+  ['消滅','闇 ＋ 光','最大HPの一定割合を削る（元ダメの5倍まで）。'],
+  ['拡散','光 ＋ 他','付いた元素を周囲の敵へ伝播させる。']
+];
+function helpHtml(){
+  var h='<div class="tipbox">💡 '+pickTip()+'</div>';
+  h+='<div class="hsec">ビルドの指針</div>';
+  h+='<div class="hrow"><span class="hk">物理 → 会心</span><span>大剣・鎌・チャクラム・刀・弓・手裏剣・ダイナマイト・グランドアッパー・ロックボール・ベル・チェンソー・マスケット・ガトリング・錨。<b>会心</b>が乗りやすいので「会心」「剛撃」を重ねると伸びる。</span></div>';
+  h+='<div class="hrow"><span class="hk">魔法 → 反応</span><span>炎・氷・雷・光・闇・毒の武器。敵に元素を付け、別属性と組み合わせて<b>元素反応</b>を狙う。「元素付着」「元素熟知」が効く（会心は乗らない）。</span></div>';
+  h+='<div class="hsec">元素反応 一覧</div>';
+  for(var i=0;i<REACTBL.length;i++){ var r=REACTBL[i];
+    h+='<div class="hrow"><span class="hk">'+r[0]+'</span><span><b>'+r[1]+'</b>　'+r[2]+'</span></div>'; }
+  h+='<div class="hsec">豆知識</div>';
+  for(var t=0;t<TIPS.length;t++) h+='<div class="hrow"><span>・'+TIPS[t]+'</span></div>';
+  return h;
+}
+var helpEl=document.getElementById('help');
+function renderHelp(){ document.getElementById('helpbody').innerHTML=helpHtml(); }
+document.getElementById('helpbtn').onclick=function(){ audio(); renderHelp(); helpEl.classList.add('on'); };
+document.getElementById('helpclose').onclick=function(){ helpEl.classList.remove('on'); };
 
 /* ============ 受け取りボックス（メールボックス）============ */
 var mailEl=document.getElementById('mailbox');
