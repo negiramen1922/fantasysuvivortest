@@ -2684,7 +2684,7 @@ function figInfo(id){
   if(BOSS[id]){ var B=BOSS[id], tt=ETYPE[B.key]||{}; return {nm:B.nm,shape:tt.shape,col:tt.col,dark:tt.dark,desc:BDEX[id]||'',boss:true}; }
   var t=ETYPE[id]||{}; return {nm:t.nm,shape:t.shape,col:t.col,dark:t.dark,desc:DEX[id]||'',boss:false};
 }
-var VERSION='α1.0.173'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
+var VERSION='α1.0.174'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
 function applySave(o){
   for(var i=0;i<UPG.length;i++) META[UPG[i].id]=0;
   try{
@@ -8190,8 +8190,11 @@ function takeTrait(w,id){
   if(!SEL[w]) SEL[w]=[];
   if(picksLeft(w)<=0) return;
   SEL[w].push(id);
-  saveGame(); renderMast(); syncTitle();
+  saveGame(); syncTitle();
   [0,80,170].forEach(function(ms,i){ setTimeout(function(){ sfx([659,880,1174][i],.15,'triangle',.075); },ms); });
+  // 連続で選べるように：まだ枠が残っていればその武器の選択画面のまま、選び切ったらその武器の詳細へ（一覧に戻さない）
+  if(picksLeft(w)>0) openTraitPick(w);
+  else openWeaponDetail(w);
 }
 document.getElementById('mastbtn').onclick=function(){ audio(); renderMast(); document.getElementById('masthelpbox').classList.remove('on'); document.getElementById('masthelp').classList.remove('on'); mastEl.classList.add('on'); };
 document.getElementById('masthelp').onclick=function(){ audio(); var bx=document.getElementById('masthelpbox'); var op=bx.classList.toggle('on'); this.classList.toggle('on',op); };
@@ -8882,6 +8885,9 @@ Array.prototype.forEach.call(document.querySelectorAll('#setview button'),functi
 // 更新履歴：1つのお知らせ内で「バージョン見出し」ごとに変更点を並べる（新しい順）。
 // マージのたびに先頭へ新バージョンを追加し、VERSION も更新する。
 var UPDATES=[
+  {v:'α1.0.174', items:[
+    '武器熟練で強化を連続して選べるようにしました。1つ選ぶたびに一覧へ戻らず、その武器の次の強化選択がそのまま続きます（選び切るとその武器の詳細に戻ります）。',
+  ]},
   {v:'α1.0.173', items:[
     '次の新ステージに向けた内部準備を進めています（通常のプレイ内容に変更はありません）。',
   ]},
