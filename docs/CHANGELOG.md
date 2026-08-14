@@ -10,6 +10,9 @@
 - リザルト画面と設定画面に `VERSION` を表示。
 - お知らせ（`UPDATES` 配列）は**1枠内でバージョン見出しごとに変更点を掲載**（新しい順）。マージ時は `UPDATES` 先頭に新バージョンを追加し `VERSION` を一致させる。
 
+## ver.α1.0.149
+- 農夫の鎌成長を「毎レベル+1本」→「20レベルごと+1本」に緩和（強すぎたため）。`grow` を `{k:'scythe_cnt', per:20, unit:'本'}` に変更。`GROW`（線形）では階段状にできないため専用関数 `scytheLvBonus()=Math.floor(P.lv/g.per)` を新設し、`doScythe` の本数計算を `1+CNT('scythe')+scytheLvBonus()` に変更（ラン内 count 軸とは引き続き加算）。`buildText` の成長表示も `grow.per` 対応（`+floor(P.lv/per)本`）。
+
 ## ver.α1.0.148
 - 新キャラ「調剤師(apoth)」を追加。初期武器 `toxin`（毒瓶）、glyph ⚗️。`hp:1.00 pw:0.95 area:1.08 ele:0.10`。`grow:{k:'grassp',v:0.01}`＝毎レベル草属性武器+1%（`pw(w)` に `GROW('grassp')&&ELW.grass.indexOf(w)>=0` を配線。草武器=toxin）。解放条件 `cond:'kills' val:12000`、`cost:10`。
 - 毒瓶(toxin)に count 軸を追加：`WAX.toxin` に `count:2`。`rollChoices` は `WAX[id]` の軸を上限まで提示するため、ラン中に「毒瓶・発射数」を最大+2（合計3本）まで取得可能。`doToxin` を `cnt=1+CNT('toxin')` 本ループに変更し、2本目以降は着弾点を `40〜110px` ランダム方向へ散らして毒沼(`addZone`)を広く展開。`wgain('toxin',cnt)`。検証：`check.py` OK。

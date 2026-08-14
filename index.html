@@ -2313,7 +2313,7 @@ var CHARS={
   farmer:{ nm:'農夫',   glyph:'\u{1F33E}', w:'scythe',
     tx:'鎌を振るう働き者。刈るほどに手数が増え、数の暴力に打たれ強い。',
     st:'攻撃力 +8%／範囲 +12%／最大HP +15%',
-    grow:{k:'scythe_cnt', v:1, unit:'本', tx:'毎レベル 投げる鎌 +1本'},
+    grow:{k:'scythe_cnt', per:20, unit:'本', tx:'20レベルごと 投げる鎌 +1本'},
     hp:1.15, spd:1.00, pw:1.08, area:1.12, ele:0, elp:0, crit:0, regen:0,
     cost:10, cond:'kills',  val:25000, condTx:'累計 25,000 体を討伐する' },
   necro:{  nm:'死霊術師', glyph:'💀', w:'dhand',
@@ -2562,7 +2562,7 @@ function figInfo(id){
   if(BOSS[id]){ var B=BOSS[id], tt=ETYPE[B.key]||{}; return {nm:B.nm,shape:tt.shape,col:tt.col,dark:tt.dark,desc:BDEX[id]||'',boss:true}; }
   var t=ETYPE[id]||{}; return {nm:t.nm,shape:t.shape,col:t.col,dark:t.dark,desc:DEX[id]||'',boss:false};
 }
-var VERSION='α1.0.148'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
+var VERSION='α1.0.149'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
 function applySave(o){
   for(var i=0;i<UPG.length;i++) META[UPG[i].id]=0;
   try{
@@ -2682,6 +2682,8 @@ var cool={};
 
 /* ============ 派生ステータス ============ */
 function GROW(k){ var g=CH().grow; return (g&&g.k===k)?g.v*(P.lv-1):0; }
+// 農夫：投げる鎌の追加本数（per レベルごとに +1、階段状）
+function scytheLvBonus(){ var g=CH().grow; return (g&&g.k==='scythe_cnt')?Math.floor(P.lv/g.per):0; }
 // 爆弾魔：武器由来の爆発だけを伸ばす（元素反応の爆発は対象外）
 function pw(w){
   var m=(1+0.12*(P.p.power||0)+0.06*M('might'))*CH().pw;
@@ -3292,7 +3294,7 @@ function doFlame(dt){
 function doScythe(){
   var e=nearest(P.x,P.y,RNG('scythe'));
   var base=e?Math.atan2(e.y-P.y,e.x-P.x):P.face;
-  var cnt=1+CNT('scythe')+Math.round(GROW('scythe_cnt')), rng=210*AREA('scythe')*RNGM('scythe'), dmg=20*DMG('scythe')*pw('scythe');   // 農夫：毎レベル+1本（ラン内強化と加算）
+  var cnt=1+CNT('scythe')+scytheLvBonus(), rng=210*AREA('scythe')*RNGM('scythe'), dmg=20*DMG('scythe')*pw('scythe');   // 農夫：20レベルごと+1本（ラン内強化と加算）
   for(var i=0;i<cnt;i++){
     scys.push({ a:base+(i-(cnt-1)/2)*0.55, t:0, dur:0.95, rng:rng, dmg:dmg,
                 x:P.x, y:P.y, spin:0, back:0, hit:[] });
@@ -7672,8 +7674,9 @@ function buildText(){
   for(id in ELEM){ if(elemSourceOwned(id)) ch.push(ELEM[id].nm+' <b>'+Math.round(elemChance(id)*100)+'%</b>'); }
   var charBlock='<div class="wrow"><span class="wg">'+CH().glyph+'</span>'+CH().nm+
     (CH().grow?'<span style="color:var(--gold)">　'+CH().grow.tx+'（現在 +'+
-       (CH().grow.unit?(CH().grow.v*(P.lv-1)).toFixed(0)+CH().grow.unit
-                      :(CH().grow.v*(P.lv-1)*100).toFixed(0)+'%')+'）</span>':'')+'</div>';
+       (CH().grow.per?Math.floor(P.lv/CH().grow.per)+CH().grow.unit
+         :CH().grow.unit?(CH().grow.v*(P.lv-1)).toFixed(0)+CH().grow.unit
+                        :(CH().grow.v*(P.lv-1)*100).toFixed(0)+'%')+'）</span>':'')+'</div>';
   return '経過 <b>'+(m<10?'0':'')+m+':'+(s<10?'0':'')+s+(ENDLESS?'  ♾ 無限':' / 20:00')+'</b>　'+
          'SCORE <b>'+fmt(score)+'</b>　討伐 <b>'+kills+'</b>　元素反応 <span class="el">'+reacts+'</span>　会心 <b>'+crits+'</b><br>'+
          '持ち帰り 銀貨 <b>'+silver+'</b>　金貨 <b>'+gold+'</b><br>'+
@@ -8032,6 +8035,9 @@ Array.prototype.forEach.call(document.querySelectorAll('#setview button'),functi
 // 更新履歴：1つのお知らせ内で「バージョン見出し」ごとに変更点を並べる（新しい順）。
 // マージのたびに先頭へ新バージョンを追加し、VERSION も更新する。
 var UPDATES=[
+  {v:'α1.0.149', items:[
+    '農夫の鎌の増え方を調整。「毎レベル+1本」は増えすぎだったため、「20レベルごとに+1本」に変更しました（ラン中の鎌+1強化は従来どおり加算）。',
+  ]},
   {v:'α1.0.148', items:[
     '新キャラクター「調剤師」を追加！ 初期武器は毒瓶。元素付与+10%・範囲+8%の毒の専門家で、レベルアップごとに草属性の武器の攻撃力+1%。解放条件：累計 12,000 体を討伐。',
     '毒瓶に強化軸「発射数」を追加。ラン中の強化で最大＋2（合計3本）まで同時に投げられるようになり、着弾点が散って毒沼を広く展開します。',
