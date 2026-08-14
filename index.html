@@ -2351,7 +2351,13 @@ var CHARS={
     st:'元素付与 +10%／範囲 +8%／攻撃力 −5%',
     grow:{k:'grassp', v:0.01, tx:'毎レベル 草属性の武器の攻撃力 +1%'},
     hp:1.00, spd:1.00, pw:0.95, area:1.08, ele:0.10, elp:0, crit:0, regen:0,
-    cost:10, cond:'kills',  val:12000, condTx:'累計 12,000 体を討伐する' }
+    cost:10, cond:'kills',  val:12000, condTx:'累計 12,000 体を討伐する' },
+  shepd:{  nm:'牧者',   glyph:'\u{1F411}', w:'bell',
+    tx:'鈴を鳴らして群れを導く者。音の波紋で四方を守り、鳴らすほど響きが広がる。',
+    st:'最大HP +20%／範囲 +15%／毎秒 HP+0.3／攻撃力 −8%',
+    grow:{k:'bellarea', v:0.01, tx:'毎レベル ベルの範囲 +1%'},
+    hp:1.20, spd:1.00, pw:0.92, area:1.15, ele:0, elp:0, crit:0, regen:0.3,
+    cost:10, cond:'time',   val:900,   condTx:'15:00 まで生き延びる' }
 };
 var ALLCHR=0;   // 1で全キャラ解放（開発用）。製品は 0
 var UNL={}, SELCH='knight';
@@ -3759,7 +3765,7 @@ function moveRocks(dt){
 
 // ベル：音の波紋が自分を中心に広がる。通り過ぎた敵を1度ずつ打つ。
 function doBell(){
-  var n=1+CNT('bell'), mx=155*AREA('bell'), dmg=7*DMG('bell')*pw('bell');
+  var n=1+CNT('bell'), mx=155*AREA('bell')*(1+GROW('bellarea')), dmg=7*DMG('bell')*pw('bell');   // 牧者：毎レベル 波紋 +1%
   for(var i=0;i<n;i++)
     bells.push({ x:P.x, y:P.y, r:0, pr:0, max:mx, dmg:dmg, t:-i*0.18, hit:[] });
   sfx(1568,.32,'sine',.055,.42);
