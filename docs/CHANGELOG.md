@@ -10,6 +10,32 @@
 - リザルト画面と設定画面に `VERSION` を表示。
 - お知らせ（`UPDATES` 配列）は**1枠内でバージョン見出しごとに変更点を掲載**（新しい順）。マージ時は `UPDATES` 先頭に新バージョンを追加し `VERSION` を一致させる。
 
+## ver.α1.0.151
+- 敵の攻撃予告を最前面化。`drawEnemy` 末尾にあった予告描画ブロック（突進線/slam警告/ゴブキング扇/卵設置/射撃リング/sdragonブレス/sking墓落下/hecaton拳/hecatonレーザー/墓守）を新関数 `drawTele(e)` に切り出し（`ctx.save→translate(e.x,e.y)→var R=e.r→…→restore`）、`render` の自機エフェクト・敵弾の後（`drawEnemyOutlines` 前）で全生存敵に対し描画。これにより自機の攻撃エフェクトで予告が隠れなくなる。移設に伴い element/boss/elite の装飾描画を予告ブロックの前へ移動（elite の一時変数 `bw`→`bw2` で重複回避）。
+- 磁石(vacs)を最前面化＆見た目を🧲に変更。`drawVac` を青いグロー＋`ctx.fillText('🧲')`（30px・上下に浮遊）に刷新し、`render` の描画呼び出しを地面レイヤーから最前面パスへ移動。判定(34px)・引き寄せ挙動は据え置き。
+
+## ver.α1.0.150
+- 氷術師(cryo)/雷鳴使い(thundr) の解放条件を属性別キル数に変更。cryo `cond:'killIc' val:3000`、thundr `cond:'killTh' val:3000`。`ACH` に `killTh/killIc` を追加（`for(var av in ACH)` 読込・`ach:ACH` 保存のため自動永続）。`kill(e)` で、とどめの `SRC` が `ELW.thunder`/`ELW.ice` に属せば該当カウンタを+1（弾は命中時 `SRC=s.src`、即着弾武器は各 do* で `SRC` 設定済み）。`condMet` は未知condを `(ACH[cond]||0)>=val` で判定するため新condに追加対応不要。
+- `renderChr` 冒頭で `unlockCheck()` を実行し、条件達成済みキャラを画面表示時に即解放（従来 `unlockCheck` は `finish` 時のみで、銃士が「39,654/7,000 達成なのに未解放」のまま残る問題を修正）。新規解放時は `saveGame()`＋`syncTitle()` でバッジ更新。
+
+## ver.α1.0.149
+- 農夫の鎌成長を「毎レベル+1本」→「20レベルごと+1本」に緩和（強すぎたため）。`grow` を `{k:'scythe_cnt', per:20, unit:'本'}` に変更。`GROW`（線形）では階段状にできないため専用関数 `scytheLvBonus()=Math.floor(P.lv/g.per)` を新設し、`doScythe` の本数計算を `1+CNT('scythe')+scytheLvBonus()` に変更（ラン内 count 軸とは引き続き加算）。`buildText` の成長表示も `grow.per` 対応（`+floor(P.lv/per)本`）。
+
+## ver.α1.0.148
+- 新キャラ「調剤師(apoth)」を追加。初期武器 `toxin`（毒瓶）、glyph ⚗️。`hp:1.00 pw:0.95 area:1.08 ele:0.10`。`grow:{k:'grassp',v:0.01}`＝毎レベル草属性武器+1%（`pw(w)` に `GROW('grassp')&&ELW.grass.indexOf(w)>=0` を配線。草武器=toxin）。解放条件 `cond:'kills' val:12000`、`cost:10`。
+- 毒瓶(toxin)に count 軸を追加：`WAX.toxin` に `count:2`。`rollChoices` は `WAX[id]` の軸を上限まで提示するため、ラン中に「毒瓶・発射数」を最大+2（合計3本）まで取得可能。`doToxin` を `cnt=1+CNT('toxin')` 本ループに変更し、2本目以降は着弾点を `40〜110px` ランダム方向へ散らして毒沼(`addZone`)を広く展開。`wgain('toxin',cnt)`。検証：`check.py` OK。
+
+## ver.α1.0.147
+- 新キャラ「死霊術師(necro)」を追加。初期武器 `dhand`（ダークハンド）、glyph 💀。`hp:1.10 spd:0.94 ele:0.10`。`grow:{k:'darkp',v:0.01}`＝毎レベル闇属性武器+1%（`pw(w)` に `GROW('darkp')&&ELW.dark.indexOf(w)>=0` を配線。闇武器=voidh/dhand）。解放条件 `cond:'stage' val:3`、`cost:15`。
+- `achOK` を `condMet(c.cond,c.val)` へ委譲して `'stage'` 条件に対応。従来 `achOK` は `(ACH[cond]||0)>=val` で 'stage' を判定できず、cryo(stage2)/thundr(stage3) が実績で自動解放されないバグがあった（購入は可能）。これを修正し、necro含めステージクリアで自動解放されるようにした。`achNow` に `'stage'`→`STGCLEAR[val]` の達成/未達成表示を追加。
+
+## ver.α1.0.146
+- 新キャラ「農夫(farmer)」を追加。初期武器 `scythe`、glyph 🌾。`hp:1.15 spd:1.00 pw:1.08 area:1.12`。`grow:{k:'scythe_cnt',v:1,unit:'本'}`＝毎レベル投げる鎌+1本。`doScythe` の `cnt=1+CNT('scythe')+Math.round(GROW('scythe_cnt'))` に配線（ラン内 count 軸＝AX/TR/LB と加算）。扇状 `0.55rad` 間隔なので高レベルでは全方位化。解放条件 `cond:'kills' val:25000`、`cost:10`。
+- `buildText` のキャラ成長表示を汎用化：`grow.unit` があれば `（現在 +N本）`、無ければ従来の `+XX%`。`GROW('scythe_cnt')` は農夫以外0で他キャラ不変。
+
+## ver.α1.0.145
+- 描画のカメラ座標 `camx/camy` を `Math.round()` で整数ピクセルに丸めた（`render`）。画面全体をピクセルグリッドに載せることで、揺れ(`shake*SHK`)有効時の全描画要素のサブピクセル・アンチエイリアスを削減し、描画負荷を軽減＆映像をくっきり化。揺れ強度設定（なし/弱/標準/強＝`SHK`）は据え置き。HUD等の画面座標描画は `ctx.restore()` 後なので影響なし。
+
 ## ver.α1.0.144
 - 既存武器キャラを3体追加。`cryo`(氷術師/ice, ele:0.12, spd:0.95, grow icep, cond stage2)、`thundr`(雷鳴使い/thunder, crit:0.08, grow thunp, cond stage3)、`gunner`(銃士/musket, crit:0.10, spd:1.05, hp:0.85, grow rof, cond kills7000)。
 - 属性別・攻速の固有成長を配線。`pw()`: `GROW('icep')`/`GROW('thunp')` をそれぞれ `ELW.ice`/`ELW.thunder` の武器に乗算（聖女の `light` と同パターン）。`cdr()`: `*(1-GROW('rof'))` を追加（銃士のレベルアップで全体クールダウン短縮）。

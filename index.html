@@ -2118,7 +2118,7 @@ var WAX={
   shuriken:{ dmg:4, count:3, pierce:3, rate:3, range:2 },
   bow:     { dmg:4, pierce:3, count:3, rate:3, burst:3, range:3 },
   dynamite:{ dmg:4, area:4, burst:4, rate:3, range:2 },
-  toxin:   { dmg:4, area:4, rate:3, range:2 },
+  toxin:   { dmg:4, area:4, count:2, rate:3, range:2 },
   anchor:  { dmg:5, area:4, rate:3, range:2 },
   quake:   { dmg:4, area:4, rate:3, range:3 },
   rock:    { dmg:4, area:4, count:2, rate:3, burst:3, range:3 },
@@ -2297,34 +2297,52 @@ var CHARS={
     st:'元素付与 +12%／移動速度 −5%',
     grow:{k:'icep', v:0.01, tx:'毎レベル 氷属性の武器の攻撃力 +1%'},
     hp:1.00, spd:0.95, pw:1.00, area:1.00, ele:0.12, elp:0, crit:0, regen:0,
-    cost:10, cond:'stage',  val:2,     condTx:'ステージ2をクリアする' },
+    cost:10, cond:'killIc', val:3000,  condTx:'氷属性の武器で 3,000 体を討伐する' },
   thundr:{ nm:'雷鳴使い', glyph:'⚡', w:'thunder',
     tx:'龍の雷を落とす。感電と超電導で一気に畳みかける。',
     st:'会心率 +8%／最大HP −10%',
     grow:{k:'thunp', v:0.01, tx:'毎レベル 雷属性の武器の攻撃力 +1%'},
     hp:0.90, spd:1.00, pw:1.00, area:1.00, ele:0, elp:0, crit:0.08, regen:0,
-    cost:10, cond:'stage',  val:3,     condTx:'ステージ3をクリアする' },
+    cost:10, cond:'killTh', val:3000,  condTx:'雷属性の武器で 3,000 体を討伐する' },
   gunner:{ nm:'銃士', glyph:'\u{1F52B}', w:'musket',
     tx:'銃を撃ち込む遠距離の手練れ。撃つほどに手が速くなる。',
     st:'会心率 +10%／移動速度 +5%／最大HP −15%',
     grow:{k:'rof', v:0.005, tx:'毎レベル 攻撃の間隔 −0.5%'},
     hp:0.85, spd:1.05, pw:1.00, area:1.00, ele:0, elp:0, crit:0.10, regen:0,
-    cost:10, cond:'kills',  val:7000,  condTx:'累計 7,000 体を討伐する' }
+    cost:10, cond:'kills',  val:7000,  condTx:'累計 7,000 体を討伐する' },
+  farmer:{ nm:'農夫',   glyph:'\u{1F33E}', w:'scythe',
+    tx:'鎌を振るう働き者。刈るほどに手数が増え、数の暴力に打たれ強い。',
+    st:'攻撃力 +8%／範囲 +12%／最大HP +15%',
+    grow:{k:'scythe_cnt', per:20, unit:'本', tx:'20レベルごと 投げる鎌 +1本'},
+    hp:1.15, spd:1.00, pw:1.08, area:1.12, ele:0, elp:0, crit:0, regen:0,
+    cost:10, cond:'kills',  val:25000, condTx:'累計 25,000 体を討伐する' },
+  necro:{  nm:'死霊術師', glyph:'💀', w:'dhand',
+    tx:'死者の手を操る闇の術者。王墓の主を退けた者にのみ付き従う。',
+    st:'最大HP +10%／元素付与 +10%／移動速度 −6%',
+    grow:{k:'darkp', v:0.01, tx:'毎レベル 闇属性の武器の攻撃力 +1%'},
+    hp:1.10, spd:0.94, pw:1.00, area:1.00, ele:0.10, elp:0, crit:0, regen:0,
+    cost:15, cond:'stage',  val:3,     condTx:'ステージ3（古代の王墓）をクリアする' },
+  apoth:{  nm:'調剤師', glyph:'⚗️', w:'toxin',
+    tx:'毒の瓶を調合して投げる術者。毒を極め、じわじわと戦場を蝕む。',
+    st:'元素付与 +10%／範囲 +8%／攻撃力 −5%',
+    grow:{k:'grassp', v:0.01, tx:'毎レベル 草属性の武器の攻撃力 +1%'},
+    hp:1.00, spd:1.00, pw:0.95, area:1.08, ele:0.10, elp:0, crit:0, regen:0,
+    cost:10, cond:'kills',  val:12000, condTx:'累計 12,000 体を討伐する' }
 };
 var ALLCHR=0;   // 1で全キャラ解放（開発用）。製品は 0
 var UNL={}, SELCH='knight';
 (function(){ for(var k in CHARS) UNL[k]=ALLCHR?1:(k==='knight'?1:0); })();
-var ACH={lv:0, kills:0, reacts:0, clear:0, time:0, dmg:0, crit:0, survt:0, logins:0};
+var ACH={lv:0, kills:0, reacts:0, clear:0, time:0, dmg:0, crit:0, survt:0, logins:0, killTh:0, killIc:0};
 function CH(){ return CHARS[SELCH]||CHARS.knight; }
 // キャラの毎レベル成長
 function achOK(id){
   var c=CHARS[id];
-  if(!c.cond) return 1;
-  return (ACH[c.cond]||0)>=c.val;
+  return condMet(c.cond,c.val);   // stage/clear/数値カウンタを一括判定（stage対応でcryo/thundr/necroの実績解放を修正）
 }
 function achNow(id){
   var c=CHARS[id];
   if(!c.cond) return '';
+  if(c.cond==='stage') return STGCLEAR[c.val]?'達成':'未達成';
   var v=ACH[c.cond]||0;
   return (c.cond==='clear')?(v?'達成':'未達成'):(fmt(v)+' / '+fmt(c.val));
 }
@@ -2544,7 +2562,7 @@ function figInfo(id){
   if(BOSS[id]){ var B=BOSS[id], tt=ETYPE[B.key]||{}; return {nm:B.nm,shape:tt.shape,col:tt.col,dark:tt.dark,desc:BDEX[id]||'',boss:true}; }
   var t=ETYPE[id]||{}; return {nm:t.nm,shape:t.shape,col:t.col,dark:t.dark,desc:DEX[id]||'',boss:false};
 }
-var VERSION='α1.0.144'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
+var VERSION='α1.0.151'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
 function applySave(o){
   for(var i=0;i<UPG.length;i++) META[UPG[i].id]=0;
   try{
@@ -2664,6 +2682,8 @@ var cool={};
 
 /* ============ 派生ステータス ============ */
 function GROW(k){ var g=CH().grow; return (g&&g.k===k)?g.v*(P.lv-1):0; }
+// 農夫：投げる鎌の追加本数（per レベルごとに +1、階段状）
+function scytheLvBonus(){ var g=CH().grow; return (g&&g.k==='scythe_cnt')?Math.floor(P.lv/g.per):0; }
 // 爆弾魔：武器由来の爆発だけを伸ばす（元素反応の爆発は対象外）
 function pw(w){
   var m=(1+0.12*(P.p.power||0)+0.06*M('might'))*CH().pw;
@@ -2672,6 +2692,8 @@ function pw(w){
     if(GROW('light')  &&ELW.holy.indexOf(w)>=0)    m*=(1+GROW('light'));
     if(GROW('icep')   &&ELW.ice.indexOf(w)>=0)     m*=(1+GROW('icep'));
     if(GROW('thunp')  &&ELW.thunder.indexOf(w)>=0) m*=(1+GROW('thunp'));
+    if(GROW('darkp')  &&ELW.dark.indexOf(w)>=0)    m*=(1+GROW('darkp'));
+    if(GROW('grassp') &&ELW.grass.indexOf(w)>=0)   m*=(1+GROW('grassp'));
   }
   return m;
 }
@@ -3272,7 +3294,7 @@ function doFlame(dt){
 function doScythe(){
   var e=nearest(P.x,P.y,RNG('scythe'));
   var base=e?Math.atan2(e.y-P.y,e.x-P.x):P.face;
-  var cnt=1+CNT('scythe'), rng=210*AREA('scythe')*RNGM('scythe'), dmg=20*DMG('scythe')*pw('scythe');
+  var cnt=1+CNT('scythe')+scytheLvBonus(), rng=210*AREA('scythe')*RNGM('scythe'), dmg=20*DMG('scythe')*pw('scythe');   // 農夫：20レベルごと+1本（ラン内強化と加算）
   for(var i=0;i<cnt;i++){
     scys.push({ a:base+(i-(cnt-1)/2)*0.55, t:0, dur:0.95, rng:rng, dmg:dmg,
                 x:P.x, y:P.y, spin:0, back:0, hit:[] });
@@ -3366,12 +3388,17 @@ function doAnchor(){
 function doToxin(){
   var e=nearest(P.x,P.y,RNG('toxin')); if(!e) return;
   var ar=AREA('toxin');
+  var cnt=1+CNT('toxin'), prad=70*ar, pdmg=4*DMG('toxin')*pw('toxin');   // 発射数（毒瓶の count 軸／最大3本）
   // 瓶を放物線で投げ、着弾地点(bomb landing)で毒沼が発生する
-  bombs.push({ sx:P.x, sy:P.y, tx:e.x+(Math.random()-.5)*44, ty:e.y+(Math.random()-.5)*44,
-    t:0, dur:0.58, spin:0, x:P.x, y:P.y, h:0,
-    pois:1, prad:70*ar, pdmg:4*DMG('toxin')*pw('toxin') });
+  for(var i=0;i<cnt;i++){
+    var sp=(i===0)?0:(40+Math.random()*70), sa=Math.random()*6.283;      // 2本目以降は着弾点を散らして毒沼を広く展開
+    bombs.push({ sx:P.x, sy:P.y,
+      tx:e.x+Math.cos(sa)*sp+(Math.random()-.5)*44, ty:e.y+Math.sin(sa)*sp+(Math.random()-.5)*44,
+      t:0, dur:0.58, spin:0, x:P.x, y:P.y, h:0,
+      pois:1, prad:prad, pdmg:pdmg });
+  }
   sfx(300,.08,'sine',.045,.6);
-  wgain('toxin',1);
+  wgain('toxin',cnt);
 }
 function moveBombs(dt){
   for(var i=bombs.length-1;i>=0;i--){
@@ -4826,6 +4853,11 @@ function hurt(e,dmg,nx,ny,el){
 function kill(e){
   if(e.dead) return;
   e.dead=1; kills++;
+  // 属性別キル数（解放条件用）：とどめの武器(SRC)が雷/氷属性なら加算
+  if(SRC){
+    if(ELW.thunder.indexOf(SRC)>=0) ACH.killTh=(ACH.killTh||0)+1;
+    else if(ELW.ice.indexOf(SRC)>=0) ACH.killIc=(ACH.killIc||0)+1;
+  }
   // ブーマー：死亡時に毒の沼を残す（乗ると継続ダメージ）
   if(e.puddle){
     puddles.push({x:e.x,y:e.y,r:(e.r||18)+34,life:6,t:0});
@@ -5010,16 +5042,14 @@ function moveVacs(dt){
 function drawVac(v){
   ctx.save(); ctx.translate(v.x,v.y);
   var p=0.6+Math.sin(v.t*5)*0.4;
-  ctx.globalAlpha=.14+p*.16;
-  ctx.fillStyle='#56e0ff'; ctx.beginPath(); ctx.arc(0,0,30,0,6.3); ctx.fill();
-  ctx.globalAlpha=1; ctx.rotate(v.t*3);
-  ctx.strokeStyle='#7fe6ff'; ctx.lineWidth=3; ctx.lineCap='round';
-  for(var i=0;i<3;i++){
-    var a=i/3*6.283;
-    ctx.beginPath();
-    ctx.arc(0,0,14,a,a+1.6); ctx.stroke();
-  }
-  ctx.fillStyle='#eafaff'; ctx.beginPath(); ctx.arc(0,0,5,0,6.3); ctx.fill();
+  // 視認用の青いグロー（引き寄せを連想）
+  ctx.globalAlpha=.16+p*.18;
+  ctx.fillStyle='#56e0ff'; ctx.beginPath(); ctx.arc(0,0,26,0,6.3); ctx.fill();
+  ctx.globalAlpha=1;
+  // 磁石アイコン🧲（ふわりと上下に浮遊）
+  var by=Math.sin(v.t*3)*2.5;
+  ctx.font='30px serif'; ctx.textAlign='center'; ctx.textBaseline='middle';
+  ctx.fillText('🧲',0,by);
   ctx.restore();
 }
 // 地面に残る効果（亀裂・氷柱・炎の帯）をまとめて扱う
@@ -5529,7 +5559,7 @@ function render(){
   var sx=(Math.random()-.5)*sh, sy=(Math.random()-.5)*sh;
   ctx.save();
   if(VZOOM!==1){ ctx.translate(W/2,H/2); ctx.scale(VZOOM,VZOOM); ctx.translate(-W/2,-H/2); }   // 視野：自機中心にズームアウト
-  var camx=P.x-W/2-sx, camy=P.y-H/2-sy;
+  var camx=Math.round(P.x-W/2-sx), camy=Math.round(P.y-H/2-sy);   // 整数に丸めてサブピクセル描画を避ける（軽量化＋くっきり）
   ctx.translate(-camx,-camy);
 
   drawGround(camx,camy);
@@ -5541,7 +5571,6 @@ function render(){
   for(i=0;i<relics.length;i++) drawRelic(relics[i]);
   for(i=0;i<chests.length;i++) drawChest(chests[i]);
   for(i=0;i<coins.length;i++) drawCoin(coins[i]);
-  for(i=0;i<vacs.length;i++) drawVac(vacs[i]);
   for(i=0;i<gems.length;i++) drawGem(gems[i]);
   for(i=0;i<zones.length;i++) drawZone(zones[i]);
   for(i=0;i<holes.length;i++) drawHole(holes[i]);
@@ -5594,6 +5623,8 @@ function render(){
   for(i=0;i<bolts.length;i++) drawChain(bolts[i]);
   // 敵弾は自機エフェクトより最前面に描く：何が当たるか常に見えるように（弾幕の視認性対策）
   for(i=0;i<ebul.length;i++) drawEbul(ebul[i]);
+  for(i=0;i<enemies.length;i++) if(!enemies[i].dead) drawTele(enemies[i]);   // 敵の攻撃予告を最前面に（自機エフェクトで隠さない）
+  for(i=0;i<vacs.length;i++) drawVac(vacs[i]);                               // 磁石も最前面に（拾い逃さないように）
   drawEnemyOutlines();
   for(i=0;i<dmgs.length;i++) drawDmg(dmgs[i]);
 
@@ -6375,6 +6406,29 @@ function drawEnemy(e){
     ctx.fillStyle='#c89ce0'; ctx.fillRect(-bw/2,-R-14,bw*Math.max(0,e.hp/e.mhp),5);
   }
 
+  if(e.el&&ELEM[e.el]){
+    var ec=ELEM[e.el].col, pulse=0.6+Math.sin(time*12+e.ph)*0.4;
+    ctx.globalAlpha=0.30*pulse;
+    ctx.fillStyle=ec; ctx.beginPath(); ctx.arc(0,0,R+6,0,6.3); ctx.fill();
+    ctx.globalAlpha=1;
+    ctx.fillStyle=ec; ctx.beginPath(); ctx.arc(0,-R-10,4.5,0,6.3); ctx.fill();
+  }
+  if(e.boss){
+    ctx.strokeStyle='#ff4d6d'; ctx.lineWidth=3;
+    ctx.beginPath(); ctx.arc(0,0,R+10,0,6.3); ctx.stroke();
+  }else if(e.elite){
+    ctx.strokeStyle='#ffcc4d'; ctx.lineWidth=2;
+    ctx.beginPath(); ctx.arc(0,0,R+7,0,6.3); ctx.stroke();
+    var bw2=R*2.4;
+    ctx.fillStyle='#000'; ctx.fillRect(-bw2/2,-R-16,bw2,5);
+    ctx.fillStyle='#ff4d6d'; ctx.fillRect(-bw2/2,-R-16,bw2*Math.max(0,e.hp/e.mhp),5);
+  }
+  ctx.restore();
+}
+// 敵の攻撃予告（突進線・拳・ブレス等）は自機エフェクトより最前面に描く（自分の攻撃で隠れないように）
+function drawTele(e){
+  ctx.save(); ctx.translate(e.x,e.y);
+  var R=e.r;
   // 突進の予告：溜め中はプレイヤー方向へ、実際の突進距離ぶんの赤いラインを伸ばす
   if((e.st==='wind'||e.st==='gwind'||e.st==='kcwind')&&e.chspd>0){
     // ケルビ・墓守・スケルトンキングは予告開始時に方向固定なのでその向きを表示
@@ -6510,23 +6564,6 @@ function drawEnemy(e){
     }
   }
 
-  if(e.el&&ELEM[e.el]){
-    var ec=ELEM[e.el].col, pulse=0.6+Math.sin(time*12+e.ph)*0.4;
-    ctx.globalAlpha=0.30*pulse;
-    ctx.fillStyle=ec; ctx.beginPath(); ctx.arc(0,0,R+6,0,6.3); ctx.fill();
-    ctx.globalAlpha=1;
-    ctx.fillStyle=ec; ctx.beginPath(); ctx.arc(0,-R-10,4.5,0,6.3); ctx.fill();
-  }
-  if(e.boss){
-    ctx.strokeStyle='#ff4d6d'; ctx.lineWidth=3;
-    ctx.beginPath(); ctx.arc(0,0,R+10,0,6.3); ctx.stroke();
-  }else if(e.elite){
-    ctx.strokeStyle='#ffcc4d'; ctx.lineWidth=2;
-    ctx.beginPath(); ctx.arc(0,0,R+7,0,6.3); ctx.stroke();
-    var bw=R*2.4;
-    ctx.fillStyle='#000'; ctx.fillRect(-bw/2,-R-16,bw,5);
-    ctx.fillStyle='#ff4d6d'; ctx.fillRect(-bw/2,-R-16,bw*Math.max(0,e.hp/e.mhp),5);
-  }
   ctx.restore();
 }
 // エフェクトに埋もれても敵の位置が分かるよう、最前面に輪郭だけを描く
@@ -7162,6 +7199,8 @@ function syncTitle(){
 var chrEl=null;
 function renderChr(){
   chrEl=chrEl||document.getElementById('chr');
+  var _nu=unlockCheck();                                  // 画面を開いた時点で条件達成キャラを即解放（銃士等が「達成なのに未解放」を防ぐ）
+  if(_nu&&_nu.length){ saveGame(); syncTitle(); }
   document.getElementById('chrpurse').innerHTML=purseHtml();
   var L=document.getElementById('chrlist');
   L.innerHTML='';
@@ -7647,7 +7686,9 @@ function buildText(){
   for(id in ELEM){ if(elemSourceOwned(id)) ch.push(ELEM[id].nm+' <b>'+Math.round(elemChance(id)*100)+'%</b>'); }
   var charBlock='<div class="wrow"><span class="wg">'+CH().glyph+'</span>'+CH().nm+
     (CH().grow?'<span style="color:var(--gold)">　'+CH().grow.tx+'（現在 +'+
-       (CH().grow.v*(P.lv-1)*100).toFixed(0)+'%）</span>':'')+'</div>';
+       (CH().grow.per?Math.floor(P.lv/CH().grow.per)+CH().grow.unit
+         :CH().grow.unit?(CH().grow.v*(P.lv-1)).toFixed(0)+CH().grow.unit
+                        :(CH().grow.v*(P.lv-1)*100).toFixed(0)+'%')+'）</span>':'')+'</div>';
   return '経過 <b>'+(m<10?'0':'')+m+':'+(s<10?'0':'')+s+(ENDLESS?'  ♾ 無限':' / 20:00')+'</b>　'+
          'SCORE <b>'+fmt(score)+'</b>　討伐 <b>'+kills+'</b>　元素反応 <span class="el">'+reacts+'</span>　会心 <b>'+crits+'</b><br>'+
          '持ち帰り 銀貨 <b>'+silver+'</b>　金貨 <b>'+gold+'</b><br>'+
@@ -8006,6 +8047,31 @@ Array.prototype.forEach.call(document.querySelectorAll('#setview button'),functi
 // 更新履歴：1つのお知らせ内で「バージョン見出し」ごとに変更点を並べる（新しい順）。
 // マージのたびに先頭へ新バージョンを追加し、VERSION も更新する。
 var UPDATES=[
+  {v:'α1.0.151', items:[
+    '敵の攻撃予告（突進の赤い線、ヘカトンケイルの拳、ドラゴンのブレスなど）を最前面に描くようにしました。自分の攻撃エフェクトで予告が隠れて避けられない、ということがなくなります。',
+    '磁石（マグネット）も最前面に描くようにし、見た目を🧲アイコンに変更しました。攻撃エフェクトに埋もれて拾い逃すことがなくなります。',
+  ]},
+  {v:'α1.0.150', items:[
+    '氷術師・雷鳴使いの解放条件を変更しました。氷術師＝「氷属性の武器で3,000体討伐」、雷鳴使い＝「雷属性の武器で3,000体討伐」（新カウンタのため0からのカウントです）。',
+    'キャラクター画面を開いた時点で、解放条件を満たしているキャラが即座に解放されるよう修正しました（銃士などが「達成なのに未解放」のままになる問題を解消）。',
+  ]},
+  {v:'α1.0.149', items:[
+    '農夫の鎌の増え方を調整。「毎レベル+1本」は増えすぎだったため、「20レベルごとに+1本」に変更しました（ラン中の鎌+1強化は従来どおり加算）。',
+  ]},
+  {v:'α1.0.148', items:[
+    '新キャラクター「調剤師」を追加！ 初期武器は毒瓶。元素付与+10%・範囲+8%の毒の専門家で、レベルアップごとに草属性の武器の攻撃力+1%。解放条件：累計 12,000 体を討伐。',
+    '毒瓶に強化軸「発射数」を追加。ラン中の強化で最大＋2（合計3本）まで同時に投げられるようになり、着弾点が散って毒沼を広く展開します。',
+  ]},
+  {v:'α1.0.147', items:[
+    '新キャラクター「死霊術師」を追加！ 初期武器はダークハンド。最大HP+10%・元素付与+10%の闇の術者で、レベルアップごとに闇属性の武器の攻撃力+1%。解放条件：ステージ3（古代の王墓）をクリアする。',
+    'あわせて、氷術師（ステージ2）・雷鳴使い（ステージ3）が「ステージクリアで自動解放」されるよう内部処理を修正しました（従来は条件表示のみで自動解放されていませんでした）。',
+  ]},
+  {v:'α1.0.146', items:[
+    '新キャラクター「農夫」を追加！ 初期武器は鎌。攻撃力+8%・範囲+12%・最大HP+15%の耐久型で、レベルアップごとに投げる鎌が＋1本（ラン中の強化とも加算。高レベルでは全方位に大量の鎌が舞います）。解放条件：累計 25,000 体を討伐。',
+  ]},
+  {v:'α1.0.145', items:[
+    'カメラの描画位置を整数ピクセルに丸めて軽量化しました。画面の揺れ演出時にサブピクセル描画が減り、動作が軽く・映像がくっきりします（揺れの強さ設定「なし〜強」は従来どおり）。',
+  ]},
   {v:'α1.0.144', items:[
     '既存武器を使う新キャラを3体追加しました。氷術師（アイスジャベリン／元素付与+12%・移動-5%・毎Lv氷武器+1%／解放:ステージ2クリア）、雷鳴使い（ドラゴンボルト／会心+8%・HP-10%・毎Lv雷武器+1%／解放:ステージ3クリア）、銃士（マスケット／会心+10%・移動+5%・HP-15%・毎Lv攻撃間隔-0.5%／解放:累計7,000討伐）。※立ち絵は後日追加予定です。',
   ]},
