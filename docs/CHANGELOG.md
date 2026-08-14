@@ -10,6 +10,9 @@
 - リザルト画面と設定画面に `VERSION` を表示。
 - お知らせ（`UPDATES` 配列）は**1枠内でバージョン見出しごとに変更点を掲載**（新しい順）。マージ時は `UPDATES` 先頭に新バージョンを追加し `VERSION` を一致させる。
 
+## ver.α1.0.156
+- 全体実績「討伐数」(`ACHV` kills) の tiers を `[1000,10000,100000,1000000]`→`[...,10000000,100000000]`（1,000万・1億）に拡張、words に `殲滅王`/`殺戮神` を追加。金貨は `GOLD_TIER` 上限(500)で頭打ち。
+
 ## ver.α1.0.155
 - 武器ごとの特性リセットを追加。`resetMastOne(w){ SEL[w]=[]; saveGame(); }` を新設。`openWeaponDetail` の強化内容欄に、取得済み強化がある場合のみ「この武器の特性をリセット」ボタン(`.wdreset`)を表示し、confirm後に `resetMastOne(w)`→`openWeaponDetail(w)` 再描画＋`syncTitle()`。熟練度レベル(`WX`)は保持し選択(`SEL[w]`)のみクリア。既存の一括リセット(`resetMast`/`#mastreset`)は据え置き。検証：`check.py` OK。
 

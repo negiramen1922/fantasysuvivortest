@@ -2467,7 +2467,7 @@ function claimDaily(){
 // すべての実績が「二つ名パーツ（冠=前半 / 銘=後半）＋金貨（ティアで増額）」を付与。冠1つ＋銘1つを自由に組み合わせて表示。
 var GOLD_TIER=[10,30,80,200,500];   // ティア（0始まり）ごとの金貨。ティアが上がるほど増える。
 var ACHV=[
-  {k:'kills', nm:'討伐数',       ic:'⚔', stat:'kills',  side:'suf', tiers:[1000,10000,100000,1000000],               words:['討伐者','殲滅者','虐殺者','絶滅者']},
+  {k:'kills', nm:'討伐数',       ic:'⚔', stat:'kills',  side:'suf', tiers:[1000,10000,100000,1000000,10000000,100000000], words:['討伐者','殲滅者','虐殺者','絶滅者','殲滅王','殺戮神']},
   {k:'dmg',   nm:'累計ダメージ', ic:'💥', stat:'dmg',    side:'pre', tiers:[10000,100000,1000000,10000000,100000000], words:['一撃の','強打の','破壊の','崩壊の','終焉の']},
   {k:'survt', nm:'累計生存時間', ic:'⏳', stat:'survt',  side:'suf', tiers:[600,6000,30000,60000],                    words:['生存者','不屈の兵','歴戦の勇','不死身']},
   {k:'logins',nm:'累計ログイン', ic:'🗓', stat:'logins', side:'suf', tiers:[10,50,100,300],                           words:['常連','皆勤者','ヌシ','伝説の主']},
@@ -2580,7 +2580,7 @@ function figInfo(id){
   if(BOSS[id]){ var B=BOSS[id], tt=ETYPE[B.key]||{}; return {nm:B.nm,shape:tt.shape,col:tt.col,dark:tt.dark,desc:BDEX[id]||'',boss:true}; }
   var t=ETYPE[id]||{}; return {nm:t.nm,shape:t.shape,col:t.col,dark:t.dark,desc:DEX[id]||'',boss:false};
 }
-var VERSION='α1.0.155'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
+var VERSION='α1.0.156'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
 function applySave(o){
   for(var i=0;i<UPG.length;i++) META[UPG[i].id]=0;
   try{
@@ -8073,6 +8073,9 @@ Array.prototype.forEach.call(document.querySelectorAll('#setview button'),functi
 // 更新履歴：1つのお知らせ内で「バージョン見出し」ごとに変更点を並べる（新しい順）。
 // マージのたびに先頭へ新バージョンを追加し、VERSION も更新する。
 var UPDATES=[
+  {v:'α1.0.156', items:[
+    '実績「討伐数」を拡張。累計討伐 1,000万・1億 の段階を追加しました（二つ名「殲滅王」「殺戮神」）。',
+  ]},
   {v:'α1.0.155', items:[
     '武器ごとに特性（熟練の強化）をリセットできるようにしました。武器熟練→武器を選んで詳細を開くと「この武器の特性をリセット」ボタンが出ます（熟練度レベルは保持され、強化を選び直せます）。全部まとめてリセットしたいときは従来の「特性リセット」もそのまま使えます。',
   ]},
