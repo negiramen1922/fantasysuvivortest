@@ -2309,7 +2309,13 @@ var CHARS={
     st:'会心率 +10%／移動速度 +5%／最大HP −15%',
     grow:{k:'rof', v:0.005, tx:'毎レベル 攻撃の間隔 −0.5%'},
     hp:0.85, spd:1.05, pw:1.00, area:1.00, ele:0, elp:0, crit:0.10, regen:0,
-    cost:10, cond:'kills',  val:7000,  condTx:'累計 7,000 体を討伐する' }
+    cost:10, cond:'kills',  val:7000,  condTx:'累計 7,000 体を討伐する' },
+  farmer:{ nm:'農夫',   glyph:'\u{1F33E}', w:'scythe',
+    tx:'鎌を振るう働き者。刈るほどに手数が増え、数の暴力に打たれ強い。',
+    st:'攻撃力 +8%／範囲 +12%／最大HP +15%',
+    grow:{k:'scythe_cnt', v:1, unit:'本', tx:'毎レベル 投げる鎌 +1本'},
+    hp:1.15, spd:1.00, pw:1.08, area:1.12, ele:0, elp:0, crit:0, regen:0,
+    cost:10, cond:'kills',  val:25000, condTx:'累計 25,000 体を討伐する' }
 };
 var ALLCHR=0;   // 1で全キャラ解放（開発用）。製品は 0
 var UNL={}, SELCH='knight';
@@ -2544,7 +2550,7 @@ function figInfo(id){
   if(BOSS[id]){ var B=BOSS[id], tt=ETYPE[B.key]||{}; return {nm:B.nm,shape:tt.shape,col:tt.col,dark:tt.dark,desc:BDEX[id]||'',boss:true}; }
   var t=ETYPE[id]||{}; return {nm:t.nm,shape:t.shape,col:t.col,dark:t.dark,desc:DEX[id]||'',boss:false};
 }
-var VERSION='α1.0.145'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
+var VERSION='α1.0.146'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
 function applySave(o){
   for(var i=0;i<UPG.length;i++) META[UPG[i].id]=0;
   try{
@@ -3272,7 +3278,7 @@ function doFlame(dt){
 function doScythe(){
   var e=nearest(P.x,P.y,RNG('scythe'));
   var base=e?Math.atan2(e.y-P.y,e.x-P.x):P.face;
-  var cnt=1+CNT('scythe'), rng=210*AREA('scythe')*RNGM('scythe'), dmg=20*DMG('scythe')*pw('scythe');
+  var cnt=1+CNT('scythe')+Math.round(GROW('scythe_cnt')), rng=210*AREA('scythe')*RNGM('scythe'), dmg=20*DMG('scythe')*pw('scythe');   // 農夫：毎レベル+1本（ラン内強化と加算）
   for(var i=0;i<cnt;i++){
     scys.push({ a:base+(i-(cnt-1)/2)*0.55, t:0, dur:0.95, rng:rng, dmg:dmg,
                 x:P.x, y:P.y, spin:0, back:0, hit:[] });
@@ -7647,7 +7653,8 @@ function buildText(){
   for(id in ELEM){ if(elemSourceOwned(id)) ch.push(ELEM[id].nm+' <b>'+Math.round(elemChance(id)*100)+'%</b>'); }
   var charBlock='<div class="wrow"><span class="wg">'+CH().glyph+'</span>'+CH().nm+
     (CH().grow?'<span style="color:var(--gold)">　'+CH().grow.tx+'（現在 +'+
-       (CH().grow.v*(P.lv-1)*100).toFixed(0)+'%）</span>':'')+'</div>';
+       (CH().grow.unit?(CH().grow.v*(P.lv-1)).toFixed(0)+CH().grow.unit
+                      :(CH().grow.v*(P.lv-1)*100).toFixed(0)+'%')+'）</span>':'')+'</div>';
   return '経過 <b>'+(m<10?'0':'')+m+':'+(s<10?'0':'')+s+(ENDLESS?'  ♾ 無限':' / 20:00')+'</b>　'+
          'SCORE <b>'+fmt(score)+'</b>　討伐 <b>'+kills+'</b>　元素反応 <span class="el">'+reacts+'</span>　会心 <b>'+crits+'</b><br>'+
          '持ち帰り 銀貨 <b>'+silver+'</b>　金貨 <b>'+gold+'</b><br>'+
@@ -8006,6 +8013,9 @@ Array.prototype.forEach.call(document.querySelectorAll('#setview button'),functi
 // 更新履歴：1つのお知らせ内で「バージョン見出し」ごとに変更点を並べる（新しい順）。
 // マージのたびに先頭へ新バージョンを追加し、VERSION も更新する。
 var UPDATES=[
+  {v:'α1.0.146', items:[
+    '新キャラクター「農夫」を追加！ 初期武器は鎌。攻撃力+8%・範囲+12%・最大HP+15%の耐久型で、レベルアップごとに投げる鎌が＋1本（ラン中の強化とも加算。高レベルでは全方位に大量の鎌が舞います）。解放条件：累計 25,000 体を討伐。',
+  ]},
   {v:'α1.0.145', items:[
     'カメラの描画位置を整数ピクセルに丸めて軽量化しました。画面の揺れ演出時にサブピクセル描画が減り、動作が軽く・映像がくっきりします（揺れの強さ設定「なし〜強」は従来どおり）。',
   ]},

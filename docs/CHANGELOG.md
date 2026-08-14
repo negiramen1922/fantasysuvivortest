@@ -10,6 +10,10 @@
 - リザルト画面と設定画面に `VERSION` を表示。
 - お知らせ（`UPDATES` 配列）は**1枠内でバージョン見出しごとに変更点を掲載**（新しい順）。マージ時は `UPDATES` 先頭に新バージョンを追加し `VERSION` を一致させる。
 
+## ver.α1.0.146
+- 新キャラ「農夫(farmer)」を追加。初期武器 `scythe`、glyph 🌾。`hp:1.15 spd:1.00 pw:1.08 area:1.12`。`grow:{k:'scythe_cnt',v:1,unit:'本'}`＝毎レベル投げる鎌+1本。`doScythe` の `cnt=1+CNT('scythe')+Math.round(GROW('scythe_cnt'))` に配線（ラン内 count 軸＝AX/TR/LB と加算）。扇状 `0.55rad` 間隔なので高レベルでは全方位化。解放条件 `cond:'kills' val:25000`、`cost:10`。
+- `buildText` のキャラ成長表示を汎用化：`grow.unit` があれば `（現在 +N本）`、無ければ従来の `+XX%`。`GROW('scythe_cnt')` は農夫以外0で他キャラ不変。
+
 ## ver.α1.0.145
 - 描画のカメラ座標 `camx/camy` を `Math.round()` で整数ピクセルに丸めた（`render`）。画面全体をピクセルグリッドに載せることで、揺れ(`shake*SHK`)有効時の全描画要素のサブピクセル・アンチエイリアスを削減し、描画負荷を軽減＆映像をくっきり化。揺れ強度設定（なし/弱/標準/強＝`SHK`）は据え置き。HUD等の画面座標描画は `ctx.restore()` 後なので影響なし。
 
