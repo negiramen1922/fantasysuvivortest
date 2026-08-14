@@ -1389,6 +1389,11 @@ var ETYPE={
   kelpie:   { nm:'ケルピー',     res:0.18, hp:150, spd:150, r:15, col:'#7ab0d8', dark:'#2a4a63', xp:4, dmg:20, shape:'kelpie',    pts:46, sv:0.12, ai:'charge', range:300, acd:2.8, chspd:540, wind:0.5, chdur:1.0 },
   shark:    { nm:'サメ',         res:0.30, hp:210, spd:92,  r:18, col:'#9aa8b8', dark:'#37414f', xp:6, dmg:30, shape:'shark',     pts:66, sv:0.15, ai:'charge', range:360, acd:3.2, chspd:620, wind:0.7, chdur:1.1 },
   manta:    { nm:'マンタ',       res:0.25, hp:170, spd:150, r:19, col:'#5a6a8a', dark:'#20283a', xp:5, dmg:18, shape:'manta',     pts:56, sv:0.14, ai:'fly' },
+  hermit:   { nm:'ヤドカリ',     res:0.30, hp:260, spd:150, r:16, col:'#d0a060', dark:'#5a4020', xp:5, dmg:18, shape:'hermit',    pts:56, sv:0.14, ai:'hermit', shield:140 },
+  clam:     { nm:'カイ',         res:0.35, hp:180, spd:48,  r:15, col:'#c09ac0', dark:'#4a2a4a', xp:4, dmg:18, shape:'clam',      pts:48, sv:0.13, ai:'burrow', shield:120 },
+  serpent:  { nm:'ミズチ',       res:0.20, hp:170, spd:96,  r:14, col:'#4a9a7a', dark:'#1a4535', xp:4, dmg:20, shape:'serpent',   pts:50, sv:0.13, ai:'serpent', range:320, acd:3.0, chspd:560, wind:0.55, chdur:0.9 },
+  jelly:    { nm:'クラゲ',       res:0.05, hp:90,  spd:52,  r:14, col:'#c0a0e0', dark:'#4a3060', xp:3, dmg:10, shape:'jelly',     pts:30, sv:0.10, cpois:1 },
+  siren:    { nm:'セイレーン',   res:0.12, hp:150, spd:44,  r:14, col:'#e0a0b0', dark:'#5a2a3a', xp:5, dmg:16, shape:'siren',     pts:54, sv:0.14, ai:'beam', range:420, acd:4.2, wind:1.0, bdmg:20 },
   // エルダートレントが生やす回復の木（ウェーブには出ない・図鑑なし）
   healtree: { nm:'いのちの木',           res:0.30, hp:100, spd:0,   r:20, col:'#6e8a4a', dark:'#33421f', xp:0, dmg:0,  shape:'treant',   pts:120, sv:0, ai:'healtree' },
   // ボス専用の見た目（ウェーブには出ない）
@@ -1441,12 +1446,18 @@ var DEX={
   seaturtle:'分厚い甲羅の海亀。遅いが頑丈で、軽い攻撃は通らない。',
   kelpie:'水面を駆ける魔馬。高速で一気に距離を詰めてくる。',
   shark:'獰猛な鮫。長い助走から予告つきで大きく突進する。',
-  manta:'海を舞う大鬼えい。ゆったり滑空して迫る。'
+  manta:'海を舞う大鬼えい。ゆったり滑空して迫る。',
+  hermit:'貝殻を背負ったヤドカリ。殻がある間は素早いが、殻を割ると鈍くなる。頑丈。',
+  clam:'砂に潜む大貝。足元から飛び出して襲い、殻を割らないと本体に届かない。',
+  serpent:'水を這うミズチ。左右に蛇行して間合いを詰め、鋭く突進する。',
+  jelly:'漂うクラゲ。触れると毒に侵され、じわじわ蝕まれる。',
+  siren:'歌う海妖セイレーン。予告線に沿って強力なビームを放つ。'
 };
 var DEXLIST=['slime','goblin','bat','boar','wolf','orc','rider','harpy','ogre','turtle','slimeM','slimeS',
   'spirit','bird','myconid','bee','panther','dryad','mantis','spider','beetle','gnat','treant',
   'skeleton','mummy','wraith','fly','shadow','gargoyle','ghoul','lich','shieldman','sarcher','necro','dullahan','boomer',
-  'flyingfish','sahagin','crab','seaturtle','kelpie','shark','manta'];
+  'flyingfish','sahagin','crab','seaturtle','kelpie','shark','manta',
+  'hermit','clam','serpent','jelly','siren'];
 // モンスターの種族タグ（ナイトメアの属性強化カード等の土台）。ザコ＝ETYPEキー、ボス＝BOSSキー。
 var MTAG={
   slime:['スライム'], slimeM:['スライム'], slimeS:['スライム'],
@@ -1461,6 +1472,7 @@ var MTAG={
   wraith:['アンデッド','ファントム'], shadow:['ファントム'], gargoyle:['アンデッド','飛行'],
   flyingfish:['ビースト','飛行'], sahagin:['亜人'], crab:['ビースト'], seaturtle:['ビースト'],
   kelpie:['ビースト'], shark:['ビースト'], manta:['ビースト','飛行'],
+  hermit:['ビースト'], clam:['ビースト'], serpent:['竜','ビースト'], jelly:['ビースト'], siren:['亜人'],
   slimeking:['スライム'],
   greatboar:['ビースト'], fenrir:['ビースト'],
   goblinking:['亜人'],
@@ -1556,13 +1568,16 @@ var BOSS_AT3=[[300,'gravekeeper',26000],[600,'skeletonking',130000],[900,'hecato
 // ※トビウオ(flyingfish)は dash 型＝スウォーム専用（swarmK）。通常湧きには入れない。
 var WAVE4=[
   { t:0,    mix:[['sahagin',1.00]] },
-  { t:60,   mix:[['sahagin',0.62],['crab',1.00]] },
-  { t:150,  mix:[['sahagin',0.42],['crab',0.72],['kelpie',1.00]] },
-  { t:270,  mix:[['sahagin',0.24],['crab',0.48],['kelpie',0.70],['seaturtle',0.85],['manta',1.00]] },
-  { t:420,  mix:[['crab',0.22],['kelpie',0.44],['seaturtle',0.62],['manta',0.82],['shark',1.00]] },
-  { t:600,  mix:[['kelpie',0.22],['seaturtle',0.42],['manta',0.64],['shark',0.84],['sahagin',1.00]] },
-  { t:840,  mix:[['seaturtle',0.22],['manta',0.44],['shark',0.68],['kelpie',0.86],['crab',1.00]] },
-  { t:1080, mix:[['shark',0.30],['manta',0.55],['kelpie',0.76],['seaturtle',0.90],['crab',1.00]] }
+  { t:30,   mix:[['sahagin',0.62],['jelly',1.00]] },
+  { t:90,   mix:[['sahagin',0.44],['jelly',0.72],['crab',1.00]] },
+  { t:150,  mix:[['sahagin',0.30],['jelly',0.52],['crab',0.76],['serpent',1.00]] },
+  { t:240,  mix:[['jelly',0.22],['crab',0.44],['serpent',0.64],['hermit',0.82],['kelpie',1.00]] },
+  { t:330,  mix:[['crab',0.20],['serpent',0.40],['hermit',0.58],['kelpie',0.78],['clam',1.00]] },
+  { t:420,  mix:[['serpent',0.18],['hermit',0.36],['kelpie',0.54],['clam',0.70],['seaturtle',0.85],['manta',1.00]] },
+  { t:540,  mix:[['hermit',0.18],['kelpie',0.36],['clam',0.52],['seaturtle',0.68],['manta',0.84],['siren',1.00]] },
+  { t:720,  mix:[['kelpie',0.18],['clam',0.34],['seaturtle',0.50],['manta',0.66],['siren',0.82],['shark',1.00]] },
+  { t:960,  mix:[['seaturtle',0.20],['manta',0.38],['siren',0.54],['shark',0.74],['hermit',0.88],['serpent',1.00]] },
+  { t:1140, mix:[['shark',0.24],['siren',0.44],['manta',0.62],['kelpie',0.80],['seaturtle',0.92],['crab',1.00]] }
 ];
 
 // ステージ定義。req をクリア済みで次ステージが解放される。
@@ -2644,7 +2659,7 @@ function figInfo(id){
   if(BOSS[id]){ var B=BOSS[id], tt=ETYPE[B.key]||{}; return {nm:B.nm,shape:tt.shape,col:tt.col,dark:tt.dark,desc:BDEX[id]||'',boss:true}; }
   var t=ETYPE[id]||{}; return {nm:t.nm,shape:t.shape,col:t.col,dark:t.dark,desc:DEX[id]||'',boss:false};
 }
-var VERSION='α1.0.165'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
+var VERSION='α1.0.166'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
 function applySave(o){
   for(var i=0;i<UPG.length;i++) META[UPG[i].id]=0;
   try{
@@ -2749,7 +2764,7 @@ function reset(){
   var hp=Math.round(100*(1+0.10*M('health'))*c.hp);
   var w0={}, wa0={}; w0[c.w]=1; wa0[c.w]={};
   P={ x:0,y:0, r:12, hp:hp, max:hp, spd:190*c.spd, face:0,
-      lv:1, xp:0, need:xpNeed(1), hurt:0, inv:0,
+      lv:1, xp:0, need:xpNeed(1), hurt:0, inv:0, pois:0, poisD:0,
       w:w0, wa:wa0, aw:{}, lb:{}, p:{}, rel:{},
       rr:5+M('reroll'), sk:5+M('skipn') };
   enemies=[]; gems=[]; shots=[]; fx=[]; dmgs=[]; parts=[]; bolts=[]; chests=[]; coins=[]; chaks=[]; scys=[]; bombs=[]; rocks=[]; holes=[]; ebul=[]; quakes=[]; dhits=[]; vacs=[]; vacT=40; bells=[]; swords=[]; zones=[]; volley=[]; puddles=[]; sheep=[]; relics=placeRelics();
@@ -2920,6 +2935,9 @@ function movePlayer(dt){
   if(d>0){ P.x+=dx/d*spd()*dt; P.y+=dy/d*spd()*dt; P.mvdir=Math.atan2(dy,dx); }   // 移動方向を記録（チェンソー等の向きに使う）
   if(P.hurt>0) P.hurt-=dt;
   if(P.inv>0) P.inv-=dt;
+  if(P.pois>0){ P.pois-=dt;                       // クラゲの毒：接触後もじわじわ継続ダメージ
+    if(!P.god&&!P.nodmg){ P.hp-=P.poisD*dt;
+      if(P.hp<=0){ P.hp=0; KILLER={k:'jelly',nm:'クラゲの毒'}; die(); return; } } }
 }
 
 function nearest(x,y,range){
@@ -4297,7 +4315,7 @@ function makeEnemy(k){
     vx:0, vy:0, res:t.res||0, flat:(t.flat||0)*scale,
     range:t.range||0, chspd:t.chspd||0, wind:t.wind||0, chdur:t.chdur||0,
     bspd:t.bspd||0, bdmg:(t.bdmg||0)*dscale, sum:t.sum||'', nsum:t.nsum||0,
-    boom:t.boom||0, boomR:t.boomR||0, boomDmg:(t.boomDmg||0)*dscale, puddle:t.puddle||0, life:0,
+    boom:t.boom||0, boomR:t.boomR||0, boomDmg:(t.boomDmg||0)*dscale, puddle:t.puddle||0, cpois:t.cpois||0, life:0,
     shield:t.shield||0, shieldMax:t.shield||0, buffT:0,
     kb:0, kbx:0, kby:0, ht:0, slow:0, el:0, elT:0, rcd:0, frz:0, dotD:0, dotT:0, dotN:0, vuln:0,
     ph:Math.random()*6.28, elite:0, boss:0, dead:0, uid:(++UID) };
@@ -4874,6 +4892,39 @@ function moveEnemies(dt){
       if(e.life>0){ e.life-=dt; if(e.life<=0){ e.dead=1; continue; } }
       if(d>1500){ e.dead=1; continue; }
     }
+    else if(e.ai==='hermit'){
+      // ヤドカリ：殻(shield)がある間は高速、割れると鈍足。moved=1にしないので通常追尾が動く。
+      if(e.spd0==null) e.spd0=e.spd;
+      e.spd = e.shield>0 ? e.spd0 : e.spd0*0.38;
+    }
+    else if(e.ai==='serpent'){
+      // ミズチ：左右に蛇行して近づき、間合いで突進。
+      if(e.st==='wind'){ e.stT-=dt; moved=1;
+        if(e.stT<=0){ e.st='dash'; e.stT=e.chdur; e.vx=Math.cos(e.aimA)*e.chspd; e.vy=Math.sin(e.aimA)*e.chspd; sfx(160,.14,'sawtooth',.05,.6); } }
+      else if(e.st==='dash'){ e.stT-=dt; moved=1; e.x+=e.vx*dt; e.y+=e.vy*dt; if(e.stT<=0){ e.st=''; e.at=e.acd; } }
+      else if(e.at<=0&&d<e.range){ e.st='wind'; e.stT=e.wind; e.aimA=Math.atan2(dy,dx); moved=1; }
+      else { moved=1;
+        var ux=dx/(d||1), uy=dy/(d||1), pxw=-uy, pyw=ux, wv=Math.sin(time*6+e.ph)*0.6;
+        var sp2=e.slow>0?e.spd*(e.slowMul||0.45):e.spd;
+        e.x+=(ux+pxw*wv)*sp2*dt; e.y+=(uy+pyw*wv)*sp2*dt; }
+    }
+    else if(e.ai==='beam'){
+      // セイレーン：予告線を出してから、その線に沿ってビームを照射。
+      if(e.st==='aim'){ moved=1; e.stT-=dt;
+        if(e.stT<=0){ e.st='fire'; e.stT=0.42; sfx(300,.4,'sawtooth',.06,1.4); } }
+      else if(e.st==='fire'){ moved=1; e.stT-=dt;
+        if(!P.god&&P.hurt<=0&&P.inv<=0){
+          var pa=Math.atan2(P.y-e.y,P.x-e.x);
+          var rel=Math.atan2(Math.sin(pa-e.aimA),Math.cos(pa-e.aimA));
+          var along=d*Math.cos(rel), perp=Math.abs(d*Math.sin(rel));
+          if(along>0&&along<900&&perp<20){
+            P.hp-=e.bdmg*(1-0.04*M('armor'))*(1-0.03*(P.p.bulwark||0))*dexTakeMul(figKey(e)); P.hurt=0.55; shake=Math.min(18,shake+5);
+            if(P.hp<=0){ P.hp=0; setKiller(e); die(); return; }
+          }
+        }
+        if(e.stT<=0){ e.st=''; e.at=e.acd; } }
+      else if(e.at<=0&&d<e.range){ e.st='aim'; e.stT=e.wind; e.aimA=Math.atan2(dy,dx); moved=1; }
+    }
     else if(e.ai==='burrow'){
       // グール：地面から出現。予告(ぼこぼこ)中は動かず・無害、時間経過で出現して以後は追尾。
       if(e.st==='burrow'){ e.stT-=dt; moved=1;
@@ -4910,6 +4961,7 @@ function moveEnemies(dt){
     // --- プレイヤーへの接触 ---
     if(e.dmg>0&&e.st!=='burrow'&&d<e.r+P.r&&P.hurt<=0&&P.inv<=0&&!P.god){
       P.hp-=e.dmg*(1-0.04*M('armor'))*(1-0.03*(P.p.bulwark||0))*dexTakeMul(figKey(e)); P.hurt=0.55; shake=Math.min(16,shake+5);
+      if(e.cpois){ P.pois=Math.max(P.pois||0,3.0); P.poisD=Math.max(P.poisD||0,e.dmg*0.5); }   // クラゲ：接触で毒（3秒間の継続ダメージ）
       sfx(140,.16,'square',.09,.5);
       if(P.hp<=0){ P.hp=0; setKiller(e); die(); return; }
     }
@@ -6260,7 +6312,7 @@ function drawForestShape(s,R,col,dark,t){
   }
 }
 // ステージ4（海）の手続き描画。ctx は敵中心へ translate 済み。頭は左向き（-x）を基本とする。
-var OCEAN={flyingfish:1,sahagin:1,crab:1,seaturtle:1,kelpie:1,shark:1,manta:1};
+var OCEAN={flyingfish:1,sahagin:1,crab:1,seaturtle:1,kelpie:1,shark:1,manta:1,hermit:1,clam:1,serpent:1,jelly:1,siren:1};
 function drawOceanShape(s,R,col,dark,t){
   ctx.fillStyle=col; ctx.strokeStyle=dark;
   if(s==='flyingfish'){
@@ -6321,6 +6373,46 @@ function drawOceanShape(s,R,col,dark,t){
     ctx.fillStyle=dark; ctx.beginPath(); ctx.ellipse(0,R*0.05,R*0.26,R*0.5,0,0,6.3); ctx.fill();             // 胴の稜線
     ctx.strokeStyle=col; ctx.lineWidth=R*0.12; ctx.beginPath(); ctx.moveTo(0,R*0.5); ctx.lineTo(0,R*1.5); ctx.stroke(); ctx.lineWidth=2;  // 尾
     ctx.fillStyle='#0a1a2a'; ctx.beginPath(); ctx.arc(-R*0.35,-R*0.28,R*0.09,0,6.3); ctx.fill(); ctx.beginPath(); ctx.arc(R*0.35,-R*0.28,R*0.09,0,6.3); ctx.fill();
+  }else if(s==='hermit'){
+    ctx.fillStyle=col; ctx.beginPath(); ctx.ellipse(-R*0.3,R*0.1,R*0.6,R*0.5,0,0,6.3); ctx.fill(); ctx.stroke();   // 体（前）
+    ctx.beginPath(); ctx.arc(-R*0.95,-R*0.1,R*0.32,0,6.3); ctx.fill(); ctx.stroke();                                // ハサミ
+    ctx.fillStyle=dark; ctx.beginPath(); ctx.arc(R*0.35,0,R*0.85,0,6.3); ctx.fill(); ctx.stroke();                  // 殻
+    ctx.strokeStyle=col; ctx.lineWidth=R*0.1;
+    ctx.beginPath(); ctx.arc(R*0.35,0,R*0.55,0,4.5); ctx.stroke();
+    ctx.beginPath(); ctx.arc(R*0.45,-R*0.1,R*0.28,0,4.5); ctx.stroke(); ctx.lineWidth=2;
+    ctx.fillStyle='#0a1a2a'; ctx.beginPath(); ctx.arc(-R*0.5,-R*0.2,R*0.09,0,6.3); ctx.fill();
+  }else if(s==='clam'){
+    ctx.fillStyle=col;
+    ctx.beginPath(); ctx.moveTo(-R,R*0.1); ctx.quadraticCurveTo(0,R*0.9,R,R*0.1); ctx.quadraticCurveTo(0,R*0.4,-R,R*0.1); ctx.closePath(); ctx.fill(); ctx.stroke();  // 下殻
+    ctx.beginPath(); ctx.moveTo(-R,-R*0.1); ctx.quadraticCurveTo(0,-R*0.9,R,-R*0.1); ctx.quadraticCurveTo(0,-R*0.4,-R,-R*0.1); ctx.closePath(); ctx.fill(); ctx.stroke();  // 上殻
+    ctx.strokeStyle=dark; ctx.lineWidth=R*0.08;
+    ctx.beginPath(); ctx.moveTo(0,R*0.7); ctx.lineTo(-R*0.5,R*0.15); ctx.moveTo(0,R*0.7); ctx.lineTo(R*0.5,R*0.15); ctx.stroke(); ctx.lineWidth=2;
+    ctx.fillStyle='#eaffff'; ctx.beginPath(); ctx.arc(0,0,R*0.18,0,6.3); ctx.fill();                                // 真珠
+  }else if(s==='serpent'){
+    ctx.strokeStyle=col; ctx.lineWidth=R*0.7; ctx.lineCap='round';
+    ctx.beginPath();
+    ctx.moveTo(R*1.2,Math.sin(t*6)*R*0.3);
+    ctx.quadraticCurveTo(R*0.4,-R*0.6,-R*0.2,Math.sin(t*6+1)*R*0.4);
+    ctx.quadraticCurveTo(-R*0.9,R*0.6,-R*1.4,Math.sin(t*6+2)*R*0.3); ctx.stroke(); ctx.lineWidth=2;
+    ctx.fillStyle=col; ctx.beginPath(); ctx.ellipse(R*1.2,Math.sin(t*6)*R*0.3,R*0.5,R*0.4,0,0,6.3); ctx.fill(); ctx.stroke();  // 頭
+    ctx.fillStyle='#0a1a2a'; ctx.beginPath(); ctx.arc(R*1.35,Math.sin(t*6)*R*0.3-R*0.1,R*0.1,0,6.3); ctx.fill();
+  }else if(s==='jelly'){
+    ctx.globalAlpha=.5; ctx.fillStyle=col;
+    ctx.beginPath(); ctx.arc(0,-R*0.1,R*0.9,Math.PI,0); ctx.closePath(); ctx.fill();                                // 傘
+    ctx.globalAlpha=1; ctx.strokeStyle=col; ctx.lineWidth=R*0.14; ctx.lineCap='round';
+    for(var jt=0;jt<5;jt++){ var jx=(-0.6+jt*0.3)*R;
+      ctx.beginPath(); ctx.moveTo(jx,-R*0.05);
+      ctx.quadraticCurveTo(jx+Math.sin(t*4+jt)*R*0.3,R*0.6,jx+Math.sin(t*4+jt+1)*R*0.3,R*1.1); ctx.stroke(); }
+    ctx.lineWidth=2; ctx.strokeStyle=col; ctx.beginPath(); ctx.arc(0,-R*0.1,R*0.9,Math.PI,0); ctx.stroke();
+    ctx.globalAlpha=.7; ctx.fillStyle='#eaffff'; ctx.beginPath(); ctx.arc(-R*0.25,-R*0.35,R*0.16,0,6.3); ctx.fill(); ctx.globalAlpha=1;
+  }else if(s==='siren'){
+    ctx.fillStyle=dark;                                                                                             // 尾ビレ
+    ctx.beginPath(); ctx.moveTo(0,R*0.3); ctx.quadraticCurveTo(R*0.4,R*0.9,0,R*1.4); ctx.quadraticCurveTo(-R*0.4,R*0.9,0,R*0.3); ctx.closePath(); ctx.fill();
+    ctx.beginPath(); ctx.moveTo(0,R*1.2); ctx.lineTo(-R*0.4,R*1.55); ctx.lineTo(0,R*1.35); ctx.lineTo(R*0.4,R*1.55); ctx.closePath(); ctx.fill();
+    ctx.fillStyle=col; ctx.beginPath(); ctx.ellipse(0,R*0.1,R*0.4,R*0.6,0,0,6.3); ctx.fill(); ctx.stroke();          // 胴
+    ctx.beginPath(); ctx.arc(0,-R*0.6,R*0.32,0,6.3); ctx.fill(); ctx.stroke();                                       // 頭
+    ctx.fillStyle=dark; ctx.beginPath(); ctx.arc(0,-R*0.7,R*0.4,Math.PI*0.9,Math.PI*2.1); ctx.fill();                // 髪
+    ctx.fillStyle='#0a1a2a'; ctx.beginPath(); ctx.arc(-R*0.1,-R*0.6,R*0.06,0,6.3); ctx.fill(); ctx.beginPath(); ctx.arc(R*0.1,-R*0.6,R*0.06,0,6.3); ctx.fill();
   }
 }
 // ステージ1の手続き描画（刷新）。ctx は敵中心へ translate 済み。
@@ -6661,6 +6753,17 @@ function drawTele(e){
     // 到達点のマーカー
     ctx.globalAlpha=0.5+0.3*Math.sin(time*20);
     ctx.beginPath(); ctx.arc(dl,0,R*0.35,0,6.3); ctx.fill();
+    ctx.globalAlpha=1; ctx.restore();
+  }
+  // セイレーンのビーム：予告線（aim）→ 照射（fire）
+  if(e.ai==='beam'&&(e.st==='aim'||e.st==='fire')&&e.aimA!=null){
+    ctx.save(); ctx.rotate(e.aimA);
+    if(e.st==='aim'){
+      ctx.globalAlpha=0.3+0.3*Math.sin(time*24); ctx.fillStyle='#ff6ab0'; ctx.fillRect(R*0.4,-2,900,4);
+    }else{
+      ctx.globalAlpha=0.85; ctx.fillStyle='#ffd0ec'; ctx.fillRect(R*0.4,-18,900,36);
+      ctx.globalAlpha=0.6;  ctx.fillStyle='#ff6ab0'; ctx.fillRect(R*0.4,-9,900,18);
+    }
     ctx.globalAlpha=1; ctx.restore();
   }
   // 弾幕の予告：溜め中は警告リング
@@ -8385,11 +8488,8 @@ Array.prototype.forEach.call(document.querySelectorAll('#setview button'),functi
 // 更新履歴：1つのお知らせ内で「バージョン見出し」ごとに変更点を並べる（新しい順）。
 // マージのたびに先頭へ新バージョンを追加し、VERSION も更新する。
 var UPDATES=[
-  {v:'α1.0.165', items:[
+  {v:'α1.0.166', items:[
     '次の新ステージに向けた内部準備を進めています（通常のプレイ内容に変更はありません）。',
-  ]},
-  {v:'α1.0.164', items:[
-    '次の新ステージに向けた内部準備を行いました（通常のプレイ内容に変更はありません）。',
   ]},
   {v:'α1.0.163', items:[
     'リザルトの与ダメージ内訳で、羊飼いの「羊」の与ダメージをベルとは別枠（🐑 羊）で集計・表示するようにしました。',
