@@ -1560,7 +1560,7 @@ var P, enemies, gems, shots, fx, dmgs, parts, bolts, chests, coins, chaks, scys,
 var time, kills, spawnT, eliteT, shake, hitStop, flash, chain, chainT, choices;
 var whirlA, marks, reacts, crits, rdep, rtok, pending, score, silver, gold, magFx, chakSpin, swingT, swingDir;
 var SWDUR=0.42;   // 大剣の振りの長さ（秒）。大きいほどゆっくり
-var ebul, boss, bossN, quakes, dhits, vacs, vacT, bells, swords, zones, volley, relics, puddles;
+var ebul, boss, bossN, quakes, dhits, vacs, vacT, bells, swords, zones, volley, relics, puddles, sheep;
 var lasers;
 
 /* ============ 武器熟練度・特性 ============ */
@@ -2352,11 +2352,11 @@ var CHARS={
     grow:{k:'grassp', v:0.01, tx:'毎レベル 草属性の武器の攻撃力 +1%'},
     hp:1.00, spd:1.00, pw:0.95, area:1.08, ele:0.10, elp:0, crit:0, regen:0,
     cost:10, cond:'kills',  val:12000, condTx:'累計 12,000 体を討伐する' },
-  shepd:{  nm:'牧者',   glyph:'\u{1F411}', w:'bell',
-    tx:'鈴を鳴らして群れを導く者。音の波紋で四方を守り、鳴らすほど響きが広がる。',
-    st:'最大HP +20%／範囲 +15%／毎秒 HP+0.3／攻撃力 −8%',
-    grow:{k:'bellarea', v:0.01, tx:'毎レベル ベルの範囲 +1%'},
-    hp:1.20, spd:1.00, pw:0.92, area:1.15, ele:0, elp:0, crit:0, regen:0.3,
+  shepd:{  nm:'羊飼い', glyph:'\u{1F411}', w:'bell',
+    tx:'鈴で群れを呼ぶ者。ベルを鳴らすたび、まれに羊の群れが画面の外から駆け抜けて敵を踏み荒らす。',
+    st:'攻撃力 −10%',
+    grow:{k:'sheep', v:0.0015, tx:'毎レベル 羊の群れ出現率 +0.15%（数＝ベル×5／威力＝ベル×0.7）'},
+    hp:1.00, spd:1.00, pw:0.90, area:1.00, ele:0, elp:0, crit:0, regen:0,
     cost:10, cond:'time',   val:900,   condTx:'15:00 まで生き延びる' }
 };
 var ALLCHR=0;   // 1で全キャラ解放（開発用）。製品は 0
@@ -2701,7 +2701,7 @@ function reset(){
       lv:1, xp:0, need:xpNeed(1), hurt:0, inv:0,
       w:w0, wa:wa0, aw:{}, lb:{}, p:{}, rel:{},
       rr:5+M('reroll'), sk:5+M('skipn') };
-  enemies=[]; gems=[]; shots=[]; fx=[]; dmgs=[]; parts=[]; bolts=[]; chests=[]; coins=[]; chaks=[]; scys=[]; bombs=[]; rocks=[]; holes=[]; ebul=[]; quakes=[]; dhits=[]; vacs=[]; vacT=40; bells=[]; swords=[]; zones=[]; volley=[]; puddles=[]; relics=placeRelics();
+  enemies=[]; gems=[]; shots=[]; fx=[]; dmgs=[]; parts=[]; bolts=[]; chests=[]; coins=[]; chaks=[]; scys=[]; bombs=[]; rocks=[]; holes=[]; ebul=[]; quakes=[]; dhits=[]; vacs=[]; vacT=40; bells=[]; swords=[]; zones=[]; volley=[]; puddles=[]; sheep=[]; relics=placeRelics();
   boss=null; bossN=0; lasers=[];
   time=0; kills=0; spawnT=0; eliteT=55; swarmT=3; swarmWarnT=0; shake=0; hitStop=0; flash=0; chain=0; chainT=0;
   gat.t=0; gat.mag=-1; gat.rl=0;
@@ -2755,7 +2755,7 @@ var dpsVal=0, dpmVal=0, dmgSec=0, dmgRing=[], dmgRingI=0, dpsClock=1;   // 与�
 function objCount(){
   return shots.length+chaks.length+scys.length+bells.length+swords.length+
          rocks.length+holes.length+zones.length+bombs.length+ebul.length+
-         quakes.length+dhits.length+volley.length+lasers.length+fx.length+parts.length+relics.length;
+         quakes.length+dhits.length+volley.length+lasers.length+fx.length+parts.length+relics.length+sheep.length;
 }
 function infoTick(dt){
   // DPS/DPM 集計（1秒ごとに更新。DPS=直近1秒、DPM=直近60秒の合計）
@@ -2829,6 +2829,7 @@ function update(dt){
   moveQuakes(dt);
   moveDhand(dt);
   moveBells(dt);
+  moveSheep(dt);
   moveSwords(dt);
   moveZones(dt);
   moveVolley(dt);
@@ -3765,11 +3766,14 @@ function moveRocks(dt){
 
 // ベル：音の波紋が自分を中心に広がる。通り過ぎた敵を1度ずつ打つ。
 function doBell(){
-  var n=1+CNT('bell'), mx=155*AREA('bell')*(1+GROW('bellarea')), dmg=7*DMG('bell')*pw('bell');   // 牧者：毎レベル 波紋 +1%
+  var n=1+CNT('bell'), mx=155*AREA('bell'), dmg=7*DMG('bell')*pw('bell');
   for(var i=0;i<n;i++)
     bells.push({ x:P.x, y:P.y, r:0, pr:0, max:mx, dmg:dmg, t:-i*0.18, hit:[] });
   sfx(1568,.32,'sine',.055,.42);
   setTimeout(function(){ sfx(2093,.22,'sine',.03,.5); },40);
+  // 羊飼い：鳴らすたび低確率で画面端から羊の群れが突進する（発生率＝レベル×0.15%）
+  var sc=GROW('sheep');
+  if(sc>0&&Math.random()<sc) sheepStampede(n*5, dmg*0.7);   // 数＝ベル数×5／ダメージ＝ベル×0.7
   wgain('bell',n);
 }
 var BELL_W=13;              // 輪の太さ（片側）
@@ -3807,6 +3811,56 @@ function drawBell(b){
   ctx.strokeStyle='#8fd0ff'; ctx.lineWidth=2;
   ctx.beginPath(); ctx.arc(b.x,b.y,b.r*0.86,0,6.3); ctx.stroke();
   ctx.globalAlpha=1; ctx.restore();
+}
+// 羊飼い：画面端の一辺から羊の群れが出て横切り、触れた敵を踏みつけて通り抜ける
+function sheepStampede(count, dmg){
+  var a=Math.random()*6.283;
+  var SWR=Math.max(760,offR()+150);
+  var cx=P.x+Math.cos(a)*SWR, cy=P.y+Math.sin(a)*SWR;   // 画面外の一辺
+  var dx=P.x-cx, dy=P.y-cy, dd=Math.hypot(dx,dy)||1;
+  var vx=dx/dd, vy=dy/dd, px=-vy, py=vx;                // vx,vy＝進行方向（プレイヤー越しに横切る）／px,py＝横並び
+  var sp=340, spread=Math.max(W,H)/VZOOM*0.6+120;
+  for(var i=0;i<count;i++){
+    var side=(Math.random()-0.5)*spread*2, along=Math.random()*280;
+    sheep.push({ x:cx+px*side-vx*along, y:cy+py*side-vy*along,
+      dirx:vx, diry:vy, sp:sp*(0.9+Math.random()*0.2),
+      r:15, dmg:dmg, life:2*SWR/sp+1.2, hop:Math.random()*6.283, hit:[] });
+  }
+  sfx(680,.18,'triangle',.03,1.6);
+}
+function moveSheep(dt){
+  if(!sheep.length) return;
+  SRC='bell';
+  for(var i=sheep.length-1;i>=0;i--){
+    var s=sheep[i];
+    s.life-=dt; s.hop+=dt*14;
+    if(s.life<=0){ sheep.splice(i,1); continue; }
+    s.x+=s.dirx*s.sp*dt; s.y+=s.diry*s.sp*dt;
+    for(var j=enemies.length-1;j>=0;j--){
+      var e=enemies[j];
+      if(e.dead||s.hit.indexOf(e)>=0) continue;
+      var ex=e.x-s.x, ey=e.y-s.y, d=Math.hypot(ex,ey);
+      if(d<s.r+e.r){
+        hurt(e,s.dmg,ex/(d||1),ey/(d||1),null); s.hit.push(e);
+        e.kb=Math.max(e.kb||0,3.0); e.kbx=s.dirx; e.kby=s.diry;   // 踏みつけて進行方向へ少し押す
+      }
+    }
+  }
+  SRC=null;
+}
+function drawSheep(s){
+  var hopY=Math.abs(Math.sin(s.hop))*4;
+  ctx.save(); ctx.translate(s.x,s.y-hopY);
+  ctx.fillStyle='rgba(0,0,0,0.18)'; ctx.beginPath(); ctx.ellipse(0,s.r*0.8+hopY,s.r*0.9,s.r*0.35,0,0,6.3); ctx.fill();   // 影
+  ctx.fillStyle='#f4f1ea';   // もこもこの体
+  ctx.beginPath(); ctx.arc(0,0,s.r,0,6.3); ctx.fill();
+  ctx.beginPath(); ctx.arc(-s.r*0.62,-3,s.r*0.6,0,6.3); ctx.fill();
+  ctx.beginPath(); ctx.arc(s.r*0.62,-3,s.r*0.6,0,6.3); ctx.fill();
+  var hx=(s.dirx>=0?1:-1)*s.r*0.9;
+  ctx.strokeStyle='#33302c'; ctx.lineWidth=2; ctx.lineCap='round';   // 脚
+  ctx.beginPath(); ctx.moveTo(-5,s.r*0.6); ctx.lineTo(-5,s.r*0.6+5); ctx.moveTo(5,s.r*0.6); ctx.lineTo(5,s.r*0.6+5); ctx.stroke();
+  ctx.fillStyle='#33302c'; ctx.beginPath(); ctx.arc(hx,2,s.r*0.4,0,6.3); ctx.fill();   // 顔
+  ctx.restore();
 }
 
 // ダークハンド：闇の手が近くの敵を次々に突く
@@ -5629,6 +5683,7 @@ function render(){
 
   // ---- 敵と自機 ----
   for(i=0;i<enemies.length;i++) if(!enemies[i].dead) drawEnemy(enemies[i]);
+  for(i=0;i<sheep.length;i++) drawSheep(sheep[i]);
   for(i=0;i<rocks.length;i++) drawRock(rocks[i]);
   drawPlayer();
   // ガトリング：リロード中はプレイヤー周囲に進捗リングを表示
