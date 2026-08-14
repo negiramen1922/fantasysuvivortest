@@ -2057,6 +2057,13 @@ function mastFlavor(o){ if(!o.d) return o.tx||''; return o.d.replace('#','<span 
 var WX={}, SEL={}, wxRun={}, lastCd={};
 var WDMG={};   // このランの武器別 与ダメージ集計（_react=元素反応合計 / _bleed=出血合計）
 var REACTDMG={}, RK=null;   // 元素反応の種類別ダメージ（RK=現在の反応名）
+// キャラ別・武器別の永続累計（キャラごと実績用）
+var WDMGTOT={};   // 武器別 累計与ダメージ（各キャラの持ち武器は固有）
+var WKILL={};     // 武器別 累計討伐数
+var CHCLEAR={};   // キャラ別 ステージクリア {char:{stage:1}}
+var CHNOCONT={};  // キャラ別 ノーコンティニュークリア {char:{stage:1}}
+var CHMAXLV={};   // キャラ別 単走の最高到達レベル
+var CHSURV={};    // キャラ別 累計生存時間（秒）
 var RNAME={'fire+thunder':'過負荷','fire+ice':'融解','ice+thunder':'超電導','dark+fire':'炎症','dark+ice':'凍結','dark+thunder':'感電','dark+holy':'消滅'};
 function wtier(id){ var x=WX[id]||0,n=0; for(var i=0;i<WTH.length;i++) if(x>=WTH[i]) n++; return n; }
 function picksLeft(id){ if(!MAST[id]) return 0; return Math.max(0,wtier(id)-((SEL[id]||[]).length)); }   // 新システム有効な武器のみ
@@ -2580,7 +2587,7 @@ function figInfo(id){
   if(BOSS[id]){ var B=BOSS[id], tt=ETYPE[B.key]||{}; return {nm:B.nm,shape:tt.shape,col:tt.col,dark:tt.dark,desc:BDEX[id]||'',boss:true}; }
   var t=ETYPE[id]||{}; return {nm:t.nm,shape:t.shape,col:t.col,dark:t.dark,desc:DEX[id]||'',boss:false};
 }
-var VERSION='α1.0.156'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
+var VERSION='α1.0.157'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
 function applySave(o){
   for(var i=0;i<UPG.length;i++) META[UPG[i].id]=0;
   try{
@@ -2625,6 +2632,13 @@ function applySave(o){
       if(o.tw&&typeof o.tw==='object'){ TWON.pre=(''+(o.tw.pre||'')).slice(0,20); TWON.suf=(''+(o.tw.suf||'')).slice(0,20); }
       if(typeof o.wl==='number') WLIMIT=Math.max(1,Math.min(6,o.wl|0));
       if(o.w1) for(var w1x in o.w1){ if(o.w1[w1x]) W1CLEAR[w1x]=1; }
+      // キャラ別・武器別 累計（キャラごと実績）
+      if(o.wdt) for(var wdk in o.wdt){ if(WEAPONS[wdk]&&typeof o.wdt[wdk]==='number') WDMGTOT[wdk]=Math.max(0,o.wdt[wdk]); }
+      if(o.wkl) for(var wkk in o.wkl){ if(WEAPONS[wkk]&&typeof o.wkl[wkk]==='number') WKILL[wkk]=Math.max(0,o.wkl[wkk]|0); }
+      if(o.ccl) for(var cc in o.ccl){ if(CHARS[cc]){ CHCLEAR[cc]={}; for(var cs in o.ccl[cc]) if(o.ccl[cc][cs]) CHCLEAR[cc][cs]=1; } }
+      if(o.cnc) for(var nc in o.cnc){ if(CHARS[nc]){ CHNOCONT[nc]={}; for(var ns in o.cnc[nc]) if(o.cnc[nc][ns]) CHNOCONT[nc][ns]=1; } }
+      if(o.cml) for(var cm in o.cml){ if(CHARS[cm]&&typeof o.cml[cm]==='number') CHMAXLV[cm]=Math.max(0,o.cml[cm]|0); }
+      if(o.csv) for(var cv in o.csv){ if(CHARS[cv]&&typeof o.csv[cv]==='number') CHSURV[cv]=Math.max(0,o.csv[cv]|0); }
       if(o.sgl) for(var sl in o.sgl) STGLV[sl]=o.sgl[sl]|0;
       if(o.wu){ for(var wq in o.wu){ if(o.wu[wq]&&WEAPONS[wq]) WUNL[wq]=1; } }
       else { // 旧セーブ（武器解放が無い）は移行：熟練度が付いている＝使ったことのある武器を解放して手持ちを失わせない
@@ -2636,7 +2650,7 @@ function applySave(o){
 }
 (function loadSave(){ try{ applySave(JSON.parse(localStorage.getItem('bsv_save')||'null')); }catch(e){ applySave(null); } })();
 function saveObj(){
-  return {m:META,w:WALLET,wx:WX,sel:SEL,best:best,shk:SHK,vz:VZOOM,light:LIGHT,volm:VOLM,vols:VOLS,volb:VOLB,unl:UNL,ach:ACH,ch:SELCH,stg:STGCLEAR,sgb:STGBEST,sgw:STGWAVE,eb:ENDBEST,et:ENDTIME,nk:NICK,ban:Object.keys(BAN).filter(function(k){return BAN[k];}),tut:TUTSEEN,perf:PERF,dps:SHOWDPS,dpm:SHOWDPM,rsp:RESPEC_AT,bk:BKILL,bsc:BSCORE,bs:Object.keys(BSEEN).filter(function(k){return BSEEN[k];}),bc:Object.keys(BCLAIM).filter(function(k){return BCLAIM[k];}).reduce(function(o,k){o[k]=1;return o;},{}),bsel:BSEL,mb:MAILBOX,fcg:FCGOT,dl:DAILY,sgl:STGLV,wu:WUNL,ac:ACLAIM,tw:TWON,wl:WLIMIT,w1:W1CLEAR};
+  return {m:META,w:WALLET,wx:WX,sel:SEL,best:best,shk:SHK,vz:VZOOM,light:LIGHT,volm:VOLM,vols:VOLS,volb:VOLB,unl:UNL,ach:ACH,ch:SELCH,stg:STGCLEAR,sgb:STGBEST,sgw:STGWAVE,eb:ENDBEST,et:ENDTIME,nk:NICK,ban:Object.keys(BAN).filter(function(k){return BAN[k];}),tut:TUTSEEN,perf:PERF,dps:SHOWDPS,dpm:SHOWDPM,rsp:RESPEC_AT,bk:BKILL,bsc:BSCORE,bs:Object.keys(BSEEN).filter(function(k){return BSEEN[k];}),bc:Object.keys(BCLAIM).filter(function(k){return BCLAIM[k];}).reduce(function(o,k){o[k]=1;return o;},{}),bsel:BSEL,mb:MAILBOX,fcg:FCGOT,dl:DAILY,sgl:STGLV,wu:WUNL,ac:ACLAIM,tw:TWON,wl:WLIMIT,w1:W1CLEAR,wdt:WDMGTOT,wkl:WKILL,ccl:CHCLEAR,cnc:CHNOCONT,cml:CHMAXLV,csv:CHSURV};
 }
 function saveGame(){
   try{ localStorage.setItem('bsv_save',JSON.stringify(saveObj())); }catch(e){}
@@ -4877,6 +4891,7 @@ function kill(e){
   if(SRC){
     if(ELW.thunder.indexOf(SRC)>=0) ACH.killTh=(ACH.killTh||0)+1;
     else if(ELW.ice.indexOf(SRC)>=0) ACH.killIc=(ACH.killIc||0)+1;
+    if(WEAPONS[SRC]) WKILL[SRC]=(WKILL[SRC]||0)+1;   // 武器別 累計討伐（キャラごと実績）
   }
   // ブーマー：死亡時に毒の沼を残す（乗ると継続ダメージ）
   if(e.puddle){
@@ -7212,7 +7227,8 @@ function syncTitle(){
   document.getElementById('mastbtn').innerHTML='武器熟練'+(anyPicks()?'<span class="badge">!</span>':'');
   updateDexBadge(); updateMailBadge(); updateAchBadge();
   var nl=0; for(var ci in CHARS) if(!UNL[ci]&&achOK(ci)) nl++;
-  document.getElementById('chrbtn').innerHTML='キャラクター'+(nl?'<span class="badge">!</span>':'');
+  var chBadge=nl||anyCharAchClaim();
+  document.getElementById('chrbtn').innerHTML='キャラクター'+(chBadge?'<span class="badge">!</span>':'');
 }
 
 /* ============ キャラクター選択 ============ */
@@ -7240,11 +7256,13 @@ function renderChr(){
         '<div class="cws">'+c.st+'</div>'+
         (c.grow?'<div class="cwc" style="color:var(--gold)">'+c.grow.tx+'</div>':'')+
         (un?'':'<div class="cwc">解放条件：'+c.condTx+'　<b style="color:var(--gold);font-weight:normal">'+achNow(id)+'</b></div>')+
-      '</div>'+btn;
+      '</div>'+btn+'<div class="wmore">›</div>';
+    d.style.cursor='pointer';
+    d.onclick=function(){ openCharDetail(id); };   // カードを押すとキャラ詳細へ
     L.appendChild(d);
   });
   Array.prototype.forEach.call(L.querySelectorAll('button[data-c]'),function(b){
-    b.onclick=function(){ chrPick(b.getAttribute('data-c'),b.getAttribute('data-a')); };
+    b.onclick=function(ev){ ev.stopPropagation(); chrPick(b.getAttribute('data-c'),b.getAttribute('data-a')); };
   });
 }
 function chrPick(id,a){
@@ -7257,6 +7275,102 @@ function chrPick(id,a){
     sfx(880,.12,'triangle',.06);
   }
   SELCH=id; saveGame(); renderChr(); syncTitle(); reset();
+}
+/* ===== キャラごとの実績 ===== */
+var CGOLD=[3,5,10,25,50,100];   // キャラ実績のティア別 金貨（少額）
+function cAchGroups(c){
+  var w=CHARS[c].w, wn=(WEAPONS[w]&&WEAPONS[w].nm)||'持ち武器';
+  return [
+    {k:'cdmg',  nm:wn+'で与ダメージ', ic:'💥', fmt:'num',  tiers:[10000,100000,1000000,10000000,100000000], val:function(){ return WDMGTOT[w]||0; }},
+    {k:'ckill', nm:wn+'で討伐',       ic:'⚔', fmt:'num',  tiers:[1000,10000,100000,1000000,10000000,100000000], val:function(){ return WKILL[w]||0; }},
+    {k:'cclear',nm:'ステージクリア',   ic:'🏳', stage:true, tiers:[1,2,3], labels:['ステージ1','ステージ2','ステージ3'], done:function(i){ return !!(CHCLEAR[c]&&CHCLEAR[c][i+1]); }},
+    {k:'clv',   nm:'到達レベル',       ic:'⭐', fmt:'lv',   tiers:[30,40,50], val:function(){ return CHMAXLV[c]||0; }},
+    {k:'cnc',   nm:'ノーコンクリア',   ic:'🎖', stage:true, tiers:[1,2,3], labels:['ステージ1','ステージ2','ステージ3'], done:function(i){ return !!(CHNOCONT[c]&&CHNOCONT[c][i+1]); }},
+    {k:'csurv', nm:'累計生存時間',     ic:'⏳', fmt:'time', tiers:[1800,3600,18000], val:function(){ return CHSURV[c]||0; }}
+  ];
+}
+function cAchId(c,g,i){ return 'c:'+c+':'+g.k+':'+i; }
+function cAchDone(g,i){ return g.done?g.done(i):(g.val()>=g.tiers[i]); }
+function cAchClaimed(c,g,i){ return !!ACLAIM[cAchId(c,g,i)]; }
+function cAchClaimable(c,g,i){ return cAchDone(g,i)&&!cAchClaimed(c,g,i); }
+function cAchClaimCount(c){ var n=0, gs=cAchGroups(c); for(var x=0;x<gs.length;x++){ var g=gs[x]; for(var i=0;i<g.tiers.length;i++) if(cAchClaimable(c,g,i)) n++; } return n; }
+function anyCharAchClaim(){ for(var c in CHARS){ if(UNL[c]&&cAchClaimCount(c)>0) return 1; } return 0; }
+function cAchFmt(g,v){
+  if(g.fmt==='lv') return 'Lv '+v;
+  if(g.fmt==='time'){ if(v>=3600){ var h=Math.floor(v/3600), mm=Math.floor((v%3600)/60); return h+'時間'+(mm?mm+'分':''); } return Math.floor(v/60)+'分'; }
+  return fmt(v);
+}
+function claimCharAch(c,g,i){
+  if(!cAchClaimable(c,g,i)) return;
+  ACLAIM[cAchId(c,g,i)]=1;
+  var gd=CGOLD[i]||CGOLD[CGOLD.length-1];
+  WALLET.gold+=gd; saveGame();
+  if(typeof coinSfx==='function') coinSfx();
+  if(typeof toast==='function') toast('🏅',CHARS[c].nm+'『'+g.nm+'』達成！ 金貨 +'+gd,'#ffd27a');
+  renderCharAch(c); syncTitle();
+}
+// キャラ詳細画面（キャラリストの中に表示。武器詳細と同じ作り）
+function openCharDetail(c){
+  audio();
+  var un=!!UNL[c], sel=(SELCH===c), cc=CHARS[c], claimN=cAchClaimCount(c);
+  var L=document.getElementById('chrlist');
+  var btn;
+  if(sel) btn='<button class="btn" disabled style="margin-top:0">選択中</button>';
+  else if(un) btn='<button class="btn cdsel" type="button" style="margin-top:0">このキャラを選ぶ</button>';
+  else if(WALLET.gold>=cc.cost) btn='<button class="btn cdbuy gd" type="button" style="margin-top:0">金 '+cc.cost+' で解放</button>';
+  else btn='<button class="btn" disabled style="margin-top:0">金 '+cc.cost+'（不足）</button>';
+  L.innerHTML=
+    '<div class="wd">'+
+      '<button class="wdback" type="button">← 一覧へ戻る</button>'+
+      '<div class="wdhead">'+
+        '<div class="wdicon">'+(CHAR_SPR[c]?'<img class="cwspr" src="assets/'+CHAR_SPR[c]+'.png" alt="">':cc.glyph)+'</div>'+
+        '<div><div class="wdname">'+cc.nm+'</div>'+
+          '<div class="wdtags"><span class="wdcat">初期武器：'+WEAPONS[cc.w].nm+'</span></div>'+
+        '</div>'+
+      '</div>'+
+      '<div class="wdtx">'+cc.tx+'</div>'+
+      '<div class="cws" style="margin:6px 0">'+cc.st+'</div>'+
+      (cc.grow?'<div class="cwc" style="color:var(--gold);margin-bottom:4px">'+cc.grow.tx+'</div>':'')+
+      (un?'':'<div class="cwc" style="margin-bottom:4px">解放条件：'+cc.condTx+'　<b style="color:var(--gold);font-weight:normal">'+achNow(c)+'</b></div>')+
+      btn+
+      '<button class="btn sub2 cdach" type="button" style="margin-top:8px">🏅 実績を見る'+(claimN?'<span class="badge">'+claimN+'</span>':'')+'</button>'+
+    '</div>';
+  L.querySelector('.wdback').onclick=function(){ audio(); renderChr(); };
+  var s=L.querySelector('.cdsel'); if(s) s.onclick=function(){ chrPick(c,'sel'); };
+  var b=L.querySelector('.cdbuy'); if(b) b.onclick=function(){ chrPick(c,'buy'); };
+  L.querySelector('.cdach').onclick=function(){ renderCharAch(c); };
+}
+// キャラの実績一覧
+function renderCharAch(c){
+  audio();
+  var L=document.getElementById('chrlist'), gs=cAchGroups(c), html='';
+  html+='<button class="wdback" type="button">← '+CHARS[c].nm+' の詳細へ</button>';
+  html+='<div class="wdname" style="margin:6px 0 8px">🏅 '+CHARS[c].nm+' の実績</div>';
+  for(var x=0;x<gs.length;x++){
+    var g=gs[x], rows='';
+    for(var i=0;i<g.tiers.length;i++){
+      var done=cAchDone(g,i), claimed=cAchClaimed(c,g,i), can=cAchClaimable(c,g,i);
+      var prev=(!g.stage&&i>0)?g.tiers[i-1]:0;
+      var pct=g.stage?(done?100:0):Math.max(0,Math.min(100,(g.val()-prev)/(g.tiers[i]-prev)*100));
+      var tlabel=g.labels?g.labels[i]:cAchFmt(g,g.tiers[i]);
+      var gd=CGOLD[i]||CGOLD[CGOLD.length-1];
+      rows+='<div class="acht'+(done?' done':'')+'">'+
+        '<span class="atw">'+tlabel+'</span>'+
+        '<span class="atbar"><i style="width:'+(done?100:pct)+'%"></i></span>'+
+        (claimed?'<span class="attag">受取済</span>':
+          can?'<button class="atclaim" data-g="'+x+'" data-i="'+i+'">金'+gd+' 受取</button>':
+          '<span class="attag" style="color:#6b5f9c">金'+gd+'</span>')+
+        '</div>';
+    }
+    html+='<div class="achc"><div class="achh"><span class="ai">'+g.ic+'</span><span class="an">'+g.nm+'</span>'+
+          (g.stage?'':'<span class="av">現在 '+cAchFmt(g,g.val())+'</span>')+'</div>'+
+          '<div class="achtiers">'+rows+'</div></div>';
+  }
+  L.innerHTML=html;
+  L.querySelector('.wdback').onclick=function(){ audio(); openCharDetail(c); };
+  Array.prototype.forEach.call(L.querySelectorAll('.atclaim'),function(bb){
+    bb.onclick=function(){ claimCharAch(c, gs[bb.getAttribute('data-g')|0], bb.getAttribute('data-i')|0); };
+  });
 }
 document.getElementById('chrbtn').onclick=function(){ audio(); renderChr(); document.getElementById('chr').classList.add('on'); };
 document.getElementById('chrclose').onclick=function(){ document.getElementById('chr').classList.remove('on'); syncTitle(); };
@@ -7856,6 +7970,15 @@ function finish(won){
   ACH.dmg=(ACH.dmg||0)+Math.floor(runDmg);       // 累計与ダメージ
   ACH.crit=(ACH.crit||0)+crits;                  // 累計会心回数
   ACH.survt=(ACH.survt||0)+Math.floor(time);     // 累計生存時間（秒）
+  // キャラ別・武器別の永続累計（キャラごと実績）
+  for(var _wk2 in WDMG){ if(WEAPONS[_wk2]&&WDMG[_wk2]>0) WDMGTOT[_wk2]=(WDMGTOT[_wk2]||0)+Math.floor(WDMG[_wk2]); }
+  CHMAXLV[SELCH]=Math.max(CHMAXLV[SELCH]||0,P.lv);
+  CHSURV[SELCH]=(CHSURV[SELCH]||0)+Math.floor(time);
+  if(won&&!ENDLESS){
+    if(!CHCLEAR[SELCH]) CHCLEAR[SELCH]={};
+    CHCLEAR[SELCH][curStage]=1;
+    if(!contUsed){ if(!CHNOCONT[SELCH]) CHNOCONT[SELCH]={}; CHNOCONT[SELCH][curStage]=1; }
+  }
   var firstClear=(won&&!ENDLESS&&!STGCLEAR[curStage]);   // 初回クリア判定（STGCLEAR を立てる前に）
   if(won){ ACH.clear=1; STGCLEAR[curStage]=1; }
   var newCh=unlockCheck();
@@ -8073,6 +8196,10 @@ Array.prototype.forEach.call(document.querySelectorAll('#setview button'),functi
 // 更新履歴：1つのお知らせ内で「バージョン見出し」ごとに変更点を並べる（新しい順）。
 // マージのたびに先頭へ新バージョンを追加し、VERSION も更新する。
 var UPDATES=[
+  {v:'α1.0.157', items:[
+    'キャラクターごとの実績を追加！ キャラ一覧でキャラを押すと詳細画面が開き、「🏅 実績を見る」から確認できます。内容：持ち武器での与ダメージ（1万〜1億）・討伐数（1000〜1億）、そのキャラでのステージ①②③クリア、到達レベル（Lv30/40/50）、ノーコンティニュークリア、累計生存時間（30分/1時間/5時間）。各段階を達成すると少額の金貨を受け取れます。',
+    '※集計は今回から開始されます（過去のプレイは反映されません）。武器での与ダメージ・討伐は武器基準での集計です。',
+  ]},
   {v:'α1.0.156', items:[
     '実績「討伐数」を拡張。累計討伐 1,000万・1億 の段階を追加しました（二つ名「殲滅王」「殺戮神」）。',
   ]},

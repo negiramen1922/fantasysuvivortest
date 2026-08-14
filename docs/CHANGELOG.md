@@ -10,6 +10,11 @@
 - リザルト画面と設定画面に `VERSION` を表示。
 - お知らせ（`UPDATES` 配列）は**1枠内でバージョン見出しごとに変更点を掲載**（新しい順）。マージ時は `UPDATES` 先頭に新バージョンを追加し `VERSION` を一致させる。
 
+## ver.α1.0.157
+- キャラごと実績を追加。永続ストア `WDMGTOT`(武器別累計ダメージ)/`WKILL`(武器別累計討伐)/`CHCLEAR`/`CHNOCONT`(キャラ別クリア/ノーコン)/`CHMAXLV`/`CHSURV`(キャラ別最高Lv/累計生存秒)を新設し、save(`wdt/wkl/ccl/cnc/cml/csv`)＋applySaveで永続化。`finish()` で `WDMG`→`WDMGTOT` 加算・`CHMAXLV/CHSURV/CHCLEAR/CHNOCONT`(勝利かつ非ENDLESS、ノーコンは`!contUsed`)を更新。`kill()` で `WKILL[SRC]++`。
+- キャラ実績モデル `cAchGroups(c)`（cdmg:1万〜1億/ckill:1000〜1億/cclear:①②③/clv:30/40/50/cnc:①②③/csurv:30分/1h/5h）＋ヘルパ(`cAchDone/Claimed/Claimable/Count`, `claimCharAch`)。報酬は少額金貨 `CGOLD=[3,5,10,25,50,100]`、`ACLAIM` に `c:char:key:tier` で受取記録。
+- UI：キャラカードを押すと `openCharDetail(c)`（`#chrlist` 内・武器詳細と同じ作り）→「🏅 実績を見る」→`renderCharAch(c)`。既存の `.acht/.achc` を流用。ホームのキャラボタンのバッジに受取可能な実績を反映(`anyCharAchClaim`)。検証：`check.py` OK＋Playwrightで一覧→詳細→実績（6グループ表示）→戻るを確認。
+
 ## ver.α1.0.156
 - 全体実績「討伐数」(`ACHV` kills) の tiers を `[1000,10000,100000,1000000]`→`[...,10000000,100000000]`（1,000万・1億）に拡張、words に `殲滅王`/`殺戮神` を追加。金貨は `GOLD_TIER` 上限(500)で頭打ち。
 
