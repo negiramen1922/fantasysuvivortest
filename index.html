@@ -1450,7 +1450,8 @@ var BOSS={
   skeledragon:{ nm:'スケルトンドラゴン', res:0.96, key:'gargoyle', hp:450000, r:56, spd:100, dmg:54, xp:2600, pts:70000,
                ai:'sdragon', acd:2.6, chspd:600, chdur:1.0, wind:0.8, nbul:22, bspd:220, bdmg:18, last:1 }
 };
-var BOSS_AT=[[300,'greatboar'],[600,'slimeking'],[900,'goblinking'],[1200,'fenrir']];
+// 各要素 [出現時間s, ボスkey, 討伐スコア閾値]。時間 or スコアの早い方で出現（ぐだり防止）。スコア閾値はステージごとに調整。
+var BOSS_AT=[[300,'greatboar',16000],[600,'slimeking',44000],[900,'goblinking',84000],[1200,'fenrir',140000]];
 
 // ステージ1の出現構成
 var WAVE=[
@@ -1484,7 +1485,7 @@ var WAVE2=[
   { t:1080, mix:[['dryad',0.20],['spider',0.42],['mantis',0.62],['beetle',0.84],['treant',1.00]] }  // 18:00 終盤混成
 ];
 // ステージ2のボス（HPは hpMul 倍で出す）。締めは森の主フェンリル。
-var BOSS_AT2=[[300,'kervi'],[600,'gmoth'],[900,'arachnid'],[1200,'eldertreant']];
+var BOSS_AT2=[[300,'kervi',20000],[600,'gmoth',54000],[900,'arachnid',104000],[1200,'eldertreant',172000]];
 
 // ステージ3（古代の王墓）の出現構成。弱い敵→強い敵を段階投入。フライはスウォーム専用。
 var WAVE3=[
@@ -1503,7 +1504,7 @@ var WAVE3=[
   { t:1110, mix:[['shadow',0.16],['mummy',0.31],['dullahan',0.40],['necro',0.58],['gargoyle',0.78],['boomer',1.00]] }  // 18:30 終盤混成
 ];
 // ステージ3のボス。締めはスケルトンドラゴン。
-var BOSS_AT3=[[300,'gravekeeper'],[600,'skeletonking'],[900,'hecaton'],[1200,'skeledragon']];
+var BOSS_AT3=[[300,'gravekeeper',26000],[600,'skeletonking',68000],[900,'hecaton',128000],[1200,'skeledragon',210000]];
 
 // ステージ定義。req をクリア済みで次ステージが解放される。
 var STAGES={
@@ -2562,7 +2563,7 @@ function figInfo(id){
   if(BOSS[id]){ var B=BOSS[id], tt=ETYPE[B.key]||{}; return {nm:B.nm,shape:tt.shape,col:tt.col,dark:tt.dark,desc:BDEX[id]||'',boss:true}; }
   var t=ETYPE[id]||{}; return {nm:t.nm,shape:t.shape,col:t.col,dark:t.dark,desc:DEX[id]||'',boss:false};
 }
-var VERSION='α1.0.151'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
+var VERSION='α1.0.152'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
 function applySave(o){
   for(var i=0;i<UPG.length;i++) META[UPG[i].id]=0;
   try{
@@ -4066,8 +4067,10 @@ function rollType(){
 function checkBoss(){
   if(ENDLESS){ checkBossEndless(); return; }
   if(bossN>=BOSS_AT.length) return;
-  if(time<BOSS_AT[bossN][0]) return;
-  spawnBoss(BOSS_AT[bossN][1]);
+  if(boss&&!boss.dead) return;                          // 前のボスが健在なら次は出さない（スコア前倒しでの重複防止）
+  var b=BOSS_AT[bossN];
+  if(time<b[0] && score<(b[2]||Infinity)) return;       // 時間 or 討伐スコア の早い方で出現
+  spawnBoss(b[1]);
   bossN++;
 }
 // 無限ラン：各5分ブロックの +3:00 に、そのステージのボスを1体（周回ごとに4体をローテ＆強化＝5分に1体）
@@ -8047,6 +8050,9 @@ Array.prototype.forEach.call(document.querySelectorAll('#setview button'),functi
 // 更新履歴：1つのお知らせ内で「バージョン見出し」ごとに変更点を並べる（新しい順）。
 // マージのたびに先頭へ新バージョンを追加し、VERSION も更新する。
 var UPDATES=[
+  {v:'α1.0.152', items:[
+    'ボスの出現条件に「討伐スコア」を追加しました。これまでの時間（5:00/10:00/15:00/20:00）に加えて、討伐スコアが一定に達しても出現します（早い方を採用）。速く沢山倒す強い立ち回りでは、待たずにボスが出て試合がぐだりません。スコア閾値はステージごとに設定（後半ほど高め）。前のボスが健在の間は次は出ません。',
+  ]},
   {v:'α1.0.151', items:[
     '敵の攻撃予告（突進の赤い線、ヘカトンケイルの拳、ドラゴンのブレスなど）を最前面に描くようにしました。自分の攻撃エフェクトで予告が隠れて避けられない、ということがなくなります。',
     '磁石（マグネット）も最前面に描くようにし、見た目を🧲アイコンに変更しました。攻撃エフェクトに埋もれて拾い逃すことがなくなります。',
