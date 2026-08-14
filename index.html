@@ -2587,7 +2587,7 @@ function figInfo(id){
   if(BOSS[id]){ var B=BOSS[id], tt=ETYPE[B.key]||{}; return {nm:B.nm,shape:tt.shape,col:tt.col,dark:tt.dark,desc:BDEX[id]||'',boss:true}; }
   var t=ETYPE[id]||{}; return {nm:t.nm,shape:t.shape,col:t.col,dark:t.dark,desc:DEX[id]||'',boss:false};
 }
-var VERSION='α1.0.158'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
+var VERSION='α1.0.159'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
 function applySave(o){
   for(var i=0;i<UPG.length;i++) META[UPG[i].id]=0;
   try{
@@ -4169,13 +4169,15 @@ function makeEnemy(k){
   }
   var a=Math.random()*Math.PI*2;
   var dist=offR()+60+Math.random()*120;
-  // 無限ラン：周回(loop)ごとに敵を強化。これで「弱ステージの2周目」でも「強ステージの1周目」より難しくなる。
-  var eLoop=ENDLESS?Math.floor(Math.floor(time/ENDLESS_BLOCK)/3):0;
-  var loopMul=1+eLoop*0.6;                            // 2周目=×1.6 / 3周目=×2.2 …（敵HP）
-  var scale=(1+time/60*0.63)*loopMul, dscale=(1+time/60*0.13)*(1+eLoop*0.25);   // 攻撃力の伸びは緩め
+  // 無限ラン：5分ブロックごとに敵を強化（弱ステージへ周回で戻っても段階的に強くなる）＋HP下限でトラッシュが自明にならないように。
+  var eBlk=ENDLESS?Math.floor(time/ENDLESS_BLOCK):0;   // 5分ブロック番号（1周＝3ブロック）
+  var blkMul=ENDLESS?(1+eBlk*0.5):1;                   // 5分ごとに敵HP係数+50%（ブロック1=×1.5・2=×2.0・3=×2.5…）
+  var scale=(1+time/60*0.63)*blkMul, dscale=(1+time/60*0.13)*(ENDLESS?(1+eBlk*0.12):1);
+  var ehp=t.hp*scale;
+  if(ENDLESS){ var hpFloor=140*eBlk*(1+time/60*0.4); if(ehp<hpFloor) ehp=hpFloor; }   // どのザコもこのブロックの下限を下回らない（周回で最弱敵も右肩上がり）
   var e={ k:k, nm:t.nm, x:P.x+Math.cos(a)*dist, y:P.y+Math.sin(a)*dist,
-    hp:t.hp*scale, mhp:t.hp*scale, spd:t.spd*(0.9+Math.random()*0.25), r:t.r,
-    col:t.col, dark:t.dark, xp:t.xp, dmg:t.dmg*dscale, shape:t.shape, pts:t.pts,
+    hp:ehp, mhp:ehp, spd:t.spd*(0.9+Math.random()*0.25), r:t.r,
+    col:t.col, dark:t.dark, xp:t.xp, dmg:t.dmg*dscale, shape:t.shape, pts:t.pts, smul:(ENDLESS?blkMul:1),
     ai:t.ai||'', acd:t.acd||0, at:0.6+Math.random()*1.2, st:'', stT:0,
     vx:0, vy:0, res:t.res||0, flat:(t.flat||0)*scale,
     range:t.range||0, chspd:t.chspd||0, wind:t.wind||0, chdur:t.chdur||0,
@@ -4902,7 +4904,7 @@ function kill(e){
   // 図鑑：討伐数（表示用）とスコア（ザコの強化ポイント）を集計。ランクが上がって強化ポイントを得たらトースト通知
   if(e.boss){ if(BOSS[e.bkey]){ var fb0=figLv(e.bkey); BKILL[e.bkey]=(BKILL[e.bkey]||0)+1; if(figLv(e.bkey)>fb0&&figLv(e.bkey)<=FIG_CAP) toast('📈',figInfo(e.bkey).nm+' 図鑑ランクUP！強化ポイント獲得','#a8e06a'); } }
   else if(DEX[e.k]){ BKILL[e.k]=(BKILL[e.k]||0)+1; var fz0=figLv(e.k); BSCORE[e.k]=(BSCORE[e.k]||0)+Math.round((e.elite?PTS_ELITE:e.pts)*0.5); if(figLv(e.k)>fz0&&figLv(e.k)<=FIG_CAP) toast('📈',figInfo(e.k).nm+' 図鑑ランクUP！強化ポイント獲得','#a8e06a'); }   // 図鑑ポイントを半減
-  score+=e.boss?e.pts:(e.elite?PTS_ELITE:e.pts);
+  score+=Math.round((e.boss?e.pts:(e.elite?PTS_ELITE:e.pts))*(e.smul||1));   // 無限ランは周回でスコア倍率↑（伸びやすく）
   var np=e.boss?60:(e.elite?26:7);
   for(var k=0;k<np;k++){
     parts.push({x:e.x,y:e.y,vx:(Math.random()-.5)*(e.boss?520:260),
@@ -8196,6 +8198,10 @@ Array.prototype.forEach.call(document.querySelectorAll('#setview button'),functi
 // 更新履歴：1つのお知らせ内で「バージョン見出し」ごとに変更点を並べる（新しい順）。
 // マージのたびに先頭へ新バージョンを追加し、VERSION も更新する。
 var UPDATES=[
+  {v:'α1.0.159', items:[
+    '無限ランの難易度カーブを見直しました。これまでは周回で弱いステージ（草原など）に戻ると敵が急に柔らかく感じましたが、5分ごと（＝ステージが変わるたび）に敵が段階的に強くなり、さらに最弱のザコにもHPの下限を設けたので、周回するほどしっかり手応えが増します。',
+    'あわせて、無限ランでは周回が進むほど敵1体あたりのスコアが上がるようにしました。敵が硬くなってもスコアは伸びやすく、周回するほど高得点を狙えます。',
+  ]},
   {v:'α1.0.158', items:[
     'ボスの討伐スコア出現の閾値を、2〜4体目でさらに引き上げました（強いビルドでも来すぎないように調整）。1体目は据え置き。',
     'キャラごと実績「到達レベル」の段階を Lv30/40/50 → Lv20/50/100/200 に変更しました。',
