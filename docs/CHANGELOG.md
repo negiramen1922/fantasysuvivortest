@@ -10,6 +10,10 @@
 - リザルト画面と設定画面に `VERSION` を表示。
 - お知らせ（`UPDATES` 配列）は**1枠内でバージョン見出しごとに変更点を掲載**（新しい順）。マージ時は `UPDATES` 先頭に新バージョンを追加し `VERSION` を一致させる。
 
+## ver.α1.0.158
+- ボス討伐スコア閾値を②③④でさらに引き上げ（実測：強ビルドで②6:50/③9:40/④11:56＝早すぎ）。①据え置き、②③④を約1.9倍。BOSS_AT ②44k→90k/③120k→220k/④220k→420k、BOSS_AT2 ②54k→105k/③146k→280k/④240k→460k、BOSS_AT3 ②68k→130k/③180k→340k/④290k→550k。
+- キャラごと実績 `clv`（到達レベル）の tiers を `[30,40,50]`→`[20,50,100,200]` に変更。
+
 ## ver.α1.0.157
 - キャラごと実績を追加。永続ストア `WDMGTOT`(武器別累計ダメージ)/`WKILL`(武器別累計討伐)/`CHCLEAR`/`CHNOCONT`(キャラ別クリア/ノーコン)/`CHMAXLV`/`CHSURV`(キャラ別最高Lv/累計生存秒)を新設し、save(`wdt/wkl/ccl/cnc/cml/csv`)＋applySaveで永続化。`finish()` で `WDMG`→`WDMGTOT` 加算・`CHMAXLV/CHSURV/CHCLEAR/CHNOCONT`(勝利かつ非ENDLESS、ノーコンは`!contUsed`)を更新。`kill()` で `WKILL[SRC]++`。
 - キャラ実績モデル `cAchGroups(c)`（cdmg:1万〜1億/ckill:1000〜1億/cclear:①②③/clv:30/40/50/cnc:①②③/csurv:30分/1h/5h）＋ヘルパ(`cAchDone/Claimed/Claimable/Count`, `claimCharAch`)。報酬は少額金貨 `CGOLD=[3,5,10,25,50,100]`、`ACLAIM` に `c:char:key:tier` で受取記録。
