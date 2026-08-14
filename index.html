@@ -3251,7 +3251,7 @@ function doSlash(){
 function doKatana(){
   SRC='katana';
   var ar=AREA('katana');
-  var arc=TF('katana','fullarc')?6.3:Math.min(3.2,1.5*ar), r2=90*ar;   // 刀は射程軸なし（範囲arのみが間合いを決める）
+  var arc=TF('katana','fullarc')?6.3:Math.min(3.5,1.55*ar), r2=96*ar;   // 範囲arの効き方を大剣と同一に（角度3.5cap・1.55倍／間合い96倍）
   var dmg=20*DMG('katana')*pw('katana');
   var bmul=1+TR('katana','bleed');
   var n=arcHit(r2,arc,dmg,null,function(e){ if(Math.random()<ccChance(BLEED_CHANCE)) applyBleed(e,bmul); });
@@ -3326,8 +3326,8 @@ function doFlame(dt){
 function doScythe(){
   var e=nearest(P.x,P.y,RNG('scythe'));
   var base=e?Math.atan2(e.y-P.y,e.x-P.x):P.face;
-  var ar=AREA('scythe');   // 範囲＝大剣と同じく「攻撃が大きくなる＋間合いも伸びる」（当たり判定・見た目・飛距離すべてに乗る）。射程RNGMは追加の飛距離。
-  var cnt=1+CNT('scythe')+scytheLvBonus(), rng=210*ar*RNGM('scythe'), dmg=20*DMG('scythe')*pw('scythe');   // 農夫：20レベルごと+1本（ラン内強化と加算）
+  var ar=AREA('scythe');   // 範囲＝当たり判定と見た目の大きさ（飛距離は射程RNGMのみが担う）
+  var cnt=1+CNT('scythe')+scytheLvBonus(), rng=210*RNGM('scythe'), dmg=20*DMG('scythe')*pw('scythe');   // 農夫：20レベルごと+1本（ラン内強化と加算）
   for(var i=0;i<cnt;i++){
     scys.push({ a:base+(i-(cnt-1)/2)*0.55, t:0, dur:0.95, rng:rng, dmg:dmg, ar:ar,
                 x:P.x, y:P.y, spin:0, back:0, hit:[] });
