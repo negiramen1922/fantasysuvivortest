@@ -1388,12 +1388,14 @@ var ETYPE={
   seaturtle:{ nm:'ウミガメ',     res:0.55, hp:320, spd:38,  r:19, col:'#5a9a6a', dark:'#1f4530', xp:6, dmg:20, shape:'seaturtle', pts:64, sv:0.15, flat:5 },
   kelpie:   { nm:'ケルピー',     res:0.18, hp:150, spd:150, r:15, col:'#7ab0d8', dark:'#2a4a63', xp:4, dmg:20, shape:'kelpie',    pts:46, sv:0.12, ai:'charge', range:300, acd:2.8, chspd:540, wind:0.5, chdur:1.0 },
   shark:    { nm:'サメ',         res:0.30, hp:210, spd:92,  r:18, col:'#9aa8b8', dark:'#37414f', xp:6, dmg:30, shape:'shark',     pts:66, sv:0.15, ai:'charge', range:360, acd:3.2, chspd:620, wind:0.7, chdur:1.1 },
-  manta:    { nm:'マンタ',       res:0.25, hp:170, spd:150, r:19, col:'#5a6a8a', dark:'#20283a', xp:5, dmg:18, shape:'manta',     pts:56, sv:0.14, ai:'fly' },
+  manta:    { nm:'マンタ',       res:0.25, hp:220, spd:140, r:28, col:'#5a6a8a', dark:'#20283a', xp:5, dmg:20, shape:'manta',     pts:56, sv:0.14, ai:'fly' },
   hermit:   { nm:'ヤドカリ',     res:0.30, hp:260, spd:150, r:16, col:'#d0a060', dark:'#5a4020', xp:5, dmg:18, shape:'hermit',    pts:56, sv:0.14, ai:'hermit', shield:140 },
   clam:     { nm:'カイ',         res:0.35, hp:180, spd:48,  r:15, col:'#c09ac0', dark:'#4a2a4a', xp:4, dmg:18, shape:'clam',      pts:48, sv:0.13, ai:'burrow', shield:120 },
-  serpent:  { nm:'ミズチ',       res:0.20, hp:170, spd:96,  r:14, col:'#4a9a7a', dark:'#1a4535', xp:4, dmg:20, shape:'serpent',   pts:50, sv:0.13, ai:'serpent', range:320, acd:3.0, chspd:560, wind:0.55, chdur:0.9 },
+  serpent:  { nm:'ミズチ',       res:0.20, hp:170, spd:104, r:14, col:'#4a9a7a', dark:'#1a4535', xp:4, dmg:20, shape:'serpent',   pts:50, sv:0.13, ai:'serpent' },
   jelly:    { nm:'クラゲ',       res:0.05, hp:90,  spd:52,  r:14, col:'#c0a0e0', dark:'#4a3060', xp:3, dmg:10, shape:'jelly',     pts:30, sv:0.10, cpois:1 },
   siren:    { nm:'セイレーン',   res:0.12, hp:150, spd:44,  r:14, col:'#e0a0b0', dark:'#5a2a3a', xp:5, dmg:16, shape:'siren',     pts:54, sv:0.14, ai:'beam', range:420, acd:4.2, wind:1.0, bdmg:20 },
+  // リヴァイアサンの丸が撃つサメ型ミサイル：追尾する倒せる敵。HPは通常サメ(210)の2倍=420（時間スケールも同じ＝常にサメの2倍）。エリート化しない。
+  sharkmissile:{ nm:'サメミサイル', res:0.30, hp:420, spd:250, r:12, col:'#9ab0c8', dark:'#2a3a4a', xp:2, dmg:20, shape:'sharkmissile', pts:20, sv:0, ai:'home', home:1.6, noelite:1 },
   // 海坊主：16:00〜 5体で横一列の壁として来る。遅いが超高耐久、通った跡に黒い澱み（3秒）を残す。エリート化しない（湧きmixに入れず専用スポナーのみ）。
   umibozu:  { nm:'海坊主',       res:0.90, hp:30000, spd:85, r:34, col:'#12121e', dark:'#000006', xp:40, dmg:34, shape:'umibozu', pts:400, sv:0, ai:'umibozu', noelite:1, flathp:1 },
   // エルダートレントが生やす回復の木（ウェーブには出ない・図鑑なし）
@@ -1523,7 +1525,7 @@ var BOSS={
                ai:'kraken', acd:2.8, nbul:8, bspd:230, bdmg:16 },
   tornadoshark:{ nm:'トルネードシャーク', res:0.95, key:'tornadoshark', hp:300000, r:52, spd:120, dmg:50, xp:2100, pts:52000,
                ai:'tornshark', acd:3.0, chspd:640, chdur:1.0, wind:0.7, nbul:20, bspd:220, bdmg:17 },
-  leviathan:  { nm:'リヴァイアサン',   res:0.96, key:'leviathan', hp:520000, r:58, spd:64, dmg:56, xp:3000, pts:80000,
+  leviathan:  { nm:'リヴァイアサン',   res:0.96, key:'leviathan', hp:820000, r:58, spd:64, dmg:56, xp:3400, pts:90000,
                ai:'leviathan', acd:2.6, nbul:24, bspd:210, bdmg:18, last:1 }
 };
 // 各要素 [出現時間s, ボスkey, 討伐スコア閾値]。時間 or スコアの早い方で出現（ぐだり防止）。スコア閾値はステージごとに調整。
@@ -2682,7 +2684,7 @@ function figInfo(id){
   if(BOSS[id]){ var B=BOSS[id], tt=ETYPE[B.key]||{}; return {nm:B.nm,shape:tt.shape,col:tt.col,dark:tt.dark,desc:BDEX[id]||'',boss:true}; }
   var t=ETYPE[id]||{}; return {nm:t.nm,shape:t.shape,col:t.col,dark:t.dark,desc:DEX[id]||'',boss:false};
 }
-var VERSION='α1.0.172'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
+var VERSION='α1.0.173'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
 function applySave(o){
   for(var i=0;i<UPG.length;i++) META[UPG[i].id]=0;
   try{
@@ -4341,7 +4343,7 @@ function makeEnemy(k){
     range:t.range||0, chspd:t.chspd||0, wind:t.wind||0, chdur:t.chdur||0,
     bspd:t.bspd||0, bdmg:(t.bdmg||0)*dscale, sum:t.sum||'', nsum:t.nsum||0,
     boom:t.boom||0, boomR:t.boomR||0, boomDmg:(t.boomDmg||0)*dscale, puddle:t.puddle||0, cpois:t.cpois||0, life:0,
-    shield:t.shield||0, shieldMax:t.shield||0, buffT:0,
+    shield:t.shield||0, shieldMax:t.shield||0, buffT:0, home:t.home||0,
     kb:0, kbx:0, kby:0, ht:0, slow:0, el:0, elT:0, rcd:0, frz:0, dotD:0, dotT:0, dotN:0, vuln:0,
     ph:Math.random()*6.28, elite:0, boss:0, dead:0, uid:(++UID) };
   // グール：プレイヤーの近くの地面から出現（ぼこぼこ予告→出現）
@@ -4922,16 +4924,22 @@ function moveEnemies(dt){
       if(e.spd0==null) e.spd0=e.spd;
       e.spd = e.shield>0 ? e.spd0 : e.spd0*0.38;
     }
+    else if(e.ai==='home'){
+      // サメミサイル等：プレイヤーへゆっくり旋回して追尾。倒せる敵。時間切れで消滅。
+      moved=1;
+      var hc=(e.vx||e.vy)?Math.atan2(e.vy,e.vx):Math.atan2(dy,dx);
+      var hga=Math.atan2(dy,dx), hgd=Math.atan2(Math.sin(hga-hc),Math.cos(hga-hc)), hgt=(e.home||1.6)*dt;
+      hc+=Math.max(-hgt,Math.min(hgt,hgd));
+      e.vx=Math.cos(hc)*e.spd; e.vy=Math.sin(hc)*e.spd;
+      e.x+=e.vx*dt; e.y+=e.vy*dt;
+      if(e.life>0){ e.life-=dt; if(e.life<=0){ e.dead=1; continue; } }
+    }
     else if(e.ai==='serpent'){
-      // ミズチ：左右に蛇行して近づき、間合いで突進。
-      if(e.st==='wind'){ e.stT-=dt; moved=1;
-        if(e.stT<=0){ e.st='dash'; e.stT=e.chdur; e.vx=Math.cos(e.aimA)*e.chspd; e.vy=Math.sin(e.aimA)*e.chspd; sfx(160,.14,'sawtooth',.05,.6); } }
-      else if(e.st==='dash'){ e.stT-=dt; moved=1; e.x+=e.vx*dt; e.y+=e.vy*dt; if(e.stT<=0){ e.st=''; e.at=e.acd; } }
-      else if(e.at<=0&&d<e.range){ e.st='wind'; e.stT=e.wind; e.aimA=Math.atan2(dy,dx); moved=1; }
-      else { moved=1;
-        var ux=dx/(d||1), uy=dy/(d||1), pxw=-uy, pyw=ux, wv=Math.sin(time*6+e.ph)*0.6;
-        var sp2=e.slow>0?e.spd*(e.slowMul||0.45):e.spd;
-        e.x+=(ux+pxw*wv)*sp2*dt; e.y+=(uy+pyw*wv)*sp2*dt; }
+      // ミズチ：突進はせず、左右にグネグネ蛇行しながらプレイヤーへ近づき続ける。
+      moved=1;
+      var ux=dx/(d||1), uy=dy/(d||1), pxw=-uy, pyw=ux, wv=Math.sin(time*6+e.ph)*0.7;
+      var sp2=e.slow>0?e.spd*(e.slowMul||0.45):e.spd;
+      e.x+=(ux+pxw*wv)*sp2*dt; e.y+=(uy+pyw*wv)*sp2*dt;
     }
     else if(e.ai==='beam'){
       // セイレーン：予告線を出してから、その線に沿ってビームを照射。
@@ -5045,7 +5053,7 @@ function moveEnemies(dt){
         if(e.fc>=7&&e.pf.length===0){ e.st='tornwind'; e.stT=0.7; } }
       else if(e.st==='tornwind'){ moved=1; e.stT-=dt;   // 四方の竜巻を設置
         if(e.stT<=0){ e.st='tornado'; e.stT=3.0; e.tick=0; e.tornados=[];
-          for(var twi=0;twi<4;twi++){ var twa=twi/4*6.283+0.78; e.tornados.push({x:P.x+Math.cos(twa)*250, y:P.y+Math.sin(twa)*250, sa:Math.random()*6.283}); }
+          for(var twi=0;twi<2;twi++){ var twa=twi/2*6.283+0.78; e.tornados.push({x:P.x+Math.cos(twa)*250, y:P.y+Math.sin(twa)*250, sa:Math.random()*6.283}); }
           sfx(200,.3,'sawtooth',.06,.5); } }
       else if(e.st==='tornado'){ moved=1; e.stT-=dt; e.tick-=dt;   // 各竜巻がフェンリルの渦巻き弾幕
         if(e.tick<=0){ e.tick=0.085;
@@ -5089,12 +5097,14 @@ function moveEnemies(dt){
             if(P.hp<=0){ P.hp=0; setKiller(e); die(); return; } break; } } }
         if(e.stT<=0){ e.st=''; e.at=e.acd; } }
       else if(e.st==='summonw'){ moved=1; e.stT-=dt;
-        if(e.stT<=0){ e.st='summon'; e.stT=6.0; e.tick=0; e.orbT=0.4; e.orbs=[{x:e.x-170,y:e.y-30},{x:e.x+170,y:e.y-30}]; sfx(120,.3,'square',.06,.6); } }
+        if(e.stT<=0){ e.st='summon'; e.stT=5.0; e.tick=0; e.orbT=0.4; e.orbs=[{x:e.x-170,y:e.y-30},{x:e.x+170,y:e.y-30}]; sfx(120,.3,'square',.06,.6); } }
       else if(e.st==='summon'){ moved=1; e.stT-=dt;
         e.orbT-=dt;
-        if(e.orbT<=0&&e.orbs){ e.orbT=0.85;                                     // 2つの丸が自機狙いのサメ型ミサイル
+        if(e.orbT<=0&&e.orbs){ e.orbT=1.0;                                      // 2つの丸が自機狙いのサメ型ミサイル（倒せる敵）。50%以下は倍。
+          var nmis=(e.hp<=e.mhp*0.5)?2:1;
           for(var oi=0;oi<e.orbs.length;oi++){ var ob=e.orbs[oi], ma=Math.atan2(P.y-ob.y,P.x-ob.x);
-            ebul.push({x:ob.x,y:ob.y,vx:Math.cos(ma)*250,vy:Math.sin(ma)*250,r:11,dmg:e.bdmg,life:4.5,t:0,bk:e.bkey,col:'#9ab0c8',home:1.5,shark:1}); }
+            for(var mm=0;mm<nmis;mm++){ var shm=makeEnemy('sharkmissile'); shm.x=ob.x; shm.y=ob.y;
+              var man=ma+(nmis>1?(mm-0.5)*0.42:0); shm.vx=Math.cos(man)*shm.spd; shm.vy=Math.sin(man)*shm.spd; shm.life=5; } }
           sfx(300,.08,'sawtooth',.05,.9); }
         e.tick-=dt;
         if(e.tick<=0){ e.tick=1.0;                                             // 本体の大円弾幕
@@ -5102,10 +5112,14 @@ function moveEnemies(dt){
           fx.push({k:'ring',x:e.x,y:e.y,r:0,to:150,t:0,life:.35,col:'#bfe0ff'}); shake=Math.min(18,shake+5); sfx(110,.2,'square',.07,.5); }
         if(e.stT<=0){ e.st=''; e.at=e.acd; e.orbs=null; } }
       else if(e.at<=0&&d<820){
-        var en=e.hp<=e.mhp*0.5; e.seq=((e.seq||0)+1)%3;
-        if(e.seq===1){ e.st='pbwind'; e.stT=1.0; }
-        else if(e.seq===2){ if(en){ e.st='summonw'; e.stT=0.8; } else { e.st='spiral'; e.stT=2.6; e.tick=0; e.sa=Math.atan2(dy,dx); } }
-        else { if(en){ e.st='escale'; e.stT=4.2; e.tick=0; e.ec=0; e.sa=0; } else { e.st='scale'; e.stT=2.6; e.tick=0; e.sa=Math.atan2(dy,dx); } }
+        var en=e.hp<=e.mhp*0.5;
+        var mvs=en?['escale','pbwind','summonw']:['scale','pbwind','spiral','summonw'];   // 召喚(サメミサイル)は通常でも出す
+        e.seq=((e.seq||0)+1); var mv=mvs[e.seq%mvs.length];
+        if(mv==='pbwind'){ e.st='pbwind'; e.stT=1.0; }
+        else if(mv==='spiral'){ e.st='spiral'; e.stT=2.6; e.tick=0; e.sa=Math.atan2(dy,dx); }
+        else if(mv==='scale'){ e.st='scale'; e.stT=2.6; e.tick=0; e.sa=Math.atan2(dy,dx); }
+        else if(mv==='escale'){ e.st='escale'; e.stT=4.2; e.tick=0; e.ec=0; e.sa=0; }
+        else { e.st='summonw'; e.stT=0.8; }
         sfx(220,.12,'sawtooth',.05,.5);
       }
     }
@@ -6565,7 +6579,7 @@ function drawForestShape(s,R,col,dark,t){
   }
 }
 // ステージ4（海）の手続き描画。ctx は敵中心へ translate 済み。頭は左向き（-x）を基本とする。
-var OCEAN={flyingfish:1,sahagin:1,crab:1,seaturtle:1,kelpie:1,shark:1,manta:1,hermit:1,clam:1,serpent:1,jelly:1,siren:1,umibozu:1,whale:1,kraken:1,tornadoshark:1,leviathan:1};
+var OCEAN={flyingfish:1,sahagin:1,crab:1,seaturtle:1,kelpie:1,shark:1,manta:1,hermit:1,clam:1,serpent:1,jelly:1,siren:1,umibozu:1,whale:1,kraken:1,tornadoshark:1,leviathan:1,sharkmissile:1};
 function drawOceanShape(s,R,col,dark,t){
   ctx.fillStyle=col; ctx.strokeStyle=dark;
   if(s==='flyingfish'){
@@ -6701,6 +6715,12 @@ function drawOceanShape(s,R,col,dark,t){
     ctx.beginPath(); ctx.moveTo(0,-R*0.1); ctx.lineTo(R*0.2,-R*0.6); ctx.lineTo(R*0.42,-R*0.05); ctx.closePath(); ctx.fill(); ctx.stroke();  // 背びれ
     ctx.beginPath(); ctx.moveTo(-R*0.75,R*0.2); ctx.lineTo(-R*1.15,-R*0.1); ctx.lineTo(-R*1.05,R*0.5); ctx.closePath(); ctx.fill();  // 尾
     ctx.fillStyle='#0a1a2a'; ctx.beginPath(); ctx.arc(-R*0.5,R*0.12,R*0.1,0,6.3); ctx.fill();
+  }else if(s==='sharkmissile'){   // 進行方向へ向く（drawEnemyでhome敵は回転済み・右向き基準）
+    ctx.fillStyle=col; ctx.strokeStyle=dark;
+    ctx.beginPath(); ctx.ellipse(0,0,R*1.5,R*0.7,0,0,6.3); ctx.fill(); ctx.stroke();   // 体
+    ctx.beginPath(); ctx.moveTo(-R*1.3,0); ctx.lineTo(-R*2.1,-R*0.7); ctx.lineTo(-R*1.9,0); ctx.lineTo(-R*2.1,R*0.7); ctx.closePath(); ctx.fill();   // 尾
+    ctx.beginPath(); ctx.moveTo(R*0.1,-R*0.6); ctx.lineTo(R*0.5,-R*1.3); ctx.lineTo(R*0.7,-R*0.5); ctx.closePath(); ctx.fill();   // 背びれ
+    ctx.fillStyle='#0a0a12'; ctx.beginPath(); ctx.arc(R*0.9,-R*0.12,R*0.14,0,6.3); ctx.fill();
   }else if(s==='leviathan'){
     ctx.fillStyle=col; ctx.beginPath(); ctx.ellipse(0,R*0.3,R*0.75,R*0.95,0,0,6.3); ctx.fill(); ctx.stroke();   // 頭
     ctx.strokeStyle=col; ctx.lineWidth=R*0.16; ctx.lineCap='round';                                            // 角
@@ -6918,6 +6938,7 @@ function drawEnemy(e){
   ctx.fillStyle='rgba(0,0,0,.3)';
   ctx.beginPath(); ctx.ellipse(0,e.r*0.85,e.r*0.85*(1-slAir*0.3),e.r*0.32*(1-slAir*0.3),0,0,6.3); ctx.fill();
   if(e.hopY) ctx.translate(0,-e.hopY);   // ホエールの跳ね（影は地面、本体だけ持ち上げる）
+  if(e.ai==='home'&&(e.vx||e.vy)) ctx.rotate(Math.atan2(e.vy,e.vx));   // サメミサイル：進行方向へ向く
   // エフェクトに埋もれないよう、まず暗い縁で敵の形を抜く（手続き描画のときだけ。スプライトは自前で輪郭を持つ）
   if(!sprN){
     ctx.globalAlpha=.85; ctx.fillStyle='#0a0714';
@@ -8861,7 +8882,7 @@ Array.prototype.forEach.call(document.querySelectorAll('#setview button'),functi
 // 更新履歴：1つのお知らせ内で「バージョン見出し」ごとに変更点を並べる（新しい順）。
 // マージのたびに先頭へ新バージョンを追加し、VERSION も更新する。
 var UPDATES=[
-  {v:'α1.0.172', items:[
+  {v:'α1.0.173', items:[
     '次の新ステージに向けた内部準備を進めています（通常のプレイ内容に変更はありません）。',
   ]},
   {v:'α1.0.163', items:[
