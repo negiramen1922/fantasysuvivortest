@@ -3326,8 +3326,8 @@ function doFlame(dt){
 function doScythe(){
   var e=nearest(P.x,P.y,RNG('scythe'));
   var base=e?Math.atan2(e.y-P.y,e.x-P.x):P.face;
-  var ar=AREA('scythe');   // 範囲＝当たり判定と見た目の大きさ（飛距離は射程RNGMのみが担う）
-  var cnt=1+CNT('scythe')+scytheLvBonus(), rng=210*RNGM('scythe'), dmg=20*DMG('scythe')*pw('scythe');   // 農夫：20レベルごと+1本（ラン内強化と加算）
+  var ar=AREA('scythe');   // 範囲＝大剣と同じく「攻撃が大きくなる＋間合いも伸びる」（当たり判定・見た目・飛距離すべてに乗る）。射程RNGMは追加の飛距離。
+  var cnt=1+CNT('scythe')+scytheLvBonus(), rng=210*ar*RNGM('scythe'), dmg=20*DMG('scythe')*pw('scythe');   // 農夫：20レベルごと+1本（ラン内強化と加算）
   for(var i=0;i<cnt;i++){
     scys.push({ a:base+(i-(cnt-1)/2)*0.55, t:0, dur:0.95, rng:rng, dmg:dmg, ar:ar,
                 x:P.x, y:P.y, spin:0, back:0, hit:[] });
