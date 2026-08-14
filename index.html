@@ -1467,7 +1467,7 @@ var BOSS={
                ai:'sdragon', acd:2.6, chspd:600, chdur:1.0, wind:0.8, nbul:22, bspd:220, bdmg:18, last:1 }
 };
 // 各要素 [出現時間s, ボスkey, 討伐スコア閾値]。時間 or スコアの早い方で出現（ぐだり防止）。スコア閾値はステージごとに調整。
-var BOSS_AT=[[300,'greatboar',16000],[600,'slimeking',44000],[900,'goblinking',120000],[1200,'fenrir',220000]];
+var BOSS_AT=[[300,'greatboar',16000],[600,'slimeking',90000],[900,'goblinking',220000],[1200,'fenrir',420000]];
 
 // ステージ1の出現構成
 var WAVE=[
@@ -1501,7 +1501,7 @@ var WAVE2=[
   { t:1080, mix:[['dryad',0.20],['spider',0.42],['mantis',0.62],['beetle',0.84],['treant',1.00]] }  // 18:00 終盤混成
 ];
 // ステージ2のボス（HPは hpMul 倍で出す）。締めは森の主フェンリル。
-var BOSS_AT2=[[300,'kervi',20000],[600,'gmoth',54000],[900,'arachnid',146000],[1200,'eldertreant',240000]];
+var BOSS_AT2=[[300,'kervi',20000],[600,'gmoth',105000],[900,'arachnid',280000],[1200,'eldertreant',460000]];
 
 // ステージ3（古代の王墓）の出現構成。弱い敵→強い敵を段階投入。フライはスウォーム専用。
 var WAVE3=[
@@ -1520,7 +1520,7 @@ var WAVE3=[
   { t:1110, mix:[['shadow',0.16],['mummy',0.31],['dullahan',0.40],['necro',0.58],['gargoyle',0.78],['boomer',1.00]] }  // 18:30 終盤混成
 ];
 // ステージ3のボス。締めはスケルトンドラゴン。
-var BOSS_AT3=[[300,'gravekeeper',26000],[600,'skeletonking',68000],[900,'hecaton',180000],[1200,'skeledragon',290000]];
+var BOSS_AT3=[[300,'gravekeeper',26000],[600,'skeletonking',130000],[900,'hecaton',340000],[1200,'skeledragon',550000]];
 
 // ステージ定義。req をクリア済みで次ステージが解放される。
 var STAGES={
@@ -2587,7 +2587,7 @@ function figInfo(id){
   if(BOSS[id]){ var B=BOSS[id], tt=ETYPE[B.key]||{}; return {nm:B.nm,shape:tt.shape,col:tt.col,dark:tt.dark,desc:BDEX[id]||'',boss:true}; }
   var t=ETYPE[id]||{}; return {nm:t.nm,shape:t.shape,col:t.col,dark:t.dark,desc:DEX[id]||'',boss:false};
 }
-var VERSION='α1.0.157'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
+var VERSION='α1.0.158'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
 function applySave(o){
   for(var i=0;i<UPG.length;i++) META[UPG[i].id]=0;
   try{
@@ -7284,7 +7284,7 @@ function cAchGroups(c){
     {k:'cdmg',  nm:wn+'で与ダメージ', ic:'💥', fmt:'num',  tiers:[10000,100000,1000000,10000000,100000000], val:function(){ return WDMGTOT[w]||0; }},
     {k:'ckill', nm:wn+'で討伐',       ic:'⚔', fmt:'num',  tiers:[1000,10000,100000,1000000,10000000,100000000], val:function(){ return WKILL[w]||0; }},
     {k:'cclear',nm:'ステージクリア',   ic:'🏳', stage:true, tiers:[1,2,3], labels:['ステージ1','ステージ2','ステージ3'], done:function(i){ return !!(CHCLEAR[c]&&CHCLEAR[c][i+1]); }},
-    {k:'clv',   nm:'到達レベル',       ic:'⭐', fmt:'lv',   tiers:[30,40,50], val:function(){ return CHMAXLV[c]||0; }},
+    {k:'clv',   nm:'到達レベル',       ic:'⭐', fmt:'lv',   tiers:[20,50,100,200], val:function(){ return CHMAXLV[c]||0; }},
     {k:'cnc',   nm:'ノーコンクリア',   ic:'🎖', stage:true, tiers:[1,2,3], labels:['ステージ1','ステージ2','ステージ3'], done:function(i){ return !!(CHNOCONT[c]&&CHNOCONT[c][i+1]); }},
     {k:'csurv', nm:'累計生存時間',     ic:'⏳', fmt:'time', tiers:[1800,3600,18000], val:function(){ return CHSURV[c]||0; }}
   ];
@@ -8196,6 +8196,10 @@ Array.prototype.forEach.call(document.querySelectorAll('#setview button'),functi
 // 更新履歴：1つのお知らせ内で「バージョン見出し」ごとに変更点を並べる（新しい順）。
 // マージのたびに先頭へ新バージョンを追加し、VERSION も更新する。
 var UPDATES=[
+  {v:'α1.0.158', items:[
+    'ボスの討伐スコア出現の閾値を、2〜4体目でさらに引き上げました（強いビルドでも来すぎないように調整）。1体目は据え置き。',
+    'キャラごと実績「到達レベル」の段階を Lv30/40/50 → Lv20/50/100/200 に変更しました。',
+  ]},
   {v:'α1.0.157', items:[
     'キャラクターごとの実績を追加！ キャラ一覧でキャラを押すと詳細画面が開き、「🏅 実績を見る」から確認できます。内容：持ち武器での与ダメージ（1万〜1億）・討伐数（1000〜1億）、そのキャラでのステージ①②③クリア、到達レベル（Lv30/40/50）、ノーコンティニュークリア、累計生存時間（30分/1時間/5時間）。各段階を達成すると少額の金貨を受け取れます。',
     '※集計は今回から開始されます（過去のプレイは反映されません）。武器での与ダメージ・討伐は武器基準での集計です。',
