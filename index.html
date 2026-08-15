@@ -2618,7 +2618,7 @@ var UPG=[
   { id:'affinity', nm:'元素付着', g:'◈', per:4,    unit:'%', tx:'属性の付与率が上がる' },
   { id:'mastery',  nm:'元素熟知', g:'✧', per:10,   unit:'%', tx:'元素反応のダメージが上がる' },
   { id:'luck',     nm:'宝探し',   g:'💰', per:15,   unit:'%', tx:'銀貨の落ちやすさが上がる' },
-  { id:'ban',      nm:'排他',     g:'🚫', per:1,    unit:'枠', tx:'ラン開始前に武器を1つBANできる（ラン中の新規提示に出ない）', max:5 },
+  { id:'ban',      nm:'排他',     g:'🚫', per:1,    unit:'枠', tx:'ラン開始前に武器を1つBANできる（ラン中の新規提示に出ない・Lv6〜は金貨）', max:8 },
   { id:'reroll',   nm:'リロール', g:'🔄', per:1,    unit:'回', tx:'レベルアップの引き直し回数が増える（Lv6〜は金貨）', max:10 },
   { id:'skipn',    nm:'スキップ', g:'⏭', per:1,    unit:'回', tx:'レベルアップの見送り回数が増える（Lv6〜は金貨）', max:10 },
   { id:'nmbudget', nm:'契約予算', g:'🌙', per:5,    unit:'', tx:'ナイトメアの契約予算が増える（各レベル金貨）', max:10, goldonly:1, dev:1 }
@@ -2803,7 +2803,7 @@ function figInfo(id){
   if(BOSS[id]){ var B=BOSS[id], tt=ETYPE[B.key]||{}; return {nm:B.nm,shape:tt.shape,col:tt.col,dark:tt.dark,desc:BDEX[id]||'',boss:true}; }
   var t=ETYPE[id]||{}; return {nm:t.nm,shape:t.shape,col:t.col,dark:t.dark,desc:DEX[id]||'',boss:false};
 }
-var VERSION='α1.0.184'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
+var VERSION='α1.0.185'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
 function applySave(o){
   for(var i=0;i<UPG.length;i++) META[UPG[i].id]=0;
   try{
@@ -9146,6 +9146,9 @@ Array.prototype.forEach.call(document.querySelectorAll('#setview button'),functi
 // 更新履歴：1つのお知らせ内で「バージョン見出し」ごとに変更点を並べる（新しい順）。
 // マージのたびに先頭へ新バージョンを追加し、VERSION も更新する。
 var UPDATES=[
+  {v:'α1.0.185', items:[
+    '永続強化「排他」の上限を Lv5 → Lv8 に拡張しました。Lv6〜8 は金貨で強化でき、BANできる武器の枠をさらに増やせます。',
+  ]},
   {v:'α1.0.184', items:[
     '「グランドアッパー」「ロックボール」の属性表記を「土」から「岩」に変更しました。あわせて範囲系の武器に「範囲」タグを追加しています。',
     '次の新要素に向けた内部準備を進めています（通常のプレイ内容に変更はありません）。',
