@@ -177,9 +177,9 @@ canvas{display:block;width:100%;height:100%;touch-action:none}
 #pstat b{color:#fff;font-weight:normal}
 #pstat .el{color:var(--gold)}
 
-#shop,#mast,#ban,#settings,#news,#tutorial,#dex,#mailbox,#daily,#achieve,#help{position:absolute;inset:0;display:none;align-items:center;justify-content:center;
+#shop,#mast,#ban,#settings,#news,#tutorial,#dex,#mailbox,#daily,#achieve,#help,#nmc{position:absolute;inset:0;display:none;align-items:center;justify-content:center;
   background:rgba(6,4,16,.95);padding:14px;z-index:6}
-#shop.on,#mast.on,#ban.on,#settings.on,#news.on,#tutorial.on,#dex.on,#mailbox.on,#daily.on,#achieve.on,#help.on{display:flex}
+#shop.on,#mast.on,#ban.on,#settings.on,#news.on,#tutorial.on,#dex.on,#mailbox.on,#daily.on,#achieve.on,#help.on,#nmc.on{display:flex}
 #twobox{flex:none;border:1px solid rgba(255,204,77,.35);border-radius:12px;padding:10px;background:rgba(255,204,77,.05)}
 .twolbl{font-size:11px;color:var(--ash);margin-bottom:4px}
 #twoprev{font-size:19px;color:var(--gold);font-weight:bold;text-align:center;margin:4px 0 8px;min-height:24px}
@@ -1025,6 +1025,20 @@ img.wspr{width:1.15em;height:1.15em;object-fit:contain;image-rendering:pixelated
     </div>
   </div>
 
+  <div id="nmc">
+    <div class="shopbox">
+      <div class="shophead">
+        <div class="title">🌙 契約（ナイトメア）</div>
+        <div id="nmcnote" style="font-size:12px;color:var(--ash)"></div>
+      </div>
+      <div id="nmclist" style="overflow-y:auto"></div>
+      <div style="display:flex;gap:8px">
+        <button class="btn" id="nmcgo" style="flex:2;margin-top:0">この契約で出撃</button>
+        <button class="btn sub2" id="nmcclose" style="margin-top:0;flex:1">やめる</button>
+      </div>
+    </div>
+  </div>
+
   <div id="ban">
     <div class="shopbox">
       <div class="shophead">
@@ -1630,6 +1644,41 @@ var W1CLEAR={};   // 武器1つ（単一武器）でクリアしたステージ 
 // 無限ラン：5分ごとに舞台（＝ステージのロスター）が循環し、ボスも出る。死亡のみで終了・コンティニュー無し。
 var ENDLESS=false, ENDBLK=0, endBossDone={};
 var NIGHTMARE=false;   // 裏ステージ（ナイトメア）：敵のHP・攻撃2倍＋マゼンタ染め。契約カードで挑む。
+// 契約カード（正コストの恩恵のみ）。予算内で自由に組む。武器タグ=WTAG／敵タグ=MTAG を利用。
+var NMBUDGET=12, CONTRACT=[];
+var CONTRACTS=[
+  {id:'c_all1', nm:'力の契約',    ic:'💪', cost:3, tx:'全ダメージ +7%',      ef:{all:0.07}},
+  {id:'c_all2', nm:'剛力の契約',  ic:'💪', cost:6, tx:'全ダメージ +15%',     ef:{all:0.15}},
+  {id:'c_slash',nm:'斬撃の契約',  ic:'🗡', cost:3, tx:'斬撃武器 +20%',       ef:{wtag:'斬撃',mul:0.20}},
+  {id:'c_shot', nm:'射撃の契約',  ic:'🏹', cost:3, tx:'射撃武器 +20%',       ef:{wtag:'射撃',mul:0.20}},
+  {id:'c_boom', nm:'爆発の契約',  ic:'💥', cost:3, tx:'爆発武器 +24%',       ef:{wtag:'爆発',mul:0.24}},
+  {id:'c_melee',nm:'近接の契約',  ic:'🛡', cost:3, tx:'近接武器 +22%',       ef:{wtag:'近接',mul:0.22}},
+  {id:'c_fire', nm:'業火の契約',  ic:'🔥', cost:3, tx:'炎の武器 +22%',       ef:{wtag:'炎',mul:0.22}},
+  {id:'c_ice',  nm:'氷結の契約',  ic:'❄', cost:3, tx:'氷の武器 +22%',        ef:{wtag:'氷',mul:0.22}},
+  {id:'c_thd',  nm:'雷鳴の契約',  ic:'⚡', cost:3, tx:'雷の武器 +22%',        ef:{wtag:'雷',mul:0.22}},
+  {id:'c_und',  nm:'破邪の契約',  ic:'💀', cost:3, tx:'アンデッド特効 +28%',  ef:{mtag:'アンデッド',mul:0.28}},
+  {id:'c_bst',  nm:'狩りの契約',  ic:'🐾', cost:3, tx:'ビースト特効 +28%',    ef:{mtag:'ビースト',mul:0.28}},
+  {id:'c_drg',  nm:'竜殺しの契約',ic:'🐉', cost:3, tx:'竜特効 +34%',          ef:{mtag:'竜',mul:0.34}},
+  {id:'c_fly',  nm:'対空の契約',  ic:'🕊', cost:2, tx:'飛行特効 +28%',        ef:{mtag:'飛行',mul:0.28}},
+  {id:'c_hmn',  nm:'討伐の契約',  ic:'⚔', cost:2, tx:'亜人特効 +28%',         ef:{mtag:'亜人',mul:0.28}},
+  {id:'c_crc',  nm:'急所の契約',  ic:'🎯', cost:4, tx:'会心率 +8%',           ef:{critc:0.08}},
+  {id:'c_crd',  nm:'剛撃の契約',  ic:'💢', cost:4, tx:'会心ダメージ +35%',    ef:{critd:0.35}},
+  {id:'c_spd',  nm:'疾風の契約',  ic:'💨', cost:3, tx:'移動速度 +12%',        ef:{spd:0.12}},
+  {id:'c_hp',   nm:'頑健の契約',  ic:'❤', cost:4, tx:'最大HP +22%',           ef:{hp:0.22}}
+];
+var CMAP={}; (function(){ for(var i=0;i<CONTRACTS.length;i++) CMAP[CONTRACTS[i].id]=CONTRACTS[i]; })();
+function contractCost(){ var s=0; for(var i=0;i<CONTRACT.length;i++){ var c=CMAP[CONTRACT[i]]; if(c) s+=c.cost; } return s; }
+function contractStat(key){ if(!NIGHTMARE) return 0; var s=0; for(var i=0;i<CONTRACT.length;i++){ var c=CMAP[CONTRACT[i]]; if(c&&c.ef&&c.ef[key]!=null) s+=c.ef[key]; } return s; }
+function contractDmgMul(w,e){
+  if(!NIGHTMARE||!CONTRACT.length) return 1;
+  var m=1;
+  for(var i=0;i<CONTRACT.length;i++){ var c=CMAP[CONTRACT[i]]; if(!c||!c.ef) continue; var ef=c.ef;
+    if(ef.all) m*=1+ef.all;
+    if(ef.wtag&&w&&WTAG[w]&&WTAG[w].indexOf(ef.wtag)>=0) m*=1+ef.mul;
+    if(ef.mtag&&e){ var mk=e.boss?e.bkey:e.k; if(mk&&MTAG[mk]&&MTAG[mk].indexOf(ef.mtag)>=0) m*=1+ef.mul; }
+  }
+  return m;
+}
 var ENDLESS_BLOCK=300;   // 1舞台＝300秒（5分）ごとにステージ循環
 var ENDBEST=0, ENDTIME=0;   // 無限ランの最高スコア／最長生存秒
 var NICK='';                // ランキング表示名（セーブに保存）
@@ -2292,10 +2341,10 @@ function CRITC(){      // 会心率：武器種で基礎値が違い、キャラ
   var k=SRC?WKIND[SRC]:null;
   var b=(k==='phys')?0.12:((k==='mag')?0.05:0.09);
   var w=(k==='mag')?0.4:1;          // 魔法は会心の恩恵が4割
-  return Math.min(0.90,b+(0.05*(P.p.crit||0)+0.03*M('crit'))*w+CH().crit+0.02*LB(SRC,'crit'));
+  return Math.min(0.90,b+(0.05*(P.p.crit||0)+0.03*M('crit'))*w+CH().crit+0.02*LB(SRC,'crit')+contractStat('critc'));
 }
 function CRITD(){      // 会心倍率：全武器共通＋その武器の限界突破（物理系）＋熟練度
-  return 2+0.20*(P.p.critd||0)+0.12*M('critd')+0.15*LB(SRC,'critd')+TR(SRC,'critd');
+  return 2+0.20*(P.p.critd||0)+0.12*M('critd')+0.15*LB(SRC,'critd')+TR(SRC,'critd')+contractStat('critd');
 }
 function AX(w,k){ var a=P.wa[w]; return (a&&a[k])||0; }
 // 限界突破：各軸のカンスト後に積める追加ステータス。武器ごとに「その武器の育成軸(WAX)」に沿った軸だけ出す。
@@ -2682,7 +2731,7 @@ function figInfo(id){
   if(BOSS[id]){ var B=BOSS[id], tt=ETYPE[B.key]||{}; return {nm:B.nm,shape:tt.shape,col:tt.col,dark:tt.dark,desc:BDEX[id]||'',boss:true}; }
   var t=ETYPE[id]||{}; return {nm:t.nm,shape:t.shape,col:t.col,dark:t.dark,desc:DEX[id]||'',boss:false};
 }
-var VERSION='α1.0.177'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
+var VERSION='α1.0.178'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
 function applySave(o){
   for(var i=0;i<UPG.length;i++) META[UPG[i].id]=0;
   try{
@@ -2790,6 +2839,10 @@ function reset(){
       lv:1, xp:0, need:xpNeed(1), hurt:0, inv:0, pois:0, poisD:0,
       w:w0, wa:wa0, aw:{}, lb:{}, p:{}, rel:{},
       rr:5+M('reroll'), sk:5+M('skipn') };
+  if(NIGHTMARE){   // 契約：移動速度・最大HP
+    P.spd*=1+contractStat('spd');
+    var _hb=contractStat('hp'); if(_hb){ P.max=Math.round(P.max*(1+_hb)); P.hp=P.max; }
+  }
   enemies=[]; gems=[]; shots=[]; fx=[]; dmgs=[]; parts=[]; bolts=[]; chests=[]; coins=[]; chaks=[]; scys=[]; bombs=[]; rocks=[]; holes=[]; ebul=[]; quakes=[]; dhits=[]; vacs=[]; vacT=40; bells=[]; swords=[]; zones=[]; volley=[]; puddles=[]; sheep=[]; trails=[]; relics=placeRelics();
   boss=null; bossN=0; lasers=[];
   time=0; kills=0; spawnT=0; eliteT=55; swarmT=3; swarmWarnT=0; umiT=8; umiWarnT=0; inkT=0; shake=0; hitStop=0; flash=0; chain=0; chainT=0;
@@ -5247,6 +5300,7 @@ function hurt(e,dmg,nx,ny,el){
   if(crit) crits++;
   var d=crit?dmg*CRITD():dmg;
   d*=dexDealMul(figKey(e));                // 図鑑ボーナス：その敵への与ダメージ+
+  if(NIGHTMARE) d*=contractDmgMul(SRC,e);  // 契約：全体/武器タグ/敵タグ特効の倍率
   if(P.nodmg) d=0;                         // テスト：判定は走るが敵は死なない
   if(e.vuln>0) d*=1.2;                     // 深淵の手：被ダメージ上昇
   var bfrac=(e.bleedStk>0)?(e.bleedPer||0)*e.bleedStk:0;   // 出血：スタックぶん被ダメージ増幅
@@ -8840,11 +8894,36 @@ function renderStageSelect(){
     if(wb){ WLIMIT=+wb.getAttribute('data-wl'); saveGame(); renderStageSelect(); return; }
     var b=ev.target.closest?ev.target.closest('.stbtn'):null; if(!b) return;
     if(b.getAttribute('data-endless')){ startRun(null,true); return; }
-    var nmv=b.getAttribute('data-nm'); if(nmv){ startRun(+nmv,false,true); return; }   // ナイトメア出撃（dev限定）
+    var nmv=b.getAttribute('data-nm'); if(nmv){ openNmc(+nmv); return; }   // ナイトメア：契約選択へ（dev限定）
     var n=+b.getAttribute('data-stg'); if(!stageUnlocked(n)) return;
     startRun(n);
   };
 }
+// 契約（ナイトメア）選択画面
+var nmcEl=null, nmcStage=1;
+function openNmc(n){ nmcStage=n; nmcEl=nmcEl||document.getElementById('nmc'); audio(); renderNmc(); nmcEl.classList.add('on'); }
+function renderNmc(){
+  var spent=contractCost(), rem=NMBUDGET-spent, st=STAGES[nmcStage];
+  document.getElementById('nmcnote').innerHTML='「'+(st?st.nm:'ステージ'+nmcStage)+'」ナイトメア（敵HP・攻撃2倍）　予算 <b style="color:'+(spent>NMBUDGET?'#ff6a6a':'var(--gold)')+'">'+spent+' / '+NMBUDGET+'</b>';
+  var L=document.getElementById('nmclist'), h='';
+  for(var i=0;i<CONTRACTS.length;i++){ var c=CONTRACTS[i], on=CONTRACT.indexOf(c.id)>=0, afford=on||c.cost<=rem;
+    h+='<button data-c="'+c.id+'"'+(afford?'':' disabled')+' style="display:flex;align-items:center;gap:10px;width:100%;text-align:left;border-radius:8px;padding:9px;margin:5px 0;color:#e8e0ff;'+
+        'background:'+(on?'#3a1440':'#181026')+';border:2px solid '+(on?'#ff5ac8':'#33254a')+';opacity:'+(afford?'1':'0.4')+'">'+
+        '<span style="font-size:20px">'+c.ic+'</span>'+
+        '<span style="flex:1;display:flex;flex-direction:column"><span style="font-weight:700">'+c.nm+'</span><span style="font-size:11px;color:#b8a0d0">'+c.tx+'</span></span>'+
+        '<span style="font-weight:800;color:#ffd24a;min-width:26px;text-align:right">'+c.cost+'</span>'+
+      '</button>';
+  }
+  L.innerHTML=h;
+  L.onclick=function(ev){ var b=ev.target.closest?ev.target.closest('[data-c]'):null; if(!b) return;
+    var id=b.getAttribute('data-c'), ix=CONTRACT.indexOf(id);
+    if(ix>=0) CONTRACT.splice(ix,1);
+    else { var c=CMAP[id]; if(c&&contractCost()+c.cost<=NMBUDGET) CONTRACT.push(id); }
+    audio(); renderNmc();
+  };
+}
+document.getElementById('nmcgo').onclick=function(){ nmcEl.classList.remove('on'); startRun(nmcStage,false,true); };
+document.getElementById('nmcclose').onclick=function(){ nmcEl.classList.remove('on'); };
 document.getElementById('startbtn').onclick=function(){ audio(); showView('stage'); };
 document.getElementById('stageback').onclick=function(){ showView('home'); };
 document.getElementById('againbtn').onclick=function(){ startRun(ENDLESS?null:curStage,ENDLESS); };
@@ -8896,7 +8975,7 @@ Array.prototype.forEach.call(document.querySelectorAll('#setview button'),functi
 // 更新履歴：1つのお知らせ内で「バージョン見出し」ごとに変更点を並べる（新しい順）。
 // マージのたびに先頭へ新バージョンを追加し、VERSION も更新する。
 var UPDATES=[
-  {v:'α1.0.177', items:[
+  {v:'α1.0.178', items:[
     '次の新要素に向けた内部準備を進めています（通常のプレイ内容に変更はありません）。',
   ]},
   {v:'α1.0.176', items:[
