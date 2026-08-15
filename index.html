@@ -1629,6 +1629,7 @@ var WLIMIT=6;     // ラン前設定：装備できる武器の最大数（1〜6
 var W1CLEAR={};   // 武器1つ（単一武器）でクリアしたステージ {stage:1}（実績用）
 // 無限ラン：5分ごとに舞台（＝ステージのロスター）が循環し、ボスも出る。死亡のみで終了・コンティニュー無し。
 var ENDLESS=false, ENDBLK=0, endBossDone={};
+var NIGHTMARE=false;   // 裏ステージ（ナイトメア）：敵のHP・攻撃2倍＋マゼンタ染め。契約カードで挑む。
 var ENDLESS_BLOCK=300;   // 1舞台＝300秒（5分）ごとにステージ循環
 var ENDBEST=0, ENDTIME=0;   // 無限ランの最高スコア／最長生存秒
 var NICK='';                // ランキング表示名（セーブに保存）
@@ -2681,7 +2682,7 @@ function figInfo(id){
   if(BOSS[id]){ var B=BOSS[id], tt=ETYPE[B.key]||{}; return {nm:B.nm,shape:tt.shape,col:tt.col,dark:tt.dark,desc:BDEX[id]||'',boss:true}; }
   var t=ETYPE[id]||{}; return {nm:t.nm,shape:t.shape,col:t.col,dark:t.dark,desc:DEX[id]||'',boss:false};
 }
-var VERSION='α1.0.176'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
+var VERSION='α1.0.177'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
 function applySave(o){
   for(var i=0;i<UPG.length;i++) META[UPG[i].id]=0;
   try{
@@ -4278,9 +4279,10 @@ function checkBossEndless(){
 }
 function spawnBoss(key){
   var B=BOSS[key], t=ETYPE[B.key];
-  var scale=1+time/60*0.63, dscale=1+time/60*0.13;   // 攻撃力の伸びを緩和（ワンパン対策）
+  var nm2=NIGHTMARE?2:1;                              // ナイトメア：ボスもHP・攻撃2倍
+  var scale=1+time/60*0.63, dscale=(1+time/60*0.13)*nm2;   // 攻撃力の伸びを緩和（ワンパン対策）
   var a=Math.random()*6.283, dist=offR()+90;
-  var bhp=B.hp*bossHpMul;
+  var bhp=B.hp*bossHpMul*nm2;
   // ボスHPの下限（床）は「無限ランのみ」。エリートが時間で無限に固くなるため、ボスが後半で柔らかく負けないよう最強エリート級×1.2を保証。
   // 通常ステージは床を使わず、各ボスの基礎HPだけで決める（＝基礎HPを直接調整する方針）。
   if(ENDLESS){
@@ -4329,8 +4331,9 @@ function makeEnemy(k){
   // 無限ラン：5分ブロックごとに敵を強化（弱ステージへ周回で戻っても段階的に強くなる）＋HP下限でトラッシュが自明にならないように。
   var eBlk=ENDLESS?Math.floor(time/ENDLESS_BLOCK):0;   // 5分ブロック番号（1周＝3ブロック）
   var blkMul=ENDLESS?(1+eBlk*0.5):1;                   // 5分ごとに敵HP係数+50%（ブロック1=×1.5・2=×2.0・3=×2.5…）
-  var scale=(1+time/60*0.63)*blkMul, dscale=(1+time/60*0.13)*(ENDLESS?(1+eBlk*0.12):1);
-  var ehp=t.flathp?t.hp:t.hp*scale;   // flathp＝時間スケールを掛けず設計値そのまま（海坊主など）
+  var nm2=NIGHTMARE?2:1;              // ナイトメア：HP・攻撃2倍
+  var scale=(1+time/60*0.63)*blkMul, dscale=(1+time/60*0.13)*(ENDLESS?(1+eBlk*0.12):1)*nm2;
+  var ehp=(t.flathp?t.hp:t.hp*scale)*nm2;   // flathp＝時間スケールを掛けず設計値そのまま（海坊主など）。ナイトメアぶんは掛ける
   if(ENDLESS){ var hpFloor=140*eBlk*(1+time/60*0.4); if(ehp<hpFloor) ehp=hpFloor; }   // どのザコもこのブロックの下限を下回らない（周回で最弱敵も右肩上がり）
   var e={ k:k, nm:t.nm, x:P.x+Math.cos(a)*dist, y:P.y+Math.sin(a)*dist,
     hp:ehp, mhp:ehp, spd:t.spd*(0.9+Math.random()*0.25), r:t.r,
@@ -6893,6 +6896,19 @@ function drawPuddle(q){
   ctx.beginPath(); ctx.arc(Math.sin(q.t*2.2)*q.r*0.3,Math.cos(q.t*1.7)*q.r*0.16,2.4+Math.max(0,Math.sin(q.t*5)),0,6.3); ctx.fill();
   ctx.globalAlpha=1; ctx.restore();
 }
+// ナイトメア：敵色をマゼンタ寄りにブレンド（結果はキャッシュ）
+var NMCACHE={};
+function nmTint(hex){
+  if(!hex) return '#ff2ad0';
+  if(NMCACHE[hex]) return NMCACHE[hex];
+  var h=hex.charAt(0)==='#'?hex.slice(1):hex;
+  if(h.length===3) h=h.charAt(0)+h.charAt(0)+h.charAt(1)+h.charAt(1)+h.charAt(2)+h.charAt(2);
+  var r=parseInt(h.slice(0,2),16), g=parseInt(h.slice(2,4),16), b=parseInt(h.slice(4,6),16);
+  if(isNaN(r)||isNaN(g)||isNaN(b)) return (NMCACHE[hex]='#ff2ad0');
+  var t=0.55;
+  r=Math.round(r*(1-t)+255*t); g=Math.round(g*(1-t)+38*t); b=Math.round(b*(1-t)+200*t);
+  return (NMCACHE[hex]='rgb('+r+','+g+','+b+')');
+}
 function drawEnemy(e){
   ctx.save(); ctx.translate(e.x,e.y);
   // グール：地面からの出現予告（ぼこぼこ）。本体は描かず、盛り上がる土だけ見せる。
@@ -6936,9 +6952,9 @@ function drawEnemy(e){
     }
     ctx.globalAlpha=1;
   }
-  var bodyCol=hit?'#ffffff':(e.frz>0?'#cfeeff':(e.slow>0?'#8fd4ff':e.col));
+  var bodyCol=hit?'#ffffff':(e.frz>0?'#cfeeff':(e.slow>0?'#8fd4ff':(NIGHTMARE?nmTint(e.col):e.col)));
   ctx.fillStyle=bodyCol;
-  ctx.strokeStyle=hit?'#ffffff':e.dark; ctx.lineWidth=2;
+  ctx.strokeStyle=hit?'#ffffff':(NIGHTMARE?nmTint(e.dark):e.dark); ctx.lineWidth=2;
 
   // スライムキングの弾幕予告：プルプル！と潰れて震える
   var wob=(e.st==='wind'&&e.bkey==='slimeking')?(1+Math.sin(time*32)*0.13):0;
@@ -8741,9 +8757,10 @@ function showView(v){
   if(v==='home'){ syncTitle(); playBGM('home'); if(!TUTSEEN) openTutorial(); else if(typeof maybeShowDaily==='function') maybeShowDaily(); }
   else if(v==='stage') renderStageSelect();
 }
-function startRun(n,endless){
+function startRun(n,endless,nightmare){
   audio();
   ENDLESS=!!endless;
+  NIGHTMARE=!ENDLESS&&!!nightmare;      // ナイトメアは通常ステージのみ（無限ランには適用しない）
   if(ENDLESS) curStage=1;               // 無限ランは草原(舞台1)から開始し5分ごとに循環
   else if(n!=null) curStage=n;
   document.getElementById('veil').classList.add('hide');
@@ -8798,6 +8815,12 @@ function renderStageSelect(){
          '<span style="display:flex;flex-wrap:wrap;gap:2px;margin:3px 0 2px">'+chips+'</span>'+
          '<span style="font-size:11px;color:#7fd4ff">'+st.sub+'　▶ 出撃</span>'+
        '</button>';
+    if(DEV&&cl){   // 開発中：クリア済みステージにナイトメア入口（?dev=1 のみ）
+      h+='<button class="stbtn" data-nm="'+n+'" style="border-color:#a03a8a">'+
+           '<b style="color:#ff8ad0">🌙 ナイトメア「'+st.nm+'」</b>'+
+           '<span style="font-size:11px;color:#c98ad0">敵のHP・攻撃 2倍・マゼンタ染め（開発中／契約カードは未実装）　▶ 出撃</span>'+
+         '</button>';
+    }
   }
   // 無限ラン（専用モード）：5分ごとに舞台が循環し、ボスも押し寄せる。死亡のみ・スコアでランキング。
   var erec=(ENDBEST>0)?('最高 '+fmt(ENDBEST)+'　最長 '+fmtTime(ENDTIME)):'記録なし';
@@ -8817,6 +8840,7 @@ function renderStageSelect(){
     if(wb){ WLIMIT=+wb.getAttribute('data-wl'); saveGame(); renderStageSelect(); return; }
     var b=ev.target.closest?ev.target.closest('.stbtn'):null; if(!b) return;
     if(b.getAttribute('data-endless')){ startRun(null,true); return; }
+    var nmv=b.getAttribute('data-nm'); if(nmv){ startRun(+nmv,false,true); return; }   // ナイトメア出撃（dev限定）
     var n=+b.getAttribute('data-stg'); if(!stageUnlocked(n)) return;
     startRun(n);
   };
@@ -8872,6 +8896,9 @@ Array.prototype.forEach.call(document.querySelectorAll('#setview button'),functi
 // 更新履歴：1つのお知らせ内で「バージョン見出し」ごとに変更点を並べる（新しい順）。
 // マージのたびに先頭へ新バージョンを追加し、VERSION も更新する。
 var UPDATES=[
+  {v:'α1.0.177', items:[
+    '次の新要素に向けた内部準備を進めています（通常のプレイ内容に変更はありません）。',
+  ]},
   {v:'α1.0.176', items:[
     'ステージ④の「ウミガメ」を削除しました（出現ロスターを調整）。',
   ]},
