@@ -1676,6 +1676,20 @@ var CONTRACTS=[
   {id:'c_guts', nm:'不屈の契約',  ic:'🧿', cost:25, tx:'致命傷でもHP1で耐える（6秒に1回）', ef:{guts:1}}
 ];
 var CMAP={}; (function(){ for(var i=0;i<CONTRACTS.length;i++) CMAP[CONTRACTS[i].id]=CONTRACTS[i]; })();
+// この武器のタグに合致する契約（武器タグ系のみ）を返す
+function weaponContracts(w){
+  var tags=(typeof WTAG!=='undefined'&&WTAG[w])||[], out=[];
+  for(var i=0;i<CONTRACTS.length;i++){ var c=CONTRACTS[i];
+    if(c.ef&&c.ef.wtag&&tags.indexOf(c.ef.wtag)>=0) out.push(c); }
+  return out;
+}
+// 契約に合致する武器名を返す（武器タグ系のみ）
+function contractWeapons(c){
+  if(!c||!c.ef||!c.ef.wtag||typeof WTAG==='undefined') return [];
+  var out=[];
+  for(var w in WTAG){ if(!WEAPONS[w]) continue; if(WTAG[w].indexOf(c.ef.wtag)>=0) out.push(w); }
+  return out;
+}
 function contractCost(){ var s=0; for(var i=0;i<CONTRACT.length;i++){ var c=CMAP[CONTRACT[i]]; if(c) s+=c.cost; } return s; }
 function contractStat(key){ if(!NIGHTMARE) return 0; var s=0; for(var i=0;i<CONTRACT.length;i++){ var c=CMAP[CONTRACT[i]]; if(c&&c.ef&&c.ef[key]!=null) s+=c.ef[key]; } return s; }
 function contractDmgMul(w,e){
@@ -2231,18 +2245,18 @@ var WCAT={ slash:'剣技', scythe:'剣技', chakram:'剣技', katana:'剣技', s
 // 武器タグ（間合い・手段・属性）。ナイトメアの属性強化カード等の土台。
 var WTAG={
   slash:['近接','斬撃','物理'], chainsaw:['近接','斬撃','物理'],
-  katana:['近接','斬撃','物理','出血'], shuriken:['遠距離','投擲','物理','出血'],
+  katana:['近接','斬撃','物理','出血'], shuriken:['遠距離','射撃','投擲','物理','出血'],
   scythe:['中距離','斬撃','物理'], chakram:['自己','斬撃','物理'],
   bow:['遠距離','射撃','物理'], gatling:['遠距離','射撃','物理'], musket:['中距離','射撃','物理'],
   toxin:['中距離','投擲','草','毒'],
   anchor:['中距離','投擲','物理','スタン'],
-  dynamite:['中距離','爆発','物理'],
+  dynamite:['中距離','射撃','投擲','爆発','物理'],
   quake:['中距離','打撃','土'], rock:['遠距離','打撃','土'],
   bell:['自己','打撃','物理'],
-  fire:['遠距離','炎'], flame:['自己','炎'], inferno:['中距離','ビーム','炎'],
-  ice:['遠距離','氷'], blizzard:['自己','氷'],
+  fire:['遠距離','射撃','爆発','炎'], flame:['自己','炎'], inferno:['中距離','ビーム','炎'],
+  ice:['遠距離','射撃','氷'], blizzard:['自己','氷'],
   thunder:['遠距離','雷'], chain:['遠距離','雷'],
-  holy:['遠距離','光'], aura:['自己','設置','光'], laser:['自己','ビーム','光'],
+  holy:['遠距離','射撃','光'], aura:['自己','設置','光'], laser:['自己','ビーム','光'],
   voidh:['自己','闇'], dhand:['中距離','闇']
 };
 function tagChips(arr){
@@ -2748,7 +2762,7 @@ function figInfo(id){
   if(BOSS[id]){ var B=BOSS[id], tt=ETYPE[B.key]||{}; return {nm:B.nm,shape:tt.shape,col:tt.col,dark:tt.dark,desc:BDEX[id]||'',boss:true}; }
   var t=ETYPE[id]||{}; return {nm:t.nm,shape:t.shape,col:t.col,dark:t.dark,desc:DEX[id]||'',boss:false};
 }
-var VERSION='α1.0.180'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
+var VERSION='α1.0.181'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
 function applySave(o){
   for(var i=0;i<UPG.length;i++) META[UPG[i].id]=0;
   try{
@@ -5938,10 +5952,12 @@ function openLevelUp(){
     var d=document.createElement('div');
     d.className='card'+(c.gold?' gold':'');
     d.tabIndex=0;
+    var chips=tagChips((c.id&&typeof WTAG!=='undefined')?WTAG[c.id]:null);
     d.innerHTML='<div class="glyph">'+c.glyph+'</div>'+
       '<div class="body">'+
         '<div class="nm">'+c.nm+'</div>'+
         '<div class="tag">'+c.tag+'</div>'+
+        (chips?'<div style="margin:2px 0 1px">'+chips+'</div>':'')+
         '<div class="tx">'+c.tx+'</div>'+
         '<div class="num">'+c.lvtx+'</div>'+
       '</div>';
@@ -8221,6 +8237,16 @@ function openWeaponDetail(w){
     'スタン':'当てた敵を確率で一定時間動きを止める。「付与率」の強化で発生率が上がる。' };
   var stxt=(WTAG[w]||[]).map(function(t){ return STATUS_DESC[t]?('<div class="wdst"><b>'+t+'</b>'+STATUS_DESC[t]+'</div>'):''; }).join('');
   var statusHtml=stxt?('<div class="wdsec">状態異常</div>'+stxt):'';
+  // 対応する契約（ナイトメア専用機能なので dev のときのみ表示）
+  var conHtml='';
+  if(DEV){
+    var cons=weaponContracts(w);
+    if(cons.length){
+      conHtml='<div class="wdsec">対応する契約</div><div style="display:flex;flex-wrap:wrap;gap:5px;margin-top:2px">'+
+        cons.map(function(c){ return '<span style="display:inline-flex;align-items:center;gap:4px;font-size:11px;padding:3px 9px;border-radius:9px;background:#2a1440;color:#f0c8ff;border:1px solid #6a2f7a">'+c.ic+' '+c.nm+'</span>'; }).join('')+
+        '</div>';
+    }
+  }
   mlistEl.innerHTML=
     '<div class="wd">'+
       '<button class="wdback" type="button">← 一覧へ戻る</button>'+
@@ -8234,6 +8260,7 @@ function openWeaponDetail(w){
       '<div class="wdbarlabel">熟練度 Lv '+lv+'/10<span>'+fmt(x)+(nx?' / '+fmt(nx):' — MAX')+'</span></div>'+
       '<div class="wbar"><div style="width:'+pct+'%"></div></div>'+
       statusHtml+
+      conHtml+
       '<div class="wdsec">強化内容</div>'+
       '<div class="wdpicks">'+picksHtml+'</div>'+
       (left?'<button class="wdpickbtn" type="button">強化を選ぶ（残り'+left+'）</button>':'')+
@@ -8940,10 +8967,13 @@ function renderNmc(){
   document.getElementById('nmcnote').innerHTML='「'+(st?st.nm:'ステージ'+nmcStage)+'」ナイトメア（敵HP・攻撃2倍）　予算 <b style="color:'+(spent>BUD?'#ff6a6a':'var(--gold)')+'">'+spent+' / '+BUD+'</b>';
   var L=document.getElementById('nmclist'), h='';
   for(var i=0;i<CONTRACTS.length;i++){ var c=CONTRACTS[i], on=CONTRACT.indexOf(c.id)>=0, afford=on||c.cost<=rem;
+    var apw='';
+    if(c.ef&&c.ef.wtag){ var ws=contractWeapons(c);
+      if(ws.length) apw='<span style="font-size:10px;color:#8a7ab0;margin-top:2px">対象：'+ws.map(function(w){ return (WEAPONS[w]&&WEAPONS[w].nm)||w; }).join('・')+'</span>'; }
     h+='<button data-c="'+c.id+'"'+(afford?'':' disabled')+' style="display:flex;align-items:center;gap:10px;width:100%;text-align:left;border-radius:8px;padding:9px;margin:5px 0;color:#e8e0ff;'+
         'background:'+(on?'#3a1440':'#181026')+';border:2px solid '+(on?'#ff5ac8':'#33254a')+';opacity:'+(afford?'1':'0.4')+'">'+
         '<span style="font-size:20px">'+c.ic+'</span>'+
-        '<span style="flex:1;display:flex;flex-direction:column"><span style="font-weight:700">'+c.nm+'</span><span style="font-size:11px;color:#b8a0d0">'+c.tx+'</span></span>'+
+        '<span style="flex:1;display:flex;flex-direction:column"><span style="font-weight:700">'+c.nm+'</span><span style="font-size:11px;color:#b8a0d0">'+c.tx+'</span>'+apw+'</span>'+
         '<span style="font-weight:800;color:#ffd24a;min-width:26px;text-align:right">'+c.cost+'</span>'+
       '</button>';
   }
@@ -9008,6 +9038,9 @@ Array.prototype.forEach.call(document.querySelectorAll('#setview button'),functi
 // 更新履歴：1つのお知らせ内で「バージョン見出し」ごとに変更点を並べる（新しい順）。
 // マージのたびに先頭へ新バージョンを追加し、VERSION も更新する。
 var UPDATES=[
+  {v:'α1.0.181', items:[
+    '武器のタグ表示を拡充しました。ファイヤーボールなどに「射撃」「爆発」タグを追加し、武器選択・レベルアップの候補・武器詳細でその武器が持つタグを確認できるようにしました。',
+  ]},
   {v:'α1.0.180', items:[
     '永続強化の「リロール」「スキップ」を Lv10 まで伸ばせるようにしました（Lv6以降は金貨で強化）。引き直し・見送りの回数をさらに増やせます。',
   ]},
