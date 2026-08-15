@@ -1269,9 +1269,9 @@ var WEAPONS={
     tx:'敵の頭上へ落雷を降らせる。単発が重く、範囲に巻き込む。' },
   chain:{ nm:'チェインライトニング', glyph:'\u{1F517}', tag:'雷', max:10,
     tx:'雷のビームが敵から敵へ連鎖する。跳ぶたび威力は落ちる。' },
-  quake:{ nm:'グランドアッパー', glyph:'\u{1FAA8}', tag:'土', max:10,
+  quake:{ nm:'グランドアッパー', glyph:'\u{1FAA8}', tag:'岩', max:10,
     tx:'地面を隆起させて突き上げる。敵を大きく弾き飛ばす。' },
-  rock:{ nm:'ロックボール', glyph:'\u26AB', tag:'土', max:10,
+  rock:{ nm:'ロックボール', glyph:'\u26AB', tag:'岩', max:10,
     tx:'巨大な岩を転がす。盤面に残り続け、進路の敵をなぎ倒す。' },
   chainsaw:{ nm:'チェンソー', glyph:'\u{1FA9A}', tag:'剣技', max:10,
     tx:'向いている方向を削り続ける。一撃は軽いが刃は止まらず、たまに高速回転（暴走）してダメージが跳ね上がる。' },
@@ -1660,11 +1660,14 @@ var CONTRACTS=[
   {id:'c_fire', nm:'業火の契約',  ic:'🔥', cost:10, tx:'炎の武器 +22%',       ef:{wtag:'炎',mul:0.22}},
   {id:'c_ice',  nm:'氷結の契約',  ic:'❄', cost:10, tx:'氷の武器 +22%',        ef:{wtag:'氷',mul:0.22}},
   {id:'c_thd',  nm:'雷鳴の契約',  ic:'⚡', cost:10, tx:'雷の武器 +22%',        ef:{wtag:'雷',mul:0.22}},
+  {id:'c_rock', nm:'岩塊の契約',  ic:'🪨', cost:10, tx:'岩の武器 +22%',        ef:{wtag:'岩',mul:0.22}},
+  {id:'c_area', nm:'拡散の契約',  ic:'⭕', cost:10, tx:'範囲系武器の範囲 +30%',  ef:{wtag:'範囲',area:0.30}},
   {id:'c_und',  nm:'破邪の契約',  ic:'💀', cost:10, tx:'アンデッド特効 +28%',  ef:{mtag:'アンデッド',mul:0.28}},
   {id:'c_bst',  nm:'狩りの契約',  ic:'🐾', cost:10, tx:'ビースト特効 +28%',    ef:{mtag:'ビースト',mul:0.28}},
   {id:'c_drg',  nm:'竜殺しの契約',ic:'🐉', cost:10, tx:'竜特効 +34%',          ef:{mtag:'竜',mul:0.34}},
   {id:'c_fly',  nm:'対空の契約',  ic:'🕊', cost:5, tx:'飛行特効 +28%',        ef:{mtag:'飛行',mul:0.28}},
   {id:'c_hmn',  nm:'討伐の契約',  ic:'⚔', cost:5, tx:'亜人特効 +28%',         ef:{mtag:'亜人',mul:0.28}},
+  {id:'c_dot',  nm:'追撃の契約',  ic:'🧪', cost:10, tx:'毒・出血中の敵に +25%',  ef:{dotup:0.25}},
   {id:'c_crc',  nm:'急所の契約',  ic:'🎯', cost:15, tx:'会心率 +8%',           ef:{critc:0.08}},
   {id:'c_crd',  nm:'剛撃の契約',  ic:'💢', cost:15, tx:'会心ダメージ +35%',    ef:{critd:0.35}},
   {id:'c_spd',  nm:'疾風の契約',  ic:'💨', cost:10, tx:'移動速度 +12%',        ef:{spd:0.12}},
@@ -1673,24 +1676,44 @@ var CONTRACTS=[
   {id:'c_low',  nm:'背水の契約',  ic:'🩸', cost:15, tx:'HPが少ないほど攻撃UP（最大+60%）', ef:{lowhp:0.60}},
   {id:'c_swift',nm:'俊足の契約',  ic:'🏃', cost:15, tx:'移動速度に比例して攻撃UP', ef:{spdatk:1.5}},
   {id:'c_phys', nm:'蛮勇の契約',  ic:'⚔', cost:25, tx:'物理+55%／魔法−35%',      ef:{physup:0.55,magdown:0.35}},
+  {id:'c_mag',  nm:'秘法の契約',  ic:'🔮', cost:25, tx:'魔法+55%／物理−35%',      ef:{magup:0.55,physdown:0.35}},
   {id:'c_leech',nm:'吸命の契約',  ic:'🧛', cost:15, tx:'会心時 与ダメの8%回復',   ef:{critheal:0.08}},
   {id:'c_swarm',nm:'乱戦の契約',  ic:'🌀', cost:10, tx:'周囲に敵10体以上で攻撃+30%', ef:{density:0.30}},
   {id:'c_guts', nm:'不屈の契約',  ic:'🧿', cost:25, tx:'致命傷でもHP1で耐える（6秒に1回）', ef:{guts:1}}
 ];
 var CMAP={}; (function(){ for(var i=0;i<CONTRACTS.length;i++) CMAP[CONTRACTS[i].id]=CONTRACTS[i]; })();
-// この武器のタグに合致する契約（武器タグ系のみ）を返す
+// この契約がこの武器に効くか（タグ系＋物理/魔法の種別系）
+function contractHitsWeapon(c,w){
+  if(!c||!c.ef||!WEAPONS[w]) return false;
+  var ef=c.ef, tags=(typeof WTAG!=='undefined'&&WTAG[w])||[], kind=(typeof WKIND!=='undefined')&&WKIND[w];
+  if(ef.wtag&&tags.indexOf(ef.wtag)>=0) return true;
+  if((ef.physup||ef.physdown)&&kind==='phys') return true;
+  if((ef.magup||ef.magdown)&&kind==='mag') return true;
+  return false;
+}
+// この武器に効く契約の配列（武器詳細の「対応する契約」用）
 function weaponContracts(w){
-  var tags=(typeof WTAG!=='undefined'&&WTAG[w])||[], out=[];
-  for(var i=0;i<CONTRACTS.length;i++){ var c=CONTRACTS[i];
-    if(c.ef&&c.ef.wtag&&tags.indexOf(c.ef.wtag)>=0) out.push(c); }
+  var out=[];
+  for(var i=0;i<CONTRACTS.length;i++){ if(contractHitsWeapon(CONTRACTS[i],w)) out.push(CONTRACTS[i]); }
   return out;
 }
-// 契約に合致する武器名を返す（武器タグ系のみ）
+// この契約が効く武器名（タグ系のみ列挙）。種別系は多すぎるのでラベルで表す
 function contractWeapons(c){
   if(!c||!c.ef||!c.ef.wtag||typeof WTAG==='undefined') return [];
   var out=[];
   for(var w in WTAG){ if(!WEAPONS[w]) continue; if(WTAG[w].indexOf(c.ef.wtag)>=0) out.push(w); }
   return out;
+}
+// 契約選択画面の「対象」表示。タグ系＝武器名、種別系＝物理/魔法のクラス表記
+function contractTargetLabel(c){
+  if(!c||!c.ef) return '';
+  var ef=c.ef;
+  if(ef.wtag){ var ws=contractWeapons(c); return ws.length?ws.map(function(w){ return (WEAPONS[w]&&WEAPONS[w].nm)||w; }).join('・'):''; }
+  var parts=[];
+  if(ef.physup) parts.push('物理武器↑'); if(ef.physdown) parts.push('物理武器↓');
+  if(ef.magup) parts.push('魔法武器↑'); if(ef.magdown) parts.push('魔法武器↓');
+  if(ef.dotup) parts.push('毒・出血中の敵');
+  return parts.join(' ');
 }
 function contractCost(){ var s=0; for(var i=0;i<CONTRACT.length;i++){ var c=CMAP[CONTRACT[i]]; if(c) s+=c.cost; } return s; }
 function contractStat(key){ if(!NIGHTMARE) return 0; var s=0; for(var i=0;i<CONTRACT.length;i++){ var c=CMAP[CONTRACT[i]]; if(c&&c.ef&&c.ef[key]!=null) s+=c.ef[key]; } return s; }
@@ -1706,8 +1729,19 @@ function contractDmgMul(w,e){
     if(ef.spdatk&&P) m*=1+ef.spdatk*Math.max(0,(P.spd/190)-1);       // 移動速度に比例
     if(ef.physup&&w&&WKIND[w]==='phys') m*=1+ef.physup;              // 物理UP
     if(ef.magdown&&w&&WKIND[w]==='mag') m*=1-ef.magdown;             // 魔法DOWN
+    if(ef.magup&&w&&WKIND[w]==='mag') m*=1+ef.magup;                 // 魔法UP
+    if(ef.physdown&&w&&WKIND[w]==='phys') m*=1-ef.physdown;          // 物理DOWN
+    if(ef.dotup&&e&&((e.poisT>0)||(e.bleedStk>0))) m*=1+ef.dotup;    // 毒・出血中の敵に特効
     if(ef.density&&nmNear>=10) m*=1+ef.density;                      // 周囲密集
   }
+  return m;
+}
+// 範囲系契約：対象タグ（範囲）を持つ武器の範囲（AREA）を拡大
+function contractArea(w){
+  if(!NIGHTMARE||!CONTRACT.length) return 1;
+  var m=1;
+  for(var i=0;i<CONTRACT.length;i++){ var c=CMAP[CONTRACT[i]]; if(!c||!c.ef||!c.ef.area) continue;
+    if(c.ef.wtag&&WTAG[w]&&WTAG[w].indexOf(c.ef.wtag)>=0) m*=1+c.ef.area; }
   return m;
 }
 var ENDLESS_BLOCK=300;   // 1舞台＝300秒（5分）ごとにステージ循環
@@ -2243,7 +2277,7 @@ function TF(wid,key){ return TR(wid,key)>0; }
 // 武器の系統。同系統は波及が厚くなる
 var WCAT={ slash:'剣技', scythe:'剣技', chakram:'剣技', katana:'剣技', shuriken:'射撃', bow:'射撃', dynamite:'射撃',
            fire:'炎', flame:'炎', inferno:'炎', ice:'氷', thunder:'雷', chain:'雷',
-           quake:'土', rock:'土', voidh:'闇', dhand:'闇', holy:'光', aura:'光',
+           quake:'岩', rock:'岩', voidh:'闇', dhand:'闇', holy:'光', aura:'光',
            bell:'音', chainsaw:'剣技', musket:'射撃', blizzard:'氷', laser:'光', gatling:'射撃', toxin:'草', anchor:'打撃' };
 // 武器タグ（間合い・手段・属性）。ナイトメアの属性強化カード等の土台。
 var WTAG={
@@ -2253,14 +2287,14 @@ var WTAG={
   bow:['遠距離','射撃','物理'], gatling:['遠距離','射撃','物理'], musket:['中距離','射撃','物理'],
   toxin:['中距離','投擲','草','毒'],
   anchor:['中距離','投擲','物理','スタン'],
-  dynamite:['中距離','射撃','投擲','爆発','物理'],
-  quake:['中距離','打撃','土'], rock:['遠距離','打撃','土'],
+  dynamite:['中距離','射撃','投擲','爆発','範囲','物理'],
+  quake:['中距離','打撃','岩'], rock:['遠距離','打撃','岩'],
   bell:['自己','打撃','物理'],
-  fire:['遠距離','射撃','爆発','炎'], flame:['自己','炎'], inferno:['中距離','ビーム','炎'],
+  fire:['遠距離','射撃','爆発','範囲','炎'], flame:['自己','炎'], inferno:['中距離','ビーム','炎'],
   ice:['遠距離','射撃','氷'], blizzard:['自己','氷'],
   thunder:['遠距離','雷'], chain:['遠距離','雷'],
-  holy:['遠距離','射撃','光'], aura:['自己','設置','光'], laser:['自己','ビーム','光'],
-  voidh:['自己','闇'], dhand:['中距離','闇']
+  holy:['遠距離','射撃','光'], aura:['自己','設置','範囲','光'], laser:['自己','ビーム','光'],
+  voidh:['自己','範囲','闇'], dhand:['中距離','闇']
 };
 function tagChips(arr){
   if(!arr||!arr.length) return '';
@@ -2420,7 +2454,7 @@ var CLMUL={ melee:1.15, self:1.0, mid:1.0, long:0.78 };
 function RCM(w){ return CLMUL[WCLASS[w]||'mid']; }
 // 各軸の効き。ダメージと範囲は乗算、頻度はクールダウンの短縮。
 function DMG(w){ return RCM(w)*Math.pow(1.45,AX(w,'dmg'))*(1+TR(w,'dmg'))*(1+0.08*LB(w,'dmg')); }
-function AREA(w){ return Math.pow(1.18,AX(w,'area'))*(1+TR(w,'area'))*(1+0.04*LB(w,'area'))*CH().area*(1+0.05*(P.p.reach||0)); }
+function AREA(w){ return Math.pow(1.18,AX(w,'area'))*(1+TR(w,'area'))*(1+0.04*LB(w,'area'))*CH().area*(1+0.05*(P.p.reach||0))*contractArea(w); }
 function RATE(w){ return Math.max(0.20,Math.pow(0.85,AX(w,'rate'))*(1+TR(w,'cd'))*(1-0.015*LB(w,'rate'))); }
 function CNT(w){ return AX(w,'count')+TR(w,'count')+LB(w,'count'); }
 function BST(w){ return AX(w,'burst')+TR(w,'burst')+LB(w,'burst'); }
@@ -2769,7 +2803,7 @@ function figInfo(id){
   if(BOSS[id]){ var B=BOSS[id], tt=ETYPE[B.key]||{}; return {nm:B.nm,shape:tt.shape,col:tt.col,dark:tt.dark,desc:BDEX[id]||'',boss:true}; }
   var t=ETYPE[id]||{}; return {nm:t.nm,shape:t.shape,col:t.col,dark:t.dark,desc:DEX[id]||'',boss:false};
 }
-var VERSION='α1.0.183'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
+var VERSION='α1.0.184'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
 function applySave(o){
   for(var i=0;i<UPG.length;i++) META[UPG[i].id]=0;
   try{
@@ -9042,9 +9076,8 @@ function renderNmc(){
   document.getElementById('nmcnote').innerHTML='「'+(st?st.nm:'ステージ'+nmcStage)+'」ナイトメア（敵HP・攻撃2倍）　予算 <b style="color:'+(spent>BUD?'#ff6a6a':'var(--gold)')+'">'+spent+' / '+BUD+'</b>';
   var L=document.getElementById('nmclist'), h='';
   for(var i=0;i<CONTRACTS.length;i++){ var c=CONTRACTS[i], on=CONTRACT.indexOf(c.id)>=0, afford=on||c.cost<=rem;
-    var apw='';
-    if(c.ef&&c.ef.wtag){ var ws=contractWeapons(c);
-      if(ws.length) apw='<span style="font-size:10px;color:#8a7ab0;margin-top:2px">対象：'+ws.map(function(w){ return (WEAPONS[w]&&WEAPONS[w].nm)||w; }).join('・')+'</span>'; }
+    var apw='', apl=contractTargetLabel(c);
+    if(apl) apw='<span style="font-size:10px;color:#8a7ab0;margin-top:2px">対象：'+apl+'</span>';
     h+='<button data-c="'+c.id+'"'+(afford?'':' disabled')+' style="display:flex;align-items:center;gap:10px;width:100%;text-align:left;border-radius:8px;padding:9px;margin:5px 0;color:#e8e0ff;'+
         'background:'+(on?'#3a1440':'#181026')+';border:2px solid '+(on?'#ff5ac8':'#33254a')+';opacity:'+(afford?'1':'0.4')+'">'+
         '<span style="font-size:20px">'+c.ic+'</span>'+
@@ -9113,6 +9146,10 @@ Array.prototype.forEach.call(document.querySelectorAll('#setview button'),functi
 // 更新履歴：1つのお知らせ内で「バージョン見出し」ごとに変更点を並べる（新しい順）。
 // マージのたびに先頭へ新バージョンを追加し、VERSION も更新する。
 var UPDATES=[
+  {v:'α1.0.184', items:[
+    '「グランドアッパー」「ロックボール」の属性表記を「土」から「岩」に変更しました。あわせて範囲系の武器に「範囲」タグを追加しています。',
+    '次の新要素に向けた内部準備を進めています（通常のプレイ内容に変更はありません）。',
+  ]},
   {v:'α1.0.183', items:[
     'ボスを倒すたびに「装備」を1つ選べるようになりました（3つの中から1つ）。中身は床の装備（パッシブ）と同じで、枠・上限を超えて伸ばせます。最終ボス（クリア）と無限ランを除く各ステージで、1ランにつき最大3回選べます。',
   ]},
