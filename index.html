@@ -1085,6 +1085,7 @@ addEventListener('keydown',function(e){
   keys[k]=1;
   if(k===' '||k.indexOf('arrow')===0) e.preventDefault();
   if(state==='levelup'&&(k==='1'||k==='2'||k==='3')) choose(parseInt(k,10)-1);
+  if(state==='bossrelic'&&(k==='1'||k==='2'||k==='3')) chooseBossRelic(parseInt(k,10)-1);
   if(k==='p'||k==='escape') togglePause();
   if(k==='t') toggleTest();
   if(state==='chest'&&(k===' '||k==='enter')) chestSkip();
@@ -1721,7 +1722,7 @@ var RUN=1200;            // 1ランの長さ（秒）＝20分
 var state='title';
 var P, enemies, gems, shots, fx, dmgs, parts, bolts, chests, coins, chaks, scys, bombs, rocks, holes;
 var time, kills, spawnT, eliteT, shake, hitStop, flash, chain, chainT, choices;
-var whirlA, marks, reacts, crits, rdep, rtok, pending, score, silver, gold, magFx, chakSpin, swingT, swingDir;
+var whirlA, marks, reacts, crits, rdep, rtok, pending, bossRelicQ=0, score, silver, gold, magFx, chakSpin, swingT, swingDir;
 var SWDUR=0.42;   // 大剣の振りの長さ（秒）。大きいほどゆっくり
 var ebul, boss, bossN, quakes, dhits, vacs, vacT, bells, swords, zones, volley, relics, puddles, sheep, trails;
 var lasers;
@@ -2768,7 +2769,7 @@ function figInfo(id){
   if(BOSS[id]){ var B=BOSS[id], tt=ETYPE[B.key]||{}; return {nm:B.nm,shape:tt.shape,col:tt.col,dark:tt.dark,desc:BDEX[id]||'',boss:true}; }
   var t=ETYPE[id]||{}; return {nm:t.nm,shape:t.shape,col:t.col,dark:t.dark,desc:DEX[id]||'',boss:false};
 }
-var VERSION='α1.0.182'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
+var VERSION='α1.0.183'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
 function applySave(o){
   for(var i=0;i<UPG.length;i++) META[UPG[i].id]=0;
   try{
@@ -2887,7 +2888,7 @@ function reset(){
   boss=null; bossN=0; lasers=[];
   time=0; kills=0; spawnT=0; eliteT=55; swarmT=3; swarmWarnT=0; umiT=8; umiWarnT=0; inkT=0; shake=0; hitStop=0; flash=0; chain=0; chainT=0;
   gat.t=0; gat.mag=-1; gat.rl=0;
-  whirlA=0; marks=[1140]; reacts=0; crits=0; rdep=0; rtok=8; pending=0; swingT=0; swingDir=1;
+  whirlA=0; marks=[1140]; reacts=0; crits=0; rdep=0; rtok=8; pending=0; bossRelicQ=0; swingT=0; swingDir=1;
   dpsVal=0; dpmVal=0; dmgSec=0; dmgRing=[]; dmgRingI=0; dpsClock=1;
   dexQueue.length=0;
   score=0; silver=0; gold=0; magFx=0; chakSpin=0; wxRun={}; lastCd={}; coolMax={}; WDMG={}; REACTDMG={}; RK=null;
@@ -2973,7 +2974,7 @@ function frame(t){
   try{
     var dt=Math.min(0.05,(t-last)/1000)||0; last=t;
     if(state==='playing') update(dt);
-    else if(state==='levelup') stepFx(dt);
+    else if(state==='levelup'||state==='bossrelic') stepFx(dt);
     else if(state==='chest'){ stepFx(dt); chestAnim(dt); }
     render();
     infoTick(dt);
@@ -2985,6 +2986,7 @@ requestAnimationFrame(frame);
 function update(dt){
   // ヒットストップ：世界は止まるが演出は動く
   if(hitStop>0){ hitStop-=dt; stepFx(dt); return; }
+  if(bossRelicQ>0){ openBossRelic(); return; }   // ボス撃破の装備選択（レベルアップ解決後の安全なフレームで開く）
   time+=dt;
   whirlA+=dt*2.4*Math.min(5,1/Math.max(0.12,RATE('flame')*cdr()));   // フレイムサークルの回転は実際の攻撃間隔（右下バー）に連動＝間隔強化で回転も速くなる
   if(swingT>0){ swingT-=dt; if(swingT<0) swingT=0; }
@@ -5426,6 +5428,7 @@ function kill(e){
     setTimeout(function(){ sfx(1568,.5,'triangle',.085); },170);
     if(boss===e) boss=null;
     if(!e.last||ENDLESS) playBGM('s'+curStage);
+    if(!e.last&&!ENDLESS) bossRelicQ++;   // ボス撃破ごとに装備を1つ選べる（最終ボス=クリアと無限ランは除く）
     if(e.last&&!ENDLESS){ setTimeout(function(){ finish(true); },700); }   // 無限ランは勝利終了しない
   }else{
     // 中スライムはさらに小スライムへ
@@ -6090,6 +6093,66 @@ function choose(i){
   pending=0;
   state='playing';
   P.inv=Math.max(P.inv,0.6);   // 選択直後は短い無敵（再開直後の理不尽な被弾を防ぐ）
+}
+
+/* ====== ボス撃破の装備選択：既存の床装備（パッシブ）からランダム3択・無限ラン以外 ====== */
+var brChoices=[];
+function relicChoices(){
+  var pool=[];
+  for(var id in PASSIVES){
+    var p=PASSIVES[id], cur=P.p[id]||0;
+    if(cur>=p.max+1) continue;   // 床装備は上限+1まで。もう伸ばせないものは出さない
+    pool.push({id:id,glyph:p.glyph,nm:p.nm,tag:p.tag,tx:p.tx,
+      lvtx:cur===0?'NEW':('Lv '+cur+' → '+(cur+1))});
+  }
+  shuffle(pool);
+  return pool.slice(0,3);
+}
+function openBossRelic(){
+  var picks=relicChoices();
+  if(!picks.length){ bossRelicQ=Math.max(0,bossRelicQ-1); return; }   // 全て上限：この分はスキップ
+  state='bossrelic';
+  brChoices=picks;
+  flash=Math.max(flash,.5);
+  [0,90,170].forEach(function(ms,i){ setTimeout(function(){ sfx([659,880,1175][i],.16,'triangle',.07); },ms); });
+  document.getElementById('picktitle').textContent='ボス撃破！ 装備を選ぶ'+(bossRelicQ>1?'  ×'+bossRelicQ:'');
+  var box=document.getElementById('cards'); box.innerHTML='';
+  picks.forEach(function(c,i){
+    var d=document.createElement('div'); d.className='card gold'; d.tabIndex=0;
+    d.innerHTML='<div class="glyph">'+c.glyph+'</div>'+
+      '<div class="body">'+
+        '<div class="nm">'+c.nm+'</div>'+
+        '<div class="tag">装備・'+c.tag+'</div>'+
+        '<div class="tx">'+c.tx+'</div>'+
+        '<div class="num">'+c.lvtx+'</div>'+
+      '</div>';
+    d.onclick=function(){ chooseBossRelic(i); };
+    d.onkeydown=function(ev){ if(ev.key==='Enter'||ev.key===' ') chooseBossRelic(i); };
+    box.appendChild(d);
+  });
+  document.getElementById('pkbtns').style.display='none';   // 引き直し・見送りは無し
+  var hint=document.querySelector('#pick .hint'); if(hint) hint.style.display='none';
+  document.getElementById('pick').classList.add('on');
+}
+function chooseBossRelic(i){
+  if(state!=='bossrelic') return;
+  var c=brChoices[i]; if(!c) return;
+  var id=c.id, cur=P.p[id]||0;
+  P.p[id]=cur+1; P.rel[id]=(P.rel[id]||0)+1;   // 床装備と同じ扱い（枠・上限を1超えて伸ばせる別勘定）
+  if(id==='vital'){ P.max+=30; P.hp=Math.min(P.max,P.hp+30); }
+  if(id==='magnet') magFx=1.6;
+  banner(PASSIVES[id].nm);
+  flash=Math.max(flash,.5);
+  fx.push({k:'ring',x:P.x,y:P.y,r:0,to:120,t:0,life:.4,col:'#ffd24a'});
+  dmgs.push({x:P.x,y:P.y-30,v:-40,t:0,life:.95,txt:PASSIVES[id].nm+' Lv'+(cur+1),rx:1,col:'#ffd24a'});
+  [0,90,180].forEach(function(ms,k){ setTimeout(function(){ sfx([784,988,1319][k],.16,'triangle',.075); },ms); });
+  document.getElementById('pick').classList.remove('on');
+  document.getElementById('pkbtns').style.display='';   // レベルアップ画面用に戻す
+  var hint=document.querySelector('#pick .hint'); if(hint) hint.style.display='';
+  bossRelicQ=Math.max(0,bossRelicQ-1);
+  syncHud();
+  state='playing';   // まだ残っていれば次フレームの update が再度 openBossRelic を開く
+  P.inv=Math.max(P.inv,0.6);
 }
 
 /* ============ 演出 ============ */
@@ -9050,6 +9113,9 @@ Array.prototype.forEach.call(document.querySelectorAll('#setview button'),functi
 // 更新履歴：1つのお知らせ内で「バージョン見出し」ごとに変更点を並べる（新しい順）。
 // マージのたびに先頭へ新バージョンを追加し、VERSION も更新する。
 var UPDATES=[
+  {v:'α1.0.183', items:[
+    'ボスを倒すたびに「装備」を1つ選べるようになりました（3つの中から1つ）。中身は床の装備（パッシブ）と同じで、枠・上限を超えて伸ばせます。最終ボス（クリア）と無限ランを除く各ステージで、1ランにつき最大3回選べます。',
+  ]},
   {v:'α1.0.182', items:[
     '「大海原」の初回クリア報酬（金貨+120）とクリアボーナスが抜けていたのを修正しました。すでにクリア済みの方には初回クリア報酬を受け取りボックスへお届けします。',
     '次の新要素に向けた内部準備を進めています（通常のプレイ内容に変更はありません）。',
