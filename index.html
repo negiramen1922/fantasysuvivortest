@@ -1068,7 +1068,7 @@ img.wspr{width:1.15em;height:1.15em;object-fit:contain;image-rendering:pixelated
         <div id="lottopurse" style="font-size:13px"></div>
         <div style="font-size:12px;color:var(--ash)">くじを引いて解放メダルを集め、好きな武器・キャラを解放できます。</div>
       </div>
-      <canvas id="lottocv" width="300" height="330"></canvas>
+      <canvas id="lottocv" width="300" height="380"></canvas>
       <div id="lottores"></div>
       <div style="display:flex;gap:8px">
         <button class="btn" id="lottodropm" style="margin-top:0;flex:1;font-size:14px">🎫 銀貨10</button>
@@ -2835,7 +2835,7 @@ function figInfo(id){
   if(BOSS[id]){ var B=BOSS[id], tt=ETYPE[B.key]||{}; return {nm:B.nm,shape:tt.shape,col:tt.col,dark:tt.dark,desc:BDEX[id]||'',boss:true}; }
   var t=ETYPE[id]||{}; return {nm:t.nm,shape:t.shape,col:t.col,dark:t.dark,desc:DEX[id]||'',boss:false};
 }
-var VERSION='α1.0.194'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
+var VERSION='α1.0.195'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
 function applySave(o){
   for(var i=0;i<UPG.length;i++) META[UPG[i].id]=0;
   try{
@@ -8529,8 +8529,9 @@ var WPN_MEDAL=30, CHR_TICKET=5;     // 解放コスト（武器＝メダル / �
 var LOTTO_SLOTS=[5,2,1,1,1,2,5];    // 各スロットの景品数（両端＝大当たり）
 var LOTTO_W=[1,6,15,20,15,6,1];     // 当たりやすさ（中央ほど出やすい＝プリンコの分布）
 var lcv=null, lctx=null, lottoBalls=[], lottoRAF=false, lottoLast=0;
+var LSLOT_TOP=215, LSLOT_H=150;                   // スロットの上端と高さ（縦長）
 function lcolX(c){ return 30+c*40; }              // スロット0..6 → x（30..270）
-function lrowY(r){ return 40+r*((230-40)/6); }    // 釘の段 0..6 → y（40..230）
+function lrowY(r){ return 40+r*((200-40)/6); }    // 釘の段 0..6 → y（40..200：スロットの上まで）
 function lottoPurse(){
   document.getElementById('lottopurse').innerHTML=
     '<span class="sv">銀貨 '+fmt(WALLET.silver)+'</span>　<span style="color:#f0c8ff">🎫 '+fmt(MEDAL)+'</span>　<span style="color:#ffd27a">🎟 '+fmt(TICKET)+'</span>';
@@ -8563,22 +8564,27 @@ function renderLotto(){
   lottoPurse(); lottoUnlockList(); drawLotto();
 }
 function ballXY(bl){
-  if(bl.t>=6) return {x:lcolX(bl.cols[6]),y:272};
+  if(bl.t>=6) return {x:lcolX(bl.cols[6]),y:LSLOT_TOP+72};
   var r=Math.floor(bl.t), fr=bl.t-r;
   return {x:lcolX(bl.cols[r])+(lcolX(bl.cols[r+1])-lcolX(bl.cols[r]))*fr,
           y:lrowY(r)+(lrowY(r+1)-lrowY(r))*fr-Math.sin(fr*Math.PI)*7};
 }
+// 釘は左右対称にせず、あえて不揃いに散らして手作り感を出す（装飾／玉の軌道は cols で決定）
+var LPEGS=[[34,74,118,150,188,236,270],[54,96,150,206,258],[30,82,128,176,214,268],[48,104,158,196,244,278],[38,90,140,192,232]];
 function drawLotto(){
-  var g=lctx, W2=lcv.width, H2=lcv.height, c, x, r, i;
+  var g=lctx, W2=lcv.width, H2=lcv.height, c, i, k;
   g.clearRect(0,0,W2,H2);
-  g.fillStyle='rgba(150,130,220,.5)';
-  for(r=1;r<6;r++){ var off=(r%2)?20:0; for(x=30+off;x<=270;x+=40){ g.beginPath(); g.arc(x,lrowY(r),3,0,6.283); g.fill(); } }
+  g.fillStyle='rgba(150,130,220,.55)';
+  for(var r=0;r<LPEGS.length;r++){ var y=52+r*29+((r*13)%6); var row=LPEGS[r];
+    for(k=0;k<row.length;k++){ var jy=((r*5+k*7)%5)-2, rad=((r+k)%3===0)?3.6:2.6;
+      g.beginPath(); g.arc(row[k], y+jy, rad, 0, 6.283); g.fill(); }
+  }
   g.textAlign='center';
   for(c=0;c<7;c++){ var sx=lcolX(c), edge=(c===0||c===6);
-    g.fillStyle=edge?'#4a2f6a':'#241a44'; g.fillRect(sx-18,250,36,66);
-    g.strokeStyle=edge?'#ff5ac8':'#3a2f6a'; g.lineWidth=2; g.strokeRect(sx-18,250,36,66);
-    g.fillStyle=edge?'#ffd27a':'#f0c8ff'; g.font='bold 17px sans-serif'; g.fillText(LOTTO_SLOTS[c],sx,285);
-    g.font='9px sans-serif'; g.fillStyle='#9a90c0'; g.fillText(edge?'大当り':'景品',sx,300);
+    g.fillStyle=edge?'#4a2f6a':'#241a44'; g.fillRect(sx-18,LSLOT_TOP,36,LSLOT_H);
+    g.strokeStyle=edge?'#ff5ac8':'#3a2f6a'; g.lineWidth=2; g.strokeRect(sx-18,LSLOT_TOP,36,LSLOT_H);
+    g.fillStyle=edge?'#ffd27a':'#f0c8ff'; g.font='bold 19px sans-serif'; g.fillText(LOTTO_SLOTS[c],sx,LSLOT_TOP+38);
+    g.font='9px sans-serif'; g.fillStyle='#9a90c0'; g.fillText(edge?'大当り':'景品',sx,LSLOT_TOP+56);
   }
   for(i=0;i<lottoBalls.length;i++){ var bl=lottoBalls[i], p=ballXY(bl);
     g.fillStyle=bl.type==='t'?'#ffd24a':'#8fe0ff';
@@ -9314,6 +9320,9 @@ Array.prototype.forEach.call(document.querySelectorAll('#setview button'),functi
 // 更新履歴：1つのお知らせ内で「バージョン見出し」ごとに変更点を並べる（新しい順）。
 // マージのたびに先頭へ新バージョンを追加し、VERSION も更新する。
 var UPDATES=[
+  {v:'α1.0.195', items:[
+    '解放くじの見た目を調整：スロットを縦長にし、釘の並びを不揃いにして遊び心のある盤面にしました。',
+  ]},
   {v:'α1.0.194', items:[
     '「解放くじ」を調整：銀貨10で🎫メダル（武器解放）、銀貨100で🎟解放チケット（キャラ解放）を引けるようにしました。続けて何回でも投入でき、玉が同時に落ちていきます。対応端末では玉を打つたびに軽く振動します。',
   ]},
