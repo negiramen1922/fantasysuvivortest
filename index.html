@@ -2804,7 +2804,7 @@ function figInfo(id){
   if(BOSS[id]){ var B=BOSS[id], tt=ETYPE[B.key]||{}; return {nm:B.nm,shape:tt.shape,col:tt.col,dark:tt.dark,desc:BDEX[id]||'',boss:true}; }
   var t=ETYPE[id]||{}; return {nm:t.nm,shape:t.shape,col:t.col,dark:t.dark,desc:DEX[id]||'',boss:false};
 }
-var VERSION='α1.0.186'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
+var VERSION='α1.0.187'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
 function applySave(o){
   for(var i=0;i<UPG.length;i++) META[UPG[i].id]=0;
   try{
@@ -4339,7 +4339,7 @@ function react(e,a,b,dmg){
 function cap(){
   var area=W*H;
   var mx=area<330000?200:(area<520000?290:380);
-  return Math.min(mx,46+time*0.30);
+  return Math.min(mx,(46+time*0.30)*(NIGHTMARE?1.5:1));   // ナイトメアは同時湧き上限を1.5倍（最初から密度が高い）
 }
 // 無限ラン：5分ごとに舞台（ステージのロスター・地面・BGM・ボスHP倍率）を循環で切り替える
 function endlessTick(){
@@ -4364,6 +4364,7 @@ function spawn(dt){
   if(spawnT<=0&&enemies.length<capNow){
     spawnT=Math.max(0.24,0.85-time*0.00051);
     var burst=1+Math.floor(time/73);
+    if(NIGHTMARE){ burst=Math.ceil(burst*1.5); spawnT*=0.85; }             // ナイトメア：最初から湧き数を増やす
     if(bossOn){ spawnT*=1.9; burst=Math.max(1,Math.floor(burst*0.35)); }  // ボス戦中は湧きを抑える
     for(var i=0;i<burst;i++) makeEnemy(rollType());
   }
@@ -4466,7 +4467,7 @@ function makeEnemy(k){
   var eBlk=ENDLESS?Math.floor(time/ENDLESS_BLOCK):0;   // 5分ブロック番号（1周＝3ブロック）
   var blkMul=ENDLESS?(1+eBlk*0.5):1;                   // 5分ごとに敵HP係数+50%（ブロック1=×1.5・2=×2.0・3=×2.5…）
   var nm2=NIGHTMARE?2:1;              // ナイトメア：HP・攻撃2倍
-  var scale=(1+time/60*0.63)*blkMul, dscale=(1+time/60*0.13)*(ENDLESS?(1+eBlk*0.12):1)*nm2;
+  var scale=(1+time/60*(NIGHTMARE?0.72:0.63))*blkMul, dscale=(1+time/60*0.13)*(ENDLESS?(1+eBlk*0.12):1)*nm2;   // ナイトメアは時間HP係数を少し高める(0.63→0.72)
   var ehp=(t.flathp?t.hp:t.hp*scale)*nm2;   // flathp＝時間スケールを掛けず設計値そのまま（海坊主など）。ナイトメアぶんは掛ける
   if(ENDLESS){ var hpFloor=140*eBlk*(1+time/60*0.4); if(ehp<hpFloor) ehp=hpFloor; }   // どのザコもこのブロックの下限を下回らない（周回で最弱敵も右肩上がり）
   var e={ k:k, nm:t.nm, x:P.x+Math.cos(a)*dist, y:P.y+Math.sin(a)*dist,
@@ -9147,6 +9148,9 @@ Array.prototype.forEach.call(document.querySelectorAll('#setview button'),functi
 // 更新履歴：1つのお知らせ内で「バージョン見出し」ごとに変更点を並べる（新しい順）。
 // マージのたびに先頭へ新バージョンを追加し、VERSION も更新する。
 var UPDATES=[
+  {v:'α1.0.187', items:[
+    '次の新要素に向けた内部準備を進めています（通常のプレイ内容に変更はありません）。',
+  ]},
   {v:'α1.0.186', items:[
     '次の新要素に向けた内部準備を進めています（通常のプレイ内容に変更はありません）。',
   ]},
