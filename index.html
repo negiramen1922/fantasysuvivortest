@@ -2555,9 +2555,9 @@ var CHARS={
     cost:10, cond:'kills',  val:12000, condTx:'累計 12,000 体を討伐する' },
   shepd:{  nm:'羊飼い', glyph:'\u{1F411}', w:'bell',
     tx:'鈴で群れを呼ぶ者。ベルを鳴らすたび、まれに羊の群れが画面の外から駆け抜けて敵を踏み荒らす。',
-    st:'攻撃力 −10%',
+    st:'最大HP +10% ／ 攻撃力 −10%',
     grow:{k:'sheep', v:0.001, tx:'毎レベル 羊の群れ出現率 +0.1%（土台3%／数＝ベル×7／威力＝ベル×0.7）'},
-    hp:1.00, spd:1.00, pw:0.90, area:1.00, ele:0, elp:0, crit:0, regen:0,
+    hp:1.10, spd:1.00, pw:0.90, area:1.00, ele:0, elp:0, crit:0, regen:0,
     cost:10, cond:'stage',  val:2,     condTx:'ステージ2（森）をクリアする' }
 };
 var ALLCHR=0;   // 1で全キャラ解放（開発用）。製品は 0
@@ -2804,7 +2804,7 @@ function figInfo(id){
   if(BOSS[id]){ var B=BOSS[id], tt=ETYPE[B.key]||{}; return {nm:B.nm,shape:tt.shape,col:tt.col,dark:tt.dark,desc:BDEX[id]||'',boss:true}; }
   var t=ETYPE[id]||{}; return {nm:t.nm,shape:t.shape,col:t.col,dark:t.dark,desc:DEX[id]||'',boss:false};
 }
-var VERSION='α1.0.190'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
+var VERSION='α1.0.191'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
 function applySave(o){
   for(var i=0;i<UPG.length;i++) META[UPG[i].id]=0;
   try{
@@ -9159,6 +9159,9 @@ Array.prototype.forEach.call(document.querySelectorAll('#setview button'),functi
 // 更新履歴：1つのお知らせ内で「バージョン見出し」ごとに変更点を並べる（新しい順）。
 // マージのたびに先頭へ新バージョンを追加し、VERSION も更新する。
 var UPDATES=[
+  {v:'α1.0.191', items:[
+    'キャラ「羊飼い」に最大HP +10% を追加しました（攻撃力 −10% はそのまま）。',
+  ]},
   {v:'α1.0.190', items:[
     '次の新要素に向けた内部準備を進めています（通常のプレイ内容に変更はありません）。',
   ]},
