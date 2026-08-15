@@ -1641,6 +1641,7 @@ var STGLV={};     // ステージ別の到達最高レベル（次ステージ�
 var STGREQ={ 2:{stg:1,lv:20}, 3:{stg:2,lv:40}, 4:{stg:3,lv:60} };
 var WLIMIT=6;     // ラン前設定：装備できる武器の最大数（1〜6）。1にすると単一武器の縛りプレイ。
 var W1CLEAR={};   // 武器1つ（単一武器）でクリアしたステージ {stage:1}（実績用）
+var STGNMCLEAR={}; // ステージ別 ナイトメアクリア {stage:1}（実績用）
 // 無限ラン：5分ごとに舞台（＝ステージのロスター）が循環し、ボスも出る。死亡のみで終了・コンティニュー無し。
 var ENDLESS=false, ENDBLK=0, endBossDone={};
 var NIGHTMARE=false;   // 裏ステージ（ナイトメア）：敵のHP・攻撃2倍＋マゼンタ染め。契約カードで挑む。
@@ -2224,6 +2225,7 @@ var WDMGTOT={};   // 武器別 累計与ダメージ（各キャラの持ち武�
 var WKILL={};     // 武器別 累計討伐数
 var CHCLEAR={};   // キャラ別 ステージクリア {char:{stage:1}}
 var CHNOCONT={};  // キャラ別 ノーコンティニュークリア {char:{stage:1}}
+var CHNMCLEAR={}; // キャラ別 ナイトメアクリア {char:{stage:1}}
 var CHMAXLV={};   // キャラ別 単走の最高到達レベル
 var CHSURV={};    // キャラ別 累計生存時間（秒）
 var RNAME={'fire+thunder':'過負荷','fire+ice':'融解','ice+thunder':'超電導','dark+fire':'炎症','dark+ice':'凍結','dark+thunder':'感電','dark+holy':'消滅'};
@@ -2607,8 +2609,8 @@ var BKILL={};  // 種別ごとの累計討伐数（表示用・遊び心。ザ�
 var BSCORE={}; // ザコの累計スコア（強化ポイント算出用）
 var BSEEN={};  // 図鑑で発見済み（初遭遇カードを出したか）
 var BCLAIM={}; // 図鑑コレクション報酬を受け取り済み {id:1}
-var CLEARGOLD={1:6,2:9,3:12};     // ステージ討伐完了(クリア)で得られる金貨（毎回・控えめ）
-var FIRSTCLEAR={1:30,2:50,3:80};  // 初回クリア報酬（そのステージを初めてクリアした時だけ・一度きり）
+var CLEARGOLD={1:6,2:9,3:12,4:15};     // ステージ討伐完了(クリア)で得られる金貨（毎回・控えめ）
+var FIRSTCLEAR={1:30,2:50,3:80,4:120}; // 初回クリア報酬（そのステージを初めてクリアした時だけ・一度きり）
 var BOSSGOLD={1:4,2:6,3:9};       // ボス宝箱1個あたりの金貨（ステージが上がるほど増える。4体ぶんが主収入）
 var FCGOT={};                     // 初回クリア報酬を配布済みのステージ {stage:1}（既クリア勢への遡及配布の二重防止）
 function figReward(id){ return isBossKey(id)?10:2; }              // 図鑑報酬：ボス10・ザコ2 金貨
@@ -2660,7 +2662,11 @@ var ACHV=[
   {k:'w1',    nm:'武器1つでクリア', ic:'🗡', side:'pre', tiers:[1,2,3], labels:['ステージ1','ステージ2','ステージ3'],
     words:['一刀の','無双の','孤高の'],
     fn:function(){ var n=0; for(var s=1;s<=3;s++) if(W1CLEAR[s]) n++; return n; },
-    doneFn:function(i){ return !!W1CLEAR[i+1]; }}
+    doneFn:function(i){ return !!W1CLEAR[i+1]; }},
+  {k:'nm',    nm:'ナイトメア制覇', ic:'🌙', side:'suf', tiers:[1,2,3,4], labels:['①草原','②森','③王墓','④大海原'],
+    words:['悪夢狩り','悪夢殺し','悪夢の覇者','悪夢の支配者'], dev:1,
+    fn:function(){ var n=0; for(var s=1;s<=4;s++) if(STGNMCLEAR[s]) n++; return n; },
+    doneFn:function(i){ return !!STGNMCLEAR[i+1]; }}
 ];
 var ACLAIM={};                 // 受け取り済み実績 { 'kills:0':1, ... }
 var TWON={pre:'', suf:''};     // 選択中の二つ名パーツid（'cat:tier'）。空なら未設定
@@ -2670,8 +2676,8 @@ function achStat(a){ return a.fn?a.fn():(ACH[a.stat]||0); }
 function achDone(a,i){ return a.doneFn?!!a.doneFn(i):(achStat(a)>=a.tiers[i]); }
 function achClaimed(a,i){ return !!ACLAIM[achId(a,i)]; }
 function achClaimable(a,i){ return achDone(a,i)&&!achClaimed(a,i); }
-function anyAchClaim(){ for(var x=0;x<ACHV.length;x++){ var a=ACHV[x]; for(var i=0;i<a.tiers.length;i++) if(achClaimable(a,i)) return 1; } return 0; }
-function achClaimCount(){ var n=0; for(var x=0;x<ACHV.length;x++){ var a=ACHV[x]; for(var i=0;i<a.tiers.length;i++) if(achClaimable(a,i)) n++; } return n; }
+function anyAchClaim(){ for(var x=0;x<ACHV.length;x++){ var a=ACHV[x]; if(a.dev&&!DEV) continue; for(var i=0;i<a.tiers.length;i++) if(achClaimable(a,i)) return 1; } return 0; }
+function achClaimCount(){ var n=0; for(var x=0;x<ACHV.length;x++){ var a=ACHV[x]; if(a.dev&&!DEV) continue; for(var i=0;i<a.tiers.length;i++) if(achClaimable(a,i)) n++; } return n; }
 function partWord(id){ if(!id) return ''; var p=id.split(':'), a=achDef(p[0]); return (a&&a.words[p[1]|0])||''; }
 function partSide(id){ if(!id) return ''; var a=achDef(id.split(':')[0]); return a?a.side:''; }
 function partOwned(id){ if(!id) return false; var p=id.split(':'), a=achDef(p[0]); return !!(a&&achClaimed(a,p[1]|0)); }
@@ -2762,7 +2768,7 @@ function figInfo(id){
   if(BOSS[id]){ var B=BOSS[id], tt=ETYPE[B.key]||{}; return {nm:B.nm,shape:tt.shape,col:tt.col,dark:tt.dark,desc:BDEX[id]||'',boss:true}; }
   var t=ETYPE[id]||{}; return {nm:t.nm,shape:t.shape,col:t.col,dark:t.dark,desc:DEX[id]||'',boss:false};
 }
-var VERSION='α1.0.181'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
+var VERSION='α1.0.182'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
 function applySave(o){
   for(var i=0;i<UPG.length;i++) META[UPG[i].id]=0;
   try{
@@ -2812,6 +2818,8 @@ function applySave(o){
       if(o.wkl) for(var wkk in o.wkl){ if(WEAPONS[wkk]&&typeof o.wkl[wkk]==='number') WKILL[wkk]=Math.max(0,o.wkl[wkk]|0); }
       if(o.ccl) for(var cc in o.ccl){ if(CHARS[cc]){ CHCLEAR[cc]={}; for(var cs in o.ccl[cc]) if(o.ccl[cc][cs]) CHCLEAR[cc][cs]=1; } }
       if(o.cnc) for(var nc in o.cnc){ if(CHARS[nc]){ CHNOCONT[nc]={}; for(var ns in o.cnc[nc]) if(o.cnc[nc][ns]) CHNOCONT[nc][ns]=1; } }
+      if(o.snm) for(var snx in o.snm){ if(o.snm[snx]) STGNMCLEAR[snx]=1; }
+      if(o.cnm) for(var cnx in o.cnm){ if(CHARS[cnx]){ CHNMCLEAR[cnx]={}; for(var cns in o.cnm[cnx]) if(o.cnm[cnx][cns]) CHNMCLEAR[cnx][cns]=1; } }
       if(o.cml) for(var cm in o.cml){ if(CHARS[cm]&&typeof o.cml[cm]==='number') CHMAXLV[cm]=Math.max(0,o.cml[cm]|0); }
       if(o.csv) for(var cv in o.csv){ if(CHARS[cv]&&typeof o.csv[cv]==='number') CHSURV[cv]=Math.max(0,o.csv[cv]|0); }
       if(o.sgl) for(var sl in o.sgl) STGLV[sl]=o.sgl[sl]|0;
@@ -2825,7 +2833,7 @@ function applySave(o){
 }
 (function loadSave(){ try{ applySave(JSON.parse(localStorage.getItem('bsv_save')||'null')); }catch(e){ applySave(null); } })();
 function saveObj(){
-  return {m:META,w:WALLET,wx:WX,sel:SEL,best:best,shk:SHK,vz:VZOOM,light:LIGHT,volm:VOLM,vols:VOLS,volb:VOLB,unl:UNL,ach:ACH,ch:SELCH,stg:STGCLEAR,sgb:STGBEST,sgw:STGWAVE,eb:ENDBEST,et:ENDTIME,nk:NICK,ban:Object.keys(BAN).filter(function(k){return BAN[k];}),tut:TUTSEEN,perf:PERF,dps:SHOWDPS,dpm:SHOWDPM,rsp:RESPEC_AT,bk:BKILL,bsc:BSCORE,bs:Object.keys(BSEEN).filter(function(k){return BSEEN[k];}),bc:Object.keys(BCLAIM).filter(function(k){return BCLAIM[k];}).reduce(function(o,k){o[k]=1;return o;},{}),bsel:BSEL,mb:MAILBOX,fcg:FCGOT,dl:DAILY,sgl:STGLV,wu:WUNL,ac:ACLAIM,tw:TWON,wl:WLIMIT,w1:W1CLEAR,wdt:WDMGTOT,wkl:WKILL,ccl:CHCLEAR,cnc:CHNOCONT,cml:CHMAXLV,csv:CHSURV};
+  return {m:META,w:WALLET,wx:WX,sel:SEL,best:best,shk:SHK,vz:VZOOM,light:LIGHT,volm:VOLM,vols:VOLS,volb:VOLB,unl:UNL,ach:ACH,ch:SELCH,stg:STGCLEAR,sgb:STGBEST,sgw:STGWAVE,eb:ENDBEST,et:ENDTIME,nk:NICK,ban:Object.keys(BAN).filter(function(k){return BAN[k];}),tut:TUTSEEN,perf:PERF,dps:SHOWDPS,dpm:SHOWDPM,rsp:RESPEC_AT,bk:BKILL,bsc:BSCORE,bs:Object.keys(BSEEN).filter(function(k){return BSEEN[k];}),bc:Object.keys(BCLAIM).filter(function(k){return BCLAIM[k];}).reduce(function(o,k){o[k]=1;return o;},{}),bsel:BSEL,mb:MAILBOX,fcg:FCGOT,dl:DAILY,sgl:STGLV,wu:WUNL,ac:ACLAIM,tw:TWON,wl:WLIMIT,w1:W1CLEAR,wdt:WDMGTOT,wkl:WKILL,ccl:CHCLEAR,cnc:CHNOCONT,cml:CHMAXLV,csv:CHSURV,snm:STGNMCLEAR,cnm:CHNMCLEAR};
 }
 function saveGame(){
   try{ localStorage.setItem('bsv_save',JSON.stringify(saveObj())); }catch(e){}
@@ -8061,7 +8069,7 @@ function chrPick(id,a){
 var CGOLD=[3,5,10,25,50,100];   // キャラ実績のティア別 金貨（少額）
 function cAchGroups(c){
   var w=CHARS[c].w, wn=(WEAPONS[w]&&WEAPONS[w].nm)||'持ち武器';
-  return [
+  var g=[
     {k:'cdmg',  nm:wn+'で与ダメージ', ic:'💥', fmt:'num',  tiers:[10000,100000,1000000,10000000,100000000], val:function(){ return WDMGTOT[w]||0; }},
     {k:'ckill', nm:wn+'で討伐',       ic:'⚔', fmt:'num',  tiers:[1000,10000,100000,1000000,10000000,100000000], val:function(){ return WKILL[w]||0; }},
     {k:'cclear',nm:'ステージクリア',   ic:'🏳', stage:true, tiers:[1,2,3], labels:['ステージ1','ステージ2','ステージ3'], done:function(i){ return !!(CHCLEAR[c]&&CHCLEAR[c][i+1]); }},
@@ -8069,6 +8077,9 @@ function cAchGroups(c){
     {k:'cnc',   nm:'ノーコンクリア',   ic:'🎖', stage:true, tiers:[1,2,3], labels:['ステージ1','ステージ2','ステージ3'], done:function(i){ return !!(CHNOCONT[c]&&CHNOCONT[c][i+1]); }},
     {k:'csurv', nm:'累計生存時間',     ic:'⏳', fmt:'time', tiers:[1800,3600,18000], val:function(){ return CHSURV[c]||0; }}
   ];
+  // ナイトメアクリア（未公開機能なので dev のときだけ）
+  if(DEV) g.push({k:'cnm', nm:'ナイトメアクリア', ic:'🌙', stage:true, tiers:[1,2,3,4], labels:['①草原','②森','③王墓','④大海原'], done:function(i){ return !!(CHNMCLEAR[c]&&CHNMCLEAR[c][i+1]); }});
+  return g;
 }
 function cAchId(c,g,i){ return 'c:'+c+':'+g.k+':'+i; }
 function cAchDone(g,i){ return g.done?g.done(i):(g.val()>=g.tiers[i]); }
@@ -8777,6 +8788,7 @@ function finish(won){
     if(!CHCLEAR[SELCH]) CHCLEAR[SELCH]={};
     CHCLEAR[SELCH][curStage]=1;
     if(!contUsed){ if(!CHNOCONT[SELCH]) CHNOCONT[SELCH]={}; CHNOCONT[SELCH][curStage]=1; }
+    if(NIGHTMARE){ STGNMCLEAR[curStage]=1; if(!CHNMCLEAR[SELCH]) CHNMCLEAR[SELCH]={}; CHNMCLEAR[SELCH][curStage]=1; }
   }
   var firstClear=(won&&!ENDLESS&&!STGCLEAR[curStage]);   // 初回クリア判定（STGCLEAR を立てる前に）
   if(won){ ACH.clear=1; STGCLEAR[curStage]=1; }
@@ -9038,6 +9050,10 @@ Array.prototype.forEach.call(document.querySelectorAll('#setview button'),functi
 // 更新履歴：1つのお知らせ内で「バージョン見出し」ごとに変更点を並べる（新しい順）。
 // マージのたびに先頭へ新バージョンを追加し、VERSION も更新する。
 var UPDATES=[
+  {v:'α1.0.182', items:[
+    '「大海原」の初回クリア報酬（金貨+120）とクリアボーナスが抜けていたのを修正しました。すでにクリア済みの方には初回クリア報酬を受け取りボックスへお届けします。',
+    '次の新要素に向けた内部準備を進めています（通常のプレイ内容に変更はありません）。',
+  ]},
   {v:'α1.0.181', items:[
     '武器のタグ表示を拡充しました。ファイヤーボールなどに「射撃」「爆発」タグを追加し、武器選択・レベルアップの候補・武器詳細でその武器が持つタグを確認できるようにしました。',
   ]},
@@ -9725,6 +9741,7 @@ function renderAchieve(){
   var L=document.getElementById('achlist'); L.innerHTML='';
   for(var x=0;x<ACHV.length;x++){
     var a=ACHV[x], v=achStat(a), rows='';
+    if(a.dev&&!DEV) continue;   // 未公開機能（ナイトメア等）の実績は dev のときだけ表示
     for(var i=0;i<a.tiers.length;i++){
       var done=achDone(a,i), claimed=achClaimed(a,i), can=achClaimable(a,i);
       var prev=i>0?a.tiers[i-1]:0;
