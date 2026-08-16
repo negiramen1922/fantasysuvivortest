@@ -1329,25 +1329,26 @@ var ALLWPN=0;   // 1にすると全武器解放（開発用）。製品は 0。
 var WSTART={slash:1,bow:1,fire:1,ice:1,thunder:1,quake:1,holy:1,dhand:1,bell:1};  // 初期解放
 var WGOLD=10;   // どの武器も金貨10で解放できる共通ショートカット
 // cond種別：kills=累計討伐 / reacts=元素反応 / time=最大生存秒 / stage=そのステージ番号をクリア
+// tkt:1 ＝ 解放くじ（チケット）専用。dynamite / laser のみ実績で解放を残す。
 var WLOCK={
-  scythe:  {s:1000, cond:'kills', val:1500,  condTx:'累計討伐 1,500'},
+  scythe:  {s:1000, cond:'kills', val:1500,  condTx:'累計討伐 1,500', tkt:1},
   dynamite:{s:1500, cond:'kills', val:2000,  condTx:'累計討伐 2,000'},
-  flame:   {s:2000, cond:'reacts',val:400,   condTx:'元素反応 400 回'},
-  rock:    {s:2000, cond:'time',  val:600,   condTx:'10:00 まで生存'},
-  chakram: {s:3000, cond:'kills', val:4000,  condTx:'累計討伐 4,000'},
-  katana:  {s:3000, cond:'kills', val:3500,  condTx:'累計討伐 3,500'},
-  shuriken:{s:2500, cond:'time',  val:900,   condTx:'15:00 まで生存'},
-  toxin:   {s:3000, cond:'kills', val:4500,  condTx:'累計討伐 4,500'},
-  anchor:  {s:3000, cond:'kills', val:4000,  condTx:'累計討伐 4,000'},
-  chainsaw:{s:4000, cond:'kills', val:5000,  condTx:'累計討伐 5,000'},
-  blizzard:{s:3000, cond:'reacts',val:700,   condTx:'元素反応 700 回'},
-  chain:   {s:3000, cond:'kills', val:3500,  condTx:'累計討伐 3,500'},
-  musket:  {s:5000, cond:'kills', val:6000,  condTx:'累計討伐 6,000'},
+  flame:   {s:2000, cond:'reacts',val:400,   condTx:'元素反応 400 回', tkt:1},
+  rock:    {s:2000, cond:'time',  val:600,   condTx:'10:00 まで生存', tkt:1},
+  chakram: {s:3000, cond:'kills', val:4000,  condTx:'累計討伐 4,000', tkt:1},
+  katana:  {s:3000, cond:'kills', val:3500,  condTx:'累計討伐 3,500', tkt:1},
+  shuriken:{s:2500, cond:'time',  val:900,   condTx:'15:00 まで生存', tkt:1},
+  toxin:   {s:3000, cond:'kills', val:4500,  condTx:'累計討伐 4,500', tkt:1},
+  anchor:  {s:3000, cond:'kills', val:4000,  condTx:'累計討伐 4,000', tkt:1},
+  chainsaw:{s:4000, cond:'kills', val:5000,  condTx:'累計討伐 5,000', tkt:1},
+  blizzard:{s:3000, cond:'reacts',val:700,   condTx:'元素反応 700 回', tkt:1},
+  chain:   {s:3000, cond:'kills', val:3500,  condTx:'累計討伐 3,500', tkt:1},
+  musket:  {s:5000, cond:'kills', val:6000,  condTx:'累計討伐 6,000', tkt:1},
   laser:   {s:5000, cond:'stage', val:2,     condTx:'ステージ2をクリア'},
-  aura:    {s:6000, cond:'kills', val:5000,  condTx:'累計討伐 5,000'},
-  voidh:   {s:6000, cond:'stage', val:3,     condTx:'ステージ3をクリア'},
-  inferno: {s:8000, cond:'time',  val:900,   condTx:'15:00 まで生存'},
-  gatling: {s:10000,cond:'kills', val:12000, condTx:'累計討伐 12,000'}
+  aura:    {s:6000, cond:'kills', val:5000,  condTx:'累計討伐 5,000', tkt:1},
+  voidh:   {s:6000, cond:'stage', val:3,     condTx:'ステージ3をクリア', tkt:1},
+  inferno: {s:8000, cond:'time',  val:900,   condTx:'15:00 まで生存', tkt:1},
+  gatling: {s:10000,cond:'kills', val:12000, condTx:'累計討伐 12,000', tkt:1}
 };
 var WUNL={};   // 解放済み武器 {id:1}
 (function(){ for(var k in WSTART) WUNL[k]=1; if(ALLWPN) for(var w in WEAPONS) WUNL[w]=1; })();
@@ -2521,73 +2522,73 @@ var CHARS={
     st:'移動速度 +18%／会心率 +10%／最大HP −20%',
     grow:null,
     hp:0.80, spd:1.18, pw:1.00, area:1.00, ele:0, elp:0, crit:0.10, regen:0,
-    cost:10,  cond:'kills',  val:10000, condTx:'累計 10,000 体を討伐する' },
+    cost:0,  cond:'kills',  val:100, condTx:'累計 100 体を討伐する' },
   bomber:{ nm:'爆弾魔', glyph:'\u{1F9E8}', w:'dynamite',
     tx:'爆薬を投げる。扱うほど爆発が大きく育っていく。',
     st:'移動速度 −8%',
     grow:{k:'boom', v:0.01, tx:'毎レベル 爆発のダメージと範囲 +1%'},
     hp:1.00, spd:0.92, pw:1.00, area:1.00, ele:0, elp:0, crit:0, regen:0,
-    cost:10,  cond:'time',   val:1200,  condTx:'20:00 まで生き延びる' },
+    cost:0,  cond:'dmg',   val:10000,  condTx:'累計 10,000 ダメージを与える' },
   mage:{   nm:'魔道士', glyph:'\u{1F525}', w:'fire',
     tx:'元素を操る。反応を起こすほど破壊力が増す。',
     st:'元素付与 +12%／最大HP −10%',
     grow:{k:'elp', v:0.01, tx:'毎レベル 元素反応のダメージ +1%'},
     hp:0.90, spd:1.00, pw:1.00, area:1.00, ele:0.12, elp:0, crit:0, regen:0,
-    cost:10,  cond:'reacts', val:1500,  condTx:'累計 1,500 回の元素反応' },
+    cost:0,  cond:'kills', val:1000,  condTx:'累計 1,000 体を討伐する' },
   saint:{  nm:'聖女',   glyph:'\u271D', w:'aura',
     tx:'裁きの剣を落とす。打たれ強く、光を極めていく。',
     st:'最大HP +20%／毎秒 HP+0.5／攻撃力 −10%',
     grow:{k:'light', v:0.01, tx:'毎レベル 光属性の武器の攻撃力 +1%'},
     hp:1.20, spd:1.00, pw:0.90, area:1.00, ele:0, elp:0, crit:0, regen:0.5,
-    cost:10, cond:'clear',  val:1,     condTx:'ステージ1をクリアする' },
+    cost:0, cond:'clear',  val:1,     condTx:'ステージ1をクリアする' },
   ninja:{  nm:'忍者',   glyph:'\u{1F977}', w:'shuriken',
     tx:'手裏剣を投げ放つ。素早く動き、状態異常を乗せて崩す。',
     st:'移動速度 +15%／会心率 +12%／最大HP −15%',
     grow:{k:'debuff', v:0.005, tx:'毎レベル 状態異常の付与率 +0.5%'},
     hp:0.85, spd:1.15, pw:1.00, area:1.00, ele:0, elp:0, crit:0.12, regen:0,
-    cost:10, cond:'crit',   val:3000,  condTx:'累計 3,000 回の会心を出す' },
+    cost:0, cond:'crit',   val:3000,  condTx:'累計 3,000 回の会心を出す', tkt:1 },
   cryo:{   nm:'氷術師', glyph:'❄', w:'ice',
     tx:'氷の投槍で敵を穿つ。減速と凍結で戦場を制する。',
     st:'元素付与 +12%／移動速度 −5%',
     grow:{k:'icep', v:0.01, tx:'毎レベル 氷属性の武器の攻撃力 +1%'},
     hp:1.00, spd:0.95, pw:1.00, area:1.00, ele:0.12, elp:0, crit:0, regen:0,
-    cost:10, cond:'killIc', val:3000,  condTx:'氷属性の武器で 3,000 体を討伐する' },
+    cost:0, cond:'killIc', val:3000,  condTx:'氷属性の武器で 3,000 体を討伐する', tkt:1 },
   thundr:{ nm:'雷鳴使い', glyph:'⚡', w:'thunder',
     tx:'龍の雷を落とす。感電と超電導で一気に畳みかける。',
     st:'会心率 +8%／最大HP −10%',
     grow:{k:'thunp', v:0.01, tx:'毎レベル 雷属性の武器の攻撃力 +1%'},
     hp:0.90, spd:1.00, pw:1.00, area:1.00, ele:0, elp:0, crit:0.08, regen:0,
-    cost:10, cond:'killTh', val:3000,  condTx:'雷属性の武器で 3,000 体を討伐する' },
+    cost:0, cond:'killTh', val:3000,  condTx:'雷属性の武器で 3,000 体を討伐する', tkt:1 },
   gunner:{ nm:'銃士', glyph:'\u{1F52B}', w:'musket',
     tx:'銃を撃ち込む遠距離の手練れ。撃つほどに手が速くなる。',
     st:'会心率 +10%／移動速度 +5%／最大HP −15%',
     grow:{k:'rof', v:0.005, tx:'毎レベル 攻撃の間隔 −0.5%'},
     hp:0.85, spd:1.05, pw:1.00, area:1.00, ele:0, elp:0, crit:0.10, regen:0,
-    cost:10, cond:'kills',  val:7000,  condTx:'累計 7,000 体を討伐する' },
+    cost:0, cond:'kills',  val:7000,  condTx:'累計 7,000 体を討伐する', tkt:1 },
   farmer:{ nm:'農夫',   glyph:'\u{1F33E}', w:'scythe',
     tx:'鎌を振るう働き者。刈るほどに手数が増え、数の暴力に打たれ強い。',
     st:'攻撃力 +8%／範囲 +12%／最大HP +15%',
     grow:{k:'scythe_cnt', per:20, unit:'本', tx:'20レベルごと 投げる鎌 +1本'},
     hp:1.15, spd:1.00, pw:1.08, area:1.12, ele:0, elp:0, crit:0, regen:0,
-    cost:10, cond:'kills',  val:25000, condTx:'累計 25,000 体を討伐する' },
+    cost:0, cond:'kills',  val:25000, condTx:'累計 25,000 体を討伐する', tkt:1 },
   necro:{  nm:'死霊術師', glyph:'💀', w:'dhand',
     tx:'死者の手を操る闇の術者。王墓の主を退けた者にのみ付き従う。',
     st:'最大HP +10%／元素付与 +10%／移動速度 −6%',
     grow:{k:'darkp', v:0.01, tx:'毎レベル 闇属性の武器の攻撃力 +1%'},
     hp:1.10, spd:0.94, pw:1.00, area:1.00, ele:0.10, elp:0, crit:0, regen:0,
-    cost:15, cond:'stage',  val:3,     condTx:'ステージ3（古代の王墓）をクリアする' },
+    cost:0, cond:'stage',  val:3,     condTx:'ステージ3（古代の王墓）をクリアする', tkt:1 },
   apoth:{  nm:'調剤師', glyph:'⚗️', w:'toxin',
     tx:'毒の瓶を調合して投げる術者。毒を極め、じわじわと戦場を蝕む。',
     st:'元素付与 +10%／範囲 +8%／攻撃力 −5%',
     grow:{k:'grassp', v:0.01, tx:'毎レベル 草属性の武器の攻撃力 +1%'},
     hp:1.00, spd:1.00, pw:0.95, area:1.08, ele:0.10, elp:0, crit:0, regen:0,
-    cost:10, cond:'kills',  val:12000, condTx:'累計 12,000 体を討伐する' },
+    cost:0, cond:'kills',  val:12000, condTx:'累計 12,000 体を討伐する', tkt:1 },
   shepd:{  nm:'羊飼い', glyph:'\u{1F411}', w:'bell',
     tx:'鈴で群れを呼ぶ者。ベルを鳴らすたび、まれに羊の群れが画面の外から駆け抜けて敵を踏み荒らす。',
     st:'最大HP +10% ／ 攻撃力 −10%',
     grow:{k:'sheep', v:0.001, tx:'毎レベル 羊の群れ出現率 +0.1%（土台3%／数＝ベル×7／威力＝ベル×0.7）'},
     hp:1.10, spd:1.00, pw:0.90, area:1.00, ele:0, elp:0, crit:0, regen:0,
-    cost:10, cond:'stage',  val:2,     condTx:'ステージ2（森）をクリアする' }
+    cost:0, cond:'stage',  val:2,     condTx:'ステージ2（森）をクリアする', tkt:1 }
 };
 var ALLCHR=0;   // 1で全キャラ解放（開発用）。製品は 0
 var UNL={}, SELCH='knight';
@@ -2608,7 +2609,7 @@ function achNow(id){
 }
 function unlockCheck(){
   var got=[];
-  for(var id in CHARS) if(!UNL[id]&&achOK(id)){ UNL[id]=1; got.push(CHARS[id].nm); }
+  for(var id in CHARS) if(!UNL[id]&&!CHARS[id].tkt&&achOK(id)){ UNL[id]=1; got.push(CHARS[id].nm); }   // tkt＝解放くじ専用は自動解放しない
   return got;
 }
 // 汎用の実績条件判定（武器・キャラ共通で使える）
@@ -2630,7 +2631,7 @@ function wAchNow(id){
 // 実績条件を満たした武器を自動解放（実装前に条件達成済みの人も起動時に解放）。解放名の配列を返す。
 function weaponUnlockCheck(){   // 実績を満たした武器を解放。解放した武器idの配列を返す。
   var got=[];
-  for(var id in WLOCK){ if(!WUNL[id]&&wAchOK(id)){ WUNL[id]=1; got.push(id); } }
+  for(var id in WLOCK){ if(!WUNL[id]&&!WLOCK[id].tkt&&wAchOK(id)){ WUNL[id]=1; got.push(id); } }   // tkt＝解放くじ専用は自動解放しない
   return got;
 }
 
@@ -2835,7 +2836,7 @@ function figInfo(id){
   if(BOSS[id]){ var B=BOSS[id], tt=ETYPE[B.key]||{}; return {nm:B.nm,shape:tt.shape,col:tt.col,dark:tt.dark,desc:BDEX[id]||'',boss:true}; }
   var t=ETYPE[id]||{}; return {nm:t.nm,shape:t.shape,col:t.col,dark:t.dark,desc:DEX[id]||'',boss:false};
 }
-var VERSION='α1.0.197'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
+var VERSION='α1.0.198'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
 function applySave(o){
   for(var i=0;i<UPG.length;i++) META[UPG[i].id]=0;
   try{
@@ -8147,7 +8148,7 @@ function syncTitle(){
     (best?'<br><span style="color:#6b5f9c">ベストスコア '+fmt(best)+'</span>':'');
   document.getElementById('mastbtn').innerHTML='武器熟練'+(anyPicks()?'<span class="badge">!</span>':'');
   updateDexBadge(); updateMailBadge(); updateAchBadge();
-  var nl=0; for(var ci in CHARS) if(!UNL[ci]&&achOK(ci)) nl++;
+  var nl=0; for(var ci in CHARS) if(!UNL[ci]&&!CHARS[ci].tkt&&achOK(ci)) nl++;   // tkt＝くじ専用は「達成なのに未解放」バッジを出さない
   var chBadge=nl||anyCharAchClaim();
   document.getElementById('chrbtn').innerHTML='キャラクター'+(chBadge?'<span class="badge">!</span>':'');
 }
@@ -8168,15 +8169,17 @@ function renderChr(){
     var btn;
     if(sel) btn='<button class="ubuy" disabled>選択中</button>';
     else if(un) btn='<button class="ubuy" data-c="'+id+'" data-a="sel">選ぶ</button>';
-    else if(WALLET.gold>=c.cost) btn='<button class="ubuy gd" data-c="'+id+'" data-a="buy">金 '+c.cost+'</button>';
-    else btn='<button class="ubuy gd" disabled>金 '+c.cost+'</button>';
+    else btn='';   // ロック中は購入ボタンなし（解放くじ／実績で解放）
+    var lockLine=un?'':(c.tkt
+      ? '<div class="cwc" style="color:#ffd27a">🎟 解放くじで解放（'+CHR_TICKET+'チケット）</div>'
+      : '<div class="cwc">解放条件：'+c.condTx+'　<b style="color:var(--gold);font-weight:normal">'+achNow(id)+'</b></div>');
     d.innerHTML='<div class="cwg">'+(CHAR_SPR[id]?'<img class="cwspr" src="assets/'+CHAR_SPR[id]+'.png" alt="">':c.glyph)+'</div>'+
       '<div class="cwb">'+
         '<div class="cwn">'+c.nm+'<span>初期武器：'+WEAPONS[c.w].nm+'</span></div>'+
         '<div class="cwt">'+c.tx+'</div>'+
         '<div class="cws">'+c.st+'</div>'+
         (c.grow?'<div class="cwc" style="color:var(--gold)">'+c.grow.tx+'</div>':'')+
-        (un?'':'<div class="cwc">解放条件：'+c.condTx+'　<b style="color:var(--gold);font-weight:normal">'+achNow(id)+'</b></div>')+
+        lockLine+
       '</div>'+btn+'<div class="wmore">›</div>';
     d.style.cursor='pointer';
     d.onclick=function(){ openCharDetail(id); };   // カードを押すとキャラ詳細へ
@@ -8187,14 +8190,8 @@ function renderChr(){
   });
 }
 function chrPick(id,a){
-  if(a==='buy'){
-    if(WALLET.gold<CHARS[id].cost) return;
-    WALLET.gold-=CHARS[id].cost; UNL[id]=1;
-    [0,90,180].forEach(function(ms,i){ setTimeout(function(){ sfx([784,988,1319][i],.16,'triangle',.075); },ms); });
-  }else{
-    if(!UNL[id]) return;
-    sfx(880,.12,'triangle',.06);
-  }
+  if(!UNL[id]) return;   // 解放は解放くじ／実績のみ。ここでは選択だけ
+  sfx(880,.12,'triangle',.06);
   SELCH=id; saveGame(); renderChr(); syncTitle(); reset();
 }
 /* ===== キャラごとの実績 ===== */
@@ -8241,8 +8238,8 @@ function openCharDetail(c){
   var btn;
   if(sel) btn='<button class="btn" disabled style="margin-top:0">選択中</button>';
   else if(un) btn='<button class="btn cdsel" type="button" style="margin-top:0">このキャラを選ぶ</button>';
-  else if(WALLET.gold>=cc.cost) btn='<button class="btn cdbuy gd" type="button" style="margin-top:0">金 '+cc.cost+' で解放</button>';
-  else btn='<button class="btn" disabled style="margin-top:0">金 '+cc.cost+'（不足）</button>';
+  else if(cc.tkt) btn='<button class="btn" disabled style="margin-top:0">🎟 解放くじで解放（'+CHR_TICKET+'）</button>';
+  else btn='<button class="btn" disabled style="margin-top:0">実績で解放</button>';
   L.innerHTML=
     '<div class="wd">'+
       '<button class="wdback" type="button">← 一覧へ戻る</button>'+
@@ -8255,13 +8252,14 @@ function openCharDetail(c){
       '<div class="wdtx">'+cc.tx+'</div>'+
       '<div class="cws" style="margin:6px 0">'+cc.st+'</div>'+
       (cc.grow?'<div class="cwc" style="color:var(--gold);margin-bottom:4px">'+cc.grow.tx+'</div>':'')+
-      (un?'':'<div class="cwc" style="margin-bottom:4px">解放条件：'+cc.condTx+'　<b style="color:var(--gold);font-weight:normal">'+achNow(c)+'</b></div>')+
+      (un?'':(cc.tkt
+        ? '<div class="cwc" style="margin-bottom:4px;color:#ffd27a">🎟 解放くじ（ホームの「解放くじ」）でチケットを使って解放できます</div>'
+        : '<div class="cwc" style="margin-bottom:4px">解放条件：'+cc.condTx+'　<b style="color:var(--gold);font-weight:normal">'+achNow(c)+'</b></div>'))+
       btn+
       '<button class="btn sub2 cdach" type="button" style="margin-top:8px">🏅 実績を見る'+(claimN?'<span class="badge">'+claimN+'</span>':'')+'</button>'+
     '</div>';
   L.querySelector('.wdback').onclick=function(){ audio(); renderChr(); };
   var s=L.querySelector('.cdsel'); if(s) s.onclick=function(){ chrPick(c,'sel'); };
-  var b=L.querySelector('.cdbuy'); if(b) b.onclick=function(){ chrPick(c,'buy'); };
   L.querySelector('.cdach').onclick=function(){ renderCharAch(c); };
 }
 // キャラの実績一覧
@@ -8463,19 +8461,16 @@ function renderBan(){
   // 未解放（ロック中）の武器：金貨 or 銀貨 or 実績 で解放
   var locked=Object.keys(WEAPONS).filter(function(id){ return wLocked(id); });
   if(locked.length){
-    var lh=document.createElement('div'); lh.className='armsec'; lh.textContent='🔒 未解放（金貨・銀貨・実績で解放）'; L.appendChild(lh);
+    var lh=document.createElement('div'); lh.className='armsec'; lh.textContent='🔒 未解放'; L.appendChild(lh);
     locked.forEach(function(id){
       var w=WEAPONS[id], Lk=WLOCK[id];
-      var gOK=WALLET.gold>=WGOLD, sOK=WALLET.silver>=Lk.s;
+      var cnd=Lk.tkt
+        ? '<div class="cnd">🎟 解放くじで解放（'+WPN_TICKET+'チケット）</div>'
+        : '<div class="cnd">実績で解放：'+Lk.condTx+'　<b>'+wAchNow(id)+'</b></div>';
       var row=document.createElement('div'); row.className='armw lock';
       row.innerHTML='<div class="g">'+w.glyph+'</div>'+
         '<div class="b"><div class="nm">'+w.nm+'</div>'+
-          '<div class="sub">'+w.tx+'</div>'+
-          '<div class="cnd">実績で解放：'+Lk.condTx+'　<b>'+wAchNow(id)+'</b></div></div>'+
-        '<div class="act">'+
-          '<button class="abuy gd" data-w="'+id+'" data-a="g"'+(gOK?'':' disabled')+'>金貨 '+WGOLD+'</button>'+
-          '<button class="abuy sv" data-w="'+id+'" data-a="s"'+(sOK?'':' disabled')+'>銀貨 '+fmt(Lk.s)+'</button>'+
-        '</div>';
+          '<div class="sub">'+w.tx+'</div>'+cnd+'</div>';
       L.appendChild(row);
     });
   }
@@ -8540,9 +8535,9 @@ function lottoPurse(){
 }
 function lottoUnlockList(){
   var el=document.getElementById('lottounlock'), h='', id;
-  var lw=[]; for(id in WLOCK){ if(wLocked(id)) lw.push(id); }
-  var lc=[]; for(id in CHARS){ if(!UNL[id]) lc.push(id); }
-  if(!lw.length&&!lc.length){ el.innerHTML='<div style="text-align:center;color:#6b5f9c;font-size:12px;padding:12px">すべて解放済みです 🎉</div>'; return; }
+  var lw=[]; for(id in WLOCK){ if(wLocked(id)&&WLOCK[id].tkt) lw.push(id); }   // チケット解放対象のみ
+  var lc=[]; for(id in CHARS){ if(!UNL[id]&&CHARS[id].tkt) lc.push(id); }
+  if(!lw.length&&!lc.length){ el.innerHTML='<div style="text-align:center;color:#6b5f9c;font-size:12px;padding:12px">解放できるものはありません 🎉</div>'; return; }
   if(lw.length){
     h+='<div class="lksec">武器（🎟 '+WPN_TICKET+'）</div>';
     lw.forEach(function(w){ var can=TICKET>=WPN_TICKET;
@@ -8643,8 +8638,8 @@ document.getElementById('lottodropt').onclick=function(){ audio(); lottoDrop('t'
 document.getElementById('lottounlock').onclick=function(ev){
   var b=ev.target.closest?ev.target.closest('[data-lk]'):null; if(!b) return;
   var type=b.getAttribute('data-lk'), id=b.getAttribute('data-id');
-  if(type==='w'){ if(TICKET<WPN_TICKET||!wLocked(id)) return; TICKET-=WPN_TICKET; WUNL[id]=1; if(typeof toast==='function') toast('🎟',WEAPONS[id].nm+' を解放！','#ffd27a'); }
-  else { if(TICKET<CHR_TICKET||UNL[id]) return; TICKET-=CHR_TICKET; UNL[id]=1; if(typeof toast==='function') toast('🎟',CHARS[id].nm+' を解放！','#ffd27a'); }
+  if(type==='w'){ if(TICKET<WPN_TICKET||!wLocked(id)||!WLOCK[id].tkt) return; TICKET-=WPN_TICKET; WUNL[id]=1; if(typeof toast==='function') toast('🎟',WEAPONS[id].nm+' を解放！','#ffd27a'); }
+  else { if(TICKET<CHR_TICKET||UNL[id]||!CHARS[id].tkt) return; TICKET-=CHR_TICKET; UNL[id]=1; if(typeof toast==='function') toast('🎟',CHARS[id].nm+' を解放！','#ffd27a'); }
   [0,90,180].forEach(function(ms,i){ setTimeout(function(){ sfx([784,988,1319][i],.16,'triangle',.075); },ms); });
   saveGame(); lottoPurse(); lottoUnlockList(); syncTitle();
 };
@@ -9320,6 +9315,9 @@ Array.prototype.forEach.call(document.querySelectorAll('#setview button'),functi
 // 更新履歴：1つのお知らせ内で「バージョン見出し」ごとに変更点を並べる（新しい順）。
 // マージのたびに先頭へ新バージョンを追加し、VERSION も更新する。
 var UPDATES=[
+  {v:'α1.0.198', items:[
+    '武器・キャラの解放方法を整理しました。基本は「🎟 解放くじ」のチケットで解放（武器15／キャラ30）。一部は実績で解放できます（キャラ：狩人＝累計討伐100・爆弾魔＝累計ダメージ10,000・魔道士＝累計討伐1,000・聖女＝ステージ1クリア。武器：ダイナマイト・セイクリッドレーザー）。金貨・銀貨での直接解放は廃止しました（すでに解放済みのものはそのまま使えます）。',
+  ]},
   {v:'α1.0.197', items:[
     '解放くじの通貨を「🎟 解放チケット」に一本化しました。武器もキャラもチケットで解放できます（銀貨10＝少量／銀貨100＝まとめて×10）。これまでの解放メダルはチケットへ自動変換されます。',
   ]},
