@@ -1377,9 +1377,9 @@ var WLOCK={
   voidh:   {s:6000, cond:'stage', val:3,     condTx:'ステージ3をクリア', tkt:1},
   inferno: {s:8000, cond:'time',  val:900,   condTx:'15:00 まで生存', tkt:1},
   gatling: {s:10000,cond:'kills', val:12000, condTx:'累計討伐 12,000', tkt:1},
-  meteor:  {s:8000, cond:'kills', val:8000,  condTx:'累計討伐 8,000',  tkt:1},
-  gale:    {s:3000, cond:'kills', val:5000,  condTx:'累計討伐 5,000',  tkt:1},
-  tornado: {s:5000, cond:'reacts',val:800,   condTx:'元素反応 800 回',  tkt:1}
+  meteor:  {s:8000, tkt:1},
+  gale:    {s:3000, tkt:1},
+  tornado: {s:5000, tkt:1}
 };
 var WUNL={};   // 解放済み武器 {id:1}
 (function(){ for(var k in WSTART) WUNL[k]=1; if(ALLWPN) for(var w in WEAPONS) WUNL[w]=1; })();
@@ -2913,7 +2913,7 @@ function figInfo(id){
   if(BOSS[id]){ var B=BOSS[id], tt=ETYPE[B.key]||{}; return {nm:B.nm,shape:tt.shape,col:tt.col,dark:tt.dark,desc:BDEX[id]||'',boss:true}; }
   var t=ETYPE[id]||{}; return {nm:t.nm,shape:t.shape,col:t.col,dark:t.dark,desc:DEX[id]||'',boss:false};
 }
-var VERSION='α1.0.215'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
+var VERSION='α1.0.216'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
 function applySave(o){
   for(var i=0;i<UPG.length;i++) META[UPG[i].id]=0;
   try{
@@ -9738,8 +9738,11 @@ Array.prototype.forEach.call(document.querySelectorAll('#setview button'),functi
 // 更新履歴：1つのお知らせ内で「バージョン見出し」ごとに変更点を並べる（新しい順）。
 // マージのたびに先頭へ新バージョンを追加し、VERSION も更新する。
 var UPDATES=[
+  {v:'α1.0.216', items:[
+    '新武器（メテオ・カマイタチ・トルネード）の解放を武器チケット専用に統一しました（実績での解放条件は廃止）。',
+  ]},
   {v:'α1.0.215', items:[
-    '風属性の新武器を2種追加！ 「カマイタチ」＝緑の風の刃を3連射し、当たった敵に風属性を付与（強化軸：攻撃力／射程／範囲／間隔／数、覚醒「真空乱斬」で貫通＋刃増）。「トルネード」＝緑の渦で敵を吸い寄せ、消えるとき爆発して風属性を撒く（覚醒「大旋風」で渦と拡散が拡大）。風属性は「拡散」で他の武器の元素反応を起こしやすくする起点になります。解放：カマイタチ＝累計討伐5,000／トルネード＝元素反応800回（いずれも武器チケットでも解放可）。',
+    '風属性の新武器を2種追加！ 「カマイタチ」＝緑の風の刃を3連射し、当たった敵に風属性を付与（強化軸：攻撃力／射程／範囲／間隔／数、覚醒「真空乱斬」で貫通＋刃増）。「トルネード」＝緑の渦で敵を吸い寄せ、消えるとき爆発して風属性を撒く（覚醒「大旋風」で渦と拡散が拡大）。風属性は「拡散」で他の武器の元素反応を起こしやすくする起点になります。解放：交換所で武器チケット。',
   ]},
   {v:'α1.0.214', items:[
     'ヘルプの「元素反応」を今回のリニューアルに合わせて更新。増幅系（融解・聖光＝強い一撃を参照）と激変系（過負荷ほか＝Lv基準で安定）の違い、聖光・風の拡散を追記しました。',
