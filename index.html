@@ -941,7 +941,8 @@ img.wspr{width:1.15em;height:1.15em;object-fit:contain;image-rendering:pixelated
       <div class="dexdesc" id="fddesc"></div>
       <div class="figrow" id="fdchips" style="justify-content:center;margin-top:14px"></div>
       <div id="fdhint" style="font-size:10px;color:#8a7fc0;margin-top:10px"></div>
-      <button class="btn sub2" id="fdclose" style="margin-top:14px">閉じる</button>
+      <button class="btn sub2" id="fdreset" style="margin-top:10px;display:none">↩ この割り振りをリセット</button>
+      <button class="btn sub2" id="fdclose" style="margin-top:8px">閉じる</button>
     </div>
   </div>
 
@@ -2811,6 +2812,7 @@ function dexDealMul(id){ return 1+0.01*Math.min(FIG_CAP,(BSEL[id]&&BSEL[id].d)||
 // 被ダメージ −1%/pt。上限10ptでも最大−10%。古いセーブ等で過剰でも0.9未満にしない（被ダメ0バグ防止）
 function dexTakeMul(id){ return Math.max(0.9,1-0.01*Math.min(FIG_CAP,(BSEL[id]&&BSEL[id].t)||0)); }
 function resetFig(){ BSEL={}; saveGame(); }   // 図鑑の割り振りを全リセット（稼いだポイントは保持）
+function resetFigOne(id){ if(BSEL[id]){ delete BSEL[id]; saveGame(); } }   // 1体だけ割り振りリセット（ポイントは戻る）
 function resetMast(){ SEL={}; saveGame(); }   // 武器熟練の特性選択を全リセット（熟練度は保持）
 function resetMastOne(w){ SEL[w]=[]; saveGame(); }   // 指定した武器だけ特性選択をリセット（熟練度は保持）
 // ゲームの完全リセット：ローカルセーブ削除＋（ログイン中なら）クラウドセーブも削除して再読込
@@ -2854,7 +2856,7 @@ function figInfo(id){
   if(BOSS[id]){ var B=BOSS[id], tt=ETYPE[B.key]||{}; return {nm:B.nm,shape:tt.shape,col:tt.col,dark:tt.dark,desc:BDEX[id]||'',boss:true}; }
   var t=ETYPE[id]||{}; return {nm:t.nm,shape:t.shape,col:t.col,dark:t.dark,desc:DEX[id]||'',boss:false};
 }
-var VERSION='α1.0.203'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
+var VERSION='α1.0.204'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
 function applySave(o){
   for(var i=0;i<UPG.length;i++) META[UPG[i].id]=0;
   try{
@@ -9459,6 +9461,9 @@ Array.prototype.forEach.call(document.querySelectorAll('#setview button'),functi
 // 更新履歴：1つのお知らせ内で「バージョン見出し」ごとに変更点を並べる（新しい順）。
 // マージのたびに先頭へ新バージョンを追加し、VERSION も更新する。
 var UPDATES=[
+  {v:'α1.0.204', items:[
+    '図鑑のモンスター詳細に「この割り振りをリセット」を追加しました。割り振ったポイントを戻して振り直せます。割り振り内容は📖経験値・⚔️与ダメ・🛡️被ダメのアイコンと数で確認できます。',
+  ]},
   {v:'α1.0.203', items:[
     '解放くじに「大当たり」を追加！ 真ん中の「？」スロット（釘でガードされていて入りにくい）に玉が入ると、未入手の武器（銀貨くじ）／キャラ（金貨くじ）のルーレットが回り、当たったものを交換券なしで入手できます。すべて所持済みならチケットの大当たり（最大300枚・超低確率）になります。',
   ]},
@@ -10337,6 +10342,7 @@ function openFigDetail(id){
                :('次のポイントまで あと '+fmt((figLv(id)+1)*ZAKO_SCORE_PER-(BSCORE[id]||0))+' スコア（'+fmt(ZAKO_SCORE_PER)+'ごと）');
   if(figLv(id)>=FIG_CAP) hint='上限（'+FIG_CAP+'pt）まで解放済み';
   document.getElementById('fdhint').textContent=hint;
+  document.getElementById('fdreset').style.display=(figUsed(id)>0)?'':'none';   // 割り振り済みならリセット可
   // コレクション報酬：未受取なら「報酬を獲得」ボタンを表示（右上）
   var rb=document.getElementById('fdreward');
   if(dexRewardable(id)){ rb.style.display=''; rb.textContent='報酬を獲得 金貨+'+figReward(id); }
@@ -10353,6 +10359,7 @@ function claimFigReward(){
   var pv=document.getElementById('vpurse'); if(pv) pv.innerHTML=purseHtml();
 }
 document.getElementById('fdreward').onclick=function(){ audio(); claimFigReward(); };
+document.getElementById('fdreset').onclick=function(){ if(curFigId&&figUsed(curFigId)>0){ audio(); resetFigOne(curFigId); sfx(420,.12,'triangle',.05,.7); openFigDetail(curFigId); renderDex(); } };
 document.getElementById('fdclose').onclick=function(){ figDetEl.classList.remove('on'); };
 function renderDex(){
   var all=DEXLIST.concat(BOSSDEX), seen=0;
