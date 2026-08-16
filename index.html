@@ -1071,10 +1071,10 @@ img.wspr{width:1.15em;height:1.15em;object-fit:contain;image-rendering:pixelated
       <canvas id="lottocv" width="300" height="380"></canvas>
       <div id="lottores"></div>
       <div style="display:flex;gap:8px">
-        <button class="btn" id="lottodropm" style="margin-top:0;flex:1;font-size:14px">🎫 銀貨10</button>
-        <button class="btn" id="lottodropt" style="margin-top:0;flex:1;font-size:14px">🎟 銀貨100</button>
+        <button class="btn" id="lottodropm" style="margin-top:0;flex:1;font-size:14px">🎟 銀貨10</button>
+        <button class="btn" id="lottodropt" style="margin-top:0;flex:1;font-size:14px">🎟 銀貨100（×10）</button>
       </div>
-      <div style="font-size:10px;color:#8a7ab0;text-align:center">🎫メダル→武器解放 ／ 🎟チケット→キャラ解放　※続けて投入できます</div>
+      <div style="font-size:10px;color:#8a7ab0;text-align:center">🎟チケットで武器・キャラを解放できます　※続けて投入できます</div>
       <div id="lottounlock"></div>
       <button class="btn sub2" id="lottoclose" style="margin-top:0">閉じる</button>
     </div>
@@ -2660,7 +2660,7 @@ function umax(id){ for(var i=0;i<UPG.length;i++) if(UPG[i].id===id) return UPG[i
 function upgGold(id){ for(var i=0;i<UPG.length;i++) if(UPG[i].id===id) return !!UPG[i].goldonly; return false; }
 
 var META={}, WALLET={silver:0,gold:0}, best=0;
-var MEDAL=0;   // 解放メダル（解放くじの景品・武器の解放に使う）
+var MEDAL=0;   // 旧・解放メダル（通貨一本化で廃止。旧セーブのぶんは起動時にチケットへ統合）
 var TICKET=0;  // 解放チケット（解放くじの景品・キャラの解放に使う）
 var SHK=1;   // 画面揺れの強さ 0 / 0.5 / 1 / 1.5
 var VZOOM=1; // 視野（描画ズーム）。小さいほど広く見える 1.0=標準 / 0.85=広め / 0.72=最大
@@ -2835,7 +2835,7 @@ function figInfo(id){
   if(BOSS[id]){ var B=BOSS[id], tt=ETYPE[B.key]||{}; return {nm:B.nm,shape:tt.shape,col:tt.col,dark:tt.dark,desc:BDEX[id]||'',boss:true}; }
   var t=ETYPE[id]||{}; return {nm:t.nm,shape:t.shape,col:t.col,dark:t.dark,desc:DEX[id]||'',boss:false};
 }
-var VERSION='α1.0.196'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
+var VERSION='α1.0.197'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
 function applySave(o){
   for(var i=0;i<UPG.length;i++) META[UPG[i].id]=0;
   try{
@@ -2885,8 +2885,8 @@ function applySave(o){
       if(o.wkl) for(var wkk in o.wkl){ if(WEAPONS[wkk]&&typeof o.wkl[wkk]==='number') WKILL[wkk]=Math.max(0,o.wkl[wkk]|0); }
       if(o.ccl) for(var cc in o.ccl){ if(CHARS[cc]){ CHCLEAR[cc]={}; for(var cs in o.ccl[cc]) if(o.ccl[cc][cs]) CHCLEAR[cc][cs]=1; } }
       if(o.cnc) for(var nc in o.cnc){ if(CHARS[nc]){ CHNOCONT[nc]={}; for(var ns in o.cnc[nc]) if(o.cnc[nc][ns]) CHNOCONT[nc][ns]=1; } }
-      if(typeof o.mdl==='number') MEDAL=Math.max(0,o.mdl|0);
       if(typeof o.tkt==='number') TICKET=Math.max(0,o.tkt|0);
+      if(typeof o.mdl==='number'&&o.mdl>0){ TICKET+=Math.max(0,o.mdl|0); }   // 旧メダルはチケットへ統合（通貨一本化）
       if(o.snm) for(var snx in o.snm){ if(o.snm[snx]) STGNMCLEAR[snx]=1; }
       if(o.cnm) for(var cnx in o.cnm){ if(CHARS[cnx]){ CHNMCLEAR[cnx]={}; for(var cns in o.cnm[cnx]) if(o.cnm[cnx][cns]) CHNMCLEAR[cnx][cns]=1; } }
       if(o.cml) for(var cm in o.cml){ if(CHARS[cm]&&typeof o.cml[cm]==='number') CHMAXLV[cm]=Math.max(0,o.cml[cm]|0); }
@@ -8524,9 +8524,9 @@ document.getElementById('banclose').onclick=function(){ banEl.classList.remove('
 /* ============ 解放くじ（プリンコ）============ */
 // 銀貨で引き、釘を落ちてスロットに入り景品を得る。🎫メダル→武器解放 / 🎟チケット→キャラ解放。
 var lottoEl=document.getElementById('lotto');
-var COST_M=10, COST_T=100;          // 引くコスト（銀貨）。10=メダル / 100=チケット
-var WPN_MEDAL=30, CHR_TICKET=5;     // 解放コスト（武器＝メダル / キャラ＝チケット）
-var LOTTO_SLOTS=[5,2,1,1,1,2,5];    // 各スロットの景品数（両端＝大当たり）
+var COST_M=10, COST_T=100;          // 引くコスト（銀貨）。10=少量 / 100=まとめて（景品×10）
+var WPN_TICKET=15, CHR_TICKET=30;   // 解放コスト（チケット。武器・キャラ共通通貨）
+var LOTTO_SLOTS=[5,2,1,1,1,2,5];    // 各スロットの景品（チケット）数（両端＝大当たり）
 var LOTTO_W=[1,6,15,20,15,6,1];     // 当たりやすさ（中央ほど出やすい＝プリンコの分布）
 var lcv=null, lctx=null, lottoBalls=[], lottoRAF=false, lottoLast=0;
 var LSLOT_TOP=215, LSLOT_H=150;                   // スロットの上端と高さ（縦長）
@@ -8534,7 +8534,7 @@ function lcolX(c){ return 30+c*40; }              // スロット0..6 → x（30
 function lrowY(r){ return 40+r*((200-40)/6); }    // 釘の段 0..6 → y（40..200：スロットの上まで）
 function lottoPurse(){
   document.getElementById('lottopurse').innerHTML=
-    '<span class="sv">銀貨 '+fmt(WALLET.silver)+'</span>　<span style="color:#f0c8ff">🎫 '+fmt(MEDAL)+'</span>　<span style="color:#ffd27a">🎟 '+fmt(TICKET)+'</span>';
+    '<span class="sv">銀貨 '+fmt(WALLET.silver)+'</span>　<span style="color:#ffd27a">🎟 チケット '+fmt(TICKET)+'</span>';
   var bm=document.getElementById('lottodropm'), bt=document.getElementById('lottodropt');
   bm.disabled=(WALLET.silver<COST_M); bt.disabled=(WALLET.silver<COST_T);
 }
@@ -8544,11 +8544,11 @@ function lottoUnlockList(){
   var lc=[]; for(id in CHARS){ if(!UNL[id]) lc.push(id); }
   if(!lw.length&&!lc.length){ el.innerHTML='<div style="text-align:center;color:#6b5f9c;font-size:12px;padding:12px">すべて解放済みです 🎉</div>'; return; }
   if(lw.length){
-    h+='<div class="lksec">武器（🎫 '+WPN_MEDAL+'）</div>';
-    lw.forEach(function(w){ var can=MEDAL>=WPN_MEDAL;
+    h+='<div class="lksec">武器（🎟 '+WPN_TICKET+'）</div>';
+    lw.forEach(function(w){ var can=TICKET>=WPN_TICKET;
       h+='<div class="lkrow"><div class="g">'+wIcon(w)+'</div>'+
         '<div class="b"><div class="nm">'+WEAPONS[w].nm+'</div><div class="sub">'+(WEAPONS[w].tx||'').slice(0,30)+'</div></div>'+
-        '<button class="abuy" data-lk="w" data-id="'+w+'"'+(can?'':' disabled')+'>🎫 '+WPN_MEDAL+'</button></div>'; });
+        '<button class="abuy" data-lk="w" data-id="'+w+'"'+(can?'':' disabled')+'>🎟 '+WPN_TICKET+'</button></div>'; });
   }
   if(lc.length){
     h+='<div class="lksec">キャラ（🎟 '+CHR_TICKET+'）</div>';
@@ -8624,17 +8624,17 @@ function lottoStep(ts){
   if(lottoBalls.length){ requestAnimationFrame(lottoStep); } else { lottoRAF=false; }
 }
 function lottoAward(bl){
-  var n=LOTTO_SLOTS[bl.tg]||0, jack=(bl.tg===0||bl.tg===6);
-  if(bl.type==='t'){ TICKET+=n; document.getElementById('lottores').innerHTML='🎟 チケット +'+n+(jack?'　<span style="color:#ffd27a">★大当たり！</span>':''); }
-  else { MEDAL+=n; document.getElementById('lottores').innerHTML='🎫 メダル +'+n+(jack?'　<span style="color:#ffd27a">★大当たり！</span>':''); }
+  var n=(LOTTO_SLOTS[bl.tg]||0)*(bl.type==='t'?10:1), jack=(bl.tg===0||bl.tg===6);   // 銀貨100（type t）は景品×10
+  TICKET+=n;
+  document.getElementById('lottores').innerHTML='🎟 チケット +'+n+(jack?'　<span style="color:#ffd27a">★大当たり！</span>':'');
   saveGame(); if(typeof coinSfx==='function') coinSfx();
   lottoPurse(); lottoUnlockList();
 }
 document.getElementById('lottobtn').onclick=function(){ audio(); renderLotto(); lottoEl.classList.add('on'); };
 document.getElementById('lottoclose').onclick=function(){
   // 飛行中の玉は即時清算（銀貨を払っているので景品を渡す）
-  var m=0,t=0; while(lottoBalls.length){ var bl=lottoBalls.pop(); var n=LOTTO_SLOTS[bl.tg]||0; if(bl.type==='t') t+=n; else m+=n; }
-  if(m) MEDAL+=m; if(t) TICKET+=t; if(m||t) saveGame();
+  var t=0; while(lottoBalls.length){ var bl=lottoBalls.pop(); t+=(LOTTO_SLOTS[bl.tg]||0)*(bl.type==='t'?10:1); }
+  if(t){ TICKET+=t; saveGame(); }
   lottoRAF=false;
   lottoEl.classList.remove('on'); syncTitle();
 };
@@ -8643,7 +8643,7 @@ document.getElementById('lottodropt').onclick=function(){ audio(); lottoDrop('t'
 document.getElementById('lottounlock').onclick=function(ev){
   var b=ev.target.closest?ev.target.closest('[data-lk]'):null; if(!b) return;
   var type=b.getAttribute('data-lk'), id=b.getAttribute('data-id');
-  if(type==='w'){ if(MEDAL<WPN_MEDAL||!wLocked(id)) return; MEDAL-=WPN_MEDAL; WUNL[id]=1; if(typeof toast==='function') toast('🎫',WEAPONS[id].nm+' を解放！','#f0c8ff'); }
+  if(type==='w'){ if(TICKET<WPN_TICKET||!wLocked(id)) return; TICKET-=WPN_TICKET; WUNL[id]=1; if(typeof toast==='function') toast('🎟',WEAPONS[id].nm+' を解放！','#ffd27a'); }
   else { if(TICKET<CHR_TICKET||UNL[id]) return; TICKET-=CHR_TICKET; UNL[id]=1; if(typeof toast==='function') toast('🎟',CHARS[id].nm+' を解放！','#ffd27a'); }
   [0,90,180].forEach(function(ms,i){ setTimeout(function(){ sfx([784,988,1319][i],.16,'triangle',.075); },ms); });
   saveGame(); lottoPurse(); lottoUnlockList(); syncTitle();
@@ -9320,6 +9320,9 @@ Array.prototype.forEach.call(document.querySelectorAll('#setview button'),functi
 // 更新履歴：1つのお知らせ内で「バージョン見出し」ごとに変更点を並べる（新しい順）。
 // マージのたびに先頭へ新バージョンを追加し、VERSION も更新する。
 var UPDATES=[
+  {v:'α1.0.197', items:[
+    '解放くじの通貨を「🎟 解放チケット」に一本化しました。武器もキャラもチケットで解放できます（銀貨10＝少量／銀貨100＝まとめて×10）。これまでの解放メダルはチケットへ自動変換されます。',
+  ]},
   {v:'α1.0.196', items:[
     'ナイトメアβを微調整：ベルを「拡大の契約」の対象（範囲）に追加し、吸命の契約の回復量を調整しました。',
   ]},
