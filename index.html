@@ -2389,6 +2389,14 @@ var WKIND={ slash:'phys', scythe:'phys', chakram:'phys', katana:'phys', shuriken
             fire:'mag', flame:'mag', ice:'mag', thunder:'mag', chain:'mag', inferno:'mag',
             holy:'mag', aura:'mag', voidh:'mag', dhand:'mag', gatling:'phys', toxin:'mag', anchor:'phys',
             sheep:'phys' };   // 羊（羊飼いの召喚）：武器ではないが会心を物理扱いにするため登録
+// 武器ごとのノックバック強度：0=無し 1=弱 2=中 3=強（未指定は「中」）。ここを編集して調整できる。
+var WKB={ bell:1, aura:0, blizzard:0, inferno:0, toxin:0 };
+var KB_BASE=[0,1.1,2.2,4.0], KB_CRIT=[0,2.0,4.0,6.5];   // レベル別のノックバック量（通常/会心）
+function applyKB(e,SRC,crit,nx,ny){
+  var kl=(WKB[SRC]!==undefined)?WKB[SRC]:2;   // 既定は中
+  if(kl<=0) return;
+  e.kb=Math.max(e.kb,(crit?KB_CRIT[kl]:KB_BASE[kl])*(1+TR(SRC,'knock'))); e.kbx=nx||0; e.kby=ny||0;
+}
 var WAX={
   slash:   { dmg:5, area:4, rate:3 },
   scythe:  { dmg:4, area:4, count:3, rate:3, range:2 },
@@ -2863,7 +2871,7 @@ function figInfo(id){
   if(BOSS[id]){ var B=BOSS[id], tt=ETYPE[B.key]||{}; return {nm:B.nm,shape:tt.shape,col:tt.col,dark:tt.dark,desc:BDEX[id]||'',boss:true}; }
   var t=ETYPE[id]||{}; return {nm:t.nm,shape:t.shape,col:t.col,dark:t.dark,desc:DEX[id]||'',boss:false};
 }
-var VERSION='α1.0.207'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
+var VERSION='α1.0.208'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
 function applySave(o){
   for(var i=0;i<UPG.length;i++) META[UPG[i].id]=0;
   try{
@@ -3877,7 +3885,7 @@ function holySplit(s){
 }
 // ホーリージャッジ：十字の剣が敵の元へ落ち、着弾後もしばらく周囲を裁く
 function doAura(){
-  var n=1+CNT('aura'), rad=70*AREA('aura'), dmg=8*DMG('aura')*pw('aura');
+  var n=1+CNT('aura'), rad=50*AREA('aura'), dmg=8*DMG('aura')*pw('aura');
   var life=4.0*(1+TR('aura','life'));
   var used=[];
   for(var i=0;i<n;i++){
@@ -5460,7 +5468,7 @@ function hurt(e,dmg,nx,ny,el){
   if(e.shield>0){                            // 盾の戦士：割れるまで本体HPに通さない（この一撃も本体には行かない）
     e.shield-=d; if(e.shield<0) e.shield=0;
     e.ht=0.12; dmgSec+=d;
-    if(SRC!=='bell'&&SRC!=='aura'&&SRC!=='blizzard'&&SRC!=='inferno'&&SRC!=='toxin'){ e.kb=Math.max(e.kb,(crit?4:2.2)*(1+TR(SRC,'knock'))); e.kbx=nx||0; e.kby=ny||0; }
+    applyKB(e,SRC,crit,nx,ny);
     if(SRC) WDMG[SRC]=(WDMG[SRC]||0)+d; else WDMG._react=(WDMG._react||0)+d;
     if(dmgs.length>110) dmgs.shift();
     dmgs.push({x:e.x,y:e.y-e.r-4,v:-52,t:0,life:.6,txt:Math.round(d),crit:crit,col:'#8fd4ff'});
@@ -5468,8 +5476,8 @@ function hurt(e,dmg,nx,ny,el){
     return;
   }
   e.hp-=d; e.ht=0.12; dmgSec+=d;   // DPS/DPM 集計
-  // ベル・ホーリージャッジ（十字架AoE）・アイスブリザード・インフェルノビームはノックバックさせない
-  if(SRC!=='bell'&&SRC!=='aura'&&SRC!=='blizzard'&&SRC!=='inferno'&&SRC!=='toxin'){ e.kb=Math.max(e.kb,(crit?4:2.2)*(1+TR(SRC,'knock'))); e.kbx=nx||0; e.kby=ny||0; }
+  // ノックバックは武器ごとのレベル（WKB）で決定：ベル=弱／ホーリージャッジ・ブリザード・インフェルノ・毒瓶=無し／他=中
+  applyKB(e,SRC,crit,nx,ny);
   var bb=(bfrac>0)?d*bfrac/(1+bfrac):0;                    // このヒットの出血ぶん
   if(bb>0) WDMG._bleed=(WDMG._bleed||0)+bb;                // リザルト内訳：出血の総量
   var credit=d-bb;
@@ -9498,6 +9506,9 @@ Array.prototype.forEach.call(document.querySelectorAll('#setview button'),functi
 // 更新履歴：1つのお知らせ内で「バージョン見出し」ごとに変更点を並べる（新しい順）。
 // マージのたびに先頭へ新バージョンを追加し、VERSION も更新する。
 var UPDATES=[
+  {v:'α1.0.208', items:[
+    'ホーリージャッジの範囲を少し狭めました。ノックバックを武器ごとに「無し／弱／中／強」で管理する仕組みにし、ベルのノックバックを「弱」にしました（他の武器の吹き飛ばしは従来どおり）。',
+  ]},
   {v:'α1.0.207', items:[
     '未入手の武器・キャラをグレーアウト表示にし、入手条件（実績 or 交換所チケット）を表示するようにしました（武器熟練・キャラクター・武器詳細）。',
   ]},
