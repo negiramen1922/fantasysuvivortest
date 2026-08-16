@@ -2544,13 +2544,13 @@ var CHARS={
   knight:{ nm:'騎士',   glyph:'\u{1F6E1}', w:'slash',
     tx:'大剣を担ぐ重装。硬く、重い一撃を叩き込む。',
     st:'最大HP +30%／攻撃力 +15%／移動速度 −8%',
-    grow:null,
+    grow:{k:'wpn', wk:'slash', v:0.01, tx:'毎レベル 大剣の攻撃力 +1%'},
     hp:1.30, spd:0.92, pw:1.15, area:1.00, ele:0, elp:0, crit:0, regen:0,
     cost:0,   cond:null,     val:0,     condTx:'最初から使える' },
   hunter:{ nm:'狩人',   glyph:'\u{1F3F9}', w:'bow',
     tx:'矢を速射する。素早く動き、急所を貫く。',
     st:'移動速度 +18%／会心率 +10%／最大HP −20%',
-    grow:null,
+    grow:{k:'wpn', wk:'bow', v:0.01, tx:'毎レベル 弓の攻撃力 +1%'},
     hp:0.80, spd:1.18, pw:1.00, area:1.00, ele:0, elp:0, crit:0.10, regen:0,
     cost:0,  cond:'kills',  val:100, condTx:'累計 100 体を討伐する' },
   bomber:{ nm:'爆弾魔', glyph:'\u{1F9E8}', w:'dynamite',
@@ -2616,7 +2616,7 @@ var CHARS={
   shepd:{  nm:'羊飼い', glyph:'\u{1F411}', w:'bell',
     tx:'鈴で群れを呼ぶ者。ベルを鳴らすたび、まれに羊の群れが画面の外から駆け抜けて敵を踏み荒らす。',
     st:'最大HP +10% ／ 攻撃力 −10%',
-    grow:{k:'sheep', v:0.001, tx:'毎レベル 羊の群れ出現率 +0.1%（土台3%／数＝ベル×7／威力＝ベル×0.7）'},
+    grow:{k:'wpn', wk:'bell', v:0.01, tx:'毎レベル ベルの攻撃力 +1%（羊の群れ 出現率3%／数＝ベル×7／威力＝ベルと同値）'},
     hp:1.10, spd:1.00, pw:0.90, area:1.00, ele:0, elp:0, crit:0, regen:0,
     cost:0, cond:'stage',  val:2,     condTx:'ステージ2（森）をクリアする', tkt:1 }
 };
@@ -2869,7 +2869,7 @@ function figInfo(id){
   if(BOSS[id]){ var B=BOSS[id], tt=ETYPE[B.key]||{}; return {nm:B.nm,shape:tt.shape,col:tt.col,dark:tt.dark,desc:BDEX[id]||'',boss:true}; }
   var t=ETYPE[id]||{}; return {nm:t.nm,shape:t.shape,col:t.col,dark:t.dark,desc:DEX[id]||'',boss:false};
 }
-var VERSION='α1.0.209'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
+var VERSION='α1.0.210'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
 function applySave(o){
   for(var i=0;i<UPG.length;i++) META[UPG[i].id]=0;
   try{
@@ -3019,6 +3019,8 @@ function pw(w){
     if(GROW('thunp')  &&ELW.thunder.indexOf(w)>=0) m*=(1+GROW('thunp'));
     if(GROW('darkp')  &&ELW.dark.indexOf(w)>=0)    m*=(1+GROW('darkp'));
     if(GROW('grassp') &&ELW.grass.indexOf(w)>=0)   m*=(1+GROW('grassp'));
+    var gw=CH().grow;   // 持ち武器強化キャラ：その武器だけ毎レベル攻撃力アップ
+    if(gw&&gw.k==='wpn'&&gw.wk===w) m*=(1+gw.v*(P.lv-1));
   }
   return m;
 }
@@ -4067,10 +4069,9 @@ function doBell(){
   for(var i=0;i<n;i++)
     bells.push({ x:P.x, y:P.y, r:0, pr:0, max:mx, dmg:dmg, t:-i*0.18, hit:[] });
   bellChime();   // チリーン
-  // 羊飼い：鳴らすたび画面端から羊の群れが突進する（発生率＝土台5%＋レベル×0.15%）
-  if(CH().grow&&CH().grow.k==='sheep'){                       // 羊飼い限定（他のベル使いには出ない）
-    var sc=0.03+GROW('sheep');
-    if(Math.random()<sc) sheepStampede(n*7, dmg*0.7);         // 数＝ベル数×7／ダメージ＝ベル×0.7
+  // 羊飼い：鳴らすたび画面端から羊の群れが突進する（出現率3%固定）
+  if(SELCH==='shepd'){                                        // 羊飼い限定（他のベル使いには出ない）
+    if(Math.random()<0.03) sheepStampede(n*7, dmg);           // 数＝ベル数×7／威力＝ベルと同値（×1.0）
   }
   wgain('bell',n);
 }
@@ -9504,6 +9505,10 @@ Array.prototype.forEach.call(document.querySelectorAll('#setview button'),functi
 // 更新履歴：1つのお知らせ内で「バージョン見出し」ごとに変更点を並べる（新しい順）。
 // マージのたびに先頭へ新バージョンを追加し、VERSION も更新する。
 var UPDATES=[
+  {v:'α1.0.210', items:[
+    '羊飼いの「羊」の威力をベルと同値（×1.0）に引き上げました。また、羊飼いの毎レベル成長を「ベルの攻撃力 +1%」に変更（羊の出現率は3%固定）。',
+    '毎レベル成長を持っていなかった騎士・狩人にも成長を追加：騎士は「毎レベル 大剣の攻撃力 +1%」、狩人は「毎レベル 弓の攻撃力 +1%」。これで全キャラがレベルごとの強化を持つようになりました。',
+  ]},
   {v:'α1.0.209', items:[
     '未入手の武器・キャラは、アイコンだけでなくカード（枠）全体をグレーアウトして分かりやすくしました。タップすれば従来どおり詳細や入手条件を確認できます。',
   ]},
