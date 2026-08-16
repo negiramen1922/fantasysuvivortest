@@ -1704,7 +1704,7 @@ var CONTRACTS=[
   {id:'c_hp',   nm:'頑健の契約',  ic:'❤', cost:15, tx:'最大HP +22%',           ef:{hp:0.22}},
   {id:'c_react',nm:'反応の契約',  ic:'✦', cost:10, tx:'元素反応ダメージ +40%',  ef:{react:0.40}},
   {id:'c_swift',nm:'俊足の契約',  ic:'🏃', cost:15, tx:'移動速度に比例して攻撃UP', ef:{spdatk:1.5}},
-  {id:'c_leech',nm:'吸命の契約',  ic:'🧛', cost:25, tx:'会心時 与ダメの8%回復',   ef:{critheal:0.08}},
+  {id:'c_leech',nm:'吸命の契約',  ic:'🧛', cost:25, tx:'会心時 与ダメの30%回復',   ef:{critheal:0.3}},
   {id:'c_low',  nm:'背水の契約',  ic:'🩸', cost:15, tx:'HPが少ないほど攻撃UP（最大+60%）', ef:{lowhp:0.60}},
   {id:'c_phys', nm:'蛮勇の契約',  ic:'⚔', cost:25, tx:'物理+55%／魔法−35%',      ef:{physup:0.55,magdown:0.35}},
   {id:'c_mag',  nm:'秘法の契約',  ic:'🔮', cost:25, tx:'魔法+55%／物理−35%',      ef:{magup:0.55,physdown:0.35}},
@@ -2319,7 +2319,7 @@ var WTAG={
   anchor:['中距離','投擲','物理','スタン'],
   dynamite:['中距離','射撃','投擲','爆発','範囲','物理'],
   quake:['中距離','打撃','岩'], rock:['遠距離','打撃','岩'],
-  bell:['自己','打撃','物理'],
+  bell:['自己','打撃','範囲','物理'],
   fire:['遠距離','射撃','爆発','範囲','炎'], flame:['自己','炎'], inferno:['中距離','ビーム','炎'],
   ice:['遠距離','射撃','氷'], blizzard:['自己','氷'],
   thunder:['遠距離','雷'], chain:['遠距離','雷'],
@@ -2835,7 +2835,7 @@ function figInfo(id){
   if(BOSS[id]){ var B=BOSS[id], tt=ETYPE[B.key]||{}; return {nm:B.nm,shape:tt.shape,col:tt.col,dark:tt.dark,desc:BDEX[id]||'',boss:true}; }
   var t=ETYPE[id]||{}; return {nm:t.nm,shape:t.shape,col:t.col,dark:t.dark,desc:DEX[id]||'',boss:false};
 }
-var VERSION='α1.0.195'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
+var VERSION='α1.0.196'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
 function applySave(o){
   for(var i=0;i<UPG.length;i++) META[UPG[i].id]=0;
   try{
@@ -9320,6 +9320,9 @@ Array.prototype.forEach.call(document.querySelectorAll('#setview button'),functi
 // 更新履歴：1つのお知らせ内で「バージョン見出し」ごとに変更点を並べる（新しい順）。
 // マージのたびに先頭へ新バージョンを追加し、VERSION も更新する。
 var UPDATES=[
+  {v:'α1.0.196', items:[
+    'ナイトメアβを微調整：ベルを「拡大の契約」の対象（範囲）に追加し、吸命の契約の回復量を調整しました。',
+  ]},
   {v:'α1.0.195', items:[
     '解放くじの見た目を調整：スロットを縦長にし、釘の並びを不揃いにして遊び心のある盤面にしました。',
   ]},
