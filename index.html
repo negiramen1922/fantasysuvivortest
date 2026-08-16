@@ -752,6 +752,7 @@ img.wspr{width:1.15em;height:1.15em;object-fit:contain;image-rendering:pixelated
       </div>
       <div class="title" id="hometitle">勇者サバイバー</div>
       <div id="vpurse"></div>
+      <button class="btn big" id="resumebtn" style="display:none">続きから</button>
       <button class="btn big" id="startbtn">出撃</button>
       <div id="homemenu">
         <button class="btn sub2" id="shopbtn">永続強化</button>
@@ -2913,7 +2914,7 @@ function figInfo(id){
   if(BOSS[id]){ var B=BOSS[id], tt=ETYPE[B.key]||{}; return {nm:B.nm,shape:tt.shape,col:tt.col,dark:tt.dark,desc:BDEX[id]||'',boss:true}; }
   var t=ETYPE[id]||{}; return {nm:t.nm,shape:t.shape,col:t.col,dark:t.dark,desc:DEX[id]||'',boss:false};
 }
-var VERSION='α1.0.217'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
+var VERSION='α1.0.218'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
 function applySave(o){
   for(var i=0;i<UPG.length;i++) META[UPG[i].id]=0;
   try{
@@ -2987,6 +2988,63 @@ function saveObj(){
 function saveGame(){
   try{ localStorage.setItem('bsv_save',JSON.stringify(saveObj())); }catch(e){}
   if(typeof cloudPush==='function') cloudPush();   // ログイン中ならクラウドへ（デバウンス）
+}
+/* ===== ラン自動セーブ（強制リロード／リログ対策）=====
+   進行中ランのプレイヤービルド＋時間・スコア＋ボス・エリートを保存し、起動時に「続きから」で復帰。
+   敵の雑魚は保存しない（復帰時に再湧き）。ただしボスとエリートは復元し、HPも現在値のまま＝ピンチでのリログ逃げを防ぐ。 */
+var runActive=false, runSaveT=0;
+function runSnapshot(){
+  if(!runActive||!P) return null;
+  var bs=null;
+  if(boss&&!boss.dead) bs={bkey:boss.bkey,hp:boss.hp,x:boss.x,y:boss.y};
+  var el=[];
+  for(var i=0;i<enemies.length;i++){ var e=enemies[i];
+    if(e.elite&&!e.dead&&!e.boss) el.push({k:e.k,hp:e.hp,mhp:e.mhp,x:e.x,y:e.y,r:e.r,res:e.res,kbr:e.kbr}); }
+  return { v:1, ch:SELCH, endless:ENDLESS, nightmare:NIGHTMARE, stage:curStage,
+    contract:(!ENDLESS&&NIGHTMARE&&CONTRACT.slice)?CONTRACT.slice():[],
+    time:time, kills:kills, score:score, silver:silver, gold:gold,
+    bossN:bossN, endblk:ENDBLK, ebd:endBossDone, P:P, boss:bs, elites:el };
+}
+function saveRun(){ if(!runActive) return; try{ var s=runSnapshot(); if(s) localStorage.setItem('bsv_run',JSON.stringify(s)); }catch(e){} }
+function clearRun(){ runActive=false; try{ localStorage.removeItem('bsv_run'); }catch(e){} }
+function loadRunSave(){ try{ return JSON.parse(localStorage.getItem('bsv_run')||'null'); }catch(e){ return null; } }
+function fmtRunTime(sec){ var m=Math.floor(sec/60),s=Math.floor(sec%60); return m+':'+(s<10?'0':'')+s; }
+function refreshResumeBtn(){
+  var b=document.getElementById('resumebtn'); if(!b) return;
+  var s=loadRunSave();
+  if(s&&s.P){
+    var mode=s.endless?'無限ラン':(s.nightmare?'ナイトメア':('ステージ'+(s.stage||1)));
+    b.style.display='block';
+    b.innerHTML='▶ 続きから<span style="font-size:12px;opacity:.85;display:block;margin-top:2px">'+mode+'　'+fmtRunTime(s.time||0)+'</span>';
+  } else b.style.display='none';
+}
+function resumeRun(save){
+  if(!save||!save.P) return;
+  audio();
+  SELCH=save.ch||SELCH;
+  ENDLESS=!!save.endless; NIGHTMARE=!!save.nightmare;
+  curStage=save.stage||1;
+  CONTRACT=(save.contract&&save.contract.slice)?save.contract.slice():[];
+  document.getElementById('veil').classList.add('hide');
+  ['paused','shop','mast','ban','settings','news','bosswrap','chest','test','chr','dex','dexcard','tutorial','revive'].forEach(function(id){ var e=document.getElementById(id); if(e) e.classList.remove('on'); });
+  document.getElementById('res').innerHTML='';
+  reset();                       // WAVE/BOSS_AT/地面などをステージに合わせて初期化
+  P=save.P;                      // 保存済みのプレイヤービルド（HPは現在値のまま＝回復させない）
+  time=save.time||0; kills=save.kills||0; score=save.score||0; silver=save.silver||0; gold=save.gold||0;
+  bossN=save.bossN||0; ENDBLK=save.endblk||0; endBossDone=save.ebd||{};
+  if(save.boss&&BOSS[save.boss.bkey]){        // ボス復元（ピンチでのリログ逃げ防止）
+    spawnBoss(save.boss.bkey);
+    if(boss){ boss.hp=save.boss.hp; if(boss.mhp<boss.hp) boss.mhp=boss.hp; boss.x=save.boss.x; boss.y=save.boss.y; }
+  }
+  if(save.elites) for(var i=0;i<save.elites.length;i++){   // エリート復元
+    var s=save.elites[i]; if(!ETYPE[s.k]) continue;
+    var e=makeEnemy(s.k);
+    if(e){ e.elite=1; e.hp=s.hp; e.mhp=s.mhp||s.hp; e.r=s.r; e.res=s.res; if(s.kbr!=null)e.kbr=s.kbr; e.x=s.x; e.y=s.y; e.st=''; e.stT=0; }
+  }
+  runActive=true; runSaveT=4;
+  state='playing'; last=performance.now();
+  playBGM('s'+curStage);
+  syncHud(); saveRun();
 }
 function M(id){ return META[id]||0; }
 
@@ -3138,6 +3196,7 @@ function update(dt){
   // ヒットストップ：世界は止まるが演出は動く
   if(hitStop>0){ hitStop-=dt; stepFx(dt); return; }
   if(bossRelicQ>0){ openBossRelic(); return; }   // ボス撃破の装備選択（レベルアップ解決後の安全なフレームで開く）
+  runSaveT-=dt; if(runSaveT<=0){ runSaveT=4; saveRun(); }   // ラン自動セーブ（4秒ごと）
   time+=dt;
   whirlA+=dt*2.4*Math.min(5,1/Math.max(0.12,RATE('flame')*cdr()));   // フレイムサークルの回転は実際の攻撃間隔（右下バー）に連動＝間隔強化で回転も速くなる
   if(swingT>0){ swingT-=dt; if(swingT<0) swingT=0; }
@@ -9343,8 +9402,10 @@ document.getElementById('resumebtn').onclick=function(){ togglePause(); };
 document.getElementById('psetbtn').onclick=function(){ audio(); renderSettings(); setEl.classList.add('on'); };
 addEventListener('blur',function(){ if(state==='playing') togglePause(); });
 document.addEventListener('visibilitychange',function(){
-  if(document.hidden&&state==='playing') togglePause();
+  if(document.hidden){ saveRun(); if(state==='playing') togglePause(); }   // 隠れる直前にラン保存
 });
+window.addEventListener('pagehide',saveRun);       // タブ破棄・遷移時にラン保存
+window.addEventListener('beforeunload',saveRun);
 
 /* ============ 開始・終了 ============ */
 var bnEl=document.getElementById('banner');
@@ -9433,6 +9494,7 @@ function damageBreakdownHtml(){
 function finish(won){
   if(state==='dead') return;
   state='dead';
+  clearRun();               // ラン終了：自動セーブを消去（次回「続きから」は出さない）
   playBGM(null);
   pauseEl.classList.remove('on');
   document.getElementById('pick').classList.remove('on');
@@ -9561,7 +9623,7 @@ function showView(v){
   document.getElementById('homeview').style.display  = v==='home' ?'flex':'none';
   document.getElementById('stageview').style.display = v==='stage'?'flex':'none';
   document.getElementById('resultview').style.display= v==='result'?'flex':'none';
-  if(v==='home'){ syncTitle(); playBGM('home'); if(!TUTSEEN) openTutorial(); else if(typeof maybeShowDaily==='function') maybeShowDaily(); }
+  if(v==='home'){ syncTitle(); refreshResumeBtn(); playBGM('home'); if(!TUTSEEN) openTutorial(); else if(typeof maybeShowDaily==='function') maybeShowDaily(); }
   else if(v==='stage') renderStageSelect();
 }
 function startRun(n,endless,nightmare){
@@ -9576,6 +9638,7 @@ function startRun(n,endless,nightmare){
   });
   document.getElementById('res').innerHTML='';
   reset(); state='playing'; last=performance.now();
+  runActive=true; runSaveT=4; saveRun();   // ラン自動セーブ開始
   playBGM('s'+curStage);
   // 解析：ラン開始（開始→完走の比＝離脱率、ステージ別の挑戦回数の分母）
   if(typeof fbLog==='function') fbLog('run_start',{stage:curStage,mode:(ENDLESS?'endless':'stage'),character:SELCH,char_name:CH().nm});
@@ -9687,6 +9750,7 @@ function renderNmc(){
 }
 document.getElementById('nmcgo').onclick=function(){ nmcEl.classList.remove('on'); startRun(nmcStage,false,true); };
 document.getElementById('nmcclose').onclick=function(){ nmcEl.classList.remove('on'); };
+document.getElementById('resumebtn').onclick=function(){ var s=loadRunSave(); if(s&&s.P) resumeRun(s); };
 document.getElementById('startbtn').onclick=function(){ audio(); showView('stage'); };
 document.getElementById('stageback').onclick=function(){ showView('home'); };
 document.getElementById('againbtn').onclick=function(){ startRun(ENDLESS?null:curStage,ENDLESS); };
@@ -9738,6 +9802,9 @@ Array.prototype.forEach.call(document.querySelectorAll('#setview button'),functi
 // 更新履歴：1つのお知らせ内で「バージョン見出し」ごとに変更点を並べる（新しい順）。
 // マージのたびに先頭へ新バージョンを追加し、VERSION も更新する。
 var UPDATES=[
+  {v:'α1.0.218', items:[
+    'ラン自動セーブ機能を追加。強制リロードやリログでランが中断されても、ホームの「続きから」で復帰できます（無限ランにも対応）。ずるができないよう、HPは中断時のまま／ボスとエリートも残HPで復元されます（雑魚は再登場）。',
+  ]},
   {v:'α1.0.217', items:[
     '敵に「ノックバック耐性(kbr)」を追加し、モンスター種ごとに個別調整できるようにしました。オーク・サイクロプス・トレント・ロックタートル・グレータービートル・ガーゴイル・マミー・ブーマー・カニ・ヤドカリ・デュラハンなどの重量級はノックバックしにくく、ボス（および海坊主）はノックバック無効になります。',
   ]},
