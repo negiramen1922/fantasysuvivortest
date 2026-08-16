@@ -569,7 +569,11 @@ canvas{display:block;width:100%;height:100%;touch-action:none}
 .cw{display:flex;align-items:center;gap:10px;background:var(--panel);
   border:1px solid var(--line);padding:9px 10px}
 .cw.sel{border-color:var(--arc);box-shadow:0 0 14px rgba(86,224,255,.25)}
-.cw.lock{opacity:.72}
+.cw.lock{opacity:.92}
+.cw.lock .cwg,.cw.lock .cwspr{filter:grayscale(1) brightness(.6)}
+.wm.lock{opacity:.92}
+.wm.lock .ug{filter:grayscale(1) brightness(.6)}
+.wmlock{font-size:11px;color:#8a7fbf;margin-top:3px}
 .cwg{font-size:22px;flex:0 0 46px;text-align:center}
 .cwg .cwspr{width:44px;height:44px;image-rendering:pixelated;vertical-align:middle}
 .cwb{flex:1;min-width:0;text-align:left}
@@ -2859,7 +2863,7 @@ function figInfo(id){
   if(BOSS[id]){ var B=BOSS[id], tt=ETYPE[B.key]||{}; return {nm:B.nm,shape:tt.shape,col:tt.col,dark:tt.dark,desc:BDEX[id]||'',boss:true}; }
   var t=ETYPE[id]||{}; return {nm:t.nm,shape:t.shape,col:t.col,dark:t.dark,desc:DEX[id]||'',boss:false};
 }
-var VERSION='α1.0.206'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
+var VERSION='α1.0.207'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
 function applySave(o){
   for(var i=0;i<UPG.length;i++) META[UPG[i].id]=0;
   try{
@@ -8338,6 +8342,20 @@ function renderMast(){
   mlistEl.innerHTML='';
   Object.keys(MAST).forEach(function(w){
     if(!WEAPONS[w]) return;                 // 退避中の武器（chainsaw等）は出さない
+    // 未入手（ロック中）の武器：グレーアウト＋入手条件を表示
+    if(wLocked(w)){
+      var cnd=WLOCK[w].tkt ? ('🎫 交換所で解放（武器チケット '+WPN_TICKET+'）')
+                           : ('🏅 実績で解放：'+WLOCK[w].condTx+'　'+wAchNow(w));
+      var lr=document.createElement('div'); lr.className='wm lock clk';
+      lr.innerHTML='<div class="ug">'+wIcon(w)+'</div>'+
+        '<div class="wmb"><div class="wmn">'+WEAPONS[w].nm+'<span>'+WCAT[w]+'　🔒 未入手</span></div>'+
+          '<div style="margin:3px 0">'+tagChips(WTAG[w])+'</div>'+
+          '<div class="wmlock">'+cnd+'</div>'+
+        '</div><div class="wmore">›</div>';
+      lr.onclick=function(){ openWeaponDetail(w); };
+      mlistEl.appendChild(lr);
+      return;
+    }
     var x=WX[w]||0, lv=wtier(w), open=x>0, redesigned=!!MAST[w], left=picksLeft(w);
     var nx=lv<WTH.length?WTH[lv]:0, pv=lv>0?WTH[lv-1]:0;
     var pct=nx?Math.max(0,Math.min(100,(x-pv)/(nx-pv)*100)):100;
@@ -8416,16 +8434,23 @@ function openWeaponDetail(w){
       cons.map(function(c){ return '<span style="display:inline-flex;align-items:center;gap:4px;font-size:11px;padding:3px 9px;border-radius:9px;background:#2a1440;color:#f0c8ff;border:1px solid #6a2f7a">'+c.ic+' '+c.nm+'</span>'; }).join('')+
       '</div>';
   }
+  var lockHtml='';
+  if(wLocked(w)){
+    var lc=WLOCK[w].tkt ? ('🎫 交換所で解放できます（武器チケット '+WPN_TICKET+'）')
+                        : ('🏅 実績で解放：'+WLOCK[w].condTx+'　<b>'+wAchNow(w)+'</b>');
+    lockHtml='<div style="background:#241a44;border:1px solid #4a3f7a;border-radius:8px;padding:8px;margin:6px 0;font-size:12px;color:#c9c0e6">🔒 未入手　'+lc+'</div>';
+  }
   mlistEl.innerHTML=
     '<div class="wd">'+
       '<button class="wdback" type="button">← 一覧へ戻る</button>'+
       '<div class="wdhead">'+
-        '<div class="wdicon">'+wIcon(w)+'</div>'+
+        '<div class="wdicon"'+(wLocked(w)?' style="filter:grayscale(1) brightness(.6)"':'')+'>'+wIcon(w)+'</div>'+
         '<div><div class="wdname">'+WEAPONS[w].nm+'</div>'+
           '<div class="wdtags"><span class="wdcat">'+WCAT[w]+'</span>'+tagChips(WTAG[w])+'</div>'+
         '</div>'+
       '</div>'+
       '<div class="wdtx">'+(WEAPONS[w].tx||'')+'</div>'+
+      lockHtml+
       '<div class="wdbarlabel">熟練度 Lv '+lv+'/10<span>'+fmt(x)+(nx?' / '+fmt(nx):' — MAX')+'</span></div>'+
       '<div class="wbar"><div style="width:'+pct+'%"></div></div>'+
       statusHtml+
@@ -9473,6 +9498,9 @@ Array.prototype.forEach.call(document.querySelectorAll('#setview button'),functi
 // 更新履歴：1つのお知らせ内で「バージョン見出し」ごとに変更点を並べる（新しい順）。
 // マージのたびに先頭へ新バージョンを追加し、VERSION も更新する。
 var UPDATES=[
+  {v:'α1.0.207', items:[
+    '未入手の武器・キャラをグレーアウト表示にし、入手条件（実績 or 交換所チケット）を表示するようにしました（武器熟練・キャラクター・武器詳細）。',
+  ]},
   {v:'α1.0.206', items:[
     '解放くじの見た目を調整：大当たりルーレット中に画面が黄色く染まっていたのをやめ、スロットの枠を低くして釘（ピン）の当たる範囲を広げました。',
   ]},
