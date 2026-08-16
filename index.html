@@ -1422,11 +1422,11 @@ var ETYPE={
   boar:    { nm:'ボア',               res:0.35, hp:115, spd:54,  r:16, col:'#b98a5e', dark:'#513524', xp:3, dmg:16, shape:'boar',   pts:30,  sv:0.09,
              ai:'charge', range:240, acd:3.0, chspd:430, wind:0.55, chdur:0.85 },
   wolf:    { nm:'ウルフ',             res:0.15, hp:92,  spd:188, r:13, col:'#9aa6b8', dark:'#3b4350', xp:3, dmg:14, shape:'wolf',   pts:28,  sv:0.08 },
-  orc:     { nm:'オーク',             res:0.45, hp:235, spd:42,  r:20, col:'#79a05c', dark:'#31421f', xp:5, dmg:22, shape:'orc',    pts:52,  sv:0.14 },
+  orc:     { nm:'オーク',             res:0.45, kbr:0.82, hp:235, spd:42,  r:20, col:'#79a05c', dark:'#31421f', xp:5, dmg:22, shape:'orc',    pts:52,  sv:0.14 },
   rider:   { nm:'ヒルゴート',         res:0.62, hp:175, spd:132, r:16, col:'#e8e4da', dark:'#7a7266', xp:4, dmg:20, shape:'rider',  pts:48,  sv:0.13 },
   harpy:   { nm:'ハーピー',           res:0.20, hp:72,  spd:255, r:13, col:'#e2b0d8', dark:'#5e2f57', xp:3, dmg:15, shape:'harpy',  pts:32,  sv:0.09, ai:'fly' },
-  ogre:    { nm:'サイクロプス',       res:0.72, hp:430, spd:34,  r:26, col:'#6fb6c4', dark:'#2a5560', xp:8, dmg:28, shape:'ogre',   pts:80,  sv:0.17 },
-  turtle:  { nm:'ロックタートル',     res:0.55, hp:270, spd:56,  r:18, col:'#7d9080', dark:'#31423a', xp:6, dmg:18, shape:'turtle', pts:62,  sv:0.15, flat:3 },
+  ogre:    { nm:'サイクロプス',       res:0.72, kbr:0.92, hp:430, spd:34,  r:26, col:'#6fb6c4', dark:'#2a5560', xp:8, dmg:28, shape:'ogre',   pts:80,  sv:0.17 },
+  turtle:  { nm:'ロックタートル',     res:0.55, kbr:0.88, hp:270, spd:56,  r:18, col:'#7d9080', dark:'#31423a', xp:6, dmg:18, shape:'turtle', pts:62,  sv:0.15, flat:3 },
   // スライムキングの分裂で出る中／小
   slimeM:  { nm:'中スライム',         res:0.10, hp:150, spd:56,  r:20, col:'#6ee08a', dark:'#245c35', xp:4, dmg:14, shape:'blob',   pts:34,  sv:0.10 },
   slimeS:  { nm:'小スライム',         res:0.00, hp:48,  spd:70,  r:12, col:'#9ff0b2', dark:'#2f6b42', xp:2, dmg:9,  shape:'blob',   pts:12,  sv:0.05 },
@@ -1441,31 +1441,31 @@ var ETYPE={
   mantis:  { nm:'グレーターマンティス', res:0.40, hp:150, spd:120, r:15, col:'#6fbf4a', dark:'#2c5a1c', xp:4, dmg:26, shape:'mantis', pts:46,  sv:0.13 },
   spider:  { nm:'ブラストスパイダー', res:0.10, hp:120, spd:100, r:12, col:'#8a3a3a', dark:'#3a1414', xp:3, dmg:12, shape:'spider',  pts:30,  sv:0.09,
              boom:1, boomR:96, boomDmg:30 },
-  beetle:  { nm:'グレータービートル', res:0.65, hp:260, spd:40,  r:20, col:'#5a4632', dark:'#241a10', xp:6, dmg:20, shape:'beetle',  pts:64,  sv:0.15, flat:4 },
+  beetle:  { nm:'グレータービートル', res:0.65, kbr:0.9, hp:260, spd:40,  r:20, col:'#5a4632', dark:'#241a10', xp:6, dmg:20, shape:'beetle',  pts:64,  sv:0.15, flat:4 },
   gnat:    { nm:'スウォームナット',   res:0.00, hp:20,  spd:200, r:7,  col:'#8a7a52', dark:'#3a3020', xp:1, dmg:6,  shape:'gnat',    pts:4,   sv:0.02,  ai:'dash' },
-  treant:  { nm:'トレント',           res:0.62, hp:600, spd:36,  r:23, col:'#6e8a4a', dark:'#33421f', xp:8, dmg:24, shape:'treant',  pts:78,  sv:0.16, flat:5 },
+  treant:  { nm:'トレント',           res:0.62, kbr:0.92, hp:600, spd:36,  r:23, col:'#6e8a4a', dark:'#33421f', xp:8, dmg:24, shape:'treant',  pts:78,  sv:0.16, flat:5 },
   // ===== ステージ3（古代の王墓）モンスター =====
   skeleton: { nm:'スケルトン',           res:0.05, hp:50,  spd:60,  r:12, col:'#e8e4d0', dark:'#6b6250', xp:2, dmg:12, shape:'skeleton', pts:10, sv:0.05 },
-  mummy:    { nm:'マミー',               res:0.45, hp:240, spd:40,  r:17, col:'#cdbb90', dark:'#5c4d2c', xp:5, dmg:24, shape:'mummy',    pts:50, sv:0.13 },
+  mummy:    { nm:'マミー',               res:0.45, kbr:0.8, hp:240, spd:40,  r:17, col:'#cdbb90', dark:'#5c4d2c', xp:5, dmg:24, shape:'mummy',    pts:50, sv:0.13 },
   wraith:   { nm:'レイス',               res:0.12, hp:90,  spd:200, r:12, col:'#9fd8e0', dark:'#2f5a63', xp:3, dmg:16, shape:'wraith',   pts:28, sv:0.08 },
   fly:      { nm:'フライ',               res:0.00, hp:22,  spd:210, r:8,  col:'#7a8a4a', dark:'#33401c', xp:1, dmg:8,  shape:'fly',      pts:5,  sv:0.02, ai:'dash' },
   shadow:   { nm:'シャドウ',             res:0.20, hp:150, spd:235, r:12, col:'#2a2833', dark:'#0a0810', xp:4, dmg:22, shape:'shadow',   pts:40, sv:0.11, noelite:1 },
-  gargoyle: { nm:'ガーゴイル',           res:0.60, hp:300, spd:90,  r:16, col:'#8a90a0', dark:'#33384a', xp:6, dmg:22, shape:'gargoyle', pts:64, sv:0.15, ai:'fly' },
+  gargoyle: { nm:'ガーゴイル',           res:0.60, kbr:0.85, hp:300, spd:90,  r:16, col:'#8a90a0', dark:'#33384a', xp:6, dmg:22, shape:'gargoyle', pts:64, sv:0.15, ai:'fly' },
   ghoul:    { nm:'グール',               res:0.10, hp:130, spd:110, r:14, col:'#9ab07a', dark:'#3d4a26', xp:3, dmg:18, shape:'ghoul',    pts:30, sv:0.09, ai:'burrow' },
   lich:     { nm:'リッチ',               res:0.15, hp:160, spd:44,  r:14, col:'#b48ad0', dark:'#3f2a58', xp:5, dmg:12, shape:'lich',     pts:52, sv:0.14, ai:'buff', cap:4 },
   shieldman:{ nm:'盾の戦士',             res:0.15, hp:120, spd:70,  r:14, col:'#c0c4cc', dark:'#4a4e58', xp:4, dmg:20, shape:'shieldman',pts:44, sv:0.12, shield:180 },
   sarcher:  { nm:'スケルトンアーチャー', res:0.10, hp:80,  spd:60,  r:12, col:'#d8d0b0', dark:'#5c5238', xp:3, dmg:12, shape:'sarcher',  pts:30, sv:0.10, ai:'shoot', range:360, acd:3.6, bspd:240, bdmg:16 },
   necro:    { nm:'ネクロマンサー',       res:0.20, hp:200, spd:46,  r:14, col:'#7a5aa0', dark:'#2a1a42', xp:6, dmg:10, shape:'necro',    pts:56, sv:0.15, ai:'summon', sum:'skeleton', nsum:2, acd:5.0, cap:3 },
-  dullahan: { nm:'デュラハン',           res:0.40, hp:260, spd:60,  r:17, col:'#4a5a6a', dark:'#1a2530', xp:6, dmg:26, shape:'dullahan', pts:60, sv:0.15, ai:'charge', range:340, acd:3.0, chspd:500, wind:0.6, chdur:1.15 },
-  boomer:   { nm:'ブーマー',             res:0.10, hp:300, spd:60,  r:19, col:'#8a9a5a', dark:'#3a4520', xp:6, dmg:14, shape:'boomer',   pts:56, sv:0.15, boom:1, boomR:110, boomDmg:40, puddle:1, cap:3 },
+  dullahan: { nm:'デュラハン',           res:0.40, kbr:0.78, hp:260, spd:60,  r:17, col:'#4a5a6a', dark:'#1a2530', xp:6, dmg:26, shape:'dullahan', pts:60, sv:0.15, ai:'charge', range:340, acd:3.0, chspd:500, wind:0.6, chdur:1.15 },
+  boomer:   { nm:'ブーマー',             res:0.10, kbr:0.8, hp:300, spd:60,  r:19, col:'#8a9a5a', dark:'#3a4520', xp:6, dmg:14, shape:'boomer',   pts:56, sv:0.15, boom:1, boomR:110, boomDmg:40, puddle:1, cap:3 },
   // ===== ステージ4（海）モンスター =====
   flyingfish:{ nm:'トビウオ',   res:0.00, hp:26,  spd:220, r:9,  col:'#8fd4ff', dark:'#2a5a7a', xp:1, dmg:9,  shape:'flyingfish', pts:6,  sv:0.03, ai:'dash' },
   sahagin:  { nm:'サハギン',     res:0.12, hp:120, spd:78,  r:14, col:'#5aa0a0', dark:'#1f4a4a', xp:3, dmg:16, shape:'sahagin',   pts:34, sv:0.10 },
-  crab:     { nm:'カニ',         res:0.25, hp:150, spd:66,  r:16, col:'#e07a4a', dark:'#5a281a', xp:4, dmg:20, shape:'crab',      pts:46, sv:0.12, shield:170 },
+  crab:     { nm:'カニ',         res:0.25, kbr:0.8, hp:150, spd:66,  r:16, col:'#e07a4a', dark:'#5a281a', xp:4, dmg:20, shape:'crab',      pts:46, sv:0.12, shield:170 },
   kelpie:   { nm:'ケルピー',     res:0.18, hp:150, spd:150, r:15, col:'#7ab0d8', dark:'#2a4a63', xp:4, dmg:20, shape:'kelpie',    pts:46, sv:0.12, ai:'charge', range:300, acd:2.8, chspd:540, wind:0.5, chdur:1.0 },
   shark:    { nm:'サメ',         res:0.30, hp:210, spd:92,  r:18, col:'#9aa8b8', dark:'#37414f', xp:6, dmg:30, shape:'shark',     pts:66, sv:0.15, ai:'charge', range:360, acd:3.2, chspd:620, wind:0.7, chdur:1.1 },
   manta:    { nm:'マンタ',       res:0.25, hp:220, spd:140, r:28, col:'#5a6a8a', dark:'#20283a', xp:5, dmg:20, shape:'manta',     pts:56, sv:0.14, ai:'fly' },
-  hermit:   { nm:'ヤドカリ',     res:0.30, hp:260, spd:150, r:16, col:'#d0a060', dark:'#5a4020', xp:5, dmg:18, shape:'hermit',    pts:56, sv:0.14, ai:'hermit', shield:140 },
+  hermit:   { nm:'ヤドカリ',     res:0.30, kbr:0.85, hp:260, spd:150, r:16, col:'#d0a060', dark:'#5a4020', xp:5, dmg:18, shape:'hermit',    pts:56, sv:0.14, ai:'hermit', shield:140 },
   clam:     { nm:'カイ',         res:0.35, hp:180, spd:48,  r:15, col:'#c09ac0', dark:'#4a2a4a', xp:4, dmg:18, shape:'clam',      pts:48, sv:0.13, ai:'burrow', shield:120 },
   serpent:  { nm:'ミズチ',       res:0.20, hp:170, spd:104, r:14, col:'#4a9a7a', dark:'#1a4535', xp:4, dmg:20, shape:'serpent',   pts:50, sv:0.13, ai:'serpent' },
   jelly:    { nm:'クラゲ',       res:0.05, hp:90,  spd:52,  r:14, col:'#c0a0e0', dark:'#4a3060', xp:3, dmg:10, shape:'jelly',     pts:30, sv:0.10, cpois:1 },
@@ -1473,7 +1473,7 @@ var ETYPE={
   // リヴァイアサンの丸が撃つサメ型ミサイル：追尾する倒せる敵。HPは通常サメ(210)の2倍=420（時間スケールも同じ＝常にサメの2倍）。エリート化しない。
   sharkmissile:{ nm:'サメミサイル', res:0.30, hp:420, spd:250, r:12, col:'#9ab0c8', dark:'#2a3a4a', xp:2, dmg:20, shape:'sharkmissile', pts:20, sv:0, ai:'home', home:1.6, noelite:1 },
   // 海坊主：16:00〜 5体で横一列の壁として来る。遅いが超高耐久、通った跡に黒い澱み（3秒）を残す。エリート化しない（湧きmixに入れず専用スポナーのみ）。
-  umibozu:  { nm:'海坊主',       res:0.90, hp:30000, spd:85, r:34, col:'#12121e', dark:'#000006', xp:40, dmg:34, shape:'umibozu', pts:400, sv:0, ai:'umibozu', noelite:1, flathp:1 },
+  umibozu:  { nm:'海坊主',       res:0.90, kbr:1, hp:30000, spd:85, r:34, col:'#12121e', dark:'#000006', xp:40, dmg:34, shape:'umibozu', pts:400, sv:0, ai:'umibozu', noelite:1, flathp:1 },
   // エルダートレントが生やす回復の木（ウェーブには出ない・図鑑なし）
   healtree: { nm:'いのちの木',           res:0.30, hp:100, spd:0,   r:20, col:'#6e8a4a', dark:'#33421f', xp:0, dmg:0,  shape:'treant',   pts:120, sv:0, ai:'healtree' },
   // ボス専用の見た目（ウェーブには出ない）
@@ -2913,7 +2913,7 @@ function figInfo(id){
   if(BOSS[id]){ var B=BOSS[id], tt=ETYPE[B.key]||{}; return {nm:B.nm,shape:tt.shape,col:tt.col,dark:tt.dark,desc:BDEX[id]||'',boss:true}; }
   var t=ETYPE[id]||{}; return {nm:t.nm,shape:t.shape,col:t.col,dark:t.dark,desc:DEX[id]||'',boss:false};
 }
-var VERSION='α1.0.216'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
+var VERSION='α1.0.217'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
 function applySave(o){
   for(var i=0;i<UPG.length;i++) META[UPG[i].id]=0;
   try{
@@ -4733,7 +4733,7 @@ function spawnBoss(key){
     hp:bhp, mhp:bhp, spd:B.spd, r:B.r,
     col:t.col, dark:t.dark, xp:B.xp, dmg:B.dmg*dscale, shape:t.shape,
     pts:B.pts, ai:B.ai||'', acd:B.acd||0, at:1.2, st:'', stT:0,
-    vx:0, vy:0, res:B.res||0.9, flat:0, split:B.split||null,
+    vx:0, vy:0, res:B.res||0.9, kbr:1, flat:0, split:B.split||null,   // ボスはノックバック無効
     sum:B.sum||'', nsum:B.nsum||0, wind:B.wind||0, chdur:B.chdur||0,
     chspd:B.chspd||0, range:B.range||0, nbul:B.nbul||0,
     bspd:B.bspd||0, bdmg:(B.bdmg||0)*dscale,
@@ -4778,7 +4778,7 @@ function makeEnemy(k){
     hp:ehp, mhp:ehp, spd:t.spd*(0.9+Math.random()*0.25), r:t.r,
     col:t.col, dark:t.dark, xp:t.xp, dmg:t.dmg*dscale, shape:t.shape, pts:t.pts, smul:(ENDLESS?blkMul:1),
     ai:t.ai||'', acd:t.acd||0, at:0.6+Math.random()*1.2, st:'', stT:0,
-    vx:0, vy:0, res:t.res||0, flat:(t.flat||0)*scale,
+    vx:0, vy:0, res:t.res||0, kbr:(t.kbr!=null?t.kbr:(t.res||0)), flat:(t.flat||0)*scale,   // kbr＝ノックバック耐性(0〜1)。未指定は res 相当／ETYPEで個別調整可
     range:t.range||0, chspd:t.chspd||0, wind:t.wind||0, chdur:t.chdur||0,
     bspd:t.bspd||0, bdmg:(t.bdmg||0)*dscale, sum:t.sum||'', nsum:t.nsum||0,
     boom:t.boom||0, boomR:t.boomR||0, boomDmg:(t.boomDmg||0)*dscale, puddle:t.puddle||0, cpois:t.cpois||0, life:0,
@@ -5581,7 +5581,7 @@ function moveEnemies(dt){
 
     // --- 移動 ---
     if(e.kb>0){
-      var kr=1-(e.res||0);
+      var kr=1-Math.min(1,(e.kbr||0));            // ノックバック耐性：1で完全無効（ボス等）
       e.x+=e.kbx*e.kb*dt*13*kr; e.y+=e.kby*e.kb*dt*13*kr; e.kb-=dt*38;
     }else if(!moved){
       var sp=e.slow>0?e.spd*(e.slowMul||0.45):e.spd;
@@ -9738,6 +9738,9 @@ Array.prototype.forEach.call(document.querySelectorAll('#setview button'),functi
 // 更新履歴：1つのお知らせ内で「バージョン見出し」ごとに変更点を並べる（新しい順）。
 // マージのたびに先頭へ新バージョンを追加し、VERSION も更新する。
 var UPDATES=[
+  {v:'α1.0.217', items:[
+    '敵に「ノックバック耐性(kbr)」を追加し、モンスター種ごとに個別調整できるようにしました。オーク・サイクロプス・トレント・ロックタートル・グレータービートル・ガーゴイル・マミー・ブーマー・カニ・ヤドカリ・デュラハンなどの重量級はノックバックしにくく、ボス（および海坊主）はノックバック無効になります。',
+  ]},
   {v:'α1.0.216', items:[
     '新武器（メテオ・カマイタチ・トルネード）の解放を武器チケット専用に統一しました（実績での解放条件は廃止）。',
   ]},
