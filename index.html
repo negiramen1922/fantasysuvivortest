@@ -569,10 +569,8 @@ canvas{display:block;width:100%;height:100%;touch-action:none}
 .cw{display:flex;align-items:center;gap:10px;background:var(--panel);
   border:1px solid var(--line);padding:9px 10px}
 .cw.sel{border-color:var(--arc);box-shadow:0 0 14px rgba(86,224,255,.25)}
-.cw.lock{opacity:.92}
-.cw.lock .cwg,.cw.lock .cwspr{filter:grayscale(1) brightness(.6)}
-.wm.lock{opacity:.92}
-.wm.lock .ug{filter:grayscale(1) brightness(.6)}
+.cw.lock{filter:grayscale(1) brightness(.62);opacity:.78;background:#141026;border-color:#241d3d}
+.wm.lock{filter:grayscale(1) brightness(.62);opacity:.78;background:#141026;border-color:#241d3d}
 .wmlock{font-size:11px;color:#8a7fbf;margin-top:3px}
 .cwg{font-size:22px;flex:0 0 46px;text-align:center}
 .cwg .cwspr{width:44px;height:44px;image-rendering:pixelated;vertical-align:middle}
@@ -2871,7 +2869,7 @@ function figInfo(id){
   if(BOSS[id]){ var B=BOSS[id], tt=ETYPE[B.key]||{}; return {nm:B.nm,shape:tt.shape,col:tt.col,dark:tt.dark,desc:BDEX[id]||'',boss:true}; }
   var t=ETYPE[id]||{}; return {nm:t.nm,shape:t.shape,col:t.col,dark:t.dark,desc:DEX[id]||'',boss:false};
 }
-var VERSION='α1.0.208'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
+var VERSION='α1.0.209'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
 function applySave(o){
   for(var i=0;i<UPG.length;i++) META[UPG[i].id]=0;
   try{
@@ -9506,6 +9504,9 @@ Array.prototype.forEach.call(document.querySelectorAll('#setview button'),functi
 // 更新履歴：1つのお知らせ内で「バージョン見出し」ごとに変更点を並べる（新しい順）。
 // マージのたびに先頭へ新バージョンを追加し、VERSION も更新する。
 var UPDATES=[
+  {v:'α1.0.209', items:[
+    '未入手の武器・キャラは、アイコンだけでなくカード（枠）全体をグレーアウトして分かりやすくしました。タップすれば従来どおり詳細や入手条件を確認できます。',
+  ]},
   {v:'α1.0.208', items:[
     'ホーリージャッジの範囲を少し狭めました。ノックバックを武器ごとに「無し／弱／中／強」で管理する仕組みにし、ベルのノックバックを「弱」にしました（他の武器の吹き飛ばしは従来どおり）。',
   ]},
