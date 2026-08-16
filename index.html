@@ -2544,7 +2544,7 @@ var CHARS={
   knight:{ nm:'騎士',   glyph:'\u{1F6E1}', w:'slash',
     tx:'大剣を担ぐ重装。硬く、重い一撃を叩き込む。',
     st:'最大HP +30%／攻撃力 +15%／移動速度 −8%',
-    grow:{k:'wpn', wk:'slash', v:0.01, tx:'毎レベル 大剣の攻撃力 +1%'},
+    grow:{k:'cat', cat:'剣技', v:0.01, tx:'毎レベル 剣系統（大剣・刀など）の攻撃力 +1%'},
     hp:1.30, spd:0.92, pw:1.15, area:1.00, ele:0, elp:0, crit:0, regen:0,
     cost:0,   cond:null,     val:0,     condTx:'最初から使える' },
   hunter:{ nm:'狩人',   glyph:'\u{1F3F9}', w:'bow',
@@ -2869,7 +2869,7 @@ function figInfo(id){
   if(BOSS[id]){ var B=BOSS[id], tt=ETYPE[B.key]||{}; return {nm:B.nm,shape:tt.shape,col:tt.col,dark:tt.dark,desc:BDEX[id]||'',boss:true}; }
   var t=ETYPE[id]||{}; return {nm:t.nm,shape:t.shape,col:t.col,dark:t.dark,desc:DEX[id]||'',boss:false};
 }
-var VERSION='α1.0.210'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
+var VERSION='α1.0.211'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
 function applySave(o){
   for(var i=0;i<UPG.length;i++) META[UPG[i].id]=0;
   try{
@@ -3019,8 +3019,9 @@ function pw(w){
     if(GROW('thunp')  &&ELW.thunder.indexOf(w)>=0) m*=(1+GROW('thunp'));
     if(GROW('darkp')  &&ELW.dark.indexOf(w)>=0)    m*=(1+GROW('darkp'));
     if(GROW('grassp') &&ELW.grass.indexOf(w)>=0)   m*=(1+GROW('grassp'));
-    var gw=CH().grow;   // 持ち武器強化キャラ：その武器だけ毎レベル攻撃力アップ
+    var gw=CH().grow;   // 持ち武器強化キャラ：毎レベル攻撃力アップ（wpn=特定武器／cat=カテゴリ）
     if(gw&&gw.k==='wpn'&&gw.wk===w) m*=(1+gw.v*(P.lv-1));
+    if(gw&&gw.k==='cat'&&WCAT[w]===gw.cat) m*=(1+gw.v*(P.lv-1));
   }
   return m;
 }
@@ -3546,7 +3547,7 @@ function doSlash(){
   // 覚醒「飛翔斬撃」：そこまでに伸ばした範囲に応じた大きさの斬撃が飛ぶ
   if(AW('slash')){
     shots.push({x:P.x,y:P.y,vx:Math.cos(P.face)*560,vy:Math.sin(P.face)*560,r:24*ar,sz:ar,
-      src:'slash',kind:'wave',ang:P.face,dmg:dmg*0.85,pierce:99,life:0.85,
+      src:'slash',kind:'wave',ang:P.face,dmg:dmg*0.85,decay:(dmg*0.85)/5,pierce:99,life:0.85,
       col:'#e8e2ff',col2:'#9b8bff',el:null,hit:[]});
     sfx(700,.09,'sawtooth',.045,.7);
   }
@@ -5667,6 +5668,7 @@ function moveShots(dt){
         if(s.slow){ e.slow=Math.max(e.slow,s.slow); if(s.slowMul!=null) e.slowMul=Math.min(e.slowMul||0.45,s.slowMul); }
         if(s.src==='ice'&&AW('ice')) addZone(e.x,e.y,44,s.dmg*0.18,3.0,'ice',1.6,'#7fd8ff','ice');
         s.hit.push(e); s.pierce--;
+        if(s.decay){ s.dmg-=s.decay; if(s.dmg<=0.001){ s.life=0; break; } }   // 覚醒斬撃：貫くほど威力減衰（5体で0）
         if(s.split) { holySplit(s); s.split=0; }
         if(s.src==='fire'&&s.boom) fireBoom(s);  // 敵に当たるたび爆発
         if(s.grow&&s.dmg<s.base*3) s.dmg*=1.35;
@@ -9505,6 +9507,10 @@ Array.prototype.forEach.call(document.querySelectorAll('#setview button'),functi
 // 更新履歴：1つのお知らせ内で「バージョン見出し」ごとに変更点を並べる（新しい順）。
 // マージのたびに先頭へ新バージョンを追加し、VERSION も更新する。
 var UPDATES=[
+  {v:'α1.0.211', items:[
+    '大剣の覚醒「飛翔斬撃」に貫通の威力減衰を追加。貫くほどダメージが下がり、5体目あたりで0になります（100%→80%→60%→40%→20%）。',
+    '騎士の毎レベル成長を「剣系統（剣技＝大剣・刀・鎌・チャクラム・チェンソー）の攻撃力 +1%」に拡張しました。狩人は従来どおり「弓の攻撃力 +1%」。',
+  ]},
   {v:'α1.0.210', items:[
     '羊飼いの「羊」の威力をベルと同値（×1.0）に引き上げました。また、羊飼いの毎レベル成長を「ベルの攻撃力 +1%」に変更（羊の出現率は3%固定）。',
     '毎レベル成長を持っていなかった騎士・狩人にも成長を追加：騎士は「毎レベル 大剣の攻撃力 +1%」、狩人は「毎レベル 弓の攻撃力 +1%」。これで全キャラがレベルごとの強化を持つようになりました。',
