@@ -40,7 +40,7 @@ service cloud.firestore {
                    && request.resource.data.uid == uid
                    && request.resource.data.score is int
                    && request.resource.data.score >= 0
-                   && request.resource.data.score <= 100000000
+                   && request.resource.data.score <= 1000000000000   // 上限を1兆に引き上げ（旧1億だと高スコアが登録できなかった）
                    && request.resource.data.name is string
                    && request.resource.data.name.size() <= 16;
     }

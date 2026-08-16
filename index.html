@@ -2925,7 +2925,7 @@ function figInfo(id){
   if(BOSS[id]){ var B=BOSS[id], tt=ETYPE[B.key]||{}; return {nm:B.nm,shape:tt.shape,col:tt.col,dark:tt.dark,desc:BDEX[id]||'',boss:true}; }
   var t=ETYPE[id]||{}; return {nm:t.nm,shape:t.shape,col:t.col,dark:t.dark,desc:DEX[id]||'',boss:false};
 }
-var VERSION='α1.0.219'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
+var VERSION='α1.0.220'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
 function applySave(o){
   for(var i=0;i<UPG.length;i++) META[UPG[i].id]=0;
   try{
@@ -9813,6 +9813,9 @@ Array.prototype.forEach.call(document.querySelectorAll('#setview button'),functi
 // 更新履歴：1つのお知らせ内で「バージョン見出し」ごとに変更点を並べる（新しい順）。
 // マージのたびに先頭へ新バージョンを追加し、VERSION も更新する。
 var UPDATES=[
+  {v:'α1.0.220', items:[
+    '高スコアがランキングに登録されない問題を修正。登録スコアの桁あふれ（約21億で破綻）を解消し、登録上限も引き上げました（サーバー側ルールの更新が反映され次第、1億超のスコアも登録されます）。',
+  ]},
   {v:'α1.0.219', items:[
     'PWA対応。ホーム画面に追加すればアプリのように起動でき（全画面）、Service Workerでオフライン/ネット不調でも即ロードできます。ラン自動セーブと合わせて、強制リロードでの中断に強くなりました。',
   ]},
@@ -10885,9 +10888,10 @@ function submitRanking(sc,timeSec){
   if(!NICK){ pendingRank={score:sc,timeSec:timeSec}; openProfile(); return; }   // 名前未設定ならプロフィールで入力を促し保留
   var ref=fbDB.collection('rankings').doc(FBUSER.uid);
   ref.get().then(function(d){
-    var prev=(d.exists?d.data():null), best=(prev&&prev.score|0)||0;
-    if((sc|0)<=best) return;
-    ref.set({ uid:FBUSER.uid, name:NICK.slice(0,16), title:(twoName()||'').slice(0,24), score:sc|0, timeSec:timeSec|0, v:VERSION,
+    var prev=(d.exists?d.data():null), best=Math.max(0,Math.floor((prev&&prev.score)||0));
+    var s=Math.max(0,Math.floor(sc));   // |0 は32bit(約21億)で桁あふれするため floor で整数化
+    if(s<=best) return;
+    ref.set({ uid:FBUSER.uid, name:NICK.slice(0,16), title:(twoName()||'').slice(0,24), score:s, timeSec:Math.max(0,Math.floor(timeSec)), v:VERSION,
       ts:firebase.firestore.FieldValue.serverTimestamp() }).catch(function(e){ console.warn('rank set',e); });
   }).catch(function(e){ console.warn('rank get',e); });
 }
