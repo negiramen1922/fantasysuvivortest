@@ -1344,6 +1344,8 @@ var WEAPONS={
     tx:'十字の剣が敵の元へ落ちる。着弾で光を付与し、しばらく残って周囲を裁く。' },
   gatling:{ nm:'ガトリングガン', glyph:'\u{1F387}', tag:'射撃', max:10,
     tx:'弾倉を一気に高速連射する。DPSは全武器随一だが、撃ち切ると長いリロードに入る。' },
+  meteor:{ nm:'メテオ', glyph:'\u{1F320}', tag:'岩', max:10,
+    tx:'上空から隕石を落とす。着弾まで少しラグがあるが、落ちると大きく爆発して敵を強く吹き飛ばす。単発が非常に重い遠距離の大技。' },
 };
 // ── 武器の解放（ロック）システム ──
 // 初期解放9種（各系統1つ）は最初から使える。残り13種はロック：金貨10 or 銀貨(武器ごと) or 実績(武器ごと) で解放。
@@ -1370,7 +1372,8 @@ var WLOCK={
   aura:    {s:6000, cond:'kills', val:5000,  condTx:'累計討伐 5,000', tkt:1},
   voidh:   {s:6000, cond:'stage', val:3,     condTx:'ステージ3をクリア', tkt:1},
   inferno: {s:8000, cond:'time',  val:900,   condTx:'15:00 まで生存', tkt:1},
-  gatling: {s:10000,cond:'kills', val:12000, condTx:'累計討伐 12,000', tkt:1}
+  gatling: {s:10000,cond:'kills', val:12000, condTx:'累計討伐 12,000', tkt:1},
+  meteor:  {s:8000, cond:'kills', val:8000,  condTx:'累計討伐 8,000',  tkt:1}
 };
 var WUNL={};   // 解放済み武器 {id:1}
 (function(){ for(var k in WSTART) WUNL[k]=1; if(ALLWPN) for(var w in WEAPONS) WUNL[w]=1; })();
@@ -1811,7 +1814,7 @@ var P, enemies, gems, shots, fx, dmgs, parts, bolts, chests, coins, chaks, scys,
 var time, kills, spawnT, eliteT, shake, hitStop, flash, chain, chainT, choices;
 var whirlA, marks, reacts, crits, rdep, rtok, pending, bossRelicQ=0, score, silver, gold, magFx, chakSpin, swingT, swingDir;
 var SWDUR=0.42;   // 大剣の振りの長さ（秒）。大きいほどゆっくり
-var ebul, boss, bossN, quakes, dhits, vacs, vacT, bells, swords, zones, volley, relics, puddles, sheep, trails;
+var ebul, boss, bossN, quakes, dhits, vacs, vacT, bells, swords, zones, volley, relics, puddles, sheep, trails, meteors;
 var lasers;
 
 /* ============ 武器熟練度・特性 ============ */
@@ -2295,6 +2298,14 @@ var MAST={
     major:[ {id:'bl_D',ic:'💪',nm:'剛・攻撃力',tx:'+12%',d:'吹雪の威力が#大きく上がる',dv:'12%',ef:{dmg:.12}},
             {id:'bl_s',ic:'🐌',nm:'凍てつき',tx:'+8%',d:'凍結時に敵が#さらに遅くなる',dv:'8%',ef:{slowmag:.08}},
             {id:'bl_A',ic:'🌀',nm:'大範囲',tx:'+15%',d:'吹雪の範囲が#大きく広がる',dv:'15%',ef:{area:.15}} ]
+  },
+  meteor:{  // メテオ：dmg/area/rate/range。爆発・ノックバック強（数の代わりに衝撃波）
+    minor:[ {id:'me_d',ic:'💪',nm:'攻撃力',tx:'+6%',d:'隕石の威力が#上がる',dv:'6%',ef:{dmg:.06}},
+            {id:'me_a',ic:'🌀',nm:'範囲',tx:'+6%',d:'爆発の範囲が#広がる',dv:'6%',ef:{area:.06}},
+            {id:'me_c',ic:'⌛',nm:'間隔',tx:'−5%',d:'落下の間隔が#短くなる',dv:'5%',ef:{cd:-.05}} ],
+    major:[ {id:'me_D',ic:'💪',nm:'剛・攻撃力',tx:'+12%',d:'隕石の威力が#大きく上がる',dv:'12%',ef:{dmg:.12}},
+            {id:'me_k',ic:'💨',nm:'衝撃波',tx:'+10%',d:'着弾で敵を#強く吹き飛ばす',dv:'10%',ef:{knock:.10}},
+            {id:'me_A',ic:'🌀',nm:'大爆発',tx:'+15%',d:'爆発の範囲が#大きく広がる',dv:'15%',ef:{area:.15}} ]
   }
 };
 var MASTIDS={};   // 武器ごとの有効オプションid集合（旧SELの掃除に使う）
@@ -2331,7 +2342,7 @@ function TF(wid,key){ return TR(wid,key)>0; }
 var WCAT={ slash:'剣技', scythe:'剣技', chakram:'剣技', katana:'剣技', shuriken:'射撃', bow:'射撃', dynamite:'射撃',
            fire:'炎', flame:'炎', inferno:'炎', ice:'氷', thunder:'雷', chain:'雷',
            quake:'岩', rock:'岩', voidh:'闇', dhand:'闇', holy:'光', aura:'光',
-           bell:'音', chainsaw:'剣技', musket:'射撃', blizzard:'氷', laser:'光', gatling:'射撃', toxin:'草', anchor:'打撃' };
+           bell:'音', chainsaw:'剣技', musket:'射撃', blizzard:'氷', laser:'光', gatling:'射撃', toxin:'草', anchor:'打撃', meteor:'岩' };
 // 武器タグ（間合い・手段・属性）。ナイトメアの属性強化カード等の土台。
 var WTAG={
   slash:['近接','斬撃','物理'], chainsaw:['近接','斬撃','物理'],
@@ -2342,6 +2353,7 @@ var WTAG={
   anchor:['中距離','投擲','物理','スタン'],
   dynamite:['中距離','射撃','投擲','爆発','範囲','物理'],
   quake:['中距離','打撃','岩'], rock:['遠距離','打撃','岩'],
+  meteor:['遠距離','落下','爆発','範囲','岩','物理'],
   bell:['自己','打撃','範囲','物理'],
   fire:['遠距離','射撃','爆発','範囲','炎'], flame:['自己','炎'], inferno:['中距離','ビーム','炎'],
   ice:['遠距離','射撃','氷'], blizzard:['自己','氷'],
@@ -2386,9 +2398,9 @@ var WKIND={ slash:'phys', scythe:'phys', chakram:'phys', katana:'phys', shuriken
             blizzard:'mag', laser:'mag',
             fire:'mag', flame:'mag', ice:'mag', thunder:'mag', chain:'mag', inferno:'mag',
             holy:'mag', aura:'mag', voidh:'mag', dhand:'mag', gatling:'phys', toxin:'mag', anchor:'phys',
-            sheep:'phys' };   // 羊（羊飼いの召喚）：武器ではないが会心を物理扱いにするため登録
+            meteor:'phys', sheep:'phys' };   // 羊（羊飼いの召喚）：武器ではないが会心を物理扱いにするため登録
 // 武器ごとのノックバック強度：0=無し 1=弱 2=中 3=強（未指定は「中」）。ここを編集して調整できる。
-var WKB={ bell:1, aura:0, blizzard:0, inferno:0, toxin:0 };
+var WKB={ bell:1, aura:0, blizzard:0, inferno:0, toxin:0, meteor:3 };
 var KB_BASE=[0,1.1,2.2,4.0], KB_CRIT=[0,2.0,4.0,6.5];   // レベル別のノックバック量（通常/会心）
 function applyKB(e,SRC,crit,nx,ny){
   var kl=(WKB[SRC]!==undefined)?WKB[SRC]:2;   // 既定は中
@@ -2422,12 +2434,13 @@ var WAX={
   blizzard:{ dmg:4, area:3, rate:3, dur:3 },
   laser:   { dmg:3, count:4, rate:3, area:3 },
   inferno: { dmg:4, count:3, dur:3, rate:3, range:3 },
-  gatling: { dmg:5, rate:4, count:3, pierce:3, ammo:3, range:3 }
+  gatling: { dmg:5, rate:4, count:3, pierce:3, ammo:3, range:3 },
+  meteor:  { dmg:4, area:4, rate:3, range:2 }
 };
 // Lv10 到達で覚醒。数値ではなく挙動が変わる。
 var AWK={ chainsaw:'暴走鋸', musket:'貫通弾', blizzard:'絶対氷結', laser:'追尾光線', inferno:'業炎照射',
   slash:'飛翔斬撃', scythe:'死神の鎌', chakram:'二重円', bow:'貫き矢', katana:'無双', shuriken:'秘刃', toxin:'瘴気', anchor:'大錨',
-  dynamite:'連鎖爆破', bell:'共鳴', quake:'地割れ', rock:'巨岩',
+  dynamite:'連鎖爆破', bell:'共鳴', quake:'地割れ', rock:'巨岩', meteor:'流星群',
   fire:'爆炎弾', flame:'業火輪', ice:'氷結槍', thunder:'落雷嵐',
   chain:'無限連鎖', holy:'聖裁', aura:'審判の剣', voidh:'特異点', dhand:'深淵の手',
   gatling:'双掃射' };
@@ -2440,6 +2453,7 @@ var AWT={ chainsaw:'前方だけでなく全方位を削るようになる', mus
   chakram:'軌道が内外2重になり、内側は逆回転', bow:'貫通するたび威力が上がる（最大3倍）',
   dynamite:'爆発が巻き込んだ敵を起点にもう一度爆発', bell:'最大半径で反射し収縮しながら戻る',
   quake:'隆起点に亀裂が残り、通る敵に継続ダメージ', rock:'敵に当たるたび大きくなる',
+  meteor:'着弾ごとに小さな隕石が数個飛び散り、周囲に追撃の爆発を落とす',
   fire:'着弾の爆発が一回り大きく強くなる', flame:'火の玉が軌道上に炎の帯を残す',
   ice:'貫いた位置に氷柱が立ち、触れた敵を鈍足', thunder:'落雷地点から追加の落雷が1度連鎖',
   chain:'減衰が止まり、跳ぶ距離が倍に', holy:'拡散した破片がさらに1度拡散',
@@ -2510,7 +2524,8 @@ function lbOK(w,k){
 var WCLASS={ slash:'melee', chainsaw:'melee', katana:'melee', shuriken:'mid',
   chakram:'self', flame:'self', blizzard:'self', bell:'self', laser:'self', aura:'self', voidh:'self',
   scythe:'mid', dhand:'mid', dynamite:'mid', quake:'mid', musket:'mid', inferno:'mid', toxin:'mid', anchor:'mid',
-  fire:'long', ice:'long', bow:'long', holy:'long', thunder:'long', chain:'long', rock:'long', gatling:'long' };
+  fire:'long', ice:'long', bow:'long', holy:'long', thunder:'long', chain:'long', rock:'long', gatling:'long',
+  meteor:'mid' };   // メテオ：狙った範囲に落とす大技。威力45をそのまま出すため補正1.0の中距離扱い
 var CLMUL={ melee:1.15, self:1.0, mid:1.0, long:0.78 };
 function RCM(w){ return CLMUL[WCLASS[w]||'mid']; }
 // 各軸の効き。ダメージと範囲は乗算、頻度はクールダウンの短縮。
@@ -2533,7 +2548,7 @@ var WRNG={
   dhand:{base:300,cat:'中'}, dynamite:{base:360,cat:'中'}, quake:{base:400,cat:'中'}, musket:{base:320,cat:'中'}, inferno:{base:360,cat:'中'}, toxin:{base:400,cat:'中'}, anchor:{base:420,cat:'中'},
   chain:{base:460,cat:'長'}, thunder:{base:460,cat:'長'},
   fire:{base:520,cat:'長'}, ice:{base:520,cat:'長'}, bow:{base:560,cat:'長'},
-  holy:{base:520,cat:'長'}, rock:{base:540,cat:'長'}, gatling:{base:560,cat:'長'} };
+  holy:{base:520,cat:'長'}, rock:{base:540,cat:'長'}, gatling:{base:560,cat:'長'}, meteor:{base:560,cat:'長'} };
 function RNGM(w){ return Math.pow(1.20,AX(w,'range'))*Math.pow(1.08,LB(w,'range'))*(1+TR(w,'range')); }   // 射程軸の倍率（限界突破ぶんは緩やか）＋熟練度
 function RNG(w){ return (WRNG[w]?WRNG[w].base:640)*RNGM(w); }
 function axLeft(w,k){ return (WAX[w][k]||0)-AX(w,k); }
@@ -2869,7 +2884,7 @@ function figInfo(id){
   if(BOSS[id]){ var B=BOSS[id], tt=ETYPE[B.key]||{}; return {nm:B.nm,shape:tt.shape,col:tt.col,dark:tt.dark,desc:BDEX[id]||'',boss:true}; }
   var t=ETYPE[id]||{}; return {nm:t.nm,shape:t.shape,col:t.col,dark:t.dark,desc:DEX[id]||'',boss:false};
 }
-var VERSION='α1.0.211'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
+var VERSION='α1.0.212'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
 function applySave(o){
   for(var i=0;i<UPG.length;i++) META[UPG[i].id]=0;
   try{
@@ -2988,7 +3003,7 @@ function reset(){
     P.spd*=1+contractStat('spd');
     var _hb=contractStat('hp'); if(_hb){ P.max=Math.round(P.max*(1+_hb)); P.hp=P.max; }
   }
-  enemies=[]; gems=[]; shots=[]; fx=[]; dmgs=[]; parts=[]; bolts=[]; chests=[]; coins=[]; chaks=[]; scys=[]; bombs=[]; rocks=[]; holes=[]; ebul=[]; quakes=[]; dhits=[]; vacs=[]; vacT=40; bells=[]; swords=[]; zones=[]; volley=[]; puddles=[]; sheep=[]; trails=[]; relics=placeRelics();
+  enemies=[]; gems=[]; shots=[]; fx=[]; dmgs=[]; parts=[]; bolts=[]; chests=[]; coins=[]; chaks=[]; scys=[]; bombs=[]; rocks=[]; holes=[]; ebul=[]; quakes=[]; dhits=[]; vacs=[]; vacT=40; bells=[]; swords=[]; zones=[]; volley=[]; puddles=[]; sheep=[]; trails=[]; meteors=[]; relics=placeRelics();
   boss=null; bossN=0; lasers=[];
   time=0; kills=0; spawnT=0; eliteT=55; swarmT=3; swarmWarnT=0; umiT=8; umiWarnT=0; inkT=0; shake=0; hitStop=0; flash=0; chain=0; chainT=0;
   gat.t=0; gat.mag=-1; gat.rl=0;
@@ -3045,7 +3060,7 @@ var dpsVal=0, dpmVal=0, dmgSec=0, dmgRing=[], dmgRingI=0, dpsClock=1;   // 与�
 function objCount(){
   return shots.length+chaks.length+scys.length+bells.length+swords.length+
          rocks.length+holes.length+zones.length+bombs.length+ebul.length+
-         quakes.length+dhits.length+volley.length+lasers.length+fx.length+parts.length+relics.length+sheep.length;
+         quakes.length+dhits.length+volley.length+lasers.length+fx.length+parts.length+relics.length+sheep.length+meteors.length;
 }
 function infoTick(dt){
   // DPS/DPM 集計（1秒ごとに更新。DPS=直近1秒、DPM=直近60秒の合計）
@@ -3118,6 +3133,7 @@ function update(dt){
   moveRocks(dt);
   moveHoles(dt);
   moveQuakes(dt);
+  moveMeteors(dt);
   moveDhand(dt);
   moveBells(dt);
   moveSheep(dt);
@@ -3274,6 +3290,7 @@ function runWeapons(dt){
   if(P.w.chain   &&ready('chain',   1.45*RATE('chain'),dt))    doChain();
   if(P.w.quake   &&ready('quake',   2.30*RATE('quake'),dt))    doQuake();
   if(P.w.rock    &&ready('rock',    2.30*RATE('rock'),dt)){    doRock(); queueVolley('rock',0.20); }
+  if(P.w.meteor  &&ready('meteor',  3.00*RATE('meteor'),dt))   doMeteor();
   if(P.w.bell    &&ready('bell',    3.00*RATE('bell'),dt))     doBell();
   if(P.w.dhand   &&ready('dhand',   1.15*RATE('dhand'),dt))    doDhand();
   if(P.w.voidh   &&ready('voidh',   3.20*RATE('voidh'),dt))    doVoid();
@@ -4027,6 +4044,59 @@ function moveQuakes(dt){
   }
 }
 
+// メテオ：上空から隕石を落とす。着弾までラグ→着弾で大爆発＆強ノックバック
+function doMeteor(){
+  SRC='meteor';
+  var trng=RNG('meteor'), cand=[];
+  for(var j=0;j<enemies.length;j++){
+    var e=enemies[j]; if(e.dead) continue;
+    var d=(e.x-P.x)*(e.x-P.x)+(e.y-P.y)*(e.y-P.y);
+    if(d<trng*trng) cand.push(e);
+  }
+  var tx,ty;
+  if(cand.length){ var t=cand[(Math.random()*cand.length)|0]; tx=t.x; ty=t.y; }
+  else { tx=P.x+Math.cos(P.face)*200; ty=P.y+Math.sin(P.face)*200; }
+  meteors.push({ x:tx, y:ty, t:0, delay:0.9, rad:80*AREA('meteor'),
+    dmg:45*DMG('meteor')*pw('meteor'), aw:AW('meteor'), sec:0 });
+  sfx(300,.12,'sawtooth',.04,.4);
+  SRC=null;
+}
+function moveMeteors(dt){
+  for(var i=meteors.length-1;i>=0;i--){
+    var m=meteors[i];
+    m.t+=dt;
+    if(m.t<m.delay) continue;
+    meteors.splice(i,1);
+    meteorImpact(m);
+  }
+}
+function meteorImpact(m){
+  SRC='meteor';
+  var col='#ff8a3a';
+  fx.push({k:'ring',x:m.x,y:m.y,r:0,to:m.rad,t:0,life:.42,col:col});
+  for(var k=0;k<22;k++) parts.push({x:m.x,y:m.y,vx:(Math.random()-.5)*640,vy:(Math.random()-.5)*640,
+    t:0,life:.4+Math.random()*.35,col:(Math.random()<.5?col:'#ffd27a'),s:3+Math.random()*4});
+  var hits=0;
+  for(var j=enemies.length-1;j>=0;j--){
+    var e=enemies[j]; if(e.dead) continue;
+    var dx=e.x-m.x, dy=e.y-m.y, d=Math.hypot(dx,dy);
+    if(d<m.rad+e.r){
+      var fo=1-0.5*Math.min(1,d/(m.rad||1));   // 中心で全力、外周ほど弱く（下限50%）
+      hurt(e,m.dmg*fo,dx/(d||1),dy/(d||1),null); // ノックバックは WKB.meteor=3（強）＋衝撃波熟練で強化
+      hits++;
+    }
+  }
+  shake=Math.min(16,shake+3.0); noise(.12,.08); sfx(70,.22,'square',.08,.5);
+  if(m.aw&&!m.sec){                              // 覚醒「流星群」：小隕石を数個ばら撒く（2次着弾）
+    for(var s=0;s<3;s++){
+      var an=Math.random()*6.283, rr=60+Math.random()*90;
+      meteors.push({ x:m.x+Math.cos(an)*rr, y:m.y+Math.sin(an)*rr, t:0, delay:0.28,
+        rad:m.rad*0.62, dmg:m.dmg*0.5, aw:0, sec:1 });
+    }
+  }
+  if(hits) wgain('meteor',hits);
+  SRC=null;
+}
 // ロックボール：転がり続けて進路の敵をなぎ倒す
 function doRock(){
   var cnt=1+CNT('rock'), rr=Math.min(86,30*AREA('rock')), dmg=22*DMG('rock')*pw('rock');
@@ -4147,6 +4217,28 @@ function moveSheep(dt){
     }
   }
   SRC=null;
+}
+function drawMeteors(){
+  for(var i=0;i<meteors.length;i++){
+    var m=meteors[i], pr=Math.min(1,m.t/m.delay);
+    // 着弾予告マーカー（地面の的）
+    ctx.save(); ctx.translate(m.x,m.y);
+    ctx.strokeStyle='rgba(255,120,60,'+(0.30+0.45*pr)+')'; ctx.lineWidth=2;
+    ctx.beginPath(); ctx.arc(0,0,m.rad,0,6.283); ctx.stroke();
+    ctx.strokeStyle='rgba(255,210,120,'+(0.45+0.45*pr)+')'; ctx.lineWidth=2;   // 収縮する内側リング
+    ctx.beginPath(); ctx.arc(0,0,m.rad*(1-pr*0.82),0,6.283); ctx.stroke();
+    ctx.strokeStyle='rgba(255,150,80,.45)'; ctx.lineWidth=1;                    // 照準の十字
+    ctx.beginPath(); ctx.moveTo(-m.rad,0); ctx.lineTo(m.rad,0); ctx.moveTo(0,-m.rad); ctx.lineTo(0,m.rad); ctx.stroke();
+    ctx.restore();
+    // 落下する隕石（上空→着弾点）
+    var fall=(1-pr)*(m.sec?260:560), rr=m.sec?7:12;
+    ctx.save(); ctx.translate(m.x,m.y-fall);
+    ctx.strokeStyle='rgba(255,170,80,.55)'; ctx.lineWidth=m.sec?4:7; ctx.lineCap='round';   // 尾
+    ctx.beginPath(); ctx.moveTo(0,0); ctx.lineTo(-fall*0.05,-fall*0.28); ctx.stroke();
+    ctx.fillStyle='#5a3a22'; ctx.beginPath(); ctx.arc(0,0,rr,0,6.283); ctx.fill();
+    ctx.fillStyle='rgba(255,140,60,.9)'; ctx.beginPath(); ctx.arc(0,0,rr*0.6,0,6.283); ctx.fill();
+    ctx.restore();
+  }
 }
 function drawSheep(s){
   var hopY=Math.abs(Math.sin(s.hop))*4;
@@ -6334,6 +6426,7 @@ function render(){
   for(i=0;i<enemies.length;i++) if(!enemies[i].dead) drawEnemy(enemies[i]);
   for(i=0;i<sheep.length;i++) drawSheep(sheep[i]);
   for(i=0;i<rocks.length;i++) drawRock(rocks[i]);
+  drawMeteors();
   drawPlayer();
   // ガトリング：リロード中はプレイヤー周囲に進捗リングを表示
   if(P.w&&P.w.gatling&&gat.rl>0){
@@ -9507,6 +9600,9 @@ Array.prototype.forEach.call(document.querySelectorAll('#setview button'),functi
 // 更新履歴：1つのお知らせ内で「バージョン見出し」ごとに変更点を並べる（新しい順）。
 // マージのたびに先頭へ新バージョンを追加し、VERSION も更新する。
 var UPDATES=[
+  {v:'α1.0.212', items:[
+    '新武器「メテオ」を追加！ 上空から隕石を落とす岩属性の大技。着弾までラグがある代わりに単発が非常に重く（威力45）、爆発で敵を強く吹き飛ばします。強化軸は攻撃力／範囲／間隔／射程、特別強化は「剛・攻撃力」「衝撃波（吹き飛ばし強化）」「大爆発」。覚醒「流星群」で着弾ごとに小隕石が飛び散り追撃します。解放：累計討伐8,000 または 武器チケット。',
+  ]},
   {v:'α1.0.211', items:[
     '大剣の覚醒「飛翔斬撃」に貫通の威力減衰を追加。貫くほどダメージが下がり、5体目あたりで0になります（100%→80%→60%→40%→20%）。',
     '騎士の毎レベル成長を「剣系統（剣技＝大剣・刀・鎌・チャクラム・チェンソー）の攻撃力 +1%」に拡張しました。狩人は従来どおり「弓の攻撃力 +1%」。',
