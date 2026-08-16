@@ -1433,7 +1433,7 @@ var ETYPE={
   mummy:    { nm:'マミー',               res:0.45, hp:240, spd:40,  r:17, col:'#cdbb90', dark:'#5c4d2c', xp:5, dmg:24, shape:'mummy',    pts:50, sv:0.13 },
   wraith:   { nm:'レイス',               res:0.12, hp:90,  spd:200, r:12, col:'#9fd8e0', dark:'#2f5a63', xp:3, dmg:16, shape:'wraith',   pts:28, sv:0.08 },
   fly:      { nm:'フライ',               res:0.00, hp:22,  spd:210, r:8,  col:'#7a8a4a', dark:'#33401c', xp:1, dmg:8,  shape:'fly',      pts:5,  sv:0.02, ai:'dash' },
-  shadow:   { nm:'シャドウ',             res:0.20, hp:150, spd:235, r:12, col:'#2a2833', dark:'#0a0810', xp:4, dmg:22, shape:'shadow',   pts:40, sv:0.11 },
+  shadow:   { nm:'シャドウ',             res:0.20, hp:150, spd:235, r:12, col:'#2a2833', dark:'#0a0810', xp:4, dmg:22, shape:'shadow',   pts:40, sv:0.11, noelite:1 },
   gargoyle: { nm:'ガーゴイル',           res:0.60, hp:300, spd:90,  r:16, col:'#8a90a0', dark:'#33384a', xp:6, dmg:22, shape:'gargoyle', pts:64, sv:0.15, ai:'fly' },
   ghoul:    { nm:'グール',               res:0.10, hp:130, spd:110, r:14, col:'#9ab07a', dark:'#3d4a26', xp:3, dmg:18, shape:'ghoul',    pts:30, sv:0.09, ai:'burrow' },
   lich:     { nm:'リッチ',               res:0.15, hp:160, spd:44,  r:14, col:'#b48ad0', dark:'#3f2a58', xp:5, dmg:12, shape:'lich',     pts:52, sv:0.14, ai:'buff', cap:4 },
@@ -2854,7 +2854,7 @@ function figInfo(id){
   if(BOSS[id]){ var B=BOSS[id], tt=ETYPE[B.key]||{}; return {nm:B.nm,shape:tt.shape,col:tt.col,dark:tt.dark,desc:BDEX[id]||'',boss:true}; }
   var t=ETYPE[id]||{}; return {nm:t.nm,shape:t.shape,col:t.col,dark:t.dark,desc:DEX[id]||'',boss:false};
 }
-var VERSION='α1.0.201'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
+var VERSION='α1.0.202'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
 function applySave(o){
   for(var i=0;i<UPG.length;i++) META[UPG[i].id]=0;
   try{
@@ -4425,11 +4425,15 @@ function spawn(dt){
   eliteT-=dt;
   if(eliteT<=0&&!boss){
     eliteT=Math.max(30,54-time*0.015);
-    var k=rollType(), e=makeEnemy(k);
-    // HP倍率は時間で増える（後半に一瞬で溶けて宝箱を落とすだけの存在にならないよう）。時間係数は緩和（0.05→0.03）。
-    var em=3.4+time*0.03;                       // 10分=21倍 / 20分=39倍 / 40分=75倍
-    e.elite=1; e.hp*=em; e.mhp=e.hp; e.r*=1.5; e.res=Math.max(e.res,0.55);
-    flash=Math.max(flash,.3); sfx(90,.5,'sawtooth',.09,.5);
+    var k=rollType(), tries=0;
+    while(ETYPE[k]&&ETYPE[k].noelite&&tries<8){ k=rollType(); tries++; }   // noelite（シャドウ・海坊主など）はエリートにしない
+    if(!(ETYPE[k]&&ETYPE[k].noelite)){
+      var e=makeEnemy(k);
+      // HP倍率は時間で増える（後半に一瞬で溶けて宝箱を落とすだけの存在にならないよう）。時間係数は緩和（0.05→0.03）。
+      var em=3.4+time*0.03;                       // 10分=21倍 / 20分=39倍 / 40分=75倍
+      e.elite=1; e.hp*=em; e.mhp=e.hp; e.r*=1.5; e.res=Math.max(e.res,0.55);
+      flash=Math.max(flash,.3); sfx(90,.5,'sawtooth',.09,.5);
+    }
   }
 }
 function rollType(){
@@ -9375,6 +9379,9 @@ Array.prototype.forEach.call(document.querySelectorAll('#setview button'),functi
 // 更新履歴：1つのお知らせ内で「バージョン見出し」ごとに変更点を並べる（新しい順）。
 // マージのたびに先頭へ新バージョンを追加し、VERSION も更新する。
 var UPDATES=[
+  {v:'α1.0.202', items:[
+    'エリートの「シャドウ」が強すぎたため、シャドウはエリートで出現しないようにしました。',
+  ]},
   {v:'α1.0.201', items:[
     'チケットの表示を見やすくしました。アイコンを🎫武器チケット・🎟キャラチケットに統一し、交換所・解放くじでは一番上に大きく表示。ホーム画面でも所持枚数を確認できます。',
   ]},
