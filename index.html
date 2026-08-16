@@ -1401,11 +1401,12 @@ var ELEM={
   thunder:{ nm:'雷', col:'#ffe14d' },
   holy:{ nm:'光', col:'#ffffff' },
   dark:{ nm:'闇', col:'#a855f7' },
-  grass:{ nm:'草', col:'#7ac74f' }
+  grass:{ nm:'草', col:'#7ac74f' },
+  wind:{ nm:'風', col:'#7fe0c0' }
 };
 // 属性ごとの担い手（一時停止画面の付与率表示に使う）
 var ELW={ fire:['fire','flame'], ice:['ice','blizzard'], thunder:['thunder','chain'],
-          holy:['holy','aura','laser'], dark:['voidh','dhand'], grass:['toxin'] };
+          holy:['holy','aura','laser'], dark:['voidh','dhand'], grass:['toxin'], wind:[] };  // 風は後日カマイタチ/トルネードを追加
 var ETYPE={
   slime:   { nm:'スライム',           res:0.00, hp:34,  spd:46,  r:13, col:'#6ee08a', dark:'#245c35', xp:1, dmg:8,  shape:'blob',   pts:6,   sv:0.035 },
   goblin:  { nm:'ゴブリン',           res:0.08, hp:64,  spd:76,  r:13, col:'#8fd06a', dark:'#3d5c22', xp:2, dmg:11, shape:'goblin', pts:16,  sv:0.06 },
@@ -1730,7 +1731,7 @@ var CONTRACTS=[
   {id:'c_hp',   nm:'頑健の契約',  ic:'❤', cost:15, tx:'最大HP +22%',           ef:{hp:0.22}},
   {id:'c_react',nm:'反応の契約',  ic:'✦', cost:10, tx:'元素反応ダメージ +40%',  ef:{react:0.40}},
   {id:'c_swift',nm:'俊足の契約',  ic:'🏃', cost:15, tx:'移動速度に比例して攻撃UP', ef:{spdatk:1.5}},
-  {id:'c_leech',nm:'吸命の契約',  ic:'🧛', cost:25, tx:'会心時 与ダメの30%回復',   ef:{critheal:0.3}},
+  {id:'c_leech',nm:'吸命の契約',  ic:'🧛', cost:25, tx:'会心時 与ダメの0.3%回復',   ef:{critheal:0.003}},
   {id:'c_low',  nm:'背水の契約',  ic:'🩸', cost:15, tx:'HPが少ないほど攻撃UP（最大+60%）', ef:{lowhp:0.60}},
   {id:'c_phys', nm:'蛮勇の契約',  ic:'⚔', cost:25, tx:'物理+55%／魔法−35%',      ef:{physup:0.55,magdown:0.35}},
   {id:'c_mag',  nm:'秘法の契約',  ic:'🔮', cost:25, tx:'魔法+55%／物理−35%',      ef:{magup:0.55,physdown:0.35}},
@@ -2327,7 +2328,9 @@ var CHNOCONT={};  // キャラ別 ノーコンティニュークリア {char:{st
 var CHNMCLEAR={}; // キャラ別 ナイトメアクリア {char:{stage:1}}
 var CHMAXLV={};   // キャラ別 単走の最高到達レベル
 var CHSURV={};    // キャラ別 累計生存時間（秒）
-var RNAME={'fire+thunder':'過負荷','fire+ice':'融解','ice+thunder':'超電導','dark+fire':'炎症','dark+ice':'凍結','dark+thunder':'感電','dark+holy':'消滅'};
+var RNAME={'fire+thunder':'過負荷','fire+ice':'融解','ice+thunder':'超電導','dark+fire':'炎症','dark+ice':'凍結','dark+thunder':'感電','dark+holy':'消滅',
+  'fire+holy':'聖光','holy+ice':'聖光','holy+thunder':'聖光',
+  'fire+wind':'拡散','ice+wind':'拡散','thunder+wind':'拡散','holy+wind':'拡散','dark+wind':'拡散'};
 function wtier(id){ var x=WX[id]||0,n=0; for(var i=0;i<WTH.length;i++) if(x>=WTH[i]) n++; return n; }
 function picksLeft(id){ if(!MAST[id]) return 0; return Math.max(0,wtier(id)-((SEL[id]||[]).length)); }   // 新システム有効な武器のみ
 function anyPicks(){ for(var w in MAST) if(picksLeft(w)) return 1; return 0; }
@@ -2884,7 +2887,7 @@ function figInfo(id){
   if(BOSS[id]){ var B=BOSS[id], tt=ETYPE[B.key]||{}; return {nm:B.nm,shape:tt.shape,col:tt.col,dark:tt.dark,desc:BDEX[id]||'',boss:true}; }
   var t=ETYPE[id]||{}; return {nm:t.nm,shape:t.shape,col:t.col,dark:t.dark,desc:DEX[id]||'',boss:false};
 }
-var VERSION='α1.0.212'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
+var VERSION='α1.0.213'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
 function applySave(o){
   for(var i=0;i<UPG.length;i++) META[UPG[i].id]=0;
   try{
@@ -3048,9 +3051,9 @@ function elemChance(el){
   var lv=(SRC&&P.w[SRC])||1;
   return Math.min(1,0.30+0.05*lv+0.10*(P.p.affinity||0)+0.04*M('affinity')+CH().ele+TR(SRC,'ele'));
 }
-// 元素反応のダメージ倍率
+// 元素反応のダメージ倍率（原神の元素熟知に相当。ベース0.9・元素熟知5で最大2.15前後）
 function elemPow(){
-  return 0.55+0.25*(P.p.mastery||0)+0.10*M('mastery')+CH().elp+GROW('elp');
+  return 0.9+0.25*(P.p.mastery||0)+0.10*M('mastery')+CH().elp+GROW('elp');
 }
 
 /* ============ ループ ============ */
@@ -4370,7 +4373,7 @@ function applyElem(e,el,dmg){
     rtok--; rdep++; react(e,prev,el,dmg); rdep--;
     return;
   }
-  e.el=el; e.elT=4;
+  e.el=el; e.elT=4; e.elDmg=dmg;   // 付与した一撃のダメージを記憶（増幅反応で「両方の強い方」を参照）
 }
 function label(e,txt,col){
   if(dmgs.length>110) dmgs.shift();
@@ -4436,63 +4439,81 @@ function spreadPoison(src){
     }
   }
 }
+// 元素反応：2方式。増幅系(融解・聖光)＝両方の一撃の強い方に依存／激変系(過負荷ほか)＝プレイヤーLv基準で起爆武器に依存しない
 function react(e,a,b,dmg){
-  var key=[a,b].sort().join('+'), d=dmg||0, ep=elemPow();
+  var key=[a,b].sort().join('+'), ep=elemPow();
+  var amp=Math.max(dmg||0, e.elDmg||0);      // 増幅系：起爆と付与済みの一撃、強い方を参照（順番を選べないため）
+  var LB=6+P.lv*2.0;                         // 激変系：Lv基準値（起爆武器の強弱に左右されない）
   var keep=SRC; SRC=null;                    // 反応ダメージは武器の会心を継がない
   RK=RNAME[key]||'拡散';                      // リザルトの反応別集計用
-  e.el=0; e.elT=0; e.rcd=0.55; reacts++; score+=PTS_REACT;
-  if(key==='fire+thunder'){                 // 過負荷：爆発
-    label(e,'過負荷','#ffb066');
-    boom(e.x,e.y,115,(d*1.6+34)*ep,'#ff9040',0);
-    shake=Math.min(18,shake+6); hitStop=Math.max(hitStop,.06);
-    sfx(150,.24,'sawtooth',.09,.35); noise(.22,.12);
-  }else if(key==='fire+ice'){               // 融解：単体特大
+  e.el=0; e.elT=0; e.elDmg=0; e.rcd=0.55; reacts++; score+=PTS_REACT;
+  if(key==='fire+ice'){                      // 融解：増幅・単体特大
     label(e,'融解','#ff8080');
     fx.push({k:'ring',x:e.x,y:e.y,r:0,to:66,t:0,life:.3,col:'#ff8a8a'});
-    hurt(e,(d*1.9+22)*ep,0,-1,null);
+    hurt(e,amp*2.2*ep,0,-1,null);
     hitStop=Math.max(hitStop,.045);
     sfx(560,.2,'sine',.075,.3);
-  }else if(key==='ice+thunder'){            // 超電導：範囲＋鈍足
+  }else if(key==='fire+holy'||key==='holy+ice'||key==='holy+thunder'){   // 聖光：増幅・単体＋短スタン
+    label(e,'聖光','#fff2b0');
+    fx.push({k:'ring',x:e.x,y:e.y,r:0,to:70,t:0,life:.32,col:'#fff2b0'});
+    hurt(e,amp*2.0*ep,0,-1,null);
+    e.frz=Math.max(e.frz||0,0.35*(1-(e.res||0)));
+    hitStop=Math.max(hitStop,.04);
+    sfx(1500,.18,'triangle',.06,.3);
+  }else if(key==='fire+thunder'){            // 過負荷：激変・範囲（半径115→85に縮小）
+    label(e,'過負荷','#ffb066');
+    boom(e.x,e.y,85,LB*2.0*ep,'#ff9040',0);
+    shake=Math.min(18,shake+5); hitStop=Math.max(hitStop,.055);
+    sfx(150,.24,'sawtooth',.09,.35); noise(.22,.12);
+  }else if(key==='ice+thunder'){             // 超電導：激変・範囲＋鈍足
     label(e,'超電導','#9fe6ff');
-    boom(e.x,e.y,135,(d*0.85+20)*ep,'#ffe14d',3.2);
+    boom(e.x,e.y,135,LB*1.4*ep,'#ffe14d',3.2);
     shake=Math.min(14,shake+3.5);
     sfx(1400,.22,'triangle',.07,.28);
-  }else if(key==='dark+fire'){              // 炎症：単体に強い継続ダメージ
+  }else if(key==='dark+fire'){               // 炎症：激変・単体DoT
     label(e,'炎症','#ff9a5c');
-    dot(e,(d*0.55+10)*ep,5.0,'#ff7a2f');
+    dot(e,LB*0.7*ep,5.0,'#ff7a2f');
     fx.push({k:'ring',x:e.x,y:e.y,r:0,to:52,t:0,life:.3,col:'#ff7a2f'});
     sfx(240,.22,'sawtooth',.06,.5);
-  }else if(key==='dark+ice'){               // 凍結：完全停止（抵抗で短縮）
+  }else if(key==='dark+ice'){                // 凍結：激変・単体＋完全停止
     label(e,'凍結','#bfefff');
     e.frz=Math.max(e.frz||0,1.2*(1-(e.res||0)));
-    hurt(e,(d*0.6+14)*ep,0,-1,null);
+    hurt(e,LB*1.6*ep,0,-1,null);
     fx.push({k:'ring',x:e.x,y:e.y,r:0,to:60,t:0,life:.35,col:'#bfefff'});
     sfx(1800,.18,'sine',.06,.4);
-  }else if(key==='dark+thunder'){           // 感電：周囲へ広がる継続ダメージ
+  }else if(key==='dark+thunder'){            // 感電：激変・DoT＋周囲へ伝播
     label(e,'感電','#ffe14d');
-    dot(e,(d*0.4+8)*ep,4.0,'#ffe14d');
+    dot(e,LB*0.5*ep,4.0,'#ffe14d');
     var n2=0;
     for(var i2=enemies.length-1;i2>=0&&n2<4;i2--){
       var o=enemies[i2];
       if(o===e||o.dead) continue;
       if(Math.hypot(o.x-e.x,o.y-e.y)<150){
         bolts.push({x1:e.x,y1:e.y,x2:o.x,y2:o.y,t:0,life:.22,col:'#ffe14d'});
-        dot(o,(d*0.25+5)*ep,4.0,'#ffe14d'); n2++;
+        dot(o,LB*0.3*ep,4.0,'#ffe14d'); n2++;
       }
     }
     sfx(1000,.2,'sawtooth',.06,.5);
-  }else if(key==='dark+holy'){              // 消滅：最大HPの1%、ただし元ダメの5倍が上限
+  }else if(key==='dark+holy'){               // 消滅：独立・最大HPの1.5%（Lv基準×5が上限）
     label(e,'消滅','#d9b0ff');
-    var dm=Math.min(e.mhp*0.01,d*5)*ep;
+    var dm=Math.min(e.mhp*0.015,LB*5)*ep;
     fx.push({k:'ring',x:e.x,y:e.y,r:0,to:88,t:0,life:.4,col:'#d9b0ff'});
     hurt(e,dm,0,-1,null);
     shake=Math.min(16,shake+4); hitStop=Math.max(hitStop,.05);
     sfx(140,.3,'sine',.08,.25); noise(.2,.09);
-  }else{                                    // 拡散：元素を周囲へ伝播
-    var other=(a==='holy')?b:a;
-    label(e,'拡散','#ffffff');
-    fx.push({k:'ring',x:e.x,y:e.y,r:0,to:155,t:0,life:.32,col:'#ffffff'});
-    spread(e,other,(d*0.6+14)*ep);
+  }else{                                     // 拡散：風＋任意＝設定役。ダメージ0で相手側の属性を周囲へ撒く
+    var other=(a==='wind')?b:a; if(other==='wind') other=b;
+    label(e,'拡散','#c8fff0');
+    fx.push({k:'ring',x:e.x,y:e.y,r:0,to:155,t:0,life:.32,col:'#c8fff0'});
+    var n3=0, cap3=6+TR('aura','spread');
+    for(var i3=enemies.length-1;i3>=0&&n3<cap3;i3--){
+      var o3=enemies[i3]; if(o3===e||o3.dead) continue;
+      if(Math.hypot(o3.x-e.x,o3.y-e.y)<155){
+        bolts.push({x1:e.x,y1:e.y,x2:o3.x,y2:o3.y,t:0,life:.22,col:'#c8fff0'});
+        o3.el=other; o3.elT=4; o3.elDmg=amp*0.5;   // ダメージなしで属性だけ付与（他の武器の反応のお膳立て）
+        n3++;
+      }
+    }
     sfx(880,.15,'sine',.06,1.7);
   }
   SRC=keep; RK=null;
@@ -9600,6 +9621,12 @@ Array.prototype.forEach.call(document.querySelectorAll('#setview button'),functi
 // 更新履歴：1つのお知らせ内で「バージョン見出し」ごとに変更点を並べる（新しい順）。
 // マージのたびに先頭へ新バージョンを追加し、VERSION も更新する。
 var UPDATES=[
+  {v:'α1.0.213', items:[
+    '元素反応を大幅リニューアル。反応の威力ベースを引き上げ（elemPow 0.55→0.9）、原神のように2方式へ：融解・聖光は「起爆と付与済みの一撃のうち強い方」に依存する増幅系、過負荷・超電導・凍結・炎症・感電はプレイヤーLv基準で起爆武器に左右されない激変系にしました。過負荷の範囲を少し縮小（半径115→85）。',
+    '光の反応を追加。光＋炎/氷/雷で「聖光」（単体特大＋短スタン）が発生します。',
+    '風属性を新設。風＋他属性で「拡散」が発生し、ダメージの代わりに周囲の敵へ属性を撒いて“他の武器の反応のお膳立て”をします（風武器は近日追加予定）。',
+    '不具合修正：吸命の契約の回復量が過大だった問題を修正（会心時 与ダメの0.3%回復に）。',
+  ]},
   {v:'α1.0.212', items:[
     '新武器「メテオ」を追加！ 上空から隕石を落とす岩属性の大技。着弾までラグがある代わりに単発が非常に重く（威力45）、爆発で敵を強く吹き飛ばします。強化軸は攻撃力／範囲／間隔／射程、特別強化は「剛・攻撃力」「衝撃波（吹き飛ばし強化）」「大爆発」。覚醒「流星群」で着弾ごとに小隕石が飛び散り追撃します。解放：累計討伐8,000 または 武器チケット。',
   ]},
