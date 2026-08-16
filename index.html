@@ -5,6 +5,17 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
 <meta name="theme-color" content="#0b0818">
 <title>勇者サバイバー — プロトタイプ</title>
+<!-- PWA：インストール可＆オフライン/強制リロード対策 -->
+<link rel="manifest" href="./manifest.webmanifest">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="勇者サバイバー">
+<link rel="apple-touch-icon" href="./icon-180.png">
+<link rel="icon" type="image/png" href="./icon-192.png">
+<script>
+if('serviceWorker' in navigator){ window.addEventListener('load',function(){ navigator.serviceWorker.register('./sw.js').catch(function(){}); }); }
+</script>
 <!-- Google tag (gtag.js) — GA4 タグ検出用。Firebase Analytics も同じ dataLayer/gtag を共有する。 -->
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-JWFHEG2D2S"></script>
 <script>
@@ -2914,7 +2925,7 @@ function figInfo(id){
   if(BOSS[id]){ var B=BOSS[id], tt=ETYPE[B.key]||{}; return {nm:B.nm,shape:tt.shape,col:tt.col,dark:tt.dark,desc:BDEX[id]||'',boss:true}; }
   var t=ETYPE[id]||{}; return {nm:t.nm,shape:t.shape,col:t.col,dark:t.dark,desc:DEX[id]||'',boss:false};
 }
-var VERSION='α1.0.218'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
+var VERSION='α1.0.219'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
 function applySave(o){
   for(var i=0;i<UPG.length;i++) META[UPG[i].id]=0;
   try{
@@ -9802,6 +9813,9 @@ Array.prototype.forEach.call(document.querySelectorAll('#setview button'),functi
 // 更新履歴：1つのお知らせ内で「バージョン見出し」ごとに変更点を並べる（新しい順）。
 // マージのたびに先頭へ新バージョンを追加し、VERSION も更新する。
 var UPDATES=[
+  {v:'α1.0.219', items:[
+    'PWA対応。ホーム画面に追加すればアプリのように起動でき（全画面）、Service Workerでオフライン/ネット不調でも即ロードできます。ラン自動セーブと合わせて、強制リロードでの中断に強くなりました。',
+  ]},
   {v:'α1.0.218', items:[
     'ラン自動セーブ機能を追加。強制リロードやリログでランが中断されても、ホームの「続きから」で復帰できます（無限ランにも対応）。ずるができないよう、HPは中断時のまま／ボスとエリートも残HPで復元されます（雑魚は再登場）。',
   ]},
