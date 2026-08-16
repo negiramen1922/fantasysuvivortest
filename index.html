@@ -2859,7 +2859,7 @@ function figInfo(id){
   if(BOSS[id]){ var B=BOSS[id], tt=ETYPE[B.key]||{}; return {nm:B.nm,shape:tt.shape,col:tt.col,dark:tt.dark,desc:BDEX[id]||'',boss:true}; }
   var t=ETYPE[id]||{}; return {nm:t.nm,shape:t.shape,col:t.col,dark:t.dark,desc:DEX[id]||'',boss:false};
 }
-var VERSION='α1.0.205'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
+var VERSION='α1.0.206'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
 function applySave(o){
   for(var i=0;i<UPG.length;i++) META[UPG[i].id]=0;
   try{
@@ -8555,9 +8555,9 @@ var LOTTO_SLOTS=[5,2,1,100,1,2,5]; // 各スロットの景品。真ん中＝大
 var LOTTO_W=[1,6,20,1,20,6,1];      // 当たりやすさ。真ん中は激レア・両隣が最も出やすい＝惜しい演出
 var LOTTO_JP=3;                      // 大当たりスロット（真ん中）
 var lcv=null, lctx=null, lottoBalls=[], lottoRAF=false, lottoLast=0, lottoSaveT=0, lottoHoldT=null, lottoFlash=0, lottoMult=1;
-var LSLOT_TOP=215, LSLOT_H=150;                   // スロットの上端と高さ（縦長）
+var LSLOT_TOP=262, LSLOT_H=90;                    // スロットの上端と高さ（枠は低め・ピン領域を広く）
 function lcolX(c){ return 30+c*40; }              // スロット0..6 → x（30..270）
-function lrowY(r){ return 40+r*((200-40)/6); }    // 釘の段 0..6 → y（40..200：スロットの上まで）
+function lrowY(r){ return 40+r*((250-40)/6); }    // 釘の段 0..6 → y（40..250：ピン領域を広げた）
 function lottoSave(){ var t=performance.now(); if(t-lottoSaveT>500){ lottoSaveT=t; saveGame(); } }   // 連投中は保存を間引く
 function ticketBar(){
   return '<div style="font-size:16px;font-weight:700"><span style="color:#8fe0ff">🎫 武器 '+fmt(WTIX)+'</span>　<span style="color:#ffd24a">🎟 キャラ '+fmt(CTIX)+'</span></div>';
@@ -8580,7 +8580,7 @@ function renderLotto(){
   lottoPurse(); lottoUnlockList(); drawLotto();
 }
 function ballXY(bl){
-  if(bl.t>=6) return {x:lcolX(bl.cols[6]),y:LSLOT_TOP+72};
+  if(bl.t>=6) return {x:lcolX(bl.cols[6]),y:LSLOT_TOP+44};
   var r=Math.floor(bl.t), fr=bl.t-r;
   return {x:lcolX(bl.cols[r])+(lcolX(bl.cols[r+1])-lcolX(bl.cols[r]))*fr,
           y:lrowY(r)+(lrowY(r+1)-lrowY(r))*fr-Math.sin(fr*Math.PI)*7};
@@ -8591,7 +8591,7 @@ function drawLotto(){
   var g=lctx, W2=lcv.width, H2=lcv.height, c, i, k;
   g.clearRect(0,0,W2,H2);
   g.fillStyle='rgba(150,130,220,.55)';
-  for(var r=0;r<LPEGS.length;r++){ var y=52+r*29+((r*13)%6); var row=LPEGS[r];
+  for(var r=0;r<LPEGS.length;r++){ var y=52+r*44+((r*13)%6); var row=LPEGS[r];
     for(k=0;k<row.length;k++){ var jy=((r*5+k*7)%5)-2, rad=((r+k)%3===0)?3.6:2.6;
       g.beginPath(); g.arc(row[k], y+jy, rad, 0, 6.283); g.fill(); }
   }
@@ -8687,7 +8687,7 @@ function lottoJackpot(type,mult){
   }
   var tg=Math.floor(Math.random()*12); cells[tg]=result;
   lottoRoulette={mode:mode, type:type, result:result, cells:cells, tg:tg, s:Math.floor(Math.random()*12), laps:3, t:0, dur:2.4, li:-1};
-  lottoFlash=0.5; if(navigator.vibrate){ try{ navigator.vibrate([30,20,30]); }catch(e){} }
+  lottoFlash=0; if(navigator.vibrate){ try{ navigator.vibrate([30,20,30]); }catch(e){} }   // ルーレット中は黄色く染めない
   sfx(1200,.12,'square',.06,1.3);
 }
 function rouletteMarkIdx(R){ var ease=1-Math.pow(1-Math.min(1,R.t/R.dur),3); var span=R.laps*12+(((R.tg-R.s)%12)+12)%12; return Math.round(R.s+span*ease)%12; }
@@ -8717,7 +8717,6 @@ function drawRoulette(){   // ラン中の宝箱と同じ四角い（4×4外周1
     if(R.mode==='ticket'){ g.fillStyle='#ffe14d'; g.font='bold 24px sans-serif'; g.fillText('+'+R.result,ccx+cw2/2,ccy+cw2/2-6); g.font='10px sans-serif'; g.fillStyle='#9a90c0'; g.fillText(isC?'キャラチケット':'武器チケット',ccx+cw2/2,ccy+cw2/2+16); }
     else { var wn=isC?(CHARS[R.result]&&CHARS[R.result].nm):(WEAPONS[R.result]&&WEAPONS[R.result].nm); g.fillStyle='#9be89b'; g.font='bold 15px sans-serif'; g.fillText('入手！',ccx+cw2/2,ccy+cw2/2-8); g.fillStyle='#fff'; g.font='bold 12px sans-serif'; g.fillText(wn||'',ccx+cw2/2,ccy+cw2/2+12); }
   } else { g.fillStyle='#ffd24a'; g.font='bold 15px sans-serif'; g.fillText('大当たり',ccx+cw2/2,ccy+cw2/2); }
-  if(lottoFlash>0){ g.save(); g.globalAlpha=Math.min(0.5,lottoFlash); g.fillStyle='#ffe14d'; g.fillRect(0,0,W2,H2); g.restore(); }
   g.textBaseline='alphabetic';
 }
 function lottoRouletteFinish(){
@@ -9474,6 +9473,9 @@ Array.prototype.forEach.call(document.querySelectorAll('#setview button'),functi
 // 更新履歴：1つのお知らせ内で「バージョン見出し」ごとに変更点を並べる（新しい順）。
 // マージのたびに先頭へ新バージョンを追加し、VERSION も更新する。
 var UPDATES=[
+  {v:'α1.0.206', items:[
+    '解放くじの見た目を調整：大当たりルーレット中に画面が黄色く染まっていたのをやめ、スロットの枠を低くして釘（ピン）の当たる範囲を広げました。',
+  ]},
   {v:'α1.0.205', items:[
     '解放くじ画面をスクロールできるようにし、「閉じる」を押せない不具合を修正しました。',
     '大当たりのルーレットを、ラン中の宝箱と同じ四角いルーレットに変更しました。',
