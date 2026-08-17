@@ -2693,7 +2693,7 @@ var CHARS={
     grow:{k:'ktcounter', per:20, unit:'', tx:'20レベルごと 刀のカウンター最大ストック +1'},
     hp:0.95, spd:1.00, pw:1.10, area:1.00, ele:0, elp:0, crit:0.08, regen:0,
     cost:0, cond:null, val:0, condTx:'', tkt:1 },
-  android:{ nm:'PF-202', glyph:'\u{1F916}', w:'inferno',
+  android:{ nm:'ヴァルカン', glyph:'\u{1F916}', w:'inferno',
     tx:'灼熱ビームを搭載した自律機。高速で回り込み、標的を焼き続ける。会心は持たないが熱を制御して撃ち続ける。',
     st:'移動速度 +15% ／ 元素付与 +8% ／ 会心率 −8%',
     grow:{k:'infheat', per:10, unit:'段', tx:'10レベルごと インフェルノの熱容量・冷却速度を強化'},
@@ -2949,7 +2949,7 @@ function figInfo(id){
   if(BOSS[id]){ var B=BOSS[id], tt=ETYPE[B.key]||{}; return {nm:B.nm,shape:tt.shape,col:tt.col,dark:tt.dark,desc:BDEX[id]||'',boss:true}; }
   var t=ETYPE[id]||{}; return {nm:t.nm,shape:t.shape,col:t.col,dark:t.dark,desc:DEX[id]||'',boss:false};
 }
-var VERSION='α1.0.225'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
+var VERSION='α1.0.226'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
 function applySave(o){
   for(var i=0;i<UPG.length;i++) META[UPG[i].id]=0;
   try{
@@ -3155,7 +3155,7 @@ function GROW(k){ var g=CH().grow; return (g&&g.k===k)?g.v*(P.lv-1):0; }
 function scytheLvBonus(){ var g=CH().grow; return (g&&g.k==='scythe_cnt')?Math.floor(P.lv/g.per):0; }
 // サムライ：20レベルごとに刀のカウンター最大ストック +1（階段式）
 function samuraiCtr(){ var g=CH().grow; return (g&&g.k==='ktcounter')?Math.floor(P.lv/g.per):0; }
-// PF-202：10レベルごとにインフェルノの熱容量・冷却速度を強化（階段式）
+// ヴァルカン：10レベルごとにインフェルノの熱容量・冷却速度を強化（階段式）
 function androidHeat(){ var g=CH().grow; return (g&&g.k==='infheat')?Math.floor(P.lv/g.per):0; }
 // 爆弾魔：武器由来の爆発だけを伸ばす（元素反応の爆発は対象外）
 function pw(w){
@@ -3560,8 +3560,8 @@ var INF={tgt:0, ramp:0, tick:0, on:false, ex:0, ey:0, extra:[], heat:0, over:fal
 function infernoTick(dt){
   var rng=RNG('inferno'), extra=Math.round(CNT('inferno'));       // 数軸：追加ビーム本数
   var keep=TF('inferno','rampkeep')||AW('inferno');
-  var ah=androidHeat();                                                                 // PF-202：10レベルごとに熱管理強化
-  var coolRate=0.5*(1+0.3*DURV('inferno')+TR('inferno','cool'))*(1+0.15*ah);            // 冷却速度（持続軸＋PF-202で上昇）
+  var ah=androidHeat();                                                                 // ヴァルカン：10レベルごとに熱管理強化
+  var coolRate=0.5*(1+0.3*DURV('inferno')+TR('inferno','cool'))*(1+0.15*ah);            // 冷却速度（持続軸＋ヴァルカンで上昇）
   // オーバーヒート中：ビーム停止。熱ゲージが0に戻るまで撃てない。
   if(INF.over){
     INF.on=false; INF.extra=[];
@@ -3586,7 +3586,7 @@ function infernoTick(dt){
     e=cand[0].e; INF.tgt=e.uid; INF.ramp=keep?INF.ramp:0;         // 新ロックで火力リセット（維持特性は引き継ぎ）
   }
   // 発熱：照射中は熱がたまり、満タンでオーバーヒート（強制冷却へ）。持続軸で発熱を緩やかに（＝熱容量アップ）。
-  var heatUp=0.34/(1+0.25*DURV('inferno')+TR('inferno','heatcap')+0.12*ah);   // PF-202：熱容量増（過熱しにくい）
+  var heatUp=0.34/(1+0.25*DURV('inferno')+TR('inferno','heatcap')+0.12*ah);   // ヴァルカン：熱容量増（過熱しにくい）
   INF.heat=Math.min(1,INF.heat+dt*heatUp);
   if(INF.heat>=1){ INF.over=true; INF.on=false; INF.extra=[]; return; }
   INF.on=true; INF.ex=e.x; INF.ey=e.y;
@@ -9877,6 +9877,9 @@ Array.prototype.forEach.call(document.querySelectorAll('#setview button'),functi
 // 更新履歴：1つのお知らせ内で「バージョン見出し」ごとに変更点を並べる（新しい順）。
 // マージのたびに先頭へ新バージョンを追加し、VERSION も更新する。
 var UPDATES=[
+  {v:'α1.0.226', items:[
+    'アンドロイドのキャラ名を「ヴァルカン」に変更しました。',
+  ]},
   {v:'α1.0.225', items:[
     '新キャラ「PF-202」（アンドロイド）を追加！ 初期武器はインフェルノビーム。移動速度+15%／元素付与+8%／会心率−8%の高機動ビーム機で、10レベルごとにインフェルノの熱容量・冷却速度が強化され過熱しにくくなります。解放：交換所でキャラチケット。',
   ]},
