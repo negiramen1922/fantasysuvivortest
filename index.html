@@ -2983,7 +2983,7 @@ function figInfo(id){
   if(BOSS[id]){ var B=BOSS[id], tt=ETYPE[B.key]||{}; return {nm:B.nm,shape:tt.shape,col:tt.col,dark:tt.dark,desc:BDEX[id]||'',boss:true}; }
   var t=ETYPE[id]||{}; return {nm:t.nm,shape:t.shape,col:t.col,dark:t.dark,desc:DEX[id]||'',boss:false};
 }
-var VERSION='α1.0.233'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
+var VERSION='α1.0.234'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
 function applySave(o){
   for(var i=0;i<UPG.length;i++) META[UPG[i].id]=0;
   try{
@@ -7030,6 +7030,9 @@ function slashTint(col){
 // 落雷（サンダー）ドット絵スプライト：下端＝着弾点、上へ伸びる稲妻。3フレームのフリッカー
 var FXBOLT=new Image(), FXBOLT_RDY=0; FXBOLT.onload=function(){ FXBOLT_RDY=1; }; FXBOLT.src='assets/fx_bolt.png';
 var FXBOLT_FW=96, FXBOLT_FH=240, FXBOLT_FR=3;
+// 聖光の柱（ホーリージャッジ）ドット絵スプライト：下端＝地面、上へ伸びる光の柱。3フレームのシマー
+var FXPILLAR=new Image(), FXPILLAR_RDY=0; FXPILLAR.onload=function(){ FXPILLAR_RDY=1; }; FXPILLAR.src='assets/fx_pillar.png';
+var FXPILLAR_FW=120, FXPILLAR_FH=360, FXPILLAR_FR=3;
 function sprReady(n){ return !!SPRRDY[n]; }
 function sprTinted(n,tint,alpha){
   var key=n+'|'+tint+'|'+alpha, c=SPRT[key];
@@ -8220,6 +8223,19 @@ function drawHole(h){
 }
 function drawPillar(f){
   var k=f.t/f.life;
+  if(FXPILLAR_RDY){
+    // ドット絵：下端(地面)を f.y に合わせ上へ伸びる光の柱。フレーム切替でシマー
+    var fr=Math.min(FXPILLAR_FR-1, Math.floor(f.t/f.life*FXPILLAR_FR));
+    var W=f.r*2.2, H=460;
+    ctx.save(); ctx.globalAlpha=(1-k)*0.95; ctx.imageSmoothingEnabled=false;
+    ctx.drawImage(FXPILLAR, fr*FXPILLAR_FW,0,FXPILLAR_FW,FXPILLAR_FH, f.x-W/2, f.y-H, W, H);
+    ctx.imageSmoothingEnabled=true;
+    // 地面の着弾リング（安価）
+    ctx.globalAlpha=(1-k); ctx.strokeStyle='#fff4c2'; ctx.lineWidth=3*(1-k)+1;
+    ctx.beginPath(); ctx.arc(f.x,f.y,f.r*(0.4+k*0.7),0,6.3); ctx.stroke();
+    ctx.globalAlpha=1; ctx.restore();
+    return;
+  }
   ctx.save(); ctx.globalAlpha=(1-k)*0.85;
   var w=f.r*(1-k*0.35);
   var g=ctx.createLinearGradient(0,f.y-460,0,f.y);
@@ -10069,6 +10085,9 @@ Array.prototype.forEach.call(document.querySelectorAll('#setview button'),functi
 // 更新履歴：1つのお知らせ内で「バージョン見出し」ごとに変更点を並べる（新しい順）。
 // マージのたびに先頭へ新バージョンを追加し、VERSION も更新する。
 var UPDATES=[
+  {v:'α1.0.234', items:[
+    'ホーリージャッジ（審判の剣・覚醒の聖光の柱）の演出をドット絵アニメに刷新しました！ 白核＋金縁のテーパー柱に光の粒が舞い、地面に着弾リングが広がります。重かったグラデーション塗りをスプライト描画へ置き換えて軽量化しています。',
+  ]},
   {v:'α1.0.233', items:[
     'サンダー（落雷）の演出をドット絵アニメに刷新しました！ 白い核＋黄色いグロー＋枝分かれスパークのジグザグ稲妻が着弾点に落ちるようになりました（3フレームのフリッカー付き）。',
   ]},
