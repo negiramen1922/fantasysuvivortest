@@ -2983,7 +2983,7 @@ function figInfo(id){
   if(BOSS[id]){ var B=BOSS[id], tt=ETYPE[B.key]||{}; return {nm:B.nm,shape:tt.shape,col:tt.col,dark:tt.dark,desc:BDEX[id]||'',boss:true}; }
   var t=ETYPE[id]||{}; return {nm:t.nm,shape:t.shape,col:t.col,dark:t.dark,desc:DEX[id]||'',boss:false};
 }
-var VERSION='α1.0.231'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
+var VERSION='α1.0.232'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
 function applySave(o){
   for(var i=0;i<UPG.length;i++) META[UPG[i].id]=0;
   try{
@@ -7015,6 +7015,18 @@ function drawBooms(){
   }
   ctx.imageSmoothingEnabled=true;
 }
+// 斬撃（大剣・刀・カマイタチ・カウンター）ドット絵スプライト：白基調を武器色でtintして共通利用
+var FXSLASH=new Image(), FXSLASH_RDY=0; FXSLASH.onload=function(){ FXSLASH_RDY=1; }; FXSLASH.src='assets/fx_slash.png';
+var FXSLASH_FW=128, FXSLASH_FR=5, SLASH_TINT={};
+function slashTint(col){
+  if(SLASH_TINT[col]) return SLASH_TINT[col];
+  var w=FXSLASH_FW*FXSLASH_FR, h=FXSLASH_FW;
+  var c=document.createElement('canvas'); c.width=w; c.height=h;
+  var g=c.getContext('2d'); g.imageSmoothingEnabled=false;
+  g.drawImage(FXSLASH,0,0);
+  g.globalCompositeOperation='source-atop'; g.fillStyle=col; g.globalAlpha=0.6; g.fillRect(0,0,w,h);
+  SLASH_TINT[col]=c; return c;
+}
 function sprReady(n){ return !!SPRRDY[n]; }
 function sprTinted(n,tint,alpha){
   var key=n+'|'+tint+'|'+alpha, c=SPRT[key];
@@ -8423,6 +8435,16 @@ function drawGem(g){
 }
 function drawSlash(f){
   var k=f.t/f.life;
+  if(FXSLASH_RDY){
+    // ドット絵：外周＝f.rad（現行の薙ぎ半径）に合わせ、既存より大きくならないよう配置
+    var fr=Math.min(FXSLASH_FR-1, Math.floor(k*FXSLASH_FR));
+    var D=f.rad*2.2, img=slashTint(f.col||'#dcd6ff');
+    ctx.save(); ctx.translate(f.x,f.y); ctx.rotate(f.a);
+    ctx.imageSmoothingEnabled=false;
+    ctx.drawImage(img, fr*FXSLASH_FW,0,FXSLASH_FW,FXSLASH_FW, -D/2,-D/2, D,D);
+    ctx.imageSmoothingEnabled=true; ctx.restore();
+    return;
+  }
   ctx.save(); ctx.translate(f.x,f.y); ctx.rotate(f.a);
   ctx.globalAlpha=1-k; ctx.strokeStyle=f.col; ctx.lineWidth=9*(1-k*0.6); ctx.lineCap='round';
   var sweep=f.arc*(0.35+k*0.65);
@@ -10035,6 +10057,9 @@ Array.prototype.forEach.call(document.querySelectorAll('#setview button'),functi
 // 更新履歴：1つのお知らせ内で「バージョン見出し」ごとに変更点を並べる（新しい順）。
 // マージのたびに先頭へ新バージョンを追加し、VERSION も更新する。
 var UPDATES=[
+  {v:'α1.0.232', items:[
+    '斬撃の演出をドット絵アニメに刷新しました！ 大剣・刀・カマイタチ・敵のカウンター斬りが、三日月型のドット絵スプライトを武器色に染めて表示されるようになりました（大きさはこれまでと同じに調整）。',
+  ]},
   {v:'α1.0.231', items:[
     '爆発の演出をドット絵アニメに刷新しました！ ダイナマイト・ファイヤーボール・メテオ・元素反応（過負荷／超電導）などの爆発が、粒子ばら撒きからドット絵スプライトの描画に変わり、見た目も統一され動作も軽くなりました。',
   ]},
