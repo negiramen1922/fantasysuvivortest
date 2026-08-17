@@ -1851,7 +1851,7 @@ var P, enemies, gems, shots, fx, dmgs, parts, bolts, chests, coins, chaks, scys,
 var time, kills, spawnT, eliteT, shake, hitStop, flash, chain, chainT, choices;
 var whirlA, marks, reacts, crits, rdep, rtok, pending, bossRelicQ=0, score, silver, gold, magFx, chakSpin, swingT, swingDir;
 var SWDUR=0.42;   // 大剣の振りの長さ（秒）。大きいほどゆっくり
-var ebul, boss, bossN, quakes, dhits, vacs, vacT, bells, swords, zones, volley, relics, puddles, sheep, trails, meteors, twisters, harps, briars;
+var ebul, boss, bossN, quakes, dhits, vacs, vacT, bells, swords, zones, volley, relics, puddles, sheep, trails, meteors, twisters, harps, briars, explosions;
 var lasers;
 
 /* ============ 武器熟練度・特性 ============ */
@@ -2983,7 +2983,7 @@ function figInfo(id){
   if(BOSS[id]){ var B=BOSS[id], tt=ETYPE[B.key]||{}; return {nm:B.nm,shape:tt.shape,col:tt.col,dark:tt.dark,desc:BDEX[id]||'',boss:true}; }
   var t=ETYPE[id]||{}; return {nm:t.nm,shape:t.shape,col:t.col,dark:t.dark,desc:DEX[id]||'',boss:false};
 }
-var VERSION='α1.0.230'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
+var VERSION='α1.0.231'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
 function applySave(o){
   for(var i=0;i<UPG.length;i++) META[UPG[i].id]=0;
   try{
@@ -3166,7 +3166,7 @@ function reset(){
     P.spd*=1+contractStat('spd');
     var _hb=contractStat('hp'); if(_hb){ P.max=Math.round(P.max*(1+_hb)); P.hp=P.max; }
   }
-  enemies=[]; gems=[]; shots=[]; fx=[]; dmgs=[]; parts=[]; bolts=[]; chests=[]; coins=[]; chaks=[]; scys=[]; bombs=[]; rocks=[]; holes=[]; ebul=[]; quakes=[]; dhits=[]; vacs=[]; vacT=40; bells=[]; swords=[]; zones=[]; volley=[]; puddles=[]; sheep=[]; trails=[]; meteors=[]; twisters=[]; harps=[]; briars=[]; relics=placeRelics();
+  enemies=[]; gems=[]; shots=[]; fx=[]; dmgs=[]; parts=[]; bolts=[]; chests=[]; coins=[]; chaks=[]; scys=[]; bombs=[]; rocks=[]; holes=[]; ebul=[]; quakes=[]; dhits=[]; vacs=[]; vacT=40; bells=[]; swords=[]; zones=[]; volley=[]; puddles=[]; sheep=[]; trails=[]; meteors=[]; twisters=[]; harps=[]; briars=[]; explosions=[]; relics=placeRelics();
   boss=null; bossN=0; lasers=[];
   time=0; kills=0; spawnT=0; eliteT=55; swarmT=3; swarmWarnT=0; umiT=8; umiWarnT=0; inkT=0; shake=0; hitStop=0; flash=0; chain=0; chainT=0;
   gat.t=0; gat.mag=-1; gat.rl=0;
@@ -3239,7 +3239,7 @@ var dpsVal=0, dpmVal=0, dmgSec=0, dmgRing=[], dmgRingI=0, dpsClock=1;   // 与�
 function objCount(){
   return shots.length+chaks.length+scys.length+bells.length+swords.length+
          rocks.length+holes.length+zones.length+bombs.length+ebul.length+
-         quakes.length+dhits.length+volley.length+lasers.length+fx.length+parts.length+relics.length+sheep.length+meteors.length+twisters.length+harps.length+briars.length;
+         quakes.length+dhits.length+volley.length+lasers.length+fx.length+parts.length+relics.length+sheep.length+meteors.length+twisters.length+harps.length+briars.length+explosions.length;
 }
 function infoTick(dt){
   // DPS/DPM 集計（1秒ごとに更新。DPS=直近1秒、DPM=直近60秒の合計）
@@ -4747,8 +4747,7 @@ function label(e,txt,col){
 function boom(x,y,rad,dmg,col,slowSec){
   if(SRC){ var gb=GROW('boom'); if(gb){ dmg*=1+gb; rad*=1+gb; } }
   fx.push({k:'ring',x:x,y:y,r:0,to:rad,t:0,life:.35,col:col});
-  for(var k=0;k<10;k++) parts.push({x:x,y:y,vx:(Math.random()-.5)*520,
-    vy:(Math.random()-.5)*520,t:0,life:.35+Math.random()*.3,col:col,s:3+Math.random()*3});
+  spawnBoomSpr(x,y,rad);   // ドット絵の爆発アニメ（粒子ばら撒きを置き換え＝描画命令を削減）
   for(var i=enemies.length-1;i>=0;i--){
     var e=enemies[i], dx=e.x-x, dy=e.y-y, d=Math.hypot(dx,dy);
     if(d<rad+e.r){
@@ -6749,6 +6748,7 @@ function chooseBossRelic(i){
 /* ============ 演出 ============ */
 function stepFx(dt){
   var i;
+  stepBooms(dt);
   if(parts.length>260) parts.splice(0,parts.length-260);   // バースト時の粒子上限（重さ対策）
   if(fx.length>140) fx.splice(0,fx.length-140);
   for(i=fx.length-1;i>=0;i--){ fx[i].t+=dt; if(fx[i].t>=fx[i].life) fx.splice(i,1); }
@@ -6846,6 +6846,7 @@ function render(){
     ctx.globalAlpha=1-p.t/p.life; ctx.fillStyle=p.col;
     ctx.fillRect(p.x-p.s/2,p.y-p.s/2,p.s,p.s); }
   ctx.globalAlpha=1;
+  drawBooms();   // ドット絵の爆発
   for(i=0;i<fx.length;i++){ f=fx[i];
     if(f.k==='slash') drawSlash(f);
     else if(f.k==='bolt') drawBolt(f);
@@ -7000,6 +7001,20 @@ function keyWhite(im,name){
   im.onload=function(){ SPR[name]=keyWhite(im,name); SPRRDY[name]=1; };
   im.src=uri;
 })(k,SPRDATA[k]); } })();
+// FXスプライトシート（白抜き処理は通さず、透過PNGをそのまま使う）
+var FXBOOM=new Image(), FXBOOM_RDY=0; FXBOOM.onload=function(){ FXBOOM_RDY=1; }; FXBOOM.src='assets/fx_boom.png';
+var FXBOOM_FW=112, FXBOOM_FR=8;
+function spawnBoomSpr(x,y,rad,tint){ explosions.push({x:x,y:y,size:rad*2.2,t:0,life:0.42,tint:tint||null}); }
+function stepBooms(dt){ for(var i=explosions.length-1;i>=0;i--){ explosions[i].t+=dt; if(explosions[i].t>=explosions[i].life) explosions.splice(i,1); } }
+function drawBooms(){
+  if(!FXBOOM_RDY) return;
+  ctx.imageSmoothingEnabled=false;
+  for(var i=0;i<explosions.length;i++){
+    var b=explosions[i], f=Math.min(FXBOOM_FR-1,Math.floor(b.t/b.life*FXBOOM_FR)), sz=b.size;
+    ctx.drawImage(FXBOOM, f*FXBOOM_FW,0,FXBOOM_FW,FXBOOM_FW, b.x-sz/2, b.y-sz/2, sz, sz);
+  }
+  ctx.imageSmoothingEnabled=true;
+}
 function sprReady(n){ return !!SPRRDY[n]; }
 function sprTinted(n,tint,alpha){
   var key=n+'|'+tint+'|'+alpha, c=SPRT[key];
