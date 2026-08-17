@@ -2984,7 +2984,7 @@ function figInfo(id){
   if(BOSS[id]){ var B=BOSS[id], tt=ETYPE[B.key]||{}; return {nm:B.nm,shape:tt.shape,col:tt.col,dark:tt.dark,desc:BDEX[id]||'',boss:true}; }
   var t=ETYPE[id]||{}; return {nm:t.nm,shape:t.shape,col:t.col,dark:t.dark,desc:DEX[id]||'',boss:false};
 }
-var VERSION='α1.0.253'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
+var VERSION='α1.0.254'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
 function applySave(o){
   for(var i=0;i<UPG.length;i++) META[UPG[i].id]=0;
   try{
@@ -9812,6 +9812,18 @@ function weaponBuildRows(){
   }
   return out.join('')||'—';
 }
+// リザルト用：取得したパッシブと床装備を一覧（床装備由来ぶんを明記）
+function passiveBuildRows(){
+  var out=[], id;
+  for(id in P.p){
+    var tot=P.p[id]||0; if(tot<=0||!PASSIVES[id]) continue;
+    var rel=(P.rel&&P.rel[id])||0;
+    out.push('<div class="wrow"><span class="wg">'+(iconHtml(id,20)||PASSIVES[id].glyph)+'</span>'+
+      PASSIVES[id].nm+' <b>'+tot+'</b>'+
+      (rel>0?'<span style="color:#7fe6ff">［床装備 +'+rel+'］</span>':'')+'</div>');
+  }
+  return out.join('');
+}
 function buildText(){
   var m=Math.floor(time/60), s=Math.floor(time%60), id, ws=weaponBuildRows(), ps=[];
   var pslots=0;
@@ -10038,6 +10050,7 @@ function finish(won){
   }
   // 構成：一時停止画面と同じく、武器ごとの強化内容（軸＋限界突破）を表示
   var comp=weaponBuildRows();
+  var pcomp=passiveBuildRows();   // パッシブ・床装備
   var stg=STAGES[curStage]||STAGES[1];
   var eBlk=Math.floor(time/ENDLESS_BLOCK), eLoop=Math.floor(eBlk/3)+1;
   var stgLabel=ENDLESS?'♾ 無限ラン':((STGNUM[curStage-1]||curStage)+' '+stg.nm);
@@ -10064,6 +10077,7 @@ function finish(won){
     (anyPicks()?'<span style="color:var(--gold)">★ 武器熟練で特性を選べます</span><br>':'')+
     (newUnlocks.length?'<span style="color:var(--gold)">★ '+newUnlocks.join('・')+' が解放されました</span><br>':'')+
     '<div class="psec">構成</div>'+(comp||'—')+
+    (pcomp?'<div class="psec">パッシブ・床装備</div>'+pcomp:'')+
     damageBreakdownHtml()+
     resTipHtml();
   document.getElementById('rankbtn2').style.display=ENDLESS?'':'none';   // 無限ランのみランキングボタン表示
@@ -10284,6 +10298,9 @@ Array.prototype.forEach.call(document.querySelectorAll('#setview button'),functi
 // 更新履歴：1つのお知らせ内で「バージョン見出し」ごとに変更点を並べる（新しい順）。
 // マージのたびに先頭へ新バージョンを追加し、VERSION も更新する。
 var UPDATES=[
+  {v:'α1.0.254', items:[
+    'リザルト画面に「パッシブ・床装備」欄を追加しました。取得したパッシブと、そのうち床装備で得たぶん（［床装備 +N］）が一覧で分かるようになりました。',
+  ]},
   {v:'α1.0.253', items:[
     'アイスブリザードに「アイスシールド」を追加！ 発動時に氷のシールドが張り、ごく短い無敵を得られます（3秒に1回・無敵時間は武器レベルが上がるごとに +0.02秒ずつ自動で延長）。',
   ]},
