@@ -2984,7 +2984,7 @@ function figInfo(id){
   if(BOSS[id]){ var B=BOSS[id], tt=ETYPE[B.key]||{}; return {nm:B.nm,shape:tt.shape,col:tt.col,dark:tt.dark,desc:BDEX[id]||'',boss:true}; }
   var t=ETYPE[id]||{}; return {nm:t.nm,shape:t.shape,col:t.col,dark:t.dark,desc:DEX[id]||'',boss:false};
 }
-var VERSION='α1.0.249'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
+var VERSION='α1.0.250'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
 function applySave(o){
   for(var i=0;i<UPG.length;i++) META[UPG[i].id]=0;
   try{
@@ -3743,6 +3743,25 @@ function drawSaw(f){
 }
 function drawBliz(f){
   var k=f.t/f.life;
+  if(FXFROST_RDY){
+    // 範囲の表示を「雪の結晶」で表現：中央に大きな氷晶＋縁に沿ってきらめく小さな結晶
+    ctx.save(); ctx.imageSmoothingEnabled=false;
+    ctx.globalAlpha=0.10*(1-k*0.4); ctx.fillStyle='#8fd8ff';     // ごく薄い範囲の下地
+    ctx.beginPath(); ctx.arc(f.x,f.y,f.r,0,6.3); ctx.fill();
+    // 中央の大きな氷晶
+    var Dc=f.r*1.05;
+    ctx.globalAlpha=0.9*(1-k*0.5);
+    ctx.save(); ctx.translate(f.x,f.y); ctx.rotate(time*0.6); ctx.drawImage(FXFROST,-Dc/2,-Dc/2,Dc,Dc); ctx.restore();
+    // 範囲の縁を示す結晶リング（きらめき）
+    var N=8, Ds=Math.max(14,f.r*0.5);
+    for(var i=0;i<N;i++){
+      var ang=i/N*6.283+f.t*0.3, tw=0.4+0.5*Math.sin(time*4+i*1.7);
+      var cx=f.x+Math.cos(ang)*f.r*0.86, cy=f.y+Math.sin(ang)*f.r*0.86;
+      ctx.globalAlpha=Math.max(0,tw*(1-k));
+      ctx.save(); ctx.translate(cx,cy); ctx.rotate(time*0.9+i); ctx.drawImage(FXFROST,-Ds/2,-Ds/2,Ds,Ds); ctx.restore();
+    }
+    ctx.imageSmoothingEnabled=true; ctx.globalAlpha=1; ctx.restore(); return;
+  }
   ctx.save();
   ctx.globalAlpha=0.16*(1-k*0.4);
   ctx.fillStyle='#8fd8ff';
@@ -3752,15 +3771,6 @@ function drawBliz(f){
   ctx.setLineDash([6,10]); ctx.lineDashOffset=-time*90;
   ctx.beginPath(); ctx.arc(f.x,f.y,f.r,0,6.3); ctx.stroke();
   ctx.setLineDash([]);
-  if(FXFROST_RDY){
-    // ドット絵の氷晶をゆっくり回転させて重ねる
-    var D=f.r*1.5;
-    ctx.globalAlpha=0.85*(1-k*0.5);
-    ctx.translate(f.x,f.y); ctx.rotate(time*0.8); ctx.imageSmoothingEnabled=false;
-    ctx.drawImage(FXFROST, -D/2,-D/2, D,D);
-    ctx.imageSmoothingEnabled=true;
-    ctx.globalAlpha=1; ctx.restore(); return;
-  }
   ctx.globalAlpha=0.7*(1-k);
   for(var i=0;i<7;i++){
     var a=time*2.4+i/7*6.283, r=f.r*(0.35+((i*37)%10)/16);
@@ -8402,6 +8412,20 @@ function drawQuake(f){
   ctx.save(); ctx.globalAlpha=1-k;
   var n=9, rr=f.r*(0.35+k*0.75);
   if(FXROCK_RDY){
+    // 地割れ（ひび割れた地面）：中心から放射状のジグザグを暗いドットブロックで敷く
+    ctx.globalAlpha=(1-k)*0.9; ctx.fillStyle='#33261a';
+    var cracks=5;
+    for(var cc=0;cc<cracks;cc++){
+      var ca=cc/cracks*6.283+f.x*0.03, pxc=f.x, pyc=f.y;
+      for(var seg=1;seg<=4;seg++){
+        var rr2=rr*(seg/4), off=(seg%2?1:-1)*0.24;
+        var nxc=f.x+Math.cos(ca+off)*rr2, nyc=f.y+Math.sin(ca+off)*rr2;
+        var dxc=nxc-pxc, dyc=nyc-pyc, ln=Math.hypot(dxc,dyc)||1, steps=Math.ceil(ln/3);
+        for(var st=0;st<=steps;st++){ var bx0=pxc+dxc*st/steps, by0=pyc+dyc*st/steps, bs=Math.max(2,5-seg);
+          ctx.fillRect(Math.round(bx0-bs/2),Math.round(by0-bs/2),bs,bs); }
+        pxc=nxc; pyc=nyc;
+      }
+    }
     ctx.imageSmoothingEnabled=false;
     for(var i=0;i<n;i++){
       var a=i/n*6.283+f.x*0.01;
@@ -10246,6 +10270,10 @@ Array.prototype.forEach.call(document.querySelectorAll('#setview button'),functi
 // 更新履歴：1つのお知らせ内で「バージョン見出し」ごとに変更点を並べる（新しい順）。
 // マージのたびに先頭へ新バージョンを追加し、VERSION も更新する。
 var UPDATES=[
+  {v:'α1.0.250', items:[
+    'グランドアッパーに「地割れ」の表現を追加しました！ 隆起の中心から放射状にひび割れたドット絵の地面が走り、そこから岩がせり上がるようになりました。',
+    'アイスブリザードの範囲表示を「雪の結晶」に変更しました。点線の円のかわりに、中央の大きな氷晶と縁を縁取るきらめく結晶で射程を示します（すべてドット絵）。',
+  ]},
   {v:'α1.0.249', items:[
     '投射物をドット絵に一新しました！ 弓の矢・ホーリーアロー・手裏剣・錨・ガトリング弾が、それぞれ専用のドット絵スプライトで飛ぶようになりました（ファイヤーボール・氷槍に続く対応）。',
   ]},
