@@ -2983,7 +2983,7 @@ function figInfo(id){
   if(BOSS[id]){ var B=BOSS[id], tt=ETYPE[B.key]||{}; return {nm:B.nm,shape:tt.shape,col:tt.col,dark:tt.dark,desc:BDEX[id]||'',boss:true}; }
   var t=ETYPE[id]||{}; return {nm:t.nm,shape:t.shape,col:t.col,dark:t.dark,desc:DEX[id]||'',boss:false};
 }
-var VERSION='α1.0.240'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
+var VERSION='α1.0.241'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
 function applySave(o){
   for(var i=0;i<UPG.length;i++) META[UPG[i].id]=0;
   try{
@@ -4616,14 +4616,23 @@ function drawMeteors(){
     ctx.restore();
     // 落下する隕石（上空→着弾点）。岩を大きく＝爆発範囲に比例
     var fall=(1-pr)*(m.sec?260:560), rr=(m.sec?0.16:0.30)*m.rad;
-    ctx.save(); ctx.translate(m.x,m.y-fall);
-    ctx.strokeStyle='rgba(255,170,80,.5)'; ctx.lineWidth=rr*0.8; ctx.lineCap='round';   // 尾（炎の尾）
-    ctx.beginPath(); ctx.moveTo(0,0); ctx.lineTo(-fall*0.05,-fall*0.30); ctx.stroke();
-    ctx.globalAlpha=0.5; ctx.fillStyle='#ff7a2f';                                       // 炎のグロー
-    ctx.beginPath(); ctx.arc(0,0,rr*1.45,0,6.283); ctx.fill(); ctx.globalAlpha=1;
-    ctx.fillStyle='#5a3a22'; ctx.beginPath(); ctx.arc(0,0,rr,0,6.283); ctx.fill();      // 岩本体
-    ctx.fillStyle='rgba(255,150,70,.95)'; ctx.beginPath(); ctx.arc(0,0,rr*0.62,0,6.283); ctx.fill();   // 白熱コア
-    ctx.restore();
+    if(FXMETEOR_RDY){
+      var mfr=((time*14)|0)%FXMETEOR_FR;
+      var Wm=rr*3.6, Hm=Wm*FXMETEOR_FH/FXMETEOR_FW;   // ロック径≒rr*2.6
+      ctx.save(); ctx.imageSmoothingEnabled=false;
+      ctx.drawImage(FXMETEOR, mfr*FXMETEOR_FW,0,FXMETEOR_FW,FXMETEOR_FH,
+        m.x-Wm/2, (m.y-fall)-0.74*Hm, Wm, Hm);   // ロック中心(0.74H)を着弾点へ
+      ctx.imageSmoothingEnabled=true; ctx.restore();
+    }else{
+      ctx.save(); ctx.translate(m.x,m.y-fall);
+      ctx.strokeStyle='rgba(255,170,80,.5)'; ctx.lineWidth=rr*0.8; ctx.lineCap='round';   // 尾（炎の尾）
+      ctx.beginPath(); ctx.moveTo(0,0); ctx.lineTo(-fall*0.05,-fall*0.30); ctx.stroke();
+      ctx.globalAlpha=0.5; ctx.fillStyle='#ff7a2f';                                       // 炎のグロー
+      ctx.beginPath(); ctx.arc(0,0,rr*1.45,0,6.283); ctx.fill(); ctx.globalAlpha=1;
+      ctx.fillStyle='#5a3a22'; ctx.beginPath(); ctx.arc(0,0,rr,0,6.283); ctx.fill();      // 岩本体
+      ctx.fillStyle='rgba(255,150,70,.95)'; ctx.beginPath(); ctx.arc(0,0,rr*0.62,0,6.283); ctx.fill();   // 白熱コア
+      ctx.restore();
+    }
   }
 }
 function drawSheep(s){
@@ -7063,6 +7072,9 @@ var FXFROST=new Image(), FXFROST_RDY=0; FXFROST.onload=function(){ FXFROST_RDY=1
 // 深淵の手（dhand）ドット絵スプライト：+x方向へ伸びる爪。f.aで回転
 var FXHAND=new Image(), FXHAND_RDY=0; FXHAND.onload=function(){ FXHAND_RDY=1; }; FXHAND.src='assets/fx_hand.png';
 var FXHAND_AR=40/32;   // 幅/高さ
+// メテオ（落下隕石）ドット絵スプライト：炎の尾＋白熱するロック。2フレームのフリッカー
+var FXMETEOR=new Image(), FXMETEOR_RDY=0; FXMETEOR.onload=function(){ FXMETEOR_RDY=1; }; FXMETEOR.src='assets/fx_meteor.png';
+var FXMETEOR_FW=78, FXMETEOR_FH=132, FXMETEOR_FR=2;
 function sprReady(n){ return !!SPRRDY[n]; }
 function sprTinted(n,tint,alpha){
   var key=n+'|'+tint+'|'+alpha, c=SPRT[key];
@@ -10152,6 +10164,9 @@ Array.prototype.forEach.call(document.querySelectorAll('#setview button'),functi
 // 更新履歴：1つのお知らせ内で「バージョン見出し」ごとに変更点を並べる（新しい順）。
 // マージのたびに先頭へ新バージョンを追加し、VERSION も更新する。
 var UPDATES=[
+  {v:'α1.0.241', items:[
+    'メテオの落下する隕石をドット絵化しました！ 白熱する先端＋燃え盛る炎の尾を持つドット絵の隕石が降ってくるようになりました（着弾の爆発は既にドット絵化済み）。',
+  ]},
   {v:'α1.0.240', items:[
     'ダークハンド（深淵の手）の演出をドット絵化しました！ 3本爪の紫の手スプライトが、深淵から伸びる腕の帯を引きながら敵を掴みに伸縮するようになりました。',
   ]},
