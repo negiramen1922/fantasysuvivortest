@@ -1374,6 +1374,8 @@ var WEAPONS={
     tx:'緑の風の刃を3連射する。当たった敵に風属性を付与する。風属性は「拡散」で他の武器の元素反応を起こしやすくする起点になる。' },
   tornado:{ nm:'トルネード', glyph:'\u{1F300}', tag:'風', max:10,
     tx:'緑の渦を生み、周囲の敵を吸い寄せながら削る（吸引はブラックホールより弱い）。消えるとき爆発し、風属性を付与＝拡散で周囲へ元素を撒き散らす。' },
+  harp:{ nm:'ハープ', glyph:'\u{1F3B5}', tag:'音', max:10,
+    tx:'弦をかき鳴らし、周囲へ音の波紋を放つ。ベルと違い敵を吹き飛ばさない代わりに一撃が重く、密集した敵を高火力で削る。' },
 };
 // ── 武器の解放（ロック）システム ──
 // 初期解放9種（各系統1つ）は最初から使える。残り13種はロック：金貨10 or 銀貨(武器ごと) or 実績(武器ごと) で解放。
@@ -1403,7 +1405,8 @@ var WLOCK={
   gatling: {s:10000,cond:'kills', val:12000, condTx:'累計討伐 12,000', tkt:1},
   meteor:  {s:8000, tkt:1},
   gale:    {s:3000, tkt:1},
-  tornado: {s:5000, tkt:1}
+  tornado: {s:5000, tkt:1},
+  harp:    {s:4000, tkt:1}
 };
 var WUNL={};   // 解放済み武器 {id:1}
 (function(){ for(var k in WSTART) WUNL[k]=1; if(ALLWPN) for(var w in WEAPONS) WUNL[w]=1; })();
@@ -1845,7 +1848,7 @@ var P, enemies, gems, shots, fx, dmgs, parts, bolts, chests, coins, chaks, scys,
 var time, kills, spawnT, eliteT, shake, hitStop, flash, chain, chainT, choices;
 var whirlA, marks, reacts, crits, rdep, rtok, pending, bossRelicQ=0, score, silver, gold, magFx, chakSpin, swingT, swingDir;
 var SWDUR=0.42;   // 大剣の振りの長さ（秒）。大きいほどゆっくり
-var ebul, boss, bossN, quakes, dhits, vacs, vacT, bells, swords, zones, volley, relics, puddles, sheep, trails, meteors, twisters;
+var ebul, boss, bossN, quakes, dhits, vacs, vacT, bells, swords, zones, volley, relics, puddles, sheep, trails, meteors, twisters, harps;
 var lasers;
 
 /* ============ 武器熟練度・特性 ============ */
@@ -2353,6 +2356,14 @@ var MAST={
     major:[ {id:'to_D',ic:'💪',nm:'剛・攻撃力',tx:'+12%',d:'渦の威力が#大きく上がる',dv:'12%',ef:{dmg:.12}},
             {id:'to_p',ic:'🌀',nm:'強吸引',tx:'+15%',d:'敵を#強く吸い寄せる',dv:'15%',ef:{pull:.15}},
             {id:'to_ct',ic:'✳️',nm:'双渦',tx:'渦 +1',d:'同時に生む渦が#増える',dv:'1個',ef:{count:1}} ]
+  },
+  harp:{  // ハープ：dmg/area/count/rate。ノックバック無し・高火力の音波
+    minor:[ {id:'hp2_d',ic:'💪',nm:'攻撃力',tx:'+6%',d:'音波の威力が#上がる',dv:'6%',ef:{dmg:.06}},
+            {id:'hp2_a',ic:'🌀',nm:'範囲',tx:'+6%',d:'音波が#大きく広がる',dv:'6%',ef:{area:.06}},
+            {id:'hp2_c',ic:'⌛',nm:'間隔',tx:'−5%',d:'演奏の間隔が#短くなる',dv:'5%',ef:{cd:-.05}} ],
+    major:[ {id:'hp2_D',ic:'💪',nm:'剛・攻撃力',tx:'+12%',d:'音波の威力が#大きく上がる',dv:'12%',ef:{dmg:.12}},
+            {id:'hp2_ct',ic:'✳️',nm:'多重和音',tx:'波 +1',d:'一度に放つ音波が#増える',dv:'1つ',ef:{count:1}},
+            {id:'hp2_A',ic:'🌀',nm:'大範囲',tx:'+15%',d:'音波が#大きく広がる',dv:'15%',ef:{area:.15}} ]
   }
 };
 var MASTIDS={};   // 武器ごとの有効オプションid集合（旧SELの掃除に使う）
@@ -2391,7 +2402,7 @@ function TF(wid,key){ return TR(wid,key)>0; }
 var WCAT={ slash:'剣技', scythe:'剣技', chakram:'剣技', katana:'剣技', shuriken:'射撃', bow:'射撃', dynamite:'射撃',
            fire:'炎', flame:'炎', inferno:'炎', ice:'氷', thunder:'雷', chain:'雷',
            quake:'岩', rock:'岩', voidh:'闇', dhand:'闇', holy:'光', aura:'光',
-           bell:'音', chainsaw:'剣技', musket:'射撃', blizzard:'氷', laser:'光', gatling:'射撃', toxin:'草', anchor:'打撃', meteor:'岩', gale:'風', tornado:'風' };
+           bell:'音', chainsaw:'剣技', musket:'射撃', blizzard:'氷', laser:'光', gatling:'射撃', toxin:'草', anchor:'打撃', meteor:'岩', gale:'風', tornado:'風', harp:'音' };
 // 武器タグ（間合い・手段・属性）。ナイトメアの属性強化カード等の土台。
 var WTAG={
   slash:['近接','斬撃','物理'], chainsaw:['近接','斬撃','物理'],
@@ -2404,6 +2415,7 @@ var WTAG={
   quake:['中距離','打撃','岩'], rock:['遠距離','打撃','岩'],
   meteor:['遠距離','落下','爆発','範囲','岩','物理'],
   gale:['遠距離','斬撃','風','物理'], tornado:['自己','設置','範囲','風'],
+  harp:['自己','範囲','音','物理'],
   bell:['自己','打撃','範囲','物理'],
   fire:['遠距離','射撃','爆発','範囲','炎'], flame:['自己','炎'], inferno:['中距離','ビーム','炎'],
   ice:['遠距離','射撃','氷'], blizzard:['自己','氷'],
@@ -2448,9 +2460,9 @@ var WKIND={ slash:'phys', scythe:'phys', chakram:'phys', katana:'phys', shuriken
             blizzard:'mag', laser:'mag',
             fire:'mag', flame:'mag', ice:'mag', thunder:'mag', chain:'mag', inferno:'mag',
             holy:'mag', aura:'mag', voidh:'mag', dhand:'mag', gatling:'phys', toxin:'mag', anchor:'phys',
-            meteor:'phys', gale:'phys', tornado:'mag', sheep:'phys' };   // 羊（羊飼いの召喚）：武器ではないが会心を物理扱いにするため登録
+            meteor:'phys', gale:'phys', tornado:'mag', harp:'phys', sheep:'phys' };   // 羊（羊飼いの召喚）：武器ではないが会心を物理扱いにするため登録
 // 武器ごとのノックバック強度：0=無し 1=弱 2=中 3=強（未指定は「中」）。ここを編集して調整できる。
-var WKB={ bell:1, aura:0, blizzard:0, inferno:0, toxin:0, meteor:3, gale:1, tornado:0 };
+var WKB={ bell:1, aura:0, blizzard:0, inferno:0, toxin:0, meteor:3, gale:1, tornado:0, harp:0 };
 var KB_BASE=[0,1.1,2.2,4.0], KB_CRIT=[0,2.0,4.0,6.5];   // レベル別のノックバック量（通常/会心）
 function applyKB(e,SRC,crit,nx,ny){
   var kl=(WKB[SRC]!==undefined)?WKB[SRC]:2;   // 既定は中
@@ -2487,12 +2499,13 @@ var WAX={
   gatling: { dmg:5, rate:4, count:3, pierce:3, ammo:3, range:3 },
   meteor:  { dmg:4, area:4, rate:3, range:2 },
   gale:    { dmg:4, range:3, area:3, rate:3, count:3 },
-  tornado: { dmg:4, area:4, count:2, rate:3 }
+  tornado: { dmg:4, area:4, count:2, rate:3 },
+  harp:    { dmg:4, area:4, count:3, rate:3 }
 };
 // Lv10 到達で覚醒。数値ではなく挙動が変わる。
 var AWK={ chainsaw:'暴走鋸', musket:'貫通弾', blizzard:'絶対氷結', laser:'追尾光線', inferno:'業炎照射',
   slash:'飛翔斬撃', scythe:'死神の鎌', chakram:'二重円', bow:'貫き矢', katana:'無双', shuriken:'秘刃', toxin:'瘴気', anchor:'大錨',
-  dynamite:'連鎖爆破', bell:'共鳴', quake:'地割れ', rock:'巨岩', meteor:'流星群', gale:'真空乱斬', tornado:'大旋風',
+  dynamite:'連鎖爆破', bell:'共鳴', quake:'地割れ', rock:'巨岩', meteor:'流星群', gale:'真空乱斬', tornado:'大旋風', harp:'協奏',
   fire:'爆炎弾', flame:'業火輪', ice:'氷結槍', thunder:'落雷嵐',
   chain:'無限連鎖', holy:'聖裁', aura:'審判の剣', voidh:'特異点', dhand:'深淵の手',
   gatling:'双掃射' };
@@ -2507,6 +2520,7 @@ var AWT={ chainsaw:'前方だけでなく全方位を削るようになる', mus
   quake:'隆起点に亀裂が残り、通る敵に継続ダメージ', rock:'敵に当たるたび大きくなる',
   meteor:'着弾ごとに小さな隕石が数個飛び散り、周囲に追撃の爆発を落とす',
   gale:'斬撃が敵を貫通し、本数が増える', tornado:'渦が大きくなり、消滅時の爆発と拡散が拡大する',
+  harp:'1回の演奏で内外2重の波を放つようになり、手数が実質2倍になる',
   fire:'着弾の爆発が一回り大きく強くなる', flame:'火の玉が軌道上に炎の帯を残す',
   ice:'貫いた位置に氷柱が立ち、触れた敵を鈍足', thunder:'落雷地点から追加の落雷が1度連鎖',
   chain:'減衰が止まり、跳ぶ距離が倍に', holy:'拡散した破片がさらに1度拡散',
@@ -2575,7 +2589,7 @@ function lbOK(w,k){
 }
 // 間合いによる火力補正：近接ほど高く、遠距離ほど低い（射程との住み分け）
 var WCLASS={ slash:'melee', chainsaw:'melee', katana:'melee', shuriken:'mid',
-  chakram:'self', flame:'self', blizzard:'self', bell:'self', laser:'self', aura:'self', voidh:'self', tornado:'self', gale:'mid',
+  chakram:'self', flame:'self', blizzard:'self', bell:'self', laser:'self', aura:'self', voidh:'self', tornado:'self', gale:'mid', harp:'self',
   scythe:'mid', dhand:'mid', dynamite:'mid', quake:'mid', musket:'mid', inferno:'mid', toxin:'mid', anchor:'mid',
   fire:'long', ice:'long', bow:'long', holy:'long', thunder:'long', chain:'long', rock:'long', gatling:'long',
   meteor:'mid' };   // メテオ：狙った範囲に落とす大技。威力45をそのまま出すため補正1.0の中距離扱い
@@ -2955,7 +2969,7 @@ function figInfo(id){
   if(BOSS[id]){ var B=BOSS[id], tt=ETYPE[B.key]||{}; return {nm:B.nm,shape:tt.shape,col:tt.col,dark:tt.dark,desc:BDEX[id]||'',boss:true}; }
   var t=ETYPE[id]||{}; return {nm:t.nm,shape:t.shape,col:t.col,dark:t.dark,desc:DEX[id]||'',boss:false};
 }
-var VERSION='α1.0.227'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
+var VERSION='α1.0.228'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
 function applySave(o){
   for(var i=0;i<UPG.length;i++) META[UPG[i].id]=0;
   try{
@@ -3138,7 +3152,7 @@ function reset(){
     P.spd*=1+contractStat('spd');
     var _hb=contractStat('hp'); if(_hb){ P.max=Math.round(P.max*(1+_hb)); P.hp=P.max; }
   }
-  enemies=[]; gems=[]; shots=[]; fx=[]; dmgs=[]; parts=[]; bolts=[]; chests=[]; coins=[]; chaks=[]; scys=[]; bombs=[]; rocks=[]; holes=[]; ebul=[]; quakes=[]; dhits=[]; vacs=[]; vacT=40; bells=[]; swords=[]; zones=[]; volley=[]; puddles=[]; sheep=[]; trails=[]; meteors=[]; twisters=[]; relics=placeRelics();
+  enemies=[]; gems=[]; shots=[]; fx=[]; dmgs=[]; parts=[]; bolts=[]; chests=[]; coins=[]; chaks=[]; scys=[]; bombs=[]; rocks=[]; holes=[]; ebul=[]; quakes=[]; dhits=[]; vacs=[]; vacT=40; bells=[]; swords=[]; zones=[]; volley=[]; puddles=[]; sheep=[]; trails=[]; meteors=[]; twisters=[]; harps=[]; relics=placeRelics();
   boss=null; bossN=0; lasers=[];
   time=0; kills=0; spawnT=0; eliteT=55; swarmT=3; swarmWarnT=0; umiT=8; umiWarnT=0; inkT=0; shake=0; hitStop=0; flash=0; chain=0; chainT=0;
   gat.t=0; gat.mag=-1; gat.rl=0;
@@ -3166,7 +3180,7 @@ function androidHeat(){ var g=CH().grow; return (g&&g.k==='infheat')?Math.floor(
 // 重騎士：10レベルごとに被ダメージ −1%（上限は grow.cap）
 function juukiCut(){ var g=CH().grow; if(!g||g.k!=='dmgcut') return 0; return Math.min(g.cap||1,(g.v||0)*Math.floor(P.lv/g.per)); }
 // プレイヤーの被ダメージ共通係数（永続防護・防護パッシブ・重騎士カット）
-function armorMul(){ return armorMul()*(1-juukiCut()); }
+function armorMul(){ return (1-0.04*M('armor'))*(1-0.03*(P.p.bulwark||0))*(1-juukiCut()); }
 // キャラ成長の「現在値」表示文字列（符号・単位つき）
 function growNow(){
   var g=CH().grow; if(!g) return '';
@@ -3211,7 +3225,7 @@ var dpsVal=0, dpmVal=0, dmgSec=0, dmgRing=[], dmgRingI=0, dpsClock=1;   // 与�
 function objCount(){
   return shots.length+chaks.length+scys.length+bells.length+swords.length+
          rocks.length+holes.length+zones.length+bombs.length+ebul.length+
-         quakes.length+dhits.length+volley.length+lasers.length+fx.length+parts.length+relics.length+sheep.length+meteors.length+twisters.length;
+         quakes.length+dhits.length+volley.length+lasers.length+fx.length+parts.length+relics.length+sheep.length+meteors.length+twisters.length+harps.length;
 }
 function infoTick(dt){
   // DPS/DPM 集計（1秒ごとに更新。DPS=直近1秒、DPM=直近60秒の合計）
@@ -3289,6 +3303,7 @@ function update(dt){
   moveTwisters(dt);
   moveDhand(dt);
   moveBells(dt);
+  moveHarps(dt);
   moveSheep(dt);
   moveSwords(dt);
   moveZones(dt);
@@ -3447,6 +3462,7 @@ function runWeapons(dt){
   if(P.w.gale    &&ready('gale',    0.95*RATE('gale'),dt))      doGale();
   if(P.w.tornado &&ready('tornado', 3.20*RATE('tornado'),dt))   doTornado();
   if(P.w.bell    &&ready('bell',    3.00*RATE('bell'),dt))     doBell();
+  if(P.w.harp    &&ready('harp',    3.00*RATE('harp'),dt))     doHarp();
   if(P.w.dhand   &&ready('dhand',   1.15*RATE('dhand'),dt))    doDhand();
   if(P.w.voidh   &&ready('voidh',   3.20*RATE('voidh'),dt))    doVoid();
   if(P.w.holy    &&ready('holy',    1.20*RATE('holy'),dt)){    doHoly(); queueVolley('holy',0.11); }
@@ -4422,6 +4438,57 @@ function drawBell(b){
   ctx.beginPath(); ctx.arc(b.x,b.y,b.r,0,6.3); ctx.stroke();
   ctx.globalAlpha=(1-k)*0.16;
   ctx.strokeStyle='#8fd0ff'; ctx.lineWidth=2;
+  ctx.beginPath(); ctx.arc(b.x,b.y,b.r*0.86,0,6.3); ctx.stroke();
+  ctx.globalAlpha=1; ctx.restore();
+}
+/* ============ ハープ：ノックバック無しの高火力な音波（ベルの姉妹）============ */
+// 演奏音：波の数に応じて ポン(1) / ポポン(2) / ポロロン(3以上=上行アルペジオ)
+function harpStrum(n){
+  var notes=[523.25,587.33,659.25,783.99,880.00,1046.50,1174.66,1318.51,1567.98];  // Cメジャーペンタ上行
+  var cnt=Math.max(1,Math.min(n,notes.length));
+  var gap=cnt<=2?60:42;                    // 3音以上は速い上行＝ポロロン
+  for(var i=0;i<cnt;i++)(function(idx){
+    setTimeout(function(){
+      sfx(notes[idx],0.34,'triangle',0.05,0.55);   // 弦をはじく柔らかい音
+      sfx(notes[idx]*2,0.20,'sine',0.016,0.55);     // 倍音でキラッと
+    },idx*gap);
+  })(i);
+}
+function doHarp(){
+  var n=1+CNT('harp'), mx=150*AREA('harp'), dmg=14*DMG('harp')*pw('harp');
+  for(var i=0;i<n;i++){
+    harps.push({ x:P.x, y:P.y, r:0, pr:0, max:mx, dmg:dmg, t:-i*0.15, hit:[] });
+    if(AW('harp')) harps.push({ x:P.x, y:P.y, r:0, pr:0, max:mx*0.55, dmg:dmg, t:-i*0.15-0.05, hit:[] });   // 協奏：内側の波も同時に
+  }
+  harpStrum(n);
+  wgain('harp',n);
+}
+function moveHarps(dt){
+  for(var i=harps.length-1;i>=0;i--){
+    var b=harps[i]; b.t+=dt;
+    if(b.t<0) continue;
+    if(b.t>=0.70){ harps.splice(i,1); continue; }
+    b.pr=b.r; var ph=b.t/0.70; b.r=b.max*ph;    // ハープは折り返さない（協奏は2重波で手数を出す）
+    var lo=b.pr-BELL_W, hi=b.r+BELL_W;
+    SRC='harp';                                 // WKB.harp=0 なのでノックバックは発生しない
+    for(var j=enemies.length-1;j>=0;j--){
+      var e=enemies[j];
+      if(e.dead||b.hit.indexOf(e)>=0) continue;
+      var dx=e.x-b.x, dy=e.y-b.y, d=Math.hypot(dx,dy);
+      if(d+e.r>=lo&&d-e.r<=hi){ hurt(e,b.dmg,dx/(d||1),dy/(d||1),null); b.hit.push(e); }
+    }
+    SRC=null;
+  }
+}
+function drawHarp(b){
+  if(b.t<0) return;
+  var k=Math.min(1,b.t/0.70);
+  ctx.save();
+  ctx.globalAlpha=(1-k)*0.55;
+  ctx.strokeStyle='#ffe6a0'; ctx.lineWidth=4*(1-k)+1;   // ハープは金色の波紋
+  ctx.beginPath(); ctx.arc(b.x,b.y,b.r,0,6.3); ctx.stroke();
+  ctx.globalAlpha=(1-k)*0.16;
+  ctx.strokeStyle='#ffcf70'; ctx.lineWidth=2;
   ctx.beginPath(); ctx.arc(b.x,b.y,b.r*0.86,0,6.3); ctx.stroke();
   ctx.globalAlpha=1; ctx.restore();
 }
@@ -6679,6 +6746,7 @@ function render(){
   drawTwisters();
   for(i=0;i<swords.length;i++) drawSwordZone(swords[i]);
   for(i=0;i<bells.length;i++) drawBell(bells[i]);
+  for(i=0;i<harps.length;i++) drawHarp(harps[i]);
   for(i=0;i<chaks.length;i++) drawChakGuide(chaks[i]);
   for(i=0;i<fx.length;i++){ f=fx[i];
     if(f.k==='ring') drawRing(f);
@@ -9892,6 +9960,10 @@ Array.prototype.forEach.call(document.querySelectorAll('#setview button'),functi
 // 更新履歴：1つのお知らせ内で「バージョン見出し」ごとに変更点を並べる（新しい順）。
 // マージのたびに先頭へ新バージョンを追加し、VERSION も更新する。
 var UPDATES=[
+  {v:'α1.0.228', items:[
+    '新武器「ハープ」を追加！ 音・物理の自己範囲。ベルと違いノックバックが無い代わりに一撃が重く、密集した敵を高火力で削ります。波の数に応じて演奏音が変化（1つ＝ポン／2つ＝ポポン／3つ以上＝ポロロン）。覚醒「協奏」で内外2重の波になり手数が倍に。解放：交換所で武器チケット。',
+    '重要な不具合修正：直前のバージョンで、被弾時にゲームが停止（フリーズ）することがある不具合を修正しました。',
+  ]},
   {v:'α1.0.227', items:[
     '新キャラ「重騎士」を追加！ 初期武器は錨。最大HP+40%／攻撃力+10%／移動速度−15%の重装タンクで、10レベルごとに被ダメージ−1%（最大−15%）。硬さで前に出て寄る敵を止める壁役。解放：交換所でキャラチケット。',
   ]},
