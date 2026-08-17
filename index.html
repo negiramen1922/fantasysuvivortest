@@ -188,9 +188,11 @@ canvas{display:block;width:100%;height:100%;touch-action:none}
 #pstat b{color:#fff;font-weight:normal}
 #pstat .el{color:var(--gold)}
 
-#shop,#mast,#ban,#settings,#news,#tutorial,#dex,#mailbox,#daily,#achieve,#help,#nmc,#lotto,#tshop{position:absolute;inset:0;display:none;align-items:center;justify-content:center;
+#shop,#mast,#ban,#settings,#news,#tutorial,#dex,#mailbox,#daily,#achieve,#help,#nmc,#lotto,#tshop,#install{position:absolute;inset:0;display:none;align-items:center;justify-content:center;
   background:rgba(6,4,16,.95);padding:14px;z-index:6}
-#shop.on,#mast.on,#ban.on,#settings.on,#news.on,#tutorial.on,#dex.on,#mailbox.on,#daily.on,#achieve.on,#help.on,#nmc.on,#lotto.on,#tshop.on{display:flex}
+#shop.on,#mast.on,#ban.on,#settings.on,#news.on,#tutorial.on,#dex.on,#mailbox.on,#daily.on,#achieve.on,#help.on,#nmc.on,#lotto.on,#tshop.on,#install.on{display:flex}
+#install .idesc{font-size:13px;line-height:1.7;color:#d6cff0;margin:2px 0 4px}
+#install .idesc b{color:#8fe0ff}
 #tshoplist{flex:1;min-height:0;overflow-y:auto;-webkit-overflow-scrolling:touch}
 .salebadge{display:inline-block;font-size:9px;font-weight:700;color:#1a0f2a;background:#ff5ac8;border-radius:6px;padding:1px 5px;margin-left:4px}
 .oldp{color:#6b5f9c;text-decoration:line-through;font-size:10px;margin-right:4px}
@@ -763,7 +765,7 @@ img.wspr{width:1.15em;height:1.15em;object-fit:contain;image-rendering:pixelated
       </div>
       <div class="title" id="hometitle">勇者サバイバー</div>
       <div id="vpurse"></div>
-      <button class="btn big" id="resumebtn" style="display:none">続きから</button>
+      <button class="btn big" id="contbtn" style="display:none">続きから</button>
       <button class="btn big" id="startbtn">出撃</button>
       <div id="homemenu">
         <button class="btn sub2" id="shopbtn">永続強化</button>
@@ -774,6 +776,7 @@ img.wspr{width:1.15em;height:1.15em;object-fit:contain;image-rendering:pixelated
         <button class="btn sub2" id="lottobtn">解放くじ</button>
         <button class="btn sub2" id="tshopbtn">交換所</button>
       </div>
+      <button class="btn sub2" id="installbtn" style="display:none;border-color:#56e0ff">📲 ホーム画面に追加</button>
     </div>
     <!-- ステージ選択 -->
     <div id="stageview" class="vview">
@@ -823,6 +826,14 @@ img.wspr{width:1.15em;height:1.15em;object-fit:contain;image-rendering:pixelated
       <div class="shophead"><div class="title">お知らせ</div></div>
       <div id="newslist"></div>
       <button class="btn sub2" id="newsclose" style="margin-top:0">閉じる</button>
+    </div>
+  </div>
+
+  <div id="install">
+    <div class="shopbox" style="max-width:440px">
+      <div class="shophead"><div class="title">📲 ホーム画面に追加</div></div>
+      <div id="installbody"></div>
+      <button class="btn sub2" id="installclose" style="margin-top:0">あとで</button>
     </div>
   </div>
 
@@ -2925,7 +2936,7 @@ function figInfo(id){
   if(BOSS[id]){ var B=BOSS[id], tt=ETYPE[B.key]||{}; return {nm:B.nm,shape:tt.shape,col:tt.col,dark:tt.dark,desc:BDEX[id]||'',boss:true}; }
   var t=ETYPE[id]||{}; return {nm:t.nm,shape:t.shape,col:t.col,dark:t.dark,desc:DEX[id]||'',boss:false};
 }
-var VERSION='α1.0.220'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
+var VERSION='α1.0.221'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
 function applySave(o){
   for(var i=0;i<UPG.length;i++) META[UPG[i].id]=0;
   try{
@@ -3021,7 +3032,7 @@ function clearRun(){ runActive=false; try{ localStorage.removeItem('bsv_run'); }
 function loadRunSave(){ try{ return JSON.parse(localStorage.getItem('bsv_run')||'null'); }catch(e){ return null; } }
 function fmtRunTime(sec){ var m=Math.floor(sec/60),s=Math.floor(sec%60); return m+':'+(s<10?'0':'')+s; }
 function refreshResumeBtn(){
-  var b=document.getElementById('resumebtn'); if(!b) return;
+  var b=document.getElementById('contbtn'); if(!b) return;
   var s=loadRunSave();
   if(s&&s.P){
     var mode=s.endless?'無限ラン':(s.nightmare?'ナイトメア':('ステージ'+(s.stage||1)));
@@ -9629,12 +9640,48 @@ function finish(won){
 }
 /* ============ ホーム / ステージ選択 / 結果 の画面切替 ============ */
 var homeView='home';
+/* ===== PWA インストール誘導（ホーム画面に追加） ===== */
+var deferredPrompt=null, installShown=false;
+function isStandalone(){ return (window.matchMedia&&window.matchMedia('(display-mode: standalone)').matches)||navigator.standalone===true; }
+function isIOSdev(){ return /iphone|ipad|ipod/i.test(navigator.userAgent||''); }
+window.addEventListener('beforeinstallprompt',function(e){ e.preventDefault(); deferredPrompt=e; refreshInstallUI(); });
+window.addEventListener('appinstalled',function(){ deferredPrompt=null; var el=document.getElementById('install'); if(el) el.classList.remove('on'); refreshInstallUI(); if(typeof toast==='function') toast('📲','ホーム画面に追加しました！','#8fe0ff'); });
+function refreshInstallUI(){ var b=document.getElementById('installbtn'); if(b) b.style.display=isStandalone()?'none':'block'; }
+function openInstall(){
+  var el=document.getElementById('install'), body=document.getElementById('installbody'); if(!el||!body) return;
+  var how;
+  if(deferredPrompt) how='<button class="btn" id="installgo" style="margin-top:6px">📲 追加する</button>';
+  else if(isIOSdev()) how='<div class="idesc">Safari下部の <b>共有</b>ボタン（□に↑）→ <b>「ホーム画面に追加」</b> をタップしてください。</div>';
+  else how='<div class="idesc">ブラウザのメニュー（⋮など）→ <b>「ホーム画面に追加」／「アプリをインストール」</b> を選んでください。</div>';
+  body.innerHTML='<div class="idesc">アプリのように<b>全画面</b>で起動でき、<b>オフラインでも即ロード</b>。ラン自動セーブと合わせて<b>強制リロードでの中断に強く</b>なります。</div>'+how;
+  el.classList.add('on');
+  var go=document.getElementById('installgo'); if(go) go.onclick=doInstall;
+}
+function doInstall(){
+  if(!deferredPrompt) return;
+  deferredPrompt.prompt();
+  deferredPrompt.userChoice.then(function(){ deferredPrompt=null; var el=document.getElementById('install'); if(el) el.classList.remove('on'); refreshInstallUI(); });
+}
+var installScheduled=false;
+function maybePromptInstall(){   // 未インストールの人に、ホームがクリアになったら1回だけ誘導
+  if(isStandalone()||installShown||installScheduled) return;
+  installScheduled=true;
+  var tries=0;
+  function attempt(){
+    if(isStandalone()||installShown){ installScheduled=false; return; }
+    var blocked=document.querySelector('#tutorial.on,#daily.on,#news.on,#settings.on,#install.on,#shop.on,#mast.on,#ban.on,#achieve.on,#lotto.on,#tshop.on,#dex.on,#mailbox.on,#chr.on,#nmc.on,#profile.on');
+    if(homeView==='home'&&!blocked){ installShown=true; installScheduled=false; openInstall(); return; }
+    if(++tries>30){ installScheduled=false; return; }   // 一定時間クリアにならなければ諦め（ホームのボタンから誘導）
+    setTimeout(attempt,900);
+  }
+  setTimeout(attempt,1400);
+}
 function showView(v){
   homeView=v;
   document.getElementById('homeview').style.display  = v==='home' ?'flex':'none';
   document.getElementById('stageview').style.display = v==='stage'?'flex':'none';
   document.getElementById('resultview').style.display= v==='result'?'flex':'none';
-  if(v==='home'){ syncTitle(); refreshResumeBtn(); playBGM('home'); if(!TUTSEEN) openTutorial(); else if(typeof maybeShowDaily==='function') maybeShowDaily(); }
+  if(v==='home'){ syncTitle(); refreshResumeBtn(); refreshInstallUI(); playBGM('home'); if(!TUTSEEN) openTutorial(); else if(typeof maybeShowDaily==='function') maybeShowDaily(); maybePromptInstall(); }
   else if(v==='stage') renderStageSelect();
 }
 function startRun(n,endless,nightmare){
@@ -9761,7 +9808,9 @@ function renderNmc(){
 }
 document.getElementById('nmcgo').onclick=function(){ nmcEl.classList.remove('on'); startRun(nmcStage,false,true); };
 document.getElementById('nmcclose').onclick=function(){ nmcEl.classList.remove('on'); };
-document.getElementById('resumebtn').onclick=function(){ var s=loadRunSave(); if(s&&s.P) resumeRun(s); };
+document.getElementById('contbtn').onclick=function(){ var s=loadRunSave(); if(s&&s.P) resumeRun(s); };
+document.getElementById('installbtn').onclick=function(){ audio(); openInstall(); };
+document.getElementById('installclose').onclick=function(){ document.getElementById('install').classList.remove('on'); };
 document.getElementById('startbtn').onclick=function(){ audio(); showView('stage'); };
 document.getElementById('stageback').onclick=function(){ showView('home'); };
 document.getElementById('againbtn').onclick=function(){ startRun(ENDLESS?null:curStage,ENDLESS); };
@@ -9813,6 +9862,10 @@ Array.prototype.forEach.call(document.querySelectorAll('#setview button'),functi
 // 更新履歴：1つのお知らせ内で「バージョン見出し」ごとに変更点を並べる（新しい順）。
 // マージのたびに先頭へ新バージョンを追加し、VERSION も更新する。
 var UPDATES=[
+  {v:'α1.0.221', items:[
+    'ホーム画面への追加（インストール）を案内するようにしました。未追加の方がホームを開くと誘導が表示され、ホームの「📲 ホーム画面に追加」ボタンや攻略のコツからも確認できます。',
+    '不具合修正：ホームの「続きから」と一時停止の「再開する」ボタンが内部的に取り違えられ、正しく動作しなかった問題を修正しました。',
+  ]},
   {v:'α1.0.220', items:[
     '高スコアがランキングに登録されない問題を修正。登録スコアの桁あふれ（約21億で破綻）を解消し、登録上限も引き上げました（サーバー側ルールの更新が反映され次第、1億超のスコアも登録されます）。',
   ]},
@@ -10471,6 +10524,7 @@ var TIPS=[
   '敵の攻撃予告（<b>赤い線</b>や拳）は自分の攻撃より前面に出る。線の外へ動けば避けやすい。',
   '打たれ弱いと感じたら、パッシブ「再生」「防護」や永続「体力」、キャラ「聖女」で耐久を確保しよう。',
   '武器を使い込むと<b>武器熟練</b>が上がり、次のランに最初から強化を持ち込める。',
+  '<b>ホーム画面に追加</b>するとアプリのように全画面で起動でき、オフラインでも即ロード。強制リロードでランが中断されにくくなるのでおすすめ（ホームの「📲 ホーム画面に追加」から）。',
   '融解（炎＋氷）や聖光（光＋炎/氷/雷）は<b>単体に特大</b>。<b>起爆と付与済みの強い方</b>を参照するので、育てた武器で当てるほど伸びる。ボスや硬い敵に。',
   '過負荷・超電導などの<b>激変系（範囲反応）</b>は威力が<b>プレイヤーのレベル</b>で決まる。どの武器で起爆しても安定して伸びるので、群れ処理に頼れる。',
   '闇属性（ダークハンド・ブラックホール）は多くの属性と反応する万能枠。<b>凍結・感電・炎症・消滅</b>の起点になれる。',
