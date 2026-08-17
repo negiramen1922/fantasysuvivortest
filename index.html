@@ -2983,7 +2983,7 @@ function figInfo(id){
   if(BOSS[id]){ var B=BOSS[id], tt=ETYPE[B.key]||{}; return {nm:B.nm,shape:tt.shape,col:tt.col,dark:tt.dark,desc:BDEX[id]||'',boss:true}; }
   var t=ETYPE[id]||{}; return {nm:t.nm,shape:t.shape,col:t.col,dark:t.dark,desc:DEX[id]||'',boss:false};
 }
-var VERSION='α1.0.244'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
+var VERSION='α1.0.245'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
 function applySave(o){
   for(var i=0;i<UPG.length;i++) META[UPG[i].id]=0;
   try{
@@ -3662,14 +3662,27 @@ function infernoTick(dt){
   }
 }
 function infBeam(tx,ty,w,g){
-  ctx.globalAlpha=0.45*g; ctx.strokeStyle='#ff5a1f'; ctx.lineWidth=w*2;
-  ctx.beginPath(); ctx.moveTo(P.x,P.y); ctx.lineTo(tx,ty); ctx.stroke();
-  ctx.globalAlpha=0.85*g; ctx.strokeStyle='#ffb14d'; ctx.lineWidth=w;
-  ctx.beginPath(); ctx.moveTo(P.x,P.y); ctx.lineTo(tx,ty); ctx.stroke();
-  ctx.globalAlpha=1; ctx.strokeStyle='#fff2c0'; ctx.lineWidth=Math.max(2,w*0.4);
-  ctx.beginPath(); ctx.moveTo(P.x,P.y); ctx.lineTo(tx,ty); ctx.stroke();
-  ctx.globalAlpha=0.6*g; ctx.fillStyle='#ffcf8a';
-  ctx.beginPath(); ctx.arc(tx,ty,w*0.9,0,6.3); ctx.fill();
+  // ドット絵の火炎流：ビーム沿いに炎のブロック（外=赤／中=橙／芯=白）を揺らして並べる
+  var dx=tx-P.x, dy=ty-P.y, len=Math.hypot(dx,dy)||1;
+  var ux=dx/len, uy=dy/len, nx=-uy, ny=ux;
+  var n=Math.max(2,Math.round(len/5));
+  ctx.imageSmoothingEnabled=false;
+  for(var i=0;i<=n;i++){
+    var t=i/n;
+    var s=Math.max(2,Math.round(w*(1.25-0.35*t)));        // 根本太く先細り
+    var jz=(Math.random()-0.5)*w*1.1*(0.3+t);             // 先ほど揺れる
+    var cx=Math.round(P.x+dx*t+nx*jz), cy=Math.round(P.y+dy*t+ny*jz);
+    ctx.globalAlpha=0.5*g;  ctx.fillStyle='#ff5a1f'; ctx.fillRect(cx-s,cy-s,s*2,s*2);
+    ctx.globalAlpha=0.85*g; ctx.fillStyle='#ffb14d'; var s2=Math.max(1,Math.round(s*0.6)); ctx.fillRect(cx-s2,cy-s2,s2*2,s2*2);
+    if(t<0.85){ ctx.globalAlpha=g; ctx.fillStyle='#fff2c0'; var s3=Math.max(1,Math.round(s*0.32)); ctx.fillRect(cx-s3,cy-s3,s3*2,s3*2); }
+  }
+  // 先端の火炎ブロブ（数個の橙ブロックを散らす）
+  for(var j=0;j<5;j++){
+    var a=Math.random()*6.283, rr=Math.random()*w*1.1, bs=Math.max(2,Math.round(w*(0.5+Math.random()*0.4)));
+    ctx.globalAlpha=0.7*g; ctx.fillStyle=(j%2?'#ff7a1f':'#ffcf8a');
+    ctx.fillRect(Math.round(tx+Math.cos(a)*rr)-bs, Math.round(ty+Math.sin(a)*rr)-bs, bs*2, bs*2);
+  }
+  ctx.imageSmoothingEnabled=true; ctx.globalAlpha=1;
 }
 function drawInferno(){
   if(!P.w.inferno||!INF.on) return;
@@ -10192,6 +10205,9 @@ Array.prototype.forEach.call(document.querySelectorAll('#setview button'),functi
 // 更新履歴：1つのお知らせ内で「バージョン見出し」ごとに変更点を並べる（新しい順）。
 // マージのたびに先頭へ新バージョンを追加し、VERSION も更新する。
 var UPDATES=[
+  {v:'α1.0.245', items:[
+    'インフェルノビーム（火炎放射）の演出をドット絵化しました！ 外＝赤／中＝橙／芯＝白の炎ブロックが揺らめきながら連なり、着弾点で火の粉が散る火炎流になりました。',
+  ]},
   {v:'α1.0.244', items:[
     '騎士（大剣）の攻撃モーションを改善しました！ 攻撃と同時に大剣を振り下ろすようになり、複数の残像でスウィング感を強調。斬撃エフェクトと振りのタイミングも合わせました。',
   ]},
