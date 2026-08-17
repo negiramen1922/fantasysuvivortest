@@ -2983,7 +2983,7 @@ function figInfo(id){
   if(BOSS[id]){ var B=BOSS[id], tt=ETYPE[B.key]||{}; return {nm:B.nm,shape:tt.shape,col:tt.col,dark:tt.dark,desc:BDEX[id]||'',boss:true}; }
   var t=ETYPE[id]||{}; return {nm:t.nm,shape:t.shape,col:t.col,dark:t.dark,desc:DEX[id]||'',boss:false};
 }
-var VERSION='α1.0.237'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
+var VERSION='α1.0.238'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
 function applySave(o){
   for(var i=0;i<UPG.length;i++) META[UPG[i].id]=0;
   try{
@@ -3716,6 +3716,15 @@ function drawBliz(f){
   ctx.setLineDash([6,10]); ctx.lineDashOffset=-time*90;
   ctx.beginPath(); ctx.arc(f.x,f.y,f.r,0,6.3); ctx.stroke();
   ctx.setLineDash([]);
+  if(FXFROST_RDY){
+    // ドット絵の氷晶をゆっくり回転させて重ねる
+    var D=f.r*1.5;
+    ctx.globalAlpha=0.85*(1-k*0.5);
+    ctx.translate(f.x,f.y); ctx.rotate(time*0.8); ctx.imageSmoothingEnabled=false;
+    ctx.drawImage(FXFROST, -D/2,-D/2, D,D);
+    ctx.imageSmoothingEnabled=true;
+    ctx.globalAlpha=1; ctx.restore(); return;
+  }
   ctx.globalAlpha=0.7*(1-k);
   for(var i=0;i<7;i++){
     var a=time*2.4+i/7*6.283, r=f.r*(0.35+((i*37)%10)/16);
@@ -7049,6 +7058,8 @@ var FXHOLE=new Image(), FXHOLE_RDY=0; FXHOLE.onload=function(){ FXHOLE_RDY=1; };
 // クエイク（地割れ）の岩の破片ドット絵スプライト（1枚をリング状に並べる）
 var FXROCK=new Image(), FXROCK_RDY=0; FXROCK.onload=function(){ FXROCK_RDY=1; }; FXROCK.src='assets/fx_rock.png';
 var FXROCK_AR=18/30;   // 幅/高さ
+// アイスブリザードの雪片ドット絵スプライト（6回対称の氷晶。ゆっくり回転）
+var FXFROST=new Image(), FXFROST_RDY=0; FXFROST.onload=function(){ FXFROST_RDY=1; }; FXFROST.src='assets/fx_frost.png';
 function sprReady(n){ return !!SPRRDY[n]; }
 function sprTinted(n,tint,alpha){
   var key=n+'|'+tint+'|'+alpha, c=SPRT[key];
@@ -10124,6 +10135,9 @@ Array.prototype.forEach.call(document.querySelectorAll('#setview button'),functi
 // 更新履歴：1つのお知らせ内で「バージョン見出し」ごとに変更点を並べる（新しい順）。
 // マージのたびに先頭へ新バージョンを追加し、VERSION も更新する。
 var UPDATES=[
+  {v:'α1.0.238', items:[
+    'アイスブリザードの演出をドット絵化しました！ 範囲の円＋点線リングはそのままに、中央に6回対称の氷晶（雪片）スプライトをゆっくり回転させて重ねる表現になりました。',
+  ]},
   {v:'α1.0.237', items:[
     'クエイク（地割れ）の演出をドット絵アニメに刷新しました！ 三角形の塗りから、ゴツゴツした岩の破片スプライトがリング状に隆起する表現に変わりました。',
   ]},
