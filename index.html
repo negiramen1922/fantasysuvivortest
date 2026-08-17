@@ -2983,7 +2983,7 @@ function figInfo(id){
   if(BOSS[id]){ var B=BOSS[id], tt=ETYPE[B.key]||{}; return {nm:B.nm,shape:tt.shape,col:tt.col,dark:tt.dark,desc:BDEX[id]||'',boss:true}; }
   var t=ETYPE[id]||{}; return {nm:t.nm,shape:t.shape,col:t.col,dark:t.dark,desc:DEX[id]||'',boss:false};
 }
-var VERSION='α1.0.232'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
+var VERSION='α1.0.233'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
 function applySave(o){
   for(var i=0;i<UPG.length;i++) META[UPG[i].id]=0;
   try{
@@ -7027,6 +7027,9 @@ function slashTint(col){
   g.globalCompositeOperation='source-atop'; g.fillStyle=col; g.globalAlpha=0.6; g.fillRect(0,0,w,h);
   SLASH_TINT[col]=c; return c;
 }
+// 落雷（サンダー）ドット絵スプライト：下端＝着弾点、上へ伸びる稲妻。3フレームのフリッカー
+var FXBOLT=new Image(), FXBOLT_RDY=0; FXBOLT.onload=function(){ FXBOLT_RDY=1; }; FXBOLT.src='assets/fx_bolt.png';
+var FXBOLT_FW=96, FXBOLT_FH=240, FXBOLT_FR=3;
 function sprReady(n){ return !!SPRRDY[n]; }
 function sprTinted(n,tint,alpha){
   var key=n+'|'+tint+'|'+alpha, c=SPRT[key];
@@ -8468,6 +8471,15 @@ function drawAura(f){
 }
 function drawBolt(f){
   var k=f.t/f.life;
+  if(FXBOLT_RDY){
+    // ドット絵：下端(中央)を着弾点に合わせ、上へ伸びる。フレームを切替えてフリッカー
+    var fr=Math.min(FXBOLT_FR-1, Math.floor(f.t/f.life*FXBOLT_FR));
+    var H=300, W=H*FXBOLT_FW/FXBOLT_FH;   // アスペクト維持（≈120px幅）
+    ctx.save(); ctx.globalAlpha=Math.min(1,1.3*(1-k)); ctx.imageSmoothingEnabled=false;
+    ctx.drawImage(FXBOLT, fr*FXBOLT_FW,0,FXBOLT_FW,FXBOLT_FH, f.x-W/2, f.y-H, W, H);
+    ctx.imageSmoothingEnabled=true; ctx.globalAlpha=1; ctx.restore();
+    return;
+  }
   ctx.save(); ctx.globalAlpha=1-k;
   ctx.strokeStyle='#fff0a0'; ctx.lineWidth=5-k*3; ctx.lineCap='round';
   ctx.beginPath(); ctx.moveTo(f.x,f.y-320);
@@ -10057,6 +10069,9 @@ Array.prototype.forEach.call(document.querySelectorAll('#setview button'),functi
 // 更新履歴：1つのお知らせ内で「バージョン見出し」ごとに変更点を並べる（新しい順）。
 // マージのたびに先頭へ新バージョンを追加し、VERSION も更新する。
 var UPDATES=[
+  {v:'α1.0.233', items:[
+    'サンダー（落雷）の演出をドット絵アニメに刷新しました！ 白い核＋黄色いグロー＋枝分かれスパークのジグザグ稲妻が着弾点に落ちるようになりました（3フレームのフリッカー付き）。',
+  ]},
   {v:'α1.0.232', items:[
     '斬撃の演出をドット絵アニメに刷新しました！ 大剣・刀・カマイタチ・敵のカウンター斬りが、三日月型のドット絵スプライトを武器色に染めて表示されるようになりました（大きさはこれまでと同じに調整）。',
   ]},
