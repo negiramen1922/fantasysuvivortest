@@ -2983,7 +2983,7 @@ function figInfo(id){
   if(BOSS[id]){ var B=BOSS[id], tt=ETYPE[B.key]||{}; return {nm:B.nm,shape:tt.shape,col:tt.col,dark:tt.dark,desc:BDEX[id]||'',boss:true}; }
   var t=ETYPE[id]||{}; return {nm:t.nm,shape:t.shape,col:t.col,dark:t.dark,desc:DEX[id]||'',boss:false};
 }
-var VERSION='α1.0.245'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
+var VERSION='α1.0.246'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
 function applySave(o){
   for(var i=0;i<UPG.length;i++) META[UPG[i].id]=0;
   try{
@@ -3596,13 +3596,17 @@ function moveLasers(dt){
   }
 }
 function drawLaser(L){
-  var k=L.t/L.life;
+  var k=L.t/L.life, a=1-k, w=L.w;
   ctx.save(); ctx.translate(L.x,L.y); ctx.rotate(L.a);
-  ctx.globalAlpha=(1-k)*0.35;
-  ctx.fillStyle='#ffffff'; ctx.fillRect(0,-L.w*1.9,L.len,L.w*3.8);
-  ctx.globalAlpha=(1-k)*0.95;
-  ctx.fillStyle='#ffffff'; ctx.fillRect(0,-L.w*0.55,L.len,L.w*1.1);
-  ctx.globalAlpha=1; ctx.restore();
+  ctx.imageSmoothingEnabled=false;
+  ctx.globalAlpha=a*0.3;  ctx.fillStyle='#7fe6ff'; ctx.fillRect(0,-Math.round(w*1.9),L.len,Math.max(2,Math.round(w*3.8))); // シアンの外グロー
+  ctx.globalAlpha=a*0.95; ctx.fillStyle='#ffffff'; ctx.fillRect(0,-Math.round(w*0.6),L.len,Math.max(2,Math.round(w*1.2))); // 白い芯
+  ctx.globalAlpha=a;      ctx.fillStyle='#eaffff';                                                                          // 走る光の粒
+  var seg=Math.max(3,Math.round(w));
+  for(var x=0;x<L.len;x+=seg*2){ if(Math.random()<0.5) ctx.fillRect(Math.round(x),-1,seg,2); }
+  ctx.globalAlpha=a*0.85; ctx.fillStyle='#ffffff';                                                                          // 先端フラッシュ
+  var fs=Math.max(2,Math.round(w*1.5)); ctx.fillRect(L.len-fs,-fs,fs*2,fs*2);
+  ctx.imageSmoothingEnabled=true; ctx.globalAlpha=1; ctx.restore();
 }
 // インフェルノビーム：最寄りの敵へ照射し続け、同じ敵に当て続けるほど火力が上がる（ramp）。数軸で追加ビーム。
 // オーバーヒート式：撃つほど熱がたまり、満タンで強制冷却（ビーム停止）。持続軸で熱容量アップ＋冷却速度アップ。
@@ -10205,6 +10209,9 @@ Array.prototype.forEach.call(document.querySelectorAll('#setview button'),functi
 // 更新履歴：1つのお知らせ内で「バージョン見出し」ごとに変更点を並べる（新しい順）。
 // マージのたびに先頭へ新バージョンを追加し、VERSION も更新する。
 var UPDATES=[
+  {v:'α1.0.246', items:[
+    'セイクリッドレーザーの演出をドット絵化しました！ 白い芯＋シアンの外グローに、ビーム内を走る光の粒と着弾フラッシュを加えたエネルギービームになりました。',
+  ]},
   {v:'α1.0.245', items:[
     'インフェルノビーム（火炎放射）の演出をドット絵化しました！ 外＝赤／中＝橙／芯＝白の炎ブロックが揺らめきながら連なり、着弾点で火の粉が散る火炎流になりました。',
   ]},
