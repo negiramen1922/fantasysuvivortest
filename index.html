@@ -2983,7 +2983,7 @@ function figInfo(id){
   if(BOSS[id]){ var B=BOSS[id], tt=ETYPE[B.key]||{}; return {nm:B.nm,shape:tt.shape,col:tt.col,dark:tt.dark,desc:BDEX[id]||'',boss:true}; }
   var t=ETYPE[id]||{}; return {nm:t.nm,shape:t.shape,col:t.col,dark:t.dark,desc:DEX[id]||'',boss:false};
 }
-var VERSION='α1.0.235'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
+var VERSION='α1.0.236'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
 function applySave(o){
   for(var i=0;i<UPG.length;i++) META[UPG[i].id]=0;
   try{
@@ -7044,6 +7044,8 @@ var FXPILLAR=new Image(), FXPILLAR_RDY=0; FXPILLAR.onload=function(){ FXPILLAR_R
 var FXPILLAR_FW=120, FXPILLAR_FH=360, FXPILLAR_FR=3;
 // 緑の渦（トルネード）ドット絵スプライト：spinで回転させて渦を表現（1フレーム）
 var FXVORTEX=new Image(), FXVORTEX_RDY=0; FXVORTEX.onload=function(){ FXVORTEX_RDY=1; }; FXVORTEX.src='assets/fx_vortex.png';
+// ブラックホール（特異点）ドット絵スプライト：紫の渦＋黒コア。回転で渦を表現（1フレーム）
+var FXHOLE=new Image(), FXHOLE_RDY=0; FXHOLE.onload=function(){ FXHOLE_RDY=1; }; FXHOLE.src='assets/fx_hole.png';
 function sprReady(n){ return !!SPRRDY[n]; }
 function sprTinted(n,tint,alpha){
   var key=n+'|'+tint+'|'+alpha, c=SPRT[key];
@@ -8217,7 +8219,17 @@ function drawRock(k){
 }
 function drawHole(h){
   var k=Math.min(1,h.t*4), fade=Math.min(1,h.life*2.5);
-  ctx.save(); ctx.translate(h.x,h.y); ctx.globalAlpha=fade;
+  ctx.save(); ctx.translate(h.x,h.y);
+  if(FXHOLE_RDY){
+    // ドット絵の渦＋黒コア。回転で吸い込みを表現
+    ctx.globalAlpha=fade*0.13; ctx.fillStyle='#7a4fd6';
+    ctx.beginPath(); ctx.arc(0,0,h.r*k,0,6.3); ctx.fill();     // 吸引範囲の薄い下地
+    var D=h.r*k*2.1;
+    ctx.globalAlpha=Math.min(1,fade); ctx.rotate(h.t*2.2); ctx.imageSmoothingEnabled=false;
+    ctx.drawImage(FXHOLE, -D/2,-D/2, D,D);
+    ctx.imageSmoothingEnabled=true; ctx.globalAlpha=1; ctx.restore(); return;
+  }
+  ctx.globalAlpha=fade;
   ctx.rotate(h.t*2.2);
   ctx.globalAlpha=fade*0.13;
   ctx.fillStyle='#7a4fd6'; ctx.beginPath(); ctx.arc(0,0,h.r*k,0,6.3); ctx.fill();
@@ -10096,6 +10108,9 @@ Array.prototype.forEach.call(document.querySelectorAll('#setview button'),functi
 // 更新履歴：1つのお知らせ内で「バージョン見出し」ごとに変更点を並べる（新しい順）。
 // マージのたびに先頭へ新バージョンを追加し、VERSION も更新する。
 var UPDATES=[
+  {v:'α1.0.236', items:[
+    'ブラックホール（特異点）の演出をドット絵アニメに刷新しました！ 紫の螺旋＋中央の黒い事象の地平を回転させて吸い込みを表現する方式になりました（トルネードと同じ回転スプライト方式で軽量）。',
+  ]},
   {v:'α1.0.235', items:[
     'トルネード（緑の渦）の演出をドット絵アニメに刷新しました！ 3本腕の螺旋スプライトを回転させる方式に変わり、渦の見た目が滑らかになりつつ、毎フレーム線を引く旧方式より軽くなりました。',
   ]},
