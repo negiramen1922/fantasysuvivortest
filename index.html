@@ -2983,7 +2983,7 @@ function figInfo(id){
   if(BOSS[id]){ var B=BOSS[id], tt=ETYPE[B.key]||{}; return {nm:B.nm,shape:tt.shape,col:tt.col,dark:tt.dark,desc:BDEX[id]||'',boss:true}; }
   var t=ETYPE[id]||{}; return {nm:t.nm,shape:t.shape,col:t.col,dark:t.dark,desc:DEX[id]||'',boss:false};
 }
-var VERSION='α1.0.246'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
+var VERSION='α1.0.247'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
 function applySave(o){
   for(var i=0;i<UPG.length;i++) META[UPG[i].id]=0;
   try{
@@ -8233,8 +8233,10 @@ function drawChak(c){
 }
 function drawFlame(lv){
   var bl=flameOrbs(lv), rr=9*AREA('flame');   // 玉の見た目も範囲・拡大に合わせて大きくなる
+  var haveFB=sprReady('fireball');
   for(var i=0;i<bl.length;i++){
-    var b=bl[i], f=0.75+Math.sin(time*13+i)*0.25;
+    var b=bl[i], f=0.85+Math.sin(time*13+i)*0.15;
+    if(haveFB){ drawSprRot('fireball', b.x, b.y, time*3.2+i*1.3, rr*3.6*f); continue; }  // ドット絵の火球を流用
     ctx.save(); ctx.translate(b.x,b.y);
     ctx.globalAlpha=0.30*f;
     ctx.fillStyle='#ff8a2b'; ctx.beginPath(); ctx.arc(0,0,rr*2.1,0,6.3); ctx.fill();
@@ -10209,6 +10211,9 @@ Array.prototype.forEach.call(document.querySelectorAll('#setview button'),functi
 // 更新履歴：1つのお知らせ内で「バージョン見出し」ごとに変更点を並べる（新しい順）。
 // マージのたびに先頭へ新バージョンを追加し、VERSION も更新する。
 var UPDATES=[
+  {v:'α1.0.247', items:[
+    'フレイムサークル（周囲を回る火の玉）の見た目を、ファイヤーボールと同じドット絵の火球スプライトに統一しました。',
+  ]},
   {v:'α1.0.246', items:[
     'セイクリッドレーザーの演出をドット絵化しました！ 白い芯＋シアンの外グローに、ビーム内を走る光の粒と着弾フラッシュを加えたエネルギービームになりました。',
   ]},
