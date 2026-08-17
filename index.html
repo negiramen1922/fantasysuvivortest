@@ -2983,7 +2983,7 @@ function figInfo(id){
   if(BOSS[id]){ var B=BOSS[id], tt=ETYPE[B.key]||{}; return {nm:B.nm,shape:tt.shape,col:tt.col,dark:tt.dark,desc:BDEX[id]||'',boss:true}; }
   var t=ETYPE[id]||{}; return {nm:t.nm,shape:t.shape,col:t.col,dark:t.dark,desc:DEX[id]||'',boss:false};
 }
-var VERSION='α1.0.243'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
+var VERSION='α1.0.244'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
 function applySave(o){
   for(var i=0;i<UPG.length;i++) META[UPG[i].id]=0;
   try{
@@ -7227,14 +7227,15 @@ function drawPlayer(){
     var sw=P.r*3.2, rot;
     if(swinging){
       var u=1-swingT/SWDUR;                            // 0→1 の振り進行
-      var sweep=u<0.28?-(u/0.28)*0.5:(u-0.28)/0.72*2.9;// ゆっくり振りかぶってから振り抜く
-      rot=0.5-sweep;                                    // 担ぎ・振りの向きを反転
+      // 斬撃と同時に一気に振り抜き（前半）→その後ゆっくり肩担ぎへ戻す（後半）
+      if(u<0.32) rot=1.25-(u/0.32)*2.9;                // 1.25(振りかぶり)→ -1.65(振り抜き)
+      else       rot=-1.65+((u-0.32)/0.68)*2.35;       // -1.65 → 0.7(肩へ復帰)
     }else{
       rot=0.7;                                          // 肩に斜め担ぎ（右肩側）
     }
     // 剣スプライト（原点＝柄頭。画像は刃が上向き）。blade[i]=角度と不透明度で1回描く（インライン）
     var blade=[];
-    if(swinging) blade=[[rot+0.45,0.25],[rot,1]];       // 残像＋本体前で振る
+    if(swinging) blade=[[rot+0.85,0.12],[rot+0.5,0.22],[rot+0.22,0.4],[rot,1]];  // 振り抜きの残像を重ねてスウィング感を強調
     else         blade=[[rot,1]];                       // 担ぎ（肩の後ろ）
     // 描画順：担ぎ時は剣→本体、振り時は本体→剣
     if(!swinging){
@@ -10191,6 +10192,9 @@ Array.prototype.forEach.call(document.querySelectorAll('#setview button'),functi
 // 更新履歴：1つのお知らせ内で「バージョン見出し」ごとに変更点を並べる（新しい順）。
 // マージのたびに先頭へ新バージョンを追加し、VERSION も更新する。
 var UPDATES=[
+  {v:'α1.0.244', items:[
+    '騎士（大剣）の攻撃モーションを改善しました！ 攻撃と同時に大剣を振り下ろすようになり、複数の残像でスウィング感を強調。斬撃エフェクトと振りのタイミングも合わせました。',
+  ]},
   {v:'α1.0.243', items:[
     'チェンソーの演出をドット絵化しました！ 回転するバズソー（丸ノコ）のドット絵スプライトになり、通常時はガイドバーの先端で、覚醒（全方位）時は自機の周りで刃が高速回転します。',
   ]},
