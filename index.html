@@ -2686,7 +2686,13 @@ var CHARS={
     st:'最大HP +10% ／ 攻撃力 −10%',
     grow:{k:'wpn', wk:'bell', v:0.01, tx:'毎レベル ベルの攻撃力 +1%（羊の群れ 出現率3%／数＝ベル×7／威力＝ベルと同値）'},
     hp:1.10, spd:1.00, pw:0.90, area:1.00, ele:0, elp:0, crit:0, regen:0,
-    cost:0, cond:'stage',  val:2,     condTx:'ステージ2（森）をクリアする', tkt:1 }
+    cost:0, cond:'stage',  val:2,     condTx:'ステージ2（森）をクリアする', tkt:1 },
+  samurai:{ nm:'サムライ', glyph:'\u{1F5E1}', w:'katana',
+    tx:'刀を極めた武人。会心と手数で斬り込み、敵弾を弾いて反撃を叩き込む。',
+    st:'攻撃力 +10% ／ 会心率 +8% ／ 最大HP −5%',
+    grow:{k:'ktcounter', per:20, unit:'', tx:'20レベルごと 刀のカウンター最大ストック +1'},
+    hp:0.95, spd:1.00, pw:1.10, area:1.00, ele:0, elp:0, crit:0.08, regen:0,
+    cost:0, cond:null, val:0, condTx:'', tkt:1 }
 };
 var ALLCHR=0;   // 1で全キャラ解放（開発用）。製品は 0
 var UNL={}, SELCH='knight';
@@ -2937,7 +2943,7 @@ function figInfo(id){
   if(BOSS[id]){ var B=BOSS[id], tt=ETYPE[B.key]||{}; return {nm:B.nm,shape:tt.shape,col:tt.col,dark:tt.dark,desc:BDEX[id]||'',boss:true}; }
   var t=ETYPE[id]||{}; return {nm:t.nm,shape:t.shape,col:t.col,dark:t.dark,desc:DEX[id]||'',boss:false};
 }
-var VERSION='α1.0.223'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
+var VERSION='α1.0.224'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
 function applySave(o){
   for(var i=0;i<UPG.length;i++) META[UPG[i].id]=0;
   try{
@@ -3141,6 +3147,8 @@ var cool={};
 function GROW(k){ var g=CH().grow; return (g&&g.k===k)?g.v*(P.lv-1):0; }
 // 農夫：投げる鎌の追加本数（per レベルごとに +1、階段状）
 function scytheLvBonus(){ var g=CH().grow; return (g&&g.k==='scythe_cnt')?Math.floor(P.lv/g.per):0; }
+// サムライ：20レベルごとに刀のカウンター最大ストック +1（階段式）
+function samuraiCtr(){ var g=CH().grow; return (g&&g.k==='ktcounter')?Math.floor(P.lv/g.per):0; }
 // 爆弾魔：武器由来の爆発だけを伸ばす（元素反応の爆発は対象外）
 function pw(w){
   var m=(1+0.12*(P.p.power||0)+0.06*M('might'))*CH().pw;
@@ -3709,7 +3717,7 @@ function doKatana(){
 // 刀のカウンター：ストック制。5秒ごとに1チャージ（通常は最大1、覚醒『無双』で最大3）。
 // チャージが1以上あるとき、周囲の敵弾を弾いてチャージを1消費する（うす緑の弾きエフェクト）。
 function katanaCounter(dt){
-  var maxStock=AW('katana')?3:1, iv=5.0;
+  var maxStock=(AW('katana')?3:1)+samuraiCtr(), iv=5.0;   // サムライ：20レベルごとに最大ストック+1
   if(P.ctrChg==null) P.ctrChg=maxStock;
   if(P.ctrCd==null) P.ctrCd=iv;
   if(P.ctrChg>maxStock) P.ctrChg=maxStock;
@@ -9860,6 +9868,9 @@ Array.prototype.forEach.call(document.querySelectorAll('#setview button'),functi
 // 更新履歴：1つのお知らせ内で「バージョン見出し」ごとに変更点を並べる（新しい順）。
 // マージのたびに先頭へ新バージョンを追加し、VERSION も更新する。
 var UPDATES=[
+  {v:'α1.0.224', items:[
+    '新キャラ「サムライ」を追加！ 初期武器は刀。攻撃力+10%／会心率+8%／最大HP−5%の近接アタッカーで、20レベルごとに刀のカウンター最大ストックが+1（敵弾を弾いて反撃を溜め込める）。解放：交換所でキャラチケット。',
+  ]},
   {v:'α1.0.223', items:[
     '「続きから」のボタンが大きすぎたので、出撃ボタンを置き換える形に変更（保存があるときは「続きから」＋小さな「新しく出撃」を表示）。',
     'メテオの落下してくる隕石の見た目を大きくし、炎のグローを追加しました（爆発範囲が広いほど隕石も大きくなります）。',
