@@ -2983,7 +2983,7 @@ function figInfo(id){
   if(BOSS[id]){ var B=BOSS[id], tt=ETYPE[B.key]||{}; return {nm:B.nm,shape:tt.shape,col:tt.col,dark:tt.dark,desc:BDEX[id]||'',boss:true}; }
   var t=ETYPE[id]||{}; return {nm:t.nm,shape:t.shape,col:t.col,dark:t.dark,desc:DEX[id]||'',boss:false};
 }
-var VERSION='α1.0.241'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
+var VERSION='α1.0.242'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
 function applySave(o){
   for(var i=0;i<UPG.length;i++) META[UPG[i].id]=0;
   try{
@@ -3737,6 +3737,13 @@ function drawBliz(f){
 function drawSnowC(f){
   var k=f.t/f.life, a=(k<0.25?k/0.25:1-(k-0.25)/0.75); // 出て→ゆっくり消える
   ctx.save(); ctx.translate(f.x,f.y); ctx.rotate(f.rot);
+  if(FXFROST_RDY){
+    // 地面の氷晶：ブリザードと同じ雪片スプライトを流用
+    var D=f.sz*2.6;
+    ctx.globalAlpha=Math.max(0,a)*0.9; ctx.imageSmoothingEnabled=false;
+    ctx.drawImage(FXFROST, -D/2,-D/2, D,D);
+    ctx.imageSmoothingEnabled=true; ctx.globalAlpha=1; ctx.restore(); return;
+  }
   ctx.globalAlpha=Math.max(0,a)*0.8;
   ctx.strokeStyle='#dff2ff'; ctx.lineWidth=1.4; ctx.lineCap='round';
   for(var i=0;i<6;i++){
@@ -10164,6 +10171,9 @@ Array.prototype.forEach.call(document.querySelectorAll('#setview button'),functi
 // 更新履歴：1つのお知らせ内で「バージョン見出し」ごとに変更点を並べる（新しい順）。
 // マージのたびに先頭へ新バージョンを追加し、VERSION も更新する。
 var UPDATES=[
+  {v:'α1.0.242', items:[
+    '地面に残る雪の結晶（アイス系の足元エフェクト）もドット絵の氷晶スプライトに統一しました。',
+  ]},
   {v:'α1.0.241', items:[
     'メテオの落下する隕石をドット絵化しました！ 白熱する先端＋燃え盛る炎の尾を持つドット絵の隕石が降ってくるようになりました（着弾の爆発は既にドット絵化済み）。',
   ]},
