@@ -2984,7 +2984,7 @@ function figInfo(id){
   if(BOSS[id]){ var B=BOSS[id], tt=ETYPE[B.key]||{}; return {nm:B.nm,shape:tt.shape,col:tt.col,dark:tt.dark,desc:BDEX[id]||'',boss:true}; }
   var t=ETYPE[id]||{}; return {nm:t.nm,shape:t.shape,col:t.col,dark:t.dark,desc:DEX[id]||'',boss:false};
 }
-var VERSION='α1.0.248'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
+var VERSION='α1.0.249'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
 function applySave(o){
   for(var i=0;i<UPG.length;i++) META[UPG[i].id]=0;
   try{
@@ -6998,6 +6998,11 @@ var SPRDATA={
   fireball:'assets/fireball.png',
   icejav:'assets/icejav.png',
   rockball:'assets/rockball.png',
+  p_arrow:'assets/p_arrow.png',
+  p_holy:'assets/p_holy.png',
+  p_shuriken:'assets/p_shuriken.png',
+  p_anchor:'assets/p_anchor.png',
+  p_bullet:'assets/p_bullet.png',
   bird:'assets/bird.png',
   myconid:'assets/myconid.png',
   bee:'assets/bee.png',
@@ -8427,6 +8432,12 @@ function drawQuake(f){
 function drawShot(s){
   if(s.src==='fire'&&sprReady('fireball')){ drawSprRot('fireball',s.x,s.y,Math.atan2(s.vy,s.vx)-Math.PI/2,(s.r||8)*3.6); return; }
   if(s.src==='ice'&&sprReady('icejav')){ drawSprRot('icejav',s.x,s.y,(s.ang||0)+Math.PI/2,(s.r||7)*3.8); return; }
+  // ドット絵の投射物（矢・ホーリーアロー・手裏剣・錨・弾）。スプライトは+x向き。
+  if(s.kind==='arrow'&&sprReady('p_arrow')){ drawSprRot('p_arrow',s.x,s.y,s.ang,36); return; }
+  if(s.kind==='lance'&&sprReady('p_holy')){ drawSprRot('p_holy',s.x,s.y,s.ang,38); return; }
+  if(s.kind==='shuriken'&&sprReady('p_shuriken')){ drawSprRot('p_shuriken',s.x,s.y,s.spin||0,(s.r+8)*2.4); return; }
+  if(s.kind==='anchor'&&sprReady('p_anchor')){ drawSprRot('p_anchor',s.x,s.y,s.ang,(s.r+9)*2.4); return; }
+  if(s.kind==='bullet'&&sprReady('p_bullet')){ drawSprRot('p_bullet',s.x,s.y,s.ang,26); return; }
   ctx.save(); ctx.translate(s.x,s.y);
   if(s.kind==='pellet'){
     ctx.fillStyle=s.col; ctx.beginPath(); ctx.arc(0,0,s.r,0,6.3); ctx.fill();
@@ -10235,6 +10246,9 @@ Array.prototype.forEach.call(document.querySelectorAll('#setview button'),functi
 // 更新履歴：1つのお知らせ内で「バージョン見出し」ごとに変更点を並べる（新しい順）。
 // マージのたびに先頭へ新バージョンを追加し、VERSION も更新する。
 var UPDATES=[
+  {v:'α1.0.249', items:[
+    '投射物をドット絵に一新しました！ 弓の矢・ホーリーアロー・手裏剣・錨・ガトリング弾が、それぞれ専用のドット絵スプライトで飛ぶようになりました（ファイヤーボール・氷槍に続く対応）。',
+  ]},
   {v:'α1.0.248', items:[
     '属性（炎・氷・雷・光・闇・草・風）とパッシブ・床装備の全アイコンを、環境で崩れる絵文字からオリジナルのドット絵アイコンに一新しました！ レベルアップのカード、HUD、床装備、画面端マーカー、一時停止の一覧すべてに反映されます。',
   ]},
