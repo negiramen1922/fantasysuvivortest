@@ -620,6 +620,7 @@ canvas{display:block;width:100%;height:100%;touch-action:none}
   box-shadow:0 8px 0 rgba(0,0,0,.5),0 0 22px rgba(86,224,255,.25)}
 .card .glyph{font-size:34px;line-height:1}
 img.wspr{width:1.15em;height:1.15em;object-fit:contain;image-rendering:pixelated;vertical-align:middle;display:inline-block}
+.gicon{display:inline-block;background-image:url(assets/icons.png);image-rendering:pixelated;vertical-align:middle}
 .card .nm{font-size:19px;color:#fff}
 .card .tag{font-size:11px;color:var(--ash);border:1px solid var(--line);padding:1px 8px}
 .card .tx{font-size:13px;color:var(--ash);line-height:1.65}
@@ -2983,7 +2984,7 @@ function figInfo(id){
   if(BOSS[id]){ var B=BOSS[id], tt=ETYPE[B.key]||{}; return {nm:B.nm,shape:tt.shape,col:tt.col,dark:tt.dark,desc:BDEX[id]||'',boss:true}; }
   var t=ETYPE[id]||{}; return {nm:t.nm,shape:t.shape,col:t.col,dark:t.dark,desc:DEX[id]||'',boss:false};
 }
-var VERSION='α1.0.247'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
+var VERSION='α1.0.248'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
 function applySave(o){
   for(var i=0;i<UPG.length;i++) META[UPG[i].id]=0;
   try{
@@ -6695,7 +6696,7 @@ function rollChoices(){
     var p=PASSIVES[id], tot=P.p[id]||0, lvup=tot-(P.rel[id]||0);
     if(lvup>=p.max) continue;
     if(lvup===0&&pslots>=6) continue;          // パッシブも6枠まで（レベルアップ由来のみ）
-    pool.push({id:id,kind:'p',nm:p.nm,glyph:p.glyph,tag:p.tag,tx:p.tx,
+    pool.push({id:id,kind:'p',nm:p.nm,glyph:(iconHtml(id,40)||p.glyph),tag:p.tag,tx:p.tx,
       lvtx:tot===0?'NEW':('Lv '+tot+' → '+(tot+1))});
   }
   // 通常の強化先が尽きたら限界突破に切り替わる
@@ -6709,7 +6710,7 @@ function rollChoices(){
     seen[k]=(seen[k]||0)+1;
     out.push(c);
   }
-  if(!out.length) out=[{id:'heal',kind:'heal',nm:'祝福',glyph:'✚',tag:'回復',tx:'HPを全快させる。',lvtx:'—'}];
+  if(!out.length) out=[{id:'heal',kind:'heal',nm:'祝福',glyph:(iconHtml('heal',40)||'✚'),tag:'回復',tx:'HPを全快させる。',lvtx:'—'}];
   return out;
 }
 // 限界突破の候補（所持武器 × 伸ばせるステータス）
@@ -6761,7 +6762,7 @@ function relicChoices(){
   for(var id in PASSIVES){
     var p=PASSIVES[id], cur=P.p[id]||0;
     if(cur>=p.max+1) continue;   // 床装備は上限+1まで。もう伸ばせないものは出さない
-    pool.push({id:id,glyph:p.glyph,nm:p.nm,tag:p.tag,tx:p.tx,
+    pool.push({id:id,glyph:(iconHtml(id,40)||p.glyph),nm:p.nm,tag:p.tag,tx:p.tx,
       lvtx:cur===0?'NEW':('Lv '+cur+' → '+(cur+1))});
   }
   shuffle(pool);
@@ -7119,6 +7120,22 @@ var FXMETEOR=new Image(), FXMETEOR_RDY=0; FXMETEOR.onload=function(){ FXMETEOR_R
 var FXMETEOR_FW=78, FXMETEOR_FH=132, FXMETEOR_FR=2;
 // チェーンソーのバズソー刃ドット絵スプライト：回転させて丸ノコを表現（1フレーム）
 var FXSAW=new Image(), FXSAW_RDY=0; FXSAW.onload=function(){ FXSAW_RDY=1; }; FXSAW.src='assets/fx_saw.png';
+// 属性・パッシブ・床装備アイコン（16px格子・8列×3行のスプライトシート）
+var ICONS_IMG=new Image(), ICONS_RDY=0; ICONS_IMG.onload=function(){ ICONS_RDY=1; }; ICONS_IMG.src='assets/icons.png';
+var ICONMAP={"fire":[0,0],"ice":[1,0],"thunder":[2,0],"holy":[3,0],"dark":[4,0],"grass":[5,0],"wind":[6,0],"power":[7,0],"swift":[0,1],"magnet":[1,1],"haste":[2,1],"vital":[3,1],"crit":[4,1],"critd":[5,1],"affinity":[6,1],"mastery":[7,1],"bulwark":[0,2],"heal":[1,2],"exp":[2,2],"reach":[3,2],"greed":[4,2],"fortune":[5,2],"debuff":[6,2]};
+// キャンバス用：アイコンを中心(cx,cy)・一辺sizeで描く
+function drawIcon(key,cx,cy,size){
+  if(!ICONS_RDY||!ICONMAP[key]) return false;
+  var m=ICONMAP[key]; ctx.imageSmoothingEnabled=false;
+  ctx.drawImage(ICONS_IMG, m[0]*16,m[1]*16,16,16, Math.round(cx-size/2),Math.round(cy-size/2),size,size);
+  ctx.imageSmoothingEnabled=true; return true;
+}
+// HTML用：CSSスプライトのインライン<span>を返す（絵文字グリフの置き換え）
+function iconHtml(key,px){
+  var m=ICONMAP[key]; if(!m) return '';
+  px=px||24;
+  return '<span class="gicon" style="width:'+px+'px;height:'+px+'px;background-position:-'+(m[0]*px)+'px -'+(m[1]*px)+'px;background-size:'+(8*px)+'px '+(3*px)+'px"></span>';
+}
 function sprReady(n){ return !!SPRRDY[n]; }
 function sprTinted(n,tint,alpha){
   var key=n+'|'+tint+'|'+alpha, c=SPRT[key];
@@ -8525,8 +8542,10 @@ function drawRelic(rl){
   ctx.fillStyle='#24485a'; ctx.beginPath(); ctx.ellipse(0,15,20,7,0,0,6.3); ctx.fill();
   ctx.fillStyle='#356981'; ctx.fillRect(-13,5,26,8);
   ctx.strokeStyle='#7fe6ff'; ctx.lineWidth=2; ctx.strokeRect(-13,5,26,8);
-  ctx.font='22px sans-serif'; ctx.textAlign='center'; ctx.textBaseline='middle';
-  ctx.fillStyle='#eafcff'; ctx.fillText(PASSIVES[rl.id].glyph,0,-9);
+  if(!drawIcon(rl.id,0,-9,22)){
+    ctx.font='22px sans-serif'; ctx.textAlign='center'; ctx.textBaseline='middle';
+    ctx.fillStyle='#eafcff'; ctx.fillText(PASSIVES[rl.id].glyph,0,-9);
+  }
   ctx.restore();
 }
 // 画面外の床の装備を、画面端に「方向矢印＋パッシブアイコン」で示す（画面座標）
@@ -8547,15 +8566,20 @@ function edgeMarker(wx,wy,glyph,col,big){
   ctx.fillStyle=col;
   ctx.beginPath(); ctx.moveTo(rr+9,0); ctx.lineTo(rr+1,-6); ctx.lineTo(rr+1,6); ctx.closePath(); ctx.fill();
   ctx.restore();
-  ctx.globalAlpha=1; ctx.fillStyle='#eafcff'; ctx.font=(big?'18px':'15px')+' sans-serif';
-  ctx.fillText(glyph, mx, my+1);
+  ctx.globalAlpha=1;
+  if(typeof glyph==='string'&&glyph.indexOf('ic:')===0){
+    drawIcon(glyph.slice(3), mx, my+1, big?20:16);
+  }else{
+    ctx.fillStyle='#eafcff'; ctx.font=(big?'18px':'15px')+' sans-serif';
+    ctx.fillText(glyph, mx, my+1);
+  }
 }
 function drawRelicMarkers(){
   if(state==='title'||state==='dead'||!P) return;
   ctx.save();
   ctx.textAlign='center'; ctx.textBaseline='middle';
   // 床の装備
-  if(relics) for(var i=0;i<relics.length;i++) edgeMarker(relics[i].x,relics[i].y,PASSIVES[relics[i].id].glyph,'#7fe6ff',0);
+  if(relics) for(var i=0;i<relics.length;i++) edgeMarker(relics[i].x,relics[i].y,'ic:'+relics[i].id,'#7fe6ff',0);
   // 全回収（磁石）アイテム
   if(vacs) for(var v=0;v<vacs.length;v++) edgeMarker(vacs[v].x,vacs[v].y,'\u{1F9F2}','#ffd94d',0);
   // 宝箱
@@ -8677,7 +8701,7 @@ function rebuildSlots(){
     if(!P.rel[id]) continue;
     var eq=document.createElement('div'); eq.className='slot eq';
     eq.innerHTML='<div class="sring"></div><div class="sin">'+
-      '<div class="ic">'+PASSIVES[id].glyph+'</div>'+
+      '<div class="ic">'+(iconHtml(id,22)||PASSIVES[id].glyph)+'</div>'+
       '<div class="lv">'+P.rel[id]+'</div></div>';
     rEq.appendChild(eq);
   }
@@ -8687,7 +8711,7 @@ function rebuildSlots(){
     if(lvup<=0) continue;
     var q=document.createElement('div'); q.className='slot pas';
     q.innerHTML='<div class="sring"></div><div class="sin">'+
-      '<div class="ic">'+PASSIVES[id].glyph+'</div>'+
+      '<div class="ic">'+(iconHtml(id,22)||PASSIVES[id].glyph)+'</div>'+
       '<div class="lv">'+lvup+'</div></div>';
     rPas.appendChild(q);
   }
@@ -9571,7 +9595,7 @@ function renderTest(){
          '<button class="tg" data-p="*" data-a="max">全MAX</button>'+
          '<button class="tg" data-p="*" data-a="zero">全0</button></div><div class="tax">';
   for(var pid in PASSIVES)
-    hh+='<span>'+PASSIVES[pid].glyph+PASSIVES[pid].nm+
+    hh+='<span>'+(iconHtml(pid,16)||PASSIVES[pid].glyph)+PASSIVES[pid].nm+
         '<button data-p="'+pid+'" data-a="-">−</button>'+
         '<b>'+(P.p[pid]||0)+'/'+PASSIVES[pid].max+'</b>'+
         '<button data-p="'+pid+'" data-a="+">＋</button></span>';
@@ -9744,11 +9768,11 @@ function buildText(){
   var pslots=0;
   for(id in P.p){
     var lvup=(P.p[id]||0)-(P.rel[id]||0);
-    ps.push(PASSIVES[id].nm+' <b>'+P.p[id]+'</b>');
+    ps.push((iconHtml(id,15)||'')+PASSIVES[id].nm+' <b>'+P.p[id]+'</b>');
     if(lvup>0) pslots++;
   }
   var ch=[];
-  for(id in ELEM){ if(elemSourceOwned(id)) ch.push(ELEM[id].nm+' <b>'+Math.round(elemChance(id)*100)+'%</b>'); }
+  for(id in ELEM){ if(elemSourceOwned(id)) ch.push((iconHtml(id,16)||'')+ELEM[id].nm+' <b>'+Math.round(elemChance(id)*100)+'%</b>'); }
   // 契約（ナイトメアのみ）：持っている契約と、その対象武器を表示
   var conBlock='';
   if(NIGHTMARE&&CONTRACT.length){
@@ -10211,6 +10235,9 @@ Array.prototype.forEach.call(document.querySelectorAll('#setview button'),functi
 // 更新履歴：1つのお知らせ内で「バージョン見出し」ごとに変更点を並べる（新しい順）。
 // マージのたびに先頭へ新バージョンを追加し、VERSION も更新する。
 var UPDATES=[
+  {v:'α1.0.248', items:[
+    '属性（炎・氷・雷・光・闇・草・風）とパッシブ・床装備の全アイコンを、環境で崩れる絵文字からオリジナルのドット絵アイコンに一新しました！ レベルアップのカード、HUD、床装備、画面端マーカー、一時停止の一覧すべてに反映されます。',
+  ]},
   {v:'α1.0.247', items:[
     'フレイムサークル（周囲を回る火の玉）の見た目を、ファイヤーボールと同じドット絵の火球スプライトに統一しました。',
   ]},
