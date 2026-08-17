@@ -1354,7 +1354,7 @@ var WEAPONS={
   musket:{ nm:'マスケット', glyph:'\u{1F52B}', tag:'射撃', max:10,
     tx:'散弾を撒き散らす。近いほど多くの玉が突き刺さる。' },
   blizzard:{ nm:'アイスブリザード', glyph:'\u{1F32A}', tag:'氷', max:10,
-    tx:'自身を中心に吹雪をまとう。触れた敵を凍てつかせる。' },
+    tx:'自身を中心に吹雪をまとう。触れた敵を凍てつかせる。発動時に氷のシールドが張り、ごく短い無敵を得る（3秒に1回・無敵時間はレベルで延長）。' },
   laser:{ nm:'セイクリッドレーザー', glyph:'\u{1F4A1}', tag:'光', max:10,
     tx:'自身から光の柱を放つ。数が増えるほど四方を貫く。' },
   bell:{ nm:'ベル', glyph:'\u{1F514}', tag:'音', max:10,
@@ -2984,7 +2984,7 @@ function figInfo(id){
   if(BOSS[id]){ var B=BOSS[id], tt=ETYPE[B.key]||{}; return {nm:B.nm,shape:tt.shape,col:tt.col,dark:tt.dark,desc:BDEX[id]||'',boss:true}; }
   var t=ETYPE[id]||{}; return {nm:t.nm,shape:t.shape,col:t.col,dark:t.dark,desc:DEX[id]||'',boss:false};
 }
-var VERSION='α1.0.252'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
+var VERSION='α1.0.253'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
 function applySave(o){
   for(var i=0;i<UPG.length;i++) META[UPG[i].id]=0;
   try{
@@ -3552,6 +3552,14 @@ function doBlizzard(){
     var ang2=Math.random()*6.283, off=Math.random()*30;
     fx.push({k:'snowc',x:P.x+Math.cos(ang2)*off,y:P.y+P.r*0.35+Math.sin(ang2)*off*0.5,
              t:0,life:1.2,sz:6+Math.random()*5,rot:Math.random()*1.05});
+  }
+  // アイスシールド：発動時にごく短い無敵（3秒に1回まで）。無敵時間は武器レベルで自動的に +0.02秒/Lv
+  if(time-(P.blizShield==null?-9:P.blizShield)>=3){
+    P.blizShield=time;
+    var idur=0.1+0.02*((P.w.blizzard||1)-1);   // Lv1:0.10s … Lv10:0.28s
+    P.inv=Math.max(P.inv,idur);
+    fx.push({k:'ring',x:P.x,y:P.y,r:0,to:P.r+18,t:0,life:.34,col:'#bfeaff'});   // 氷のシールドの輪
+    sfx(1180,.08,'sine',.03,1.2);
   }
   wgain('blizzard',n); SRC=null;
 }
@@ -10276,6 +10284,9 @@ Array.prototype.forEach.call(document.querySelectorAll('#setview button'),functi
 // 更新履歴：1つのお知らせ内で「バージョン見出し」ごとに変更点を並べる（新しい順）。
 // マージのたびに先頭へ新バージョンを追加し、VERSION も更新する。
 var UPDATES=[
+  {v:'α1.0.253', items:[
+    'アイスブリザードに「アイスシールド」を追加！ 発動時に氷のシールドが張り、ごく短い無敵を得られます（3秒に1回・無敵時間は武器レベルが上がるごとに +0.02秒ずつ自動で延長）。',
+  ]},
   {v:'α1.0.252', items:[
     '錨（アンカー）の投射物を、本物の錨らしい形（リング・ストック・湾曲した爪）に描き直し、飛んでいる間も立てて表示するようにしました。ガトリングの弾は真鍮の薬莢＋銅の弾頭のカートリッジ（バレット）形に一新しました。',
   ]},
