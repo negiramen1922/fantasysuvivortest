@@ -2984,7 +2984,7 @@ function figInfo(id){
   if(BOSS[id]){ var B=BOSS[id], tt=ETYPE[B.key]||{}; return {nm:B.nm,shape:tt.shape,col:tt.col,dark:tt.dark,desc:BDEX[id]||'',boss:true}; }
   var t=ETYPE[id]||{}; return {nm:t.nm,shape:t.shape,col:t.col,dark:t.dark,desc:DEX[id]||'',boss:false};
 }
-var VERSION='α1.0.250'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
+var VERSION='α1.0.251'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
 function applySave(o){
   for(var i=0;i<UPG.length;i++) META[UPG[i].id]=0;
   try{
@@ -8462,6 +8462,12 @@ function drawShot(s){
   if(s.kind==='shuriken'&&sprReady('p_shuriken')){ drawSprRot('p_shuriken',s.x,s.y,s.spin||0,(s.r+8)*2.4); return; }
   if(s.kind==='anchor'&&sprReady('p_anchor')){ drawSprRot('p_anchor',s.x,s.y,s.ang,(s.r+9)*2.4); return; }
   if(s.kind==='bullet'&&sprReady('p_bullet')){ drawSprRot('p_bullet',s.x,s.y,s.ang,26); return; }
+  if(s.kind==='wave'&&FXSLASH_RDY){   // 飛翔斬撃・真空（カマイタチ）：斬撃スプライトを進行方向へ
+    var wimg=slashTint(s.col||'#bff5b0'), WD=(s.sz||1)*88;
+    ctx.save(); ctx.translate(s.x,s.y); ctx.rotate(s.ang); ctx.imageSmoothingEnabled=false;
+    ctx.drawImage(wimg, 3*FXSLASH_FW,0,FXSLASH_FW,FXSLASH_FW, -WD/2,-WD/2, WD,WD);
+    ctx.imageSmoothingEnabled=true; ctx.restore(); return;
+  }
   ctx.save(); ctx.translate(s.x,s.y);
   if(s.kind==='pellet'){
     ctx.fillStyle=s.col; ctx.beginPath(); ctx.arc(0,0,s.r,0,6.3); ctx.fill();
@@ -10270,6 +10276,9 @@ Array.prototype.forEach.call(document.querySelectorAll('#setview button'),functi
 // 更新履歴：1つのお知らせ内で「バージョン見出し」ごとに変更点を並べる（新しい順）。
 // マージのたびに先頭へ新バージョンを追加し、VERSION も更新する。
 var UPDATES=[
+  {v:'α1.0.251', items:[
+    'カマイタチ（真空の刃）や大剣覚醒「飛翔斬撃」など、飛んでいく斬撃もドット絵の三日月スプライトになりました。これで主要な投射物がすべてドット絵に統一されました。',
+  ]},
   {v:'α1.0.250', items:[
     'グランドアッパーに「地割れ」の表現を追加しました！ 隆起の中心から放射状にひび割れたドット絵の地面が走り、そこから岩がせり上がるようになりました。',
     'アイスブリザードの範囲表示を「雪の結晶」に変更しました。点線の円のかわりに、中央の大きな氷晶と縁を縁取るきらめく結晶で射程を示します（すべてドット絵）。',
