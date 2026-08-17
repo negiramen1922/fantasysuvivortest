@@ -765,8 +765,9 @@ img.wspr{width:1.15em;height:1.15em;object-fit:contain;image-rendering:pixelated
       </div>
       <div class="title" id="hometitle">勇者サバイバー</div>
       <div id="vpurse"></div>
-      <button class="btn big" id="contbtn" style="display:none">続きから</button>
+      <button class="btn big" id="contbtn" style="display:none;font-size:23px;letter-spacing:3px;padding:14px 24px;white-space:nowrap">続きから</button>
       <button class="btn big" id="startbtn">出撃</button>
+      <button class="btn sub2" id="newrunbtn" style="display:none;margin-top:10px">新しく出撃</button>
       <div id="homemenu">
         <button class="btn sub2" id="shopbtn">永続強化</button>
         <button class="btn sub2" id="mastbtn">武器熟練</button>
@@ -2936,7 +2937,7 @@ function figInfo(id){
   if(BOSS[id]){ var B=BOSS[id], tt=ETYPE[B.key]||{}; return {nm:B.nm,shape:tt.shape,col:tt.col,dark:tt.dark,desc:BDEX[id]||'',boss:true}; }
   var t=ETYPE[id]||{}; return {nm:t.nm,shape:t.shape,col:t.col,dark:t.dark,desc:DEX[id]||'',boss:false};
 }
-var VERSION='α1.0.222'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
+var VERSION='α1.0.223'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
 function applySave(o){
   for(var i=0;i<UPG.length;i++) META[UPG[i].id]=0;
   try{
@@ -3032,13 +3033,20 @@ function clearRun(){ runActive=false; try{ localStorage.removeItem('bsv_run'); }
 function loadRunSave(){ try{ return JSON.parse(localStorage.getItem('bsv_run')||'null'); }catch(e){ return null; } }
 function fmtRunTime(sec){ var m=Math.floor(sec/60),s=Math.floor(sec%60); return m+':'+(s<10?'0':'')+s; }
 function refreshResumeBtn(){
-  var b=document.getElementById('contbtn'); if(!b) return;
+  var b=document.getElementById('contbtn'), sb=document.getElementById('startbtn'), nb=document.getElementById('newrunbtn');
+  if(!b) return;
   var s=loadRunSave();
-  if(s&&s.P){
+  if(s&&s.P){                              // ラン保存あり：出撃を「続きから」に置き換え、新規は小ボタンに
     var mode=s.endless?'無限ラン':(s.nightmare?'ナイトメア':('ステージ'+(s.stage||1)));
+    b.innerHTML='▶ 続きから<span style="font-size:12px;letter-spacing:1px;opacity:.85;display:block;margin-top:3px">'+mode+'　'+fmtRunTime(s.time||0)+'</span>';
     b.style.display='block';
-    b.innerHTML='▶ 続きから<span style="font-size:12px;opacity:.85;display:block;margin-top:2px">'+mode+'　'+fmtRunTime(s.time||0)+'</span>';
-  } else b.style.display='none';
+    if(sb) sb.style.display='none';
+    if(nb) nb.style.display='block';
+  } else {                                 // 保存なし：通常どおり出撃のみ
+    b.style.display='none';
+    if(sb) sb.style.display='block';
+    if(nb) nb.style.display='none';
+  }
 }
 function resumeRun(save){
   if(!save||!save.P) return;
@@ -4430,13 +4438,15 @@ function drawMeteors(){
     ctx.strokeStyle='rgba(255,150,80,.45)'; ctx.lineWidth=1;                    // 照準の十字
     ctx.beginPath(); ctx.moveTo(-m.rad,0); ctx.lineTo(m.rad,0); ctx.moveTo(0,-m.rad); ctx.lineTo(0,m.rad); ctx.stroke();
     ctx.restore();
-    // 落下する隕石（上空→着弾点）
-    var fall=(1-pr)*(m.sec?260:560), rr=m.sec?7:12;
+    // 落下する隕石（上空→着弾点）。岩を大きく＝爆発範囲に比例
+    var fall=(1-pr)*(m.sec?260:560), rr=(m.sec?0.16:0.30)*m.rad;
     ctx.save(); ctx.translate(m.x,m.y-fall);
-    ctx.strokeStyle='rgba(255,170,80,.55)'; ctx.lineWidth=m.sec?4:7; ctx.lineCap='round';   // 尾
-    ctx.beginPath(); ctx.moveTo(0,0); ctx.lineTo(-fall*0.05,-fall*0.28); ctx.stroke();
-    ctx.fillStyle='#5a3a22'; ctx.beginPath(); ctx.arc(0,0,rr,0,6.283); ctx.fill();
-    ctx.fillStyle='rgba(255,140,60,.9)'; ctx.beginPath(); ctx.arc(0,0,rr*0.6,0,6.283); ctx.fill();
+    ctx.strokeStyle='rgba(255,170,80,.5)'; ctx.lineWidth=rr*0.8; ctx.lineCap='round';   // 尾（炎の尾）
+    ctx.beginPath(); ctx.moveTo(0,0); ctx.lineTo(-fall*0.05,-fall*0.30); ctx.stroke();
+    ctx.globalAlpha=0.5; ctx.fillStyle='#ff7a2f';                                       // 炎のグロー
+    ctx.beginPath(); ctx.arc(0,0,rr*1.45,0,6.283); ctx.fill(); ctx.globalAlpha=1;
+    ctx.fillStyle='#5a3a22'; ctx.beginPath(); ctx.arc(0,0,rr,0,6.283); ctx.fill();      // 岩本体
+    ctx.fillStyle='rgba(255,150,70,.95)'; ctx.beginPath(); ctx.arc(0,0,rr*0.62,0,6.283); ctx.fill();   // 白熱コア
     ctx.restore();
   }
 }
@@ -9799,6 +9809,7 @@ document.getElementById('contbtn').onclick=function(){ var s=loadRunSave(); if(s
 document.getElementById('installbtn').onclick=function(){ audio(); openInstall(); };
 document.getElementById('installclose').onclick=function(){ document.getElementById('install').classList.remove('on'); };
 document.getElementById('startbtn').onclick=function(){ audio(); showView('stage'); };
+document.getElementById('newrunbtn').onclick=function(){ audio(); showView('stage'); };
 document.getElementById('stageback').onclick=function(){ showView('home'); };
 document.getElementById('againbtn').onclick=function(){ startRun(ENDLESS?null:curStage,ENDLESS); };
 document.getElementById('homebtn').onclick=function(){ showView('home'); };
@@ -9849,6 +9860,10 @@ Array.prototype.forEach.call(document.querySelectorAll('#setview button'),functi
 // 更新履歴：1つのお知らせ内で「バージョン見出し」ごとに変更点を並べる（新しい順）。
 // マージのたびに先頭へ新バージョンを追加し、VERSION も更新する。
 var UPDATES=[
+  {v:'α1.0.223', items:[
+    '「続きから」のボタンが大きすぎたので、出撃ボタンを置き換える形に変更（保存があるときは「続きから」＋小さな「新しく出撃」を表示）。',
+    'メテオの落下してくる隕石の見た目を大きくし、炎のグローを追加しました（爆発範囲が広いほど隕石も大きくなります）。',
+  ]},
   {v:'α1.0.222', items:[
     'ホーム画面に追加の案内を、毎回の自動ポップアップは廃止し、ホーム下部の「📲 ホーム画面に追加」ボタンからの案内に一本化しました（しつこくならないように）。',
   ]},
