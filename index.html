@@ -620,6 +620,7 @@ canvas{display:block;width:100%;height:100%;touch-action:none}
   box-shadow:0 8px 0 rgba(0,0,0,.5),0 0 22px rgba(86,224,255,.25)}
 .card .glyph{font-size:34px;line-height:1}
 img.wspr{width:1.15em;height:1.15em;object-fit:contain;image-rendering:pixelated;vertical-align:middle;display:inline-block}
+.gicon{display:inline-block;background-image:url(assets/icons.png);image-rendering:pixelated;vertical-align:middle}
 .card .nm{font-size:19px;color:#fff}
 .card .tag{font-size:11px;color:var(--ash);border:1px solid var(--line);padding:1px 8px}
 .card .tx{font-size:13px;color:var(--ash);line-height:1.65}
@@ -2983,7 +2984,7 @@ function figInfo(id){
   if(BOSS[id]){ var B=BOSS[id], tt=ETYPE[B.key]||{}; return {nm:B.nm,shape:tt.shape,col:tt.col,dark:tt.dark,desc:BDEX[id]||'',boss:true}; }
   var t=ETYPE[id]||{}; return {nm:t.nm,shape:t.shape,col:t.col,dark:t.dark,desc:DEX[id]||'',boss:false};
 }
-var VERSION='α1.0.231'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
+var VERSION='α1.0.252'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
 function applySave(o){
   for(var i=0;i<UPG.length;i++) META[UPG[i].id]=0;
   try{
@@ -3596,13 +3597,17 @@ function moveLasers(dt){
   }
 }
 function drawLaser(L){
-  var k=L.t/L.life;
+  var k=L.t/L.life, a=1-k, w=L.w;
   ctx.save(); ctx.translate(L.x,L.y); ctx.rotate(L.a);
-  ctx.globalAlpha=(1-k)*0.35;
-  ctx.fillStyle='#ffffff'; ctx.fillRect(0,-L.w*1.9,L.len,L.w*3.8);
-  ctx.globalAlpha=(1-k)*0.95;
-  ctx.fillStyle='#ffffff'; ctx.fillRect(0,-L.w*0.55,L.len,L.w*1.1);
-  ctx.globalAlpha=1; ctx.restore();
+  ctx.imageSmoothingEnabled=false;
+  ctx.globalAlpha=a*0.3;  ctx.fillStyle='#7fe6ff'; ctx.fillRect(0,-Math.round(w*1.9),L.len,Math.max(2,Math.round(w*3.8))); // シアンの外グロー
+  ctx.globalAlpha=a*0.95; ctx.fillStyle='#ffffff'; ctx.fillRect(0,-Math.round(w*0.6),L.len,Math.max(2,Math.round(w*1.2))); // 白い芯
+  ctx.globalAlpha=a;      ctx.fillStyle='#eaffff';                                                                          // 走る光の粒
+  var seg=Math.max(3,Math.round(w));
+  for(var x=0;x<L.len;x+=seg*2){ if(Math.random()<0.5) ctx.fillRect(Math.round(x),-1,seg,2); }
+  ctx.globalAlpha=a*0.85; ctx.fillStyle='#ffffff';                                                                          // 先端フラッシュ
+  var fs=Math.max(2,Math.round(w*1.5)); ctx.fillRect(L.len-fs,-fs,fs*2,fs*2);
+  ctx.imageSmoothingEnabled=true; ctx.globalAlpha=1; ctx.restore();
 }
 // インフェルノビーム：最寄りの敵へ照射し続け、同じ敵に当て続けるほど火力が上がる（ramp）。数軸で追加ビーム。
 // オーバーヒート式：撃つほど熱がたまり、満タンで強制冷却（ビーム停止）。持続軸で熱容量アップ＋冷却速度アップ。
@@ -3662,14 +3667,27 @@ function infernoTick(dt){
   }
 }
 function infBeam(tx,ty,w,g){
-  ctx.globalAlpha=0.45*g; ctx.strokeStyle='#ff5a1f'; ctx.lineWidth=w*2;
-  ctx.beginPath(); ctx.moveTo(P.x,P.y); ctx.lineTo(tx,ty); ctx.stroke();
-  ctx.globalAlpha=0.85*g; ctx.strokeStyle='#ffb14d'; ctx.lineWidth=w;
-  ctx.beginPath(); ctx.moveTo(P.x,P.y); ctx.lineTo(tx,ty); ctx.stroke();
-  ctx.globalAlpha=1; ctx.strokeStyle='#fff2c0'; ctx.lineWidth=Math.max(2,w*0.4);
-  ctx.beginPath(); ctx.moveTo(P.x,P.y); ctx.lineTo(tx,ty); ctx.stroke();
-  ctx.globalAlpha=0.6*g; ctx.fillStyle='#ffcf8a';
-  ctx.beginPath(); ctx.arc(tx,ty,w*0.9,0,6.3); ctx.fill();
+  // ドット絵の火炎流：ビーム沿いに炎のブロック（外=赤／中=橙／芯=白）を揺らして並べる
+  var dx=tx-P.x, dy=ty-P.y, len=Math.hypot(dx,dy)||1;
+  var ux=dx/len, uy=dy/len, nx=-uy, ny=ux;
+  var n=Math.max(2,Math.round(len/5));
+  ctx.imageSmoothingEnabled=false;
+  for(var i=0;i<=n;i++){
+    var t=i/n;
+    var s=Math.max(2,Math.round(w*(1.25-0.35*t)));        // 根本太く先細り
+    var jz=(Math.random()-0.5)*w*1.1*(0.3+t);             // 先ほど揺れる
+    var cx=Math.round(P.x+dx*t+nx*jz), cy=Math.round(P.y+dy*t+ny*jz);
+    ctx.globalAlpha=0.5*g;  ctx.fillStyle='#ff5a1f'; ctx.fillRect(cx-s,cy-s,s*2,s*2);
+    ctx.globalAlpha=0.85*g; ctx.fillStyle='#ffb14d'; var s2=Math.max(1,Math.round(s*0.6)); ctx.fillRect(cx-s2,cy-s2,s2*2,s2*2);
+    if(t<0.85){ ctx.globalAlpha=g; ctx.fillStyle='#fff2c0'; var s3=Math.max(1,Math.round(s*0.32)); ctx.fillRect(cx-s3,cy-s3,s3*2,s3*2); }
+  }
+  // 先端の火炎ブロブ（数個の橙ブロックを散らす）
+  for(var j=0;j<5;j++){
+    var a=Math.random()*6.283, rr=Math.random()*w*1.1, bs=Math.max(2,Math.round(w*(0.5+Math.random()*0.4)));
+    ctx.globalAlpha=0.7*g; ctx.fillStyle=(j%2?'#ff7a1f':'#ffcf8a');
+    ctx.fillRect(Math.round(tx+Math.cos(a)*rr)-bs, Math.round(ty+Math.sin(a)*rr)-bs, bs*2, bs*2);
+  }
+  ctx.imageSmoothingEnabled=true; ctx.globalAlpha=1;
 }
 function drawInferno(){
   if(!P.w.inferno||!INF.on) return;
@@ -3683,6 +3701,24 @@ function drawSaw(f){
   var k=f.t/f.life;
   ctx.save(); ctx.translate(f.x,f.y); ctx.globalAlpha=f.sustain?0.9:0.92*(1-k*0.35);
   ctx.lineCap='round';
+  if(FXSAW_RDY){
+    if(f.arc>=6){                                // 覚醒：全方位バズソー（回転スプライト）
+      var D=f.rad*1.9;
+      ctx.rotate((time*12)%6.283); ctx.imageSmoothingEnabled=false;
+      ctx.drawImage(FXSAW,-D/2,-D/2,D,D);
+      ctx.imageSmoothingEnabled=true; ctx.globalAlpha=1; ctx.restore(); return;
+    }
+    ctx.rotate(f.a);
+    var Ls=f.rad, ws=Math.max(10, Ls*Math.sin(Math.min(f.arc,3)/2));
+    var bd=Math.min(Ls*0.95, ws*2.4);            // 刃の直径
+    // ガイドバー（原点→刃）
+    ctx.strokeStyle='#5a6472'; ctx.lineWidth=ws*1.3; ctx.beginPath(); ctx.moveTo(10,0); ctx.lineTo(Ls-bd*0.42,0); ctx.stroke();
+    ctx.strokeStyle='#c8d2e0'; ctx.lineWidth=ws*1.3-6; ctx.beginPath(); ctx.moveTo(10,0); ctx.lineTo(Ls-bd*0.42,0); ctx.stroke();
+    // 先端の回転バズソー
+    ctx.translate(Ls-bd*0.42,0); ctx.rotate((time*22)%6.283); ctx.imageSmoothingEnabled=false;
+    ctx.drawImage(FXSAW,-bd/2,-bd/2,bd,bd);
+    ctx.imageSmoothingEnabled=true; ctx.globalAlpha=1; ctx.restore(); return;
+  }
   if(f.arc>=6){                                  // 覚醒：全方位の丸ノコ
     ctx.rotate((time*12)%6.283);
     ctx.strokeStyle='#8a94a4'; ctx.lineWidth=8; ctx.beginPath(); ctx.arc(0,0,f.rad*0.78,0,6.283); ctx.stroke();
@@ -3707,6 +3743,25 @@ function drawSaw(f){
 }
 function drawBliz(f){
   var k=f.t/f.life;
+  if(FXFROST_RDY){
+    // 範囲の表示を「雪の結晶」で表現：中央に大きな氷晶＋縁に沿ってきらめく小さな結晶
+    ctx.save(); ctx.imageSmoothingEnabled=false;
+    ctx.globalAlpha=0.10*(1-k*0.4); ctx.fillStyle='#8fd8ff';     // ごく薄い範囲の下地
+    ctx.beginPath(); ctx.arc(f.x,f.y,f.r,0,6.3); ctx.fill();
+    // 中央の大きな氷晶
+    var Dc=f.r*1.05;
+    ctx.globalAlpha=0.9*(1-k*0.5);
+    ctx.save(); ctx.translate(f.x,f.y); ctx.rotate(time*0.6); ctx.drawImage(FXFROST,-Dc/2,-Dc/2,Dc,Dc); ctx.restore();
+    // 範囲の縁を示す結晶リング（きらめき）
+    var N=8, Ds=Math.max(14,f.r*0.5);
+    for(var i=0;i<N;i++){
+      var ang=i/N*6.283+f.t*0.3, tw=0.4+0.5*Math.sin(time*4+i*1.7);
+      var cx=f.x+Math.cos(ang)*f.r*0.86, cy=f.y+Math.sin(ang)*f.r*0.86;
+      ctx.globalAlpha=Math.max(0,tw*(1-k));
+      ctx.save(); ctx.translate(cx,cy); ctx.rotate(time*0.9+i); ctx.drawImage(FXFROST,-Ds/2,-Ds/2,Ds,Ds); ctx.restore();
+    }
+    ctx.imageSmoothingEnabled=true; ctx.globalAlpha=1; ctx.restore(); return;
+  }
   ctx.save();
   ctx.globalAlpha=0.16*(1-k*0.4);
   ctx.fillStyle='#8fd8ff';
@@ -3728,6 +3783,13 @@ function drawBliz(f){
 function drawSnowC(f){
   var k=f.t/f.life, a=(k<0.25?k/0.25:1-(k-0.25)/0.75); // 出て→ゆっくり消える
   ctx.save(); ctx.translate(f.x,f.y); ctx.rotate(f.rot);
+  if(FXFROST_RDY){
+    // 地面の氷晶：ブリザードと同じ雪片スプライトを流用
+    var D=f.sz*2.6;
+    ctx.globalAlpha=Math.max(0,a)*0.9; ctx.imageSmoothingEnabled=false;
+    ctx.drawImage(FXFROST, -D/2,-D/2, D,D);
+    ctx.imageSmoothingEnabled=true; ctx.globalAlpha=1; ctx.restore(); return;
+  }
   ctx.globalAlpha=Math.max(0,a)*0.8;
   ctx.strokeStyle='#dff2ff'; ctx.lineWidth=1.4; ctx.lineCap='round';
   for(var i=0;i<6;i++){
@@ -4353,6 +4415,15 @@ function drawTwisters(){
   for(var i=0;i<twisters.length;i++){
     var h=twisters[i], k=Math.min(1,h.t*4), fade=Math.min(1,h.life*2.5);
     ctx.save(); ctx.translate(h.x,h.y);
+    if(FXVORTEX_RDY){
+      // ドット絵の渦：spinで回転。半径に合わせてスケール
+      ctx.globalAlpha=fade*0.12; ctx.fillStyle='#4fd69a';
+      ctx.beginPath(); ctx.arc(0,0,h.r*k,0,6.3); ctx.fill();   // 範囲の薄い下地
+      var D=h.r*k*2.2;
+      ctx.globalAlpha=Math.min(1,fade); ctx.rotate(h.spin); ctx.imageSmoothingEnabled=false;
+      ctx.drawImage(FXVORTEX, -D/2,-D/2, D,D);
+      ctx.imageSmoothingEnabled=true; ctx.globalAlpha=1; ctx.restore(); continue;
+    }
     ctx.globalAlpha=fade*0.12; ctx.fillStyle='#4fd69a';
     ctx.beginPath(); ctx.arc(0,0,h.r*k,0,6.3); ctx.fill();
     ctx.globalAlpha=fade*0.6; ctx.strokeStyle='#a8ffcf'; ctx.lineWidth=2.5; ctx.lineCap='round';
@@ -4598,14 +4669,23 @@ function drawMeteors(){
     ctx.restore();
     // 落下する隕石（上空→着弾点）。岩を大きく＝爆発範囲に比例
     var fall=(1-pr)*(m.sec?260:560), rr=(m.sec?0.16:0.30)*m.rad;
-    ctx.save(); ctx.translate(m.x,m.y-fall);
-    ctx.strokeStyle='rgba(255,170,80,.5)'; ctx.lineWidth=rr*0.8; ctx.lineCap='round';   // 尾（炎の尾）
-    ctx.beginPath(); ctx.moveTo(0,0); ctx.lineTo(-fall*0.05,-fall*0.30); ctx.stroke();
-    ctx.globalAlpha=0.5; ctx.fillStyle='#ff7a2f';                                       // 炎のグロー
-    ctx.beginPath(); ctx.arc(0,0,rr*1.45,0,6.283); ctx.fill(); ctx.globalAlpha=1;
-    ctx.fillStyle='#5a3a22'; ctx.beginPath(); ctx.arc(0,0,rr,0,6.283); ctx.fill();      // 岩本体
-    ctx.fillStyle='rgba(255,150,70,.95)'; ctx.beginPath(); ctx.arc(0,0,rr*0.62,0,6.283); ctx.fill();   // 白熱コア
-    ctx.restore();
+    if(FXMETEOR_RDY){
+      var mfr=((time*14)|0)%FXMETEOR_FR;
+      var Wm=rr*3.6, Hm=Wm*FXMETEOR_FH/FXMETEOR_FW;   // ロック径≒rr*2.6
+      ctx.save(); ctx.imageSmoothingEnabled=false;
+      ctx.drawImage(FXMETEOR, mfr*FXMETEOR_FW,0,FXMETEOR_FW,FXMETEOR_FH,
+        m.x-Wm/2, (m.y-fall)-0.74*Hm, Wm, Hm);   // ロック中心(0.74H)を着弾点へ
+      ctx.imageSmoothingEnabled=true; ctx.restore();
+    }else{
+      ctx.save(); ctx.translate(m.x,m.y-fall);
+      ctx.strokeStyle='rgba(255,170,80,.5)'; ctx.lineWidth=rr*0.8; ctx.lineCap='round';   // 尾（炎の尾）
+      ctx.beginPath(); ctx.moveTo(0,0); ctx.lineTo(-fall*0.05,-fall*0.30); ctx.stroke();
+      ctx.globalAlpha=0.5; ctx.fillStyle='#ff7a2f';                                       // 炎のグロー
+      ctx.beginPath(); ctx.arc(0,0,rr*1.45,0,6.283); ctx.fill(); ctx.globalAlpha=1;
+      ctx.fillStyle='#5a3a22'; ctx.beginPath(); ctx.arc(0,0,rr,0,6.283); ctx.fill();      // 岩本体
+      ctx.fillStyle='rgba(255,150,70,.95)'; ctx.beginPath(); ctx.arc(0,0,rr*0.62,0,6.283); ctx.fill();   // 白熱コア
+      ctx.restore();
+    }
   }
 }
 function drawSheep(s){
@@ -6626,7 +6706,7 @@ function rollChoices(){
     var p=PASSIVES[id], tot=P.p[id]||0, lvup=tot-(P.rel[id]||0);
     if(lvup>=p.max) continue;
     if(lvup===0&&pslots>=6) continue;          // パッシブも6枠まで（レベルアップ由来のみ）
-    pool.push({id:id,kind:'p',nm:p.nm,glyph:p.glyph,tag:p.tag,tx:p.tx,
+    pool.push({id:id,kind:'p',nm:p.nm,glyph:(iconHtml(id,40)||p.glyph),tag:p.tag,tx:p.tx,
       lvtx:tot===0?'NEW':('Lv '+tot+' → '+(tot+1))});
   }
   // 通常の強化先が尽きたら限界突破に切り替わる
@@ -6640,7 +6720,7 @@ function rollChoices(){
     seen[k]=(seen[k]||0)+1;
     out.push(c);
   }
-  if(!out.length) out=[{id:'heal',kind:'heal',nm:'祝福',glyph:'✚',tag:'回復',tx:'HPを全快させる。',lvtx:'—'}];
+  if(!out.length) out=[{id:'heal',kind:'heal',nm:'祝福',glyph:(iconHtml('heal',40)||'✚'),tag:'回復',tx:'HPを全快させる。',lvtx:'—'}];
   return out;
 }
 // 限界突破の候補（所持武器 × 伸ばせるステータス）
@@ -6692,7 +6772,7 @@ function relicChoices(){
   for(var id in PASSIVES){
     var p=PASSIVES[id], cur=P.p[id]||0;
     if(cur>=p.max+1) continue;   // 床装備は上限+1まで。もう伸ばせないものは出さない
-    pool.push({id:id,glyph:p.glyph,nm:p.nm,tag:p.tag,tx:p.tx,
+    pool.push({id:id,glyph:(iconHtml(id,40)||p.glyph),nm:p.nm,tag:p.tag,tx:p.tx,
       lvtx:cur===0?'NEW':('Lv '+cur+' → '+(cur+1))});
   }
   shuffle(pool);
@@ -6928,6 +7008,11 @@ var SPRDATA={
   fireball:'assets/fireball.png',
   icejav:'assets/icejav.png',
   rockball:'assets/rockball.png',
+  p_arrow:'assets/p_arrow.png',
+  p_holy:'assets/p_holy.png',
+  p_shuriken:'assets/p_shuriken.png',
+  p_anchor:'assets/p_anchor.png',
+  p_bullet:'assets/p_bullet.png',
   bird:'assets/bird.png',
   myconid:'assets/myconid.png',
   bee:'assets/bee.png',
@@ -7014,6 +7099,57 @@ function drawBooms(){
     ctx.drawImage(FXBOOM, f*FXBOOM_FW,0,FXBOOM_FW,FXBOOM_FW, b.x-sz/2, b.y-sz/2, sz, sz);
   }
   ctx.imageSmoothingEnabled=true;
+}
+// 斬撃（大剣・刀・カマイタチ・カウンター）ドット絵スプライト：白基調を武器色でtintして共通利用
+var FXSLASH=new Image(), FXSLASH_RDY=0; FXSLASH.onload=function(){ FXSLASH_RDY=1; }; FXSLASH.src='assets/fx_slash.png';
+var FXSLASH_FW=128, FXSLASH_FR=5, SLASH_TINT={};
+function slashTint(col){
+  if(SLASH_TINT[col]) return SLASH_TINT[col];
+  var w=FXSLASH_FW*FXSLASH_FR, h=FXSLASH_FW;
+  var c=document.createElement('canvas'); c.width=w; c.height=h;
+  var g=c.getContext('2d'); g.imageSmoothingEnabled=false;
+  g.drawImage(FXSLASH,0,0);
+  g.globalCompositeOperation='source-atop'; g.fillStyle=col; g.globalAlpha=0.6; g.fillRect(0,0,w,h);
+  SLASH_TINT[col]=c; return c;
+}
+// 落雷（サンダー）ドット絵スプライト：下端＝着弾点、上へ伸びる稲妻。3フレームのフリッカー
+var FXBOLT=new Image(), FXBOLT_RDY=0; FXBOLT.onload=function(){ FXBOLT_RDY=1; }; FXBOLT.src='assets/fx_bolt.png';
+var FXBOLT_FW=96, FXBOLT_FH=240, FXBOLT_FR=3;
+// 聖光の柱（ホーリージャッジ）ドット絵スプライト：下端＝地面、上へ伸びる光の柱。3フレームのシマー
+var FXPILLAR=new Image(), FXPILLAR_RDY=0; FXPILLAR.onload=function(){ FXPILLAR_RDY=1; }; FXPILLAR.src='assets/fx_pillar.png';
+var FXPILLAR_FW=120, FXPILLAR_FH=360, FXPILLAR_FR=3;
+// 緑の渦（トルネード）ドット絵スプライト：spinで回転させて渦を表現（1フレーム）
+var FXVORTEX=new Image(), FXVORTEX_RDY=0; FXVORTEX.onload=function(){ FXVORTEX_RDY=1; }; FXVORTEX.src='assets/fx_vortex.png';
+// ブラックホール（特異点）ドット絵スプライト：紫の渦＋黒コア。回転で渦を表現（1フレーム）
+var FXHOLE=new Image(), FXHOLE_RDY=0; FXHOLE.onload=function(){ FXHOLE_RDY=1; }; FXHOLE.src='assets/fx_hole.png';
+// クエイク（地割れ）の岩の破片ドット絵スプライト（1枚をリング状に並べる）
+var FXROCK=new Image(), FXROCK_RDY=0; FXROCK.onload=function(){ FXROCK_RDY=1; }; FXROCK.src='assets/fx_rock.png';
+var FXROCK_AR=18/30;   // 幅/高さ
+// アイスブリザードの雪片ドット絵スプライト（6回対称の氷晶。ゆっくり回転）
+var FXFROST=new Image(), FXFROST_RDY=0; FXFROST.onload=function(){ FXFROST_RDY=1; }; FXFROST.src='assets/fx_frost.png';
+// 深淵の手（dhand）ドット絵スプライト：+x方向へ伸びる爪。f.aで回転
+var FXHAND=new Image(), FXHAND_RDY=0; FXHAND.onload=function(){ FXHAND_RDY=1; }; FXHAND.src='assets/fx_hand.png';
+var FXHAND_AR=40/32;   // 幅/高さ
+// メテオ（落下隕石）ドット絵スプライト：炎の尾＋白熱するロック。2フレームのフリッカー
+var FXMETEOR=new Image(), FXMETEOR_RDY=0; FXMETEOR.onload=function(){ FXMETEOR_RDY=1; }; FXMETEOR.src='assets/fx_meteor.png';
+var FXMETEOR_FW=78, FXMETEOR_FH=132, FXMETEOR_FR=2;
+// チェーンソーのバズソー刃ドット絵スプライト：回転させて丸ノコを表現（1フレーム）
+var FXSAW=new Image(), FXSAW_RDY=0; FXSAW.onload=function(){ FXSAW_RDY=1; }; FXSAW.src='assets/fx_saw.png';
+// 属性・パッシブ・床装備アイコン（16px格子・8列×3行のスプライトシート）
+var ICONS_IMG=new Image(), ICONS_RDY=0; ICONS_IMG.onload=function(){ ICONS_RDY=1; }; ICONS_IMG.src='assets/icons.png';
+var ICONMAP={"fire":[0,0],"ice":[1,0],"thunder":[2,0],"holy":[3,0],"dark":[4,0],"grass":[5,0],"wind":[6,0],"power":[7,0],"swift":[0,1],"magnet":[1,1],"haste":[2,1],"vital":[3,1],"crit":[4,1],"critd":[5,1],"affinity":[6,1],"mastery":[7,1],"bulwark":[0,2],"heal":[1,2],"exp":[2,2],"reach":[3,2],"greed":[4,2],"fortune":[5,2],"debuff":[6,2]};
+// キャンバス用：アイコンを中心(cx,cy)・一辺sizeで描く
+function drawIcon(key,cx,cy,size){
+  if(!ICONS_RDY||!ICONMAP[key]) return false;
+  var m=ICONMAP[key]; ctx.imageSmoothingEnabled=false;
+  ctx.drawImage(ICONS_IMG, m[0]*16,m[1]*16,16,16, Math.round(cx-size/2),Math.round(cy-size/2),size,size);
+  ctx.imageSmoothingEnabled=true; return true;
+}
+// HTML用：CSSスプライトのインライン<span>を返す（絵文字グリフの置き換え）
+function iconHtml(key,px){
+  var m=ICONMAP[key]; if(!m) return '';
+  px=px||24;
+  return '<span class="gicon" style="width:'+px+'px;height:'+px+'px;background-position:-'+(m[0]*px)+'px -'+(m[1]*px)+'px;background-size:'+(8*px)+'px '+(3*px)+'px"></span>';
 }
 function sprReady(n){ return !!SPRRDY[n]; }
 function sprTinted(n,tint,alpha){
@@ -7140,14 +7276,15 @@ function drawPlayer(){
     var sw=P.r*3.2, rot;
     if(swinging){
       var u=1-swingT/SWDUR;                            // 0→1 の振り進行
-      var sweep=u<0.28?-(u/0.28)*0.5:(u-0.28)/0.72*2.9;// ゆっくり振りかぶってから振り抜く
-      rot=0.5-sweep;                                    // 担ぎ・振りの向きを反転
+      // 斬撃と同時に一気に振り抜き（前半）→その後ゆっくり肩担ぎへ戻す（後半）
+      if(u<0.32) rot=1.25-(u/0.32)*2.9;                // 1.25(振りかぶり)→ -1.65(振り抜き)
+      else       rot=-1.65+((u-0.32)/0.68)*2.35;       // -1.65 → 0.7(肩へ復帰)
     }else{
       rot=0.7;                                          // 肩に斜め担ぎ（右肩側）
     }
     // 剣スプライト（原点＝柄頭。画像は刃が上向き）。blade[i]=角度と不透明度で1回描く（インライン）
     var blade=[];
-    if(swinging) blade=[[rot+0.45,0.25],[rot,1]];       // 残像＋本体前で振る
+    if(swinging) blade=[[rot+0.85,0.12],[rot+0.5,0.22],[rot+0.22,0.4],[rot,1]];  // 振り抜きの残像を重ねてスウィング感を強調
     else         blade=[[rot,1]];                       // 担ぎ（肩の後ろ）
     // 描画順：担ぎ時は剣→本体、振り時は本体→剣
     if(!swinging){
@@ -8128,8 +8265,10 @@ function drawChak(c){
 }
 function drawFlame(lv){
   var bl=flameOrbs(lv), rr=9*AREA('flame');   // 玉の見た目も範囲・拡大に合わせて大きくなる
+  var haveFB=sprReady('fireball');
   for(var i=0;i<bl.length;i++){
-    var b=bl[i], f=0.75+Math.sin(time*13+i)*0.25;
+    var b=bl[i], f=0.85+Math.sin(time*13+i)*0.15;
+    if(haveFB){ drawSprRot('fireball', b.x, b.y, time*3.2+i*1.3, rr*3.6*f); continue; }  // ドット絵の火球を流用
     ctx.save(); ctx.translate(b.x,b.y);
     ctx.globalAlpha=0.30*f;
     ctx.fillStyle='#ff8a2b'; ctx.beginPath(); ctx.arc(0,0,rr*2.1,0,6.3); ctx.fill();
@@ -8188,7 +8327,17 @@ function drawRock(k){
 }
 function drawHole(h){
   var k=Math.min(1,h.t*4), fade=Math.min(1,h.life*2.5);
-  ctx.save(); ctx.translate(h.x,h.y); ctx.globalAlpha=fade;
+  ctx.save(); ctx.translate(h.x,h.y);
+  if(FXHOLE_RDY){
+    // ドット絵の渦＋黒コア。回転で吸い込みを表現
+    ctx.globalAlpha=fade*0.13; ctx.fillStyle='#7a4fd6';
+    ctx.beginPath(); ctx.arc(0,0,h.r*k,0,6.3); ctx.fill();     // 吸引範囲の薄い下地
+    var D=h.r*k*2.1;
+    ctx.globalAlpha=Math.min(1,fade); ctx.rotate(h.t*2.2); ctx.imageSmoothingEnabled=false;
+    ctx.drawImage(FXHOLE, -D/2,-D/2, D,D);
+    ctx.imageSmoothingEnabled=true; ctx.globalAlpha=1; ctx.restore(); return;
+  }
+  ctx.globalAlpha=fade;
   ctx.rotate(h.t*2.2);
   ctx.globalAlpha=fade*0.13;
   ctx.fillStyle='#7a4fd6'; ctx.beginPath(); ctx.arc(0,0,h.r*k,0,6.3); ctx.fill();
@@ -8205,6 +8354,19 @@ function drawHole(h){
 }
 function drawPillar(f){
   var k=f.t/f.life;
+  if(FXPILLAR_RDY){
+    // ドット絵：下端(地面)を f.y に合わせ上へ伸びる光の柱。フレーム切替でシマー
+    var fr=Math.min(FXPILLAR_FR-1, Math.floor(f.t/f.life*FXPILLAR_FR));
+    var W=f.r*2.2, H=460;
+    ctx.save(); ctx.globalAlpha=(1-k)*0.95; ctx.imageSmoothingEnabled=false;
+    ctx.drawImage(FXPILLAR, fr*FXPILLAR_FW,0,FXPILLAR_FW,FXPILLAR_FH, f.x-W/2, f.y-H, W, H);
+    ctx.imageSmoothingEnabled=true;
+    // 地面の着弾リング（安価）
+    ctx.globalAlpha=(1-k); ctx.strokeStyle='#fff4c2'; ctx.lineWidth=3*(1-k)+1;
+    ctx.beginPath(); ctx.arc(f.x,f.y,f.r*(0.4+k*0.7),0,6.3); ctx.stroke();
+    ctx.globalAlpha=1; ctx.restore();
+    return;
+  }
   ctx.save(); ctx.globalAlpha=(1-k)*0.85;
   var w=f.r*(1-k*0.35);
   var g=ctx.createLinearGradient(0,f.y-460,0,f.y);
@@ -8219,6 +8381,15 @@ function drawPillar(f){
 function drawHand(f){
   var k=f.t/f.life, reach=1-Math.abs(k*2-1);
   ctx.save(); ctx.translate(f.x,f.y); ctx.rotate(f.a);
+  if(FXHAND_RDY){
+    // ドット絵の爪：reachで掴む動き（伸縮）。深淵からの腕（薄い帯）を後ろに残す
+    ctx.globalAlpha=(1-k)*0.32; ctx.strokeStyle='#7a4fd6'; ctx.lineWidth=7; ctx.lineCap='round';
+    ctx.beginPath(); ctx.moveTo(-70*reach,0); ctx.lineTo(-6,0); ctx.stroke();
+    var W=(30+34*reach), H=W/FXHAND_AR;
+    ctx.globalAlpha=(1-k)*0.95; ctx.imageSmoothingEnabled=false;
+    ctx.drawImage(FXHAND, -W*0.34, -H/2, W, H);   // 手のひらを原点寄り、爪を前方へ
+    ctx.imageSmoothingEnabled=true; ctx.globalAlpha=1; ctx.restore(); return;
+  }
   ctx.globalAlpha=(1-k)*0.9;
   ctx.fillStyle='#2a1046';
   ctx.strokeStyle='#a855f7'; ctx.lineWidth=2;
@@ -8239,25 +8410,64 @@ function drawHand(f){
 function drawQuake(f){
   var k=f.t/f.life;
   ctx.save(); ctx.globalAlpha=1-k;
+  var n=9, rr=f.r*(0.35+k*0.75);
+  if(FXROCK_RDY){
+    // 地割れ（ひび割れた地面）：中心から放射状のジグザグを暗いドットブロックで敷く
+    ctx.globalAlpha=(1-k)*0.9; ctx.fillStyle='#33261a';
+    var cracks=5;
+    for(var cc=0;cc<cracks;cc++){
+      var ca=cc/cracks*6.283+f.x*0.03, pxc=f.x, pyc=f.y;
+      for(var seg=1;seg<=4;seg++){
+        var rr2=rr*(seg/4), off=(seg%2?1:-1)*0.24;
+        var nxc=f.x+Math.cos(ca+off)*rr2, nyc=f.y+Math.sin(ca+off)*rr2;
+        var dxc=nxc-pxc, dyc=nyc-pyc, ln=Math.hypot(dxc,dyc)||1, steps=Math.ceil(ln/3);
+        for(var st=0;st<=steps;st++){ var bx0=pxc+dxc*st/steps, by0=pyc+dyc*st/steps, bs=Math.max(2,5-seg);
+          ctx.fillRect(Math.round(bx0-bs/2),Math.round(by0-bs/2),bs,bs); }
+        pxc=nxc; pyc=nyc;
+      }
+    }
+    ctx.imageSmoothingEnabled=false;
+    for(var i=0;i<n;i++){
+      var a=i/n*6.283+f.x*0.01;
+      var hgt=40*(1-k)*(0.6+((i*37)%10)/14);   // 破片の高さ
+      var W=hgt*FXROCK_AR;
+      var bx=f.x+Math.cos(a)*rr, by=f.y+Math.sin(a)*rr;
+      ctx.drawImage(FXROCK, bx-W/2, by-hgt, W, hgt);   // 底＝地面
+    }
+    ctx.imageSmoothingEnabled=true;
+    ctx.strokeStyle='#c4a878'; ctx.lineWidth=3*(1-k);
+    ctx.beginPath(); ctx.arc(f.x,f.y,rr,0,6.3); ctx.stroke();
+    ctx.globalAlpha=1; ctx.restore(); return;
+  }
   ctx.fillStyle='#8f7a58';
-  var n=9;
-  for(var i=0;i<n;i++){
-    var a=i/n*6.283+f.x*0.01;
-    var rr=f.r*(0.35+k*0.75);
-    var hgt=26*(1-k)*(0.6+((i*37)%10)/14);
+  for(var i2=0;i2<n;i2++){
+    var a2=i2/n*6.283+f.x*0.01;
+    var hgt2=26*(1-k)*(0.6+((i2*37)%10)/14);
     ctx.beginPath();
-    ctx.moveTo(f.x+Math.cos(a)*rr-7, f.y+Math.sin(a)*rr);
-    ctx.lineTo(f.x+Math.cos(a)*rr,   f.y+Math.sin(a)*rr-hgt);
-    ctx.lineTo(f.x+Math.cos(a)*rr+7, f.y+Math.sin(a)*rr);
+    ctx.moveTo(f.x+Math.cos(a2)*rr-7, f.y+Math.sin(a2)*rr);
+    ctx.lineTo(f.x+Math.cos(a2)*rr,   f.y+Math.sin(a2)*rr-hgt2);
+    ctx.lineTo(f.x+Math.cos(a2)*rr+7, f.y+Math.sin(a2)*rr);
     ctx.closePath(); ctx.fill();
   }
   ctx.strokeStyle='#c4a878'; ctx.lineWidth=3*(1-k);
-  ctx.beginPath(); ctx.arc(f.x,f.y,f.r*(0.35+k*0.75),0,6.3); ctx.stroke();
+  ctx.beginPath(); ctx.arc(f.x,f.y,rr,0,6.3); ctx.stroke();
   ctx.globalAlpha=1; ctx.restore();
 }
 function drawShot(s){
   if(s.src==='fire'&&sprReady('fireball')){ drawSprRot('fireball',s.x,s.y,Math.atan2(s.vy,s.vx)-Math.PI/2,(s.r||8)*3.6); return; }
   if(s.src==='ice'&&sprReady('icejav')){ drawSprRot('icejav',s.x,s.y,(s.ang||0)+Math.PI/2,(s.r||7)*3.8); return; }
+  // ドット絵の投射物（矢・ホーリーアロー・手裏剣・錨・弾）。スプライトは+x向き。
+  if(s.kind==='arrow'&&sprReady('p_arrow')){ drawSprRot('p_arrow',s.x,s.y,s.ang,36); return; }
+  if(s.kind==='lance'&&sprReady('p_holy')){ drawSprRot('p_holy',s.x,s.y,s.ang,38); return; }
+  if(s.kind==='shuriken'&&sprReady('p_shuriken')){ drawSprRot('p_shuriken',s.x,s.y,s.spin||0,(s.r+8)*2.4); return; }
+  if(s.kind==='anchor'&&sprReady('p_anchor')){ drawSprRot('p_anchor',s.x,s.y,0,(s.r+11)*2.6); return; }   // 錨は立てたまま（進行方向へ回さない）
+  if(s.kind==='bullet'&&sprReady('p_bullet')){ drawSprRot('p_bullet',s.x,s.y,s.ang,30); return; }
+  if(s.kind==='wave'&&FXSLASH_RDY){   // 飛翔斬撃・真空（カマイタチ）：斬撃スプライトを進行方向へ
+    var wimg=slashTint(s.col||'#bff5b0'), WD=(s.sz||1)*88;
+    ctx.save(); ctx.translate(s.x,s.y); ctx.rotate(s.ang); ctx.imageSmoothingEnabled=false;
+    ctx.drawImage(wimg, 3*FXSLASH_FW,0,FXSLASH_FW,FXSLASH_FW, -WD/2,-WD/2, WD,WD);
+    ctx.imageSmoothingEnabled=true; ctx.restore(); return;
+  }
   ctx.save(); ctx.translate(s.x,s.y);
   if(s.kind==='pellet'){
     ctx.fillStyle=s.col; ctx.beginPath(); ctx.arc(0,0,s.r,0,6.3); ctx.fill();
@@ -8373,8 +8583,10 @@ function drawRelic(rl){
   ctx.fillStyle='#24485a'; ctx.beginPath(); ctx.ellipse(0,15,20,7,0,0,6.3); ctx.fill();
   ctx.fillStyle='#356981'; ctx.fillRect(-13,5,26,8);
   ctx.strokeStyle='#7fe6ff'; ctx.lineWidth=2; ctx.strokeRect(-13,5,26,8);
-  ctx.font='22px sans-serif'; ctx.textAlign='center'; ctx.textBaseline='middle';
-  ctx.fillStyle='#eafcff'; ctx.fillText(PASSIVES[rl.id].glyph,0,-9);
+  if(!drawIcon(rl.id,0,-9,22)){
+    ctx.font='22px sans-serif'; ctx.textAlign='center'; ctx.textBaseline='middle';
+    ctx.fillStyle='#eafcff'; ctx.fillText(PASSIVES[rl.id].glyph,0,-9);
+  }
   ctx.restore();
 }
 // 画面外の床の装備を、画面端に「方向矢印＋パッシブアイコン」で示す（画面座標）
@@ -8395,15 +8607,20 @@ function edgeMarker(wx,wy,glyph,col,big){
   ctx.fillStyle=col;
   ctx.beginPath(); ctx.moveTo(rr+9,0); ctx.lineTo(rr+1,-6); ctx.lineTo(rr+1,6); ctx.closePath(); ctx.fill();
   ctx.restore();
-  ctx.globalAlpha=1; ctx.fillStyle='#eafcff'; ctx.font=(big?'18px':'15px')+' sans-serif';
-  ctx.fillText(glyph, mx, my+1);
+  ctx.globalAlpha=1;
+  if(typeof glyph==='string'&&glyph.indexOf('ic:')===0){
+    drawIcon(glyph.slice(3), mx, my+1, big?20:16);
+  }else{
+    ctx.fillStyle='#eafcff'; ctx.font=(big?'18px':'15px')+' sans-serif';
+    ctx.fillText(glyph, mx, my+1);
+  }
 }
 function drawRelicMarkers(){
   if(state==='title'||state==='dead'||!P) return;
   ctx.save();
   ctx.textAlign='center'; ctx.textBaseline='middle';
   // 床の装備
-  if(relics) for(var i=0;i<relics.length;i++) edgeMarker(relics[i].x,relics[i].y,PASSIVES[relics[i].id].glyph,'#7fe6ff',0);
+  if(relics) for(var i=0;i<relics.length;i++) edgeMarker(relics[i].x,relics[i].y,'ic:'+relics[i].id,'#7fe6ff',0);
   // 全回収（磁石）アイテム
   if(vacs) for(var v=0;v<vacs.length;v++) edgeMarker(vacs[v].x,vacs[v].y,'\u{1F9F2}','#ffd94d',0);
   // 宝箱
@@ -8423,6 +8640,16 @@ function drawGem(g){
 }
 function drawSlash(f){
   var k=f.t/f.life;
+  if(FXSLASH_RDY){
+    // ドット絵：外周＝f.rad（現行の薙ぎ半径）に合わせ、既存より大きくならないよう配置
+    var fr=Math.min(FXSLASH_FR-1, Math.floor(k*FXSLASH_FR));
+    var D=f.rad*2.2, img=slashTint(f.col||'#dcd6ff');
+    ctx.save(); ctx.translate(f.x,f.y); ctx.rotate(f.a);
+    ctx.imageSmoothingEnabled=false;
+    ctx.drawImage(img, fr*FXSLASH_FW,0,FXSLASH_FW,FXSLASH_FW, -D/2,-D/2, D,D);
+    ctx.imageSmoothingEnabled=true; ctx.restore();
+    return;
+  }
   ctx.save(); ctx.translate(f.x,f.y); ctx.rotate(f.a);
   ctx.globalAlpha=1-k; ctx.strokeStyle=f.col; ctx.lineWidth=9*(1-k*0.6); ctx.lineCap='round';
   var sweep=f.arc*(0.35+k*0.65);
@@ -8446,6 +8673,15 @@ function drawAura(f){
 }
 function drawBolt(f){
   var k=f.t/f.life;
+  if(FXBOLT_RDY){
+    // ドット絵：下端(中央)を着弾点に合わせ、上へ伸びる。フレームを切替えてフリッカー
+    var fr=Math.min(FXBOLT_FR-1, Math.floor(f.t/f.life*FXBOLT_FR));
+    var H=300, W=H*FXBOLT_FW/FXBOLT_FH;   // アスペクト維持（≈120px幅）
+    ctx.save(); ctx.globalAlpha=Math.min(1,1.3*(1-k)); ctx.imageSmoothingEnabled=false;
+    ctx.drawImage(FXBOLT, fr*FXBOLT_FW,0,FXBOLT_FW,FXBOLT_FH, f.x-W/2, f.y-H, W, H);
+    ctx.imageSmoothingEnabled=true; ctx.globalAlpha=1; ctx.restore();
+    return;
+  }
   ctx.save(); ctx.globalAlpha=1-k;
   ctx.strokeStyle='#fff0a0'; ctx.lineWidth=5-k*3; ctx.lineCap='round';
   ctx.beginPath(); ctx.moveTo(f.x,f.y-320);
@@ -8455,15 +8691,20 @@ function drawBolt(f){
 }
 function drawChain(b){
   var k=b.t/b.life;
-  ctx.save(); ctx.globalAlpha=1-k;
-  ctx.strokeStyle=b.col||'#ffe98a'; ctx.lineWidth=3; ctx.lineCap='round';
-  ctx.beginPath(); ctx.moveTo(b.x1,b.y1);
-  for(var i=1;i<4;i++){
-    ctx.lineTo(b.x1+(b.x2-b.x1)*i/4+(Math.random()-.5)*18,
-               b.y1+(b.y2-b.y1)*i/4+(Math.random()-.5)*18);
+  // ドット絵の電撃：ビーム沿いにジグザグの四角ブロック（黄グロー＋白核）を並べる
+  var dx=b.x2-b.x1, dy=b.y2-b.y1, len=Math.hypot(dx,dy)||1;
+  var ux=dx/len, uy=dy/len, px=-uy, py=ux;   // 進行方向と垂直
+  var seg=6, n=Math.max(2,Math.round(len/seg));
+  ctx.save(); ctx.globalAlpha=1-k; ctx.imageSmoothingEnabled=false;
+  var glow=b.col||'#ffcf33';
+  for(var i=0;i<=n;i++){
+    var t=i/n;
+    var jitter=(i===0||i===n)?0:(Math.random()-0.5)*14*(0.4+Math.sin(t*Math.PI));
+    var cx=b.x1+dx*t+px*jitter, cy=b.y1+dy*t+py*jitter;
+    ctx.fillStyle=glow; ctx.fillRect(Math.round(cx)-3,Math.round(cy)-3,6,6);   // 黄グロー
+    ctx.fillStyle='#ffffff'; ctx.fillRect(Math.round(cx)-1,Math.round(cy)-1,3,3); // 白核
   }
-  ctx.lineTo(b.x2,b.y2); ctx.stroke();
-  ctx.globalAlpha=1; ctx.restore();
+  ctx.imageSmoothingEnabled=true; ctx.globalAlpha=1; ctx.restore();
 }
 function drawDmg(d){
   var k=d.t/d.life;
@@ -8501,7 +8742,7 @@ function rebuildSlots(){
     if(!P.rel[id]) continue;
     var eq=document.createElement('div'); eq.className='slot eq';
     eq.innerHTML='<div class="sring"></div><div class="sin">'+
-      '<div class="ic">'+PASSIVES[id].glyph+'</div>'+
+      '<div class="ic">'+(iconHtml(id,22)||PASSIVES[id].glyph)+'</div>'+
       '<div class="lv">'+P.rel[id]+'</div></div>';
     rEq.appendChild(eq);
   }
@@ -8511,7 +8752,7 @@ function rebuildSlots(){
     if(lvup<=0) continue;
     var q=document.createElement('div'); q.className='slot pas';
     q.innerHTML='<div class="sring"></div><div class="sin">'+
-      '<div class="ic">'+PASSIVES[id].glyph+'</div>'+
+      '<div class="ic">'+(iconHtml(id,22)||PASSIVES[id].glyph)+'</div>'+
       '<div class="lv">'+lvup+'</div></div>';
     rPas.appendChild(q);
   }
@@ -9395,7 +9636,7 @@ function renderTest(){
          '<button class="tg" data-p="*" data-a="max">全MAX</button>'+
          '<button class="tg" data-p="*" data-a="zero">全0</button></div><div class="tax">';
   for(var pid in PASSIVES)
-    hh+='<span>'+PASSIVES[pid].glyph+PASSIVES[pid].nm+
+    hh+='<span>'+(iconHtml(pid,16)||PASSIVES[pid].glyph)+PASSIVES[pid].nm+
         '<button data-p="'+pid+'" data-a="-">−</button>'+
         '<b>'+(P.p[pid]||0)+'/'+PASSIVES[pid].max+'</b>'+
         '<button data-p="'+pid+'" data-a="+">＋</button></span>';
@@ -9568,11 +9809,11 @@ function buildText(){
   var pslots=0;
   for(id in P.p){
     var lvup=(P.p[id]||0)-(P.rel[id]||0);
-    ps.push(PASSIVES[id].nm+' <b>'+P.p[id]+'</b>');
+    ps.push((iconHtml(id,15)||'')+PASSIVES[id].nm+' <b>'+P.p[id]+'</b>');
     if(lvup>0) pslots++;
   }
   var ch=[];
-  for(id in ELEM){ if(elemSourceOwned(id)) ch.push(ELEM[id].nm+' <b>'+Math.round(elemChance(id)*100)+'%</b>'); }
+  for(id in ELEM){ if(elemSourceOwned(id)) ch.push((iconHtml(id,16)||'')+ELEM[id].nm+' <b>'+Math.round(elemChance(id)*100)+'%</b>'); }
   // 契約（ナイトメアのみ）：持っている契約と、その対象武器を表示
   var conBlock='';
   if(NIGHTMARE&&CONTRACT.length){
@@ -10035,6 +10276,70 @@ Array.prototype.forEach.call(document.querySelectorAll('#setview button'),functi
 // 更新履歴：1つのお知らせ内で「バージョン見出し」ごとに変更点を並べる（新しい順）。
 // マージのたびに先頭へ新バージョンを追加し、VERSION も更新する。
 var UPDATES=[
+  {v:'α1.0.252', items:[
+    '錨（アンカー）の投射物を、本物の錨らしい形（リング・ストック・湾曲した爪）に描き直し、飛んでいる間も立てて表示するようにしました。ガトリングの弾は真鍮の薬莢＋銅の弾頭のカートリッジ（バレット）形に一新しました。',
+  ]},
+  {v:'α1.0.251', items:[
+    'カマイタチ（真空の刃）や大剣覚醒「飛翔斬撃」など、飛んでいく斬撃もドット絵の三日月スプライトになりました。これで主要な投射物がすべてドット絵に統一されました。',
+  ]},
+  {v:'α1.0.250', items:[
+    'グランドアッパーに「地割れ」の表現を追加しました！ 隆起の中心から放射状にひび割れたドット絵の地面が走り、そこから岩がせり上がるようになりました。',
+    'アイスブリザードの範囲表示を「雪の結晶」に変更しました。点線の円のかわりに、中央の大きな氷晶と縁を縁取るきらめく結晶で射程を示します（すべてドット絵）。',
+  ]},
+  {v:'α1.0.249', items:[
+    '投射物をドット絵に一新しました！ 弓の矢・ホーリーアロー・手裏剣・錨・ガトリング弾が、それぞれ専用のドット絵スプライトで飛ぶようになりました（ファイヤーボール・氷槍に続く対応）。',
+  ]},
+  {v:'α1.0.248', items:[
+    '属性（炎・氷・雷・光・闇・草・風）とパッシブ・床装備の全アイコンを、環境で崩れる絵文字からオリジナルのドット絵アイコンに一新しました！ レベルアップのカード、HUD、床装備、画面端マーカー、一時停止の一覧すべてに反映されます。',
+  ]},
+  {v:'α1.0.247', items:[
+    'フレイムサークル（周囲を回る火の玉）の見た目を、ファイヤーボールと同じドット絵の火球スプライトに統一しました。',
+  ]},
+  {v:'α1.0.246', items:[
+    'セイクリッドレーザーの演出をドット絵化しました！ 白い芯＋シアンの外グローに、ビーム内を走る光の粒と着弾フラッシュを加えたエネルギービームになりました。',
+  ]},
+  {v:'α1.0.245', items:[
+    'インフェルノビーム（火炎放射）の演出をドット絵化しました！ 外＝赤／中＝橙／芯＝白の炎ブロックが揺らめきながら連なり、着弾点で火の粉が散る火炎流になりました。',
+  ]},
+  {v:'α1.0.244', items:[
+    '騎士（大剣）の攻撃モーションを改善しました！ 攻撃と同時に大剣を振り下ろすようになり、複数の残像でスウィング感を強調。斬撃エフェクトと振りのタイミングも合わせました。',
+  ]},
+  {v:'α1.0.243', items:[
+    'チェンソーの演出をドット絵化しました！ 回転するバズソー（丸ノコ）のドット絵スプライトになり、通常時はガイドバーの先端で、覚醒（全方位）時は自機の周りで刃が高速回転します。',
+  ]},
+  {v:'α1.0.242', items:[
+    '地面に残る雪の結晶（アイス系の足元エフェクト）もドット絵の氷晶スプライトに統一しました。',
+  ]},
+  {v:'α1.0.241', items:[
+    'メテオの落下する隕石をドット絵化しました！ 白熱する先端＋燃え盛る炎の尾を持つドット絵の隕石が降ってくるようになりました（着弾の爆発は既にドット絵化済み）。',
+  ]},
+  {v:'α1.0.240', items:[
+    'ダークハンド（深淵の手）の演出をドット絵化しました！ 3本爪の紫の手スプライトが、深淵から伸びる腕の帯を引きながら敵を掴みに伸縮するようになりました。',
+  ]},
+  {v:'α1.0.239', items:[
+    'チェインライトニング（連鎖電撃）の演出をドット絵化しました！ 敵から敵へ飛ぶビームが、黄グロー＋白核の四角ブロックが連なるジグザグの電撃になり、落雷と色調が統一されました。',
+  ]},
+  {v:'α1.0.238', items:[
+    'アイスブリザードの演出をドット絵化しました！ 範囲の円＋点線リングはそのままに、中央に6回対称の氷晶（雪片）スプライトをゆっくり回転させて重ねる表現になりました。',
+  ]},
+  {v:'α1.0.237', items:[
+    'クエイク（地割れ）の演出をドット絵アニメに刷新しました！ 三角形の塗りから、ゴツゴツした岩の破片スプライトがリング状に隆起する表現に変わりました。',
+  ]},
+  {v:'α1.0.236', items:[
+    'ブラックホール（特異点）の演出をドット絵アニメに刷新しました！ 紫の螺旋＋中央の黒い事象の地平を回転させて吸い込みを表現する方式になりました（トルネードと同じ回転スプライト方式で軽量）。',
+  ]},
+  {v:'α1.0.235', items:[
+    'トルネード（緑の渦）の演出をドット絵アニメに刷新しました！ 3本腕の螺旋スプライトを回転させる方式に変わり、渦の見た目が滑らかになりつつ、毎フレーム線を引く旧方式より軽くなりました。',
+  ]},
+  {v:'α1.0.234', items:[
+    'ホーリージャッジ（審判の剣・覚醒の聖光の柱）の演出をドット絵アニメに刷新しました！ 白核＋金縁のテーパー柱に光の粒が舞い、地面に着弾リングが広がります。重かったグラデーション塗りをスプライト描画へ置き換えて軽量化しています。',
+  ]},
+  {v:'α1.0.233', items:[
+    'サンダー（落雷）の演出をドット絵アニメに刷新しました！ 白い核＋黄色いグロー＋枝分かれスパークのジグザグ稲妻が着弾点に落ちるようになりました（3フレームのフリッカー付き）。',
+  ]},
+  {v:'α1.0.232', items:[
+    '斬撃の演出をドット絵アニメに刷新しました！ 大剣・刀・カマイタチ・敵のカウンター斬りが、三日月型のドット絵スプライトを武器色に染めて表示されるようになりました（大きさはこれまでと同じに調整）。',
+  ]},
   {v:'α1.0.231', items:[
     '爆発の演出をドット絵アニメに刷新しました！ ダイナマイト・ファイヤーボール・メテオ・元素反応（過負荷／超電導）などの爆発が、粒子ばら撒きからドット絵スプライトの描画に変わり、見た目も統一され動作も軽くなりました。',
   ]},
