@@ -2983,7 +2983,7 @@ function figInfo(id){
   if(BOSS[id]){ var B=BOSS[id], tt=ETYPE[B.key]||{}; return {nm:B.nm,shape:tt.shape,col:tt.col,dark:tt.dark,desc:BDEX[id]||'',boss:true}; }
   var t=ETYPE[id]||{}; return {nm:t.nm,shape:t.shape,col:t.col,dark:t.dark,desc:DEX[id]||'',boss:false};
 }
-var VERSION='α1.0.239'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
+var VERSION='α1.0.240'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
 function applySave(o){
   for(var i=0;i<UPG.length;i++) META[UPG[i].id]=0;
   try{
@@ -7060,6 +7060,9 @@ var FXROCK=new Image(), FXROCK_RDY=0; FXROCK.onload=function(){ FXROCK_RDY=1; };
 var FXROCK_AR=18/30;   // 幅/高さ
 // アイスブリザードの雪片ドット絵スプライト（6回対称の氷晶。ゆっくり回転）
 var FXFROST=new Image(), FXFROST_RDY=0; FXFROST.onload=function(){ FXFROST_RDY=1; }; FXFROST.src='assets/fx_frost.png';
+// 深淵の手（dhand）ドット絵スプライト：+x方向へ伸びる爪。f.aで回転
+var FXHAND=new Image(), FXHAND_RDY=0; FXHAND.onload=function(){ FXHAND_RDY=1; }; FXHAND.src='assets/fx_hand.png';
+var FXHAND_AR=40/32;   // 幅/高さ
 function sprReady(n){ return !!SPRRDY[n]; }
 function sprTinted(n,tint,alpha){
   var key=n+'|'+tint+'|'+alpha, c=SPRT[key];
@@ -8287,6 +8290,15 @@ function drawPillar(f){
 function drawHand(f){
   var k=f.t/f.life, reach=1-Math.abs(k*2-1);
   ctx.save(); ctx.translate(f.x,f.y); ctx.rotate(f.a);
+  if(FXHAND_RDY){
+    // ドット絵の爪：reachで掴む動き（伸縮）。深淵からの腕（薄い帯）を後ろに残す
+    ctx.globalAlpha=(1-k)*0.32; ctx.strokeStyle='#7a4fd6'; ctx.lineWidth=7; ctx.lineCap='round';
+    ctx.beginPath(); ctx.moveTo(-70*reach,0); ctx.lineTo(-6,0); ctx.stroke();
+    var W=(30+34*reach), H=W/FXHAND_AR;
+    ctx.globalAlpha=(1-k)*0.95; ctx.imageSmoothingEnabled=false;
+    ctx.drawImage(FXHAND, -W*0.34, -H/2, W, H);   // 手のひらを原点寄り、爪を前方へ
+    ctx.imageSmoothingEnabled=true; ctx.globalAlpha=1; ctx.restore(); return;
+  }
   ctx.globalAlpha=(1-k)*0.9;
   ctx.fillStyle='#2a1046';
   ctx.strokeStyle='#a855f7'; ctx.lineWidth=2;
@@ -10140,6 +10152,9 @@ Array.prototype.forEach.call(document.querySelectorAll('#setview button'),functi
 // 更新履歴：1つのお知らせ内で「バージョン見出し」ごとに変更点を並べる（新しい順）。
 // マージのたびに先頭へ新バージョンを追加し、VERSION も更新する。
 var UPDATES=[
+  {v:'α1.0.240', items:[
+    'ダークハンド（深淵の手）の演出をドット絵化しました！ 3本爪の紫の手スプライトが、深淵から伸びる腕の帯を引きながら敵を掴みに伸縮するようになりました。',
+  ]},
   {v:'α1.0.239', items:[
     'チェインライトニング（連鎖電撃）の演出をドット絵化しました！ 敵から敵へ飛ぶビームが、黄グロー＋白核の四角ブロックが連なるジグザグの電撃になり、落雷と色調が統一されました。',
   ]},
