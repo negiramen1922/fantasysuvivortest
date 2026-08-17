@@ -2698,6 +2698,12 @@ var CHARS={
     st:'移動速度 +15% ／ 元素付与 +8% ／ 会心率 −8%',
     grow:{k:'infheat', per:10, unit:'段', tx:'10レベルごと インフェルノの熱容量・冷却速度を強化'},
     hp:1.00, spd:1.15, pw:1.00, area:1.00, ele:0.08, elp:0, crit:-0.08, regen:0,
+    cost:0, cond:null, val:0, condTx:'', tkt:1 },
+  hknight:{ nm:'重騎士', glyph:'⚔', w:'anchor',
+    tx:'全身鎧の重装騎士。鈍いが恐ろしく硬く、錨を振り回して寄る敵を打ち据える。',
+    st:'最大HP +40% ／ 攻撃力 +10% ／ 移動速度 −15%',
+    grow:{k:'dmgcut', per:10, v:0.01, cap:0.15, unit:'', tx:'10レベルごと 被ダメージ −1%（最大 −15%）'},
+    hp:1.40, spd:0.85, pw:1.10, area:1.00, ele:0, elp:0, crit:0, regen:0,
     cost:0, cond:null, val:0, condTx:'', tkt:1 }
 };
 var ALLCHR=0;   // 1で全キャラ解放（開発用）。製品は 0
@@ -2949,7 +2955,7 @@ function figInfo(id){
   if(BOSS[id]){ var B=BOSS[id], tt=ETYPE[B.key]||{}; return {nm:B.nm,shape:tt.shape,col:tt.col,dark:tt.dark,desc:BDEX[id]||'',boss:true}; }
   var t=ETYPE[id]||{}; return {nm:t.nm,shape:t.shape,col:t.col,dark:t.dark,desc:DEX[id]||'',boss:false};
 }
-var VERSION='α1.0.226'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
+var VERSION='α1.0.227'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
 function applySave(o){
   for(var i=0;i<UPG.length;i++) META[UPG[i].id]=0;
   try{
@@ -3157,6 +3163,18 @@ function scytheLvBonus(){ var g=CH().grow; return (g&&g.k==='scythe_cnt')?Math.f
 function samuraiCtr(){ var g=CH().grow; return (g&&g.k==='ktcounter')?Math.floor(P.lv/g.per):0; }
 // ヴァルカン：10レベルごとにインフェルノの熱容量・冷却速度を強化（階段式）
 function androidHeat(){ var g=CH().grow; return (g&&g.k==='infheat')?Math.floor(P.lv/g.per):0; }
+// 重騎士：10レベルごとに被ダメージ −1%（上限は grow.cap）
+function juukiCut(){ var g=CH().grow; if(!g||g.k!=='dmgcut') return 0; return Math.min(g.cap||1,(g.v||0)*Math.floor(P.lv/g.per)); }
+// プレイヤーの被ダメージ共通係数（永続防護・防護パッシブ・重騎士カット）
+function armorMul(){ return armorMul()*(1-juukiCut()); }
+// キャラ成長の「現在値」表示文字列（符号・単位つき）
+function growNow(){
+  var g=CH().grow; if(!g) return '';
+  if(g.k==='dmgcut') return '−'+(juukiCut()*100).toFixed(0)+'%';
+  if(g.per) return '+'+Math.floor(P.lv/g.per)+g.unit;
+  if(g.unit) return '+'+(g.v*(P.lv-1)).toFixed(0)+g.unit;
+  return '+'+(g.v*(P.lv-1)*100).toFixed(0)+'%';
+}
 // 爆弾魔：武器由来の爆発だけを伸ばす（元素反応の爆発は対象外）
 function pw(w){
   var m=(1+0.12*(P.p.power||0)+0.06*M('might'))*CH().pw;
@@ -4988,7 +5006,7 @@ function moveEnemies(dt){
       if(e.elT>0){ e.elT-=dt; if(e.elT<=0) e.el=0; }
       if(e.rcd>0) e.rcd-=dt;
       if(d<e.r+P.r&&P.hurt<=0&&P.inv<=0&&!P.god){
-        P.hp-=e.dmg*(1-0.04*M('armor'))*(1-0.03*(P.p.bulwark||0))*dexTakeMul(figKey(e)); P.hurt=0.55; shake=Math.min(16,shake+5);
+        P.hp-=e.dmg*armorMul()*dexTakeMul(figKey(e)); P.hurt=0.55; shake=Math.min(16,shake+5);
         sfx(140,.16,'square',.09,.5);
         if(P.hp<=0){ P.hp=0; setKiller(e); die(); return; }
       }
@@ -5090,7 +5108,7 @@ function moveEnemies(dt){
           fx.push({k:'slash',x:e.x+dx/d*(e.r+20),y:e.y+dy/d*(e.r+20),a:Math.atan2(dy,dx),arc:1.9,rad:e.r+66,t:0,life:.2,col:'#ffd08a'});
           sfx(300,.09,'square',.06,0.65);
           if(d<e.r+96&&P.hurt<=0&&P.inv<=0&&!P.god){
-            P.hp-=e.dmg*(1-0.04*M('armor'))*(1-0.03*(P.p.bulwark||0))*dexTakeMul(figKey(e)); P.hurt=0.55; shake=Math.min(16,shake+5);
+            P.hp-=e.dmg*armorMul()*dexTakeMul(figKey(e)); P.hurt=0.55; shake=Math.min(16,shake+5);
             if(P.hp<=0){ P.hp=0; setKiller(e); die(); return; }
           }
         }
@@ -5113,7 +5131,7 @@ function moveEnemies(dt){
         else{ var rdx=e.x-e.gx, rdy=e.y-e.gy, rd=Math.hypot(rdx,rdy)||1; e.gx+=rdx/rd*560*dt; e.gy+=rdy/rd*560*dt; } // 復路（墓守へ戻る）
         e.grot=(e.grot||0)+dt*3;                                // ゆっくり回転
         if(P.hurt<=0&&P.inv<=0&&!P.god&&Math.hypot(P.x-e.gx,P.y-e.gy)<P.r+48){
-          P.hp-=e.dmg*(1-0.04*M('armor'))*(1-0.03*(P.p.bulwark||0))*dexTakeMul(figKey(e)); P.hurt=0.55; shake=Math.min(16,shake+6);
+          P.hp-=e.dmg*armorMul()*dexTakeMul(figKey(e)); P.hurt=0.55; shake=Math.min(16,shake+6);
           sfx(150,.16,'square',.09,.5);
           if(P.hp<=0){ P.hp=0; setKiller(e); die(); return; }
         }
@@ -5196,7 +5214,7 @@ function moveEnemies(dt){
               fx.push({k:'ring',x:gp.x,y:gp.y,r:0,to:72,t:0,life:.35,col:'#c9b0ff'});
               shake=Math.min(18,shake+6); sfx(80,.2,'sawtooth',.09,.4);
               if(!P.god&&P.hurt<=0&&P.inv<=0&&Math.hypot(P.x-gp.x,P.y-gp.y)<P.r+42){
-                P.hp-=e.dmg*(1-0.04*M('armor'))*(1-0.03*(P.p.bulwark||0))*dexTakeMul(figKey(e)); P.hurt=0.55; shake=Math.min(20,shake+8);
+                P.hp-=e.dmg*armorMul()*dexTakeMul(figKey(e)); P.hurt=0.55; shake=Math.min(20,shake+8);
                 if(P.hp<=0){ P.hp=0; setKiller(e); die(); return; }
               }
             }
@@ -5229,7 +5247,7 @@ function moveEnemies(dt){
             fx.push({k:'ring',x:fp.x,y:fp.y,r:0,to:e.fistR*1.7,t:0,life:.35,col:'#ffcaa0'});
             for(var fb=0;fb<8;fb++) eshootAt(fp.x,fp.y,fb/8*6.283+Math.random()*0.2,e.bspd,e.bdmg,e.bkey);
             if(!P.god&&P.hurt<=0&&P.inv<=0&&Math.hypot(P.x-fp.x,P.y-fp.y)<P.r+e.fistR){
-              P.hp-=e.dmg*(1-0.04*M('armor'))*(1-0.03*(P.p.bulwark||0))*dexTakeMul(figKey(e)); P.hurt=0.55; shake=Math.min(22,shake+9);
+              P.hp-=e.dmg*armorMul()*dexTakeMul(figKey(e)); P.hurt=0.55; shake=Math.min(22,shake+9);
               if(P.hp<=0){ P.hp=0; setKiller(e); die(); return; }
             }
             shake=Math.min(18,shake+5); sfx(80,.18,'sawtooth',.09,.4);
@@ -5252,7 +5270,7 @@ function moveEnemies(dt){
             var rel=Math.atan2(Math.sin(pa-la),Math.cos(pa-la));
             var along=d*Math.cos(rel), perp=Math.abs(d*Math.sin(rel));
             if(along>0&&along<1500&&perp<18){
-              P.hp-=e.dmg*(1-0.04*M('armor'))*(1-0.03*(P.p.bulwark||0))*dexTakeMul(figKey(e))*1.6*dt; shake=Math.min(20,shake+2);
+              P.hp-=e.dmg*armorMul()*dexTakeMul(figKey(e))*1.6*dt; shake=Math.min(20,shake+2);
               if(P.hp<=0){ P.hp=0; setKiller(e); die(); return; }
               break;
             }
@@ -5316,7 +5334,7 @@ function moveEnemies(dt){
         var brel=Math.atan2(P.y-e.y,P.x-e.x)-e.beamA; brel=Math.atan2(Math.sin(brel),Math.cos(brel));
         var balong=d*Math.cos(brel), bperp=Math.abs(d*Math.sin(brel));
         if(!P.god&&P.hurt<=0&&P.inv<=0&&balong>-e.r&&balong<1700&&bperp<100){
-          P.hp-=e.dmg*(1-0.04*M('armor'))*(1-0.03*(P.p.bulwark||0))*dexTakeMul(figKey(e))*2.0*dt;
+          P.hp-=e.dmg*armorMul()*dexTakeMul(figKey(e))*2.0*dt;
           shake=Math.min(20,shake+2);
           if(P.hp<=0){ P.hp=0; setKiller(e); die(); return; }
         }
@@ -5498,7 +5516,7 @@ function moveEnemies(dt){
           var rel=Math.atan2(Math.sin(pa-e.aimA),Math.cos(pa-e.aimA));
           var along=d*Math.cos(rel), perp=Math.abs(d*Math.sin(rel));
           if(along>0&&along<900&&perp<20){
-            P.hp-=e.bdmg*(1-0.04*M('armor'))*(1-0.03*(P.p.bulwark||0))*dexTakeMul(figKey(e)); P.hurt=0.55; shake=Math.min(18,shake+5);
+            P.hp-=e.bdmg*armorMul()*dexTakeMul(figKey(e)); P.hurt=0.55; shake=Math.min(18,shake+5);
             if(P.hp<=0){ P.hp=0; setKiller(e); die(); return; }
           }
         }
@@ -5537,7 +5555,7 @@ function moveEnemies(dt){
         var brel=Math.atan2(P.y-e.y,P.x-e.x)-e.beamA; brel=Math.atan2(Math.sin(brel),Math.cos(brel));
         var balong=d*Math.cos(brel), bperp=Math.abs(d*Math.sin(brel));
         if(!P.god&&P.hurt<=0&&P.inv<=0&&balong>-e.r&&balong<1700&&bperp<100){       // 太さもドラゴンと同等（±100）
-          P.hp-=e.dmg*(1-0.04*M('armor'))*(1-0.03*(P.p.bulwark||0))*dexTakeMul(figKey(e))*2.0*dt;
+          P.hp-=e.dmg*armorMul()*dexTakeMul(figKey(e))*2.0*dt;
           shake=Math.min(20,shake+2);
           if(P.hp<=0){ P.hp=0; setKiller(e); die(); return; }
         }
@@ -5553,7 +5571,7 @@ function moveEnemies(dt){
         if(!P.god&&P.hurt<=0&&P.inv<=0){
           var rl=Math.atan2(P.y-e.y,P.x-e.x)-e.tentA; rl=Math.atan2(Math.sin(rl),Math.cos(rl));
           var al=d*Math.cos(rl), pe=Math.abs(d*Math.sin(rl));
-          if(al>0&&al<760&&pe<30){ P.hp-=e.dmg*(1-0.04*M('armor'))*(1-0.03*(P.p.bulwark||0))*dexTakeMul(figKey(e)); P.hurt=0.55; shake=Math.min(18,shake+5);
+          if(al>0&&al<760&&pe<30){ P.hp-=e.dmg*armorMul()*dexTakeMul(figKey(e)); P.hurt=0.55; shake=Math.min(18,shake+5);
             if(P.hp<=0){ P.hp=0; setKiller(e); die(); return; } } }
         if(e.stT<=0){ e.tc=(e.tc||0)+1;
           if(e.tc>=6){ e.st='fanwind'; e.stT=0.6; }
@@ -5589,7 +5607,7 @@ function moveEnemies(dt){
             fx.push({k:'ring',x:rp.x,y:rp.y,r:0,to:e.fistR*1.7,t:0,life:.35,col:'#bfe0ff'});
             for(var rb=0;rb<10;rb++) eshootAt(rp.x,rp.y,rb/10*6.283+Math.random()*0.2,e.bspd,e.bdmg,e.bkey);   // 着弾地点から円弾幕
             if(!P.god&&P.hurt<=0&&P.inv<=0&&Math.hypot(P.x-rp.x,P.y-rp.y)<P.r+e.fistR){
-              P.hp-=e.dmg*(1-0.04*M('armor'))*(1-0.03*(P.p.bulwark||0))*dexTakeMul(figKey(e)); P.hurt=0.55; shake=Math.min(22,shake+8);
+              P.hp-=e.dmg*armorMul()*dexTakeMul(figKey(e)); P.hurt=0.55; shake=Math.min(22,shake+8);
               if(P.hp<=0){ P.hp=0; setKiller(e); die(); return; } }
             var sh=makeEnemy('shark'); sh.x=rp.x; sh.y=rp.y; sh.ai='dash';   // 降ったサメ：プレイヤーへ突進しそのまま画面外へ
             var sdx=P.x-rp.x, sdy=P.y-rp.y, sdd=Math.hypot(sdx,sdy)||1, ssp=Math.max(340,sh.spd*2.6);
@@ -5632,7 +5650,7 @@ function moveEnemies(dt){
         if(!P.god&&P.hurt<=0&&P.inv<=0){ for(var pbi=0;pbi<4;pbi++){ var pba=pbi*1.5708;
           var prel=Math.atan2(P.y-e.y,P.x-e.x)-pba; prel=Math.atan2(Math.sin(prel),Math.cos(prel));
           var pal=d*Math.cos(prel), ppe=Math.abs(d*Math.sin(prel));
-          if(pal>-e.r&&pal<1700&&ppe<130){ P.hp-=e.dmg*(1-0.04*M('armor'))*(1-0.03*(P.p.bulwark||0))*dexTakeMul(figKey(e))*2.0*dt; shake=Math.min(20,shake+2);
+          if(pal>-e.r&&pal<1700&&ppe<130){ P.hp-=e.dmg*armorMul()*dexTakeMul(figKey(e))*2.0*dt; shake=Math.min(20,shake+2);
             if(P.hp<=0){ P.hp=0; setKiller(e); die(); return; } break; } } }
         if(e.stT<=0){ e.st='xbwind'; e.stT=0.7; } }
       else if(e.st==='xbwind'){ moved=1; e.stT-=dt; if(e.stT<=0){ e.st='xbeam'; e.stT=1.2; shake=Math.min(22,shake+10); sfx(70,.5,'sawtooth',.1,.4); noise(.4,.1); } }
@@ -5640,7 +5658,7 @@ function moveEnemies(dt){
         if(!P.god&&P.hurt<=0&&P.inv<=0){ for(var xbi=0;xbi<4;xbi++){ var xba=0.785+xbi*1.5708;
           var xrel=Math.atan2(P.y-e.y,P.x-e.x)-xba; xrel=Math.atan2(Math.sin(xrel),Math.cos(xrel));
           var xal=d*Math.cos(xrel), xpe=Math.abs(d*Math.sin(xrel));
-          if(xal>-e.r&&xal<1700&&xpe<130){ P.hp-=e.dmg*(1-0.04*M('armor'))*(1-0.03*(P.p.bulwark||0))*dexTakeMul(figKey(e))*2.0*dt; shake=Math.min(20,shake+2);
+          if(xal>-e.r&&xal<1700&&xpe<130){ P.hp-=e.dmg*armorMul()*dexTakeMul(figKey(e))*2.0*dt; shake=Math.min(20,shake+2);
             if(P.hp<=0){ P.hp=0; setKiller(e); die(); return; } break; } } }
         if(e.stT<=0){ e.st=''; e.at=e.acd; } }
       else if(e.st==='summonw'){ moved=1; e.stT-=dt;
@@ -5705,7 +5723,7 @@ function moveEnemies(dt){
 
     // --- プレイヤーへの接触 ---
     if(e.dmg>0&&e.st!=='burrow'&&d<e.r+P.r&&P.hurt<=0&&P.inv<=0&&!P.god){
-      P.hp-=e.dmg*(1-0.04*M('armor'))*(1-0.03*(P.p.bulwark||0))*dexTakeMul(figKey(e)); P.hurt=0.55; shake=Math.min(16,shake+5);
+      P.hp-=e.dmg*armorMul()*dexTakeMul(figKey(e)); P.hurt=0.55; shake=Math.min(16,shake+5);
       if(e.cpois){ P.pois=Math.max(P.pois||0,3.0); P.poisD=Math.max(P.poisD||0,e.dmg*0.5); }   // クラゲ：接触で毒（3秒間の継続ダメージ）
       sfx(140,.16,'square',.09,.5);
       if(P.hp<=0){ P.hp=0; setKiller(e); die(); return; }
@@ -5726,7 +5744,7 @@ function moveEnemies(dt){
   }
 }
 function moveEbul(dt){
-  var arm=(1-0.04*M('armor'))*(1-0.03*(P.p.bulwark||0));
+  var arm=armorMul();
   for(var i=ebul.length-1;i>=0;i--){
     var b=ebul[i];
     if(b.hold>0){ b.hold-=dt; if(b.hold<=0){ b.vx=b.mvx; b.vy=b.mvy; } }   // 設置弾：待機後に動き出す
@@ -5747,7 +5765,7 @@ function moveEbul(dt){
 }
 // 毒の沼（ブーマーの遺物）：乗っているあいだ継続ダメージ。無敵時間に関係なく緩やかに削る。
 function movePuddles(dt){
-  var arm=(1-0.04*M('armor'))*(1-0.03*(P.p.bulwark||0));
+  var arm=armorMul();
   for(var i=puddles.length-1;i>=0;i--){
     var q=puddles[i]; q.life-=dt; q.t+=dt;
     if(q.life<=0){ puddles.splice(i,1); continue; }
@@ -5759,7 +5777,7 @@ function movePuddles(dt){
 }
 // 海坊主の黒い澱み（通った跡に残る短命ゾーン。プレイヤーにのみ継続ダメージ）
 function moveTrails(dt){
-  var arm=(1-0.04*M('armor'))*(1-0.03*(P.p.bulwark||0));
+  var arm=armorMul();
   for(var i=trails.length-1;i>=0;i--){
     var q=trails[i]; q.life-=dt; q.t+=dt;
     if(q.life<=0){ trails.splice(i,1); continue; }
@@ -5907,7 +5925,7 @@ function spiderBoom(e){
   shake=Math.min(18,shake+7); sfx(70,.3,'sawtooth',.09,.4); noise(.25,.1);
   var dd=Math.hypot(P.x-e.x,P.y-e.y);
   if(dd<R+P.r&&P.hurt<=0&&P.inv<=0&&!P.god){
-    P.hp-=(e.boomDmg||e.dmg*2)*(1-0.04*M('armor'))*(1-0.03*(P.p.bulwark||0))*dexTakeMul(figKey(e)); P.hurt=0.55;
+    P.hp-=(e.boomDmg||e.dmg*2)*armorMul()*dexTakeMul(figKey(e)); P.hurt=0.55;
     if(P.hp<=0){ P.hp=0; setKiller(e); die(); }
   }
 }
@@ -9423,10 +9441,7 @@ function buildText(){
     }
   }
   var charBlock='<div class="wrow"><span class="wg">'+CH().glyph+'</span>'+CH().nm+
-    (CH().grow?'<span style="color:var(--gold)">　'+CH().grow.tx+'（現在 +'+
-       (CH().grow.per?Math.floor(P.lv/CH().grow.per)+CH().grow.unit
-         :CH().grow.unit?(CH().grow.v*(P.lv-1)).toFixed(0)+CH().grow.unit
-                        :(CH().grow.v*(P.lv-1)*100).toFixed(0)+'%')+'）</span>':'')+'</div>';
+    (CH().grow?'<span style="color:var(--gold)">　'+CH().grow.tx+'（現在 '+growNow()+'）</span>':'')+'</div>';
   return '経過 <b>'+(m<10?'0':'')+m+':'+(s<10?'0':'')+s+(ENDLESS?'  ♾ 無限':' / 20:00')+'</b>　'+
          'SCORE <b>'+fmt(score)+'</b>　討伐 <b>'+kills+'</b>　元素反応 <span class="el">'+reacts+'</span>　会心 <b>'+crits+'</b><br>'+
          '持ち帰り 銀貨 <b>'+silver+'</b>　金貨 <b>'+gold+'</b><br>'+
@@ -9877,6 +9892,9 @@ Array.prototype.forEach.call(document.querySelectorAll('#setview button'),functi
 // 更新履歴：1つのお知らせ内で「バージョン見出し」ごとに変更点を並べる（新しい順）。
 // マージのたびに先頭へ新バージョンを追加し、VERSION も更新する。
 var UPDATES=[
+  {v:'α1.0.227', items:[
+    '新キャラ「重騎士」を追加！ 初期武器は錨。最大HP+40%／攻撃力+10%／移動速度−15%の重装タンクで、10レベルごとに被ダメージ−1%（最大−15%）。硬さで前に出て寄る敵を止める壁役。解放：交換所でキャラチケット。',
+  ]},
   {v:'α1.0.226', items:[
     'アンドロイドのキャラ名を「ヴァルカン」に変更しました。',
   ]},
