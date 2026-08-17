@@ -2983,7 +2983,7 @@ function figInfo(id){
   if(BOSS[id]){ var B=BOSS[id], tt=ETYPE[B.key]||{}; return {nm:B.nm,shape:tt.shape,col:tt.col,dark:tt.dark,desc:BDEX[id]||'',boss:true}; }
   var t=ETYPE[id]||{}; return {nm:t.nm,shape:t.shape,col:t.col,dark:t.dark,desc:DEX[id]||'',boss:false};
 }
-var VERSION='α1.0.234'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
+var VERSION='α1.0.235'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
 function applySave(o){
   for(var i=0;i<UPG.length;i++) META[UPG[i].id]=0;
   try{
@@ -4353,6 +4353,15 @@ function drawTwisters(){
   for(var i=0;i<twisters.length;i++){
     var h=twisters[i], k=Math.min(1,h.t*4), fade=Math.min(1,h.life*2.5);
     ctx.save(); ctx.translate(h.x,h.y);
+    if(FXVORTEX_RDY){
+      // ドット絵の渦：spinで回転。半径に合わせてスケール
+      ctx.globalAlpha=fade*0.12; ctx.fillStyle='#4fd69a';
+      ctx.beginPath(); ctx.arc(0,0,h.r*k,0,6.3); ctx.fill();   // 範囲の薄い下地
+      var D=h.r*k*2.2;
+      ctx.globalAlpha=Math.min(1,fade); ctx.rotate(h.spin); ctx.imageSmoothingEnabled=false;
+      ctx.drawImage(FXVORTEX, -D/2,-D/2, D,D);
+      ctx.imageSmoothingEnabled=true; ctx.globalAlpha=1; ctx.restore(); continue;
+    }
     ctx.globalAlpha=fade*0.12; ctx.fillStyle='#4fd69a';
     ctx.beginPath(); ctx.arc(0,0,h.r*k,0,6.3); ctx.fill();
     ctx.globalAlpha=fade*0.6; ctx.strokeStyle='#a8ffcf'; ctx.lineWidth=2.5; ctx.lineCap='round';
@@ -7033,6 +7042,8 @@ var FXBOLT_FW=96, FXBOLT_FH=240, FXBOLT_FR=3;
 // 聖光の柱（ホーリージャッジ）ドット絵スプライト：下端＝地面、上へ伸びる光の柱。3フレームのシマー
 var FXPILLAR=new Image(), FXPILLAR_RDY=0; FXPILLAR.onload=function(){ FXPILLAR_RDY=1; }; FXPILLAR.src='assets/fx_pillar.png';
 var FXPILLAR_FW=120, FXPILLAR_FH=360, FXPILLAR_FR=3;
+// 緑の渦（トルネード）ドット絵スプライト：spinで回転させて渦を表現（1フレーム）
+var FXVORTEX=new Image(), FXVORTEX_RDY=0; FXVORTEX.onload=function(){ FXVORTEX_RDY=1; }; FXVORTEX.src='assets/fx_vortex.png';
 function sprReady(n){ return !!SPRRDY[n]; }
 function sprTinted(n,tint,alpha){
   var key=n+'|'+tint+'|'+alpha, c=SPRT[key];
@@ -10085,6 +10096,9 @@ Array.prototype.forEach.call(document.querySelectorAll('#setview button'),functi
 // 更新履歴：1つのお知らせ内で「バージョン見出し」ごとに変更点を並べる（新しい順）。
 // マージのたびに先頭へ新バージョンを追加し、VERSION も更新する。
 var UPDATES=[
+  {v:'α1.0.235', items:[
+    'トルネード（緑の渦）の演出をドット絵アニメに刷新しました！ 3本腕の螺旋スプライトを回転させる方式に変わり、渦の見た目が滑らかになりつつ、毎フレーム線を引く旧方式より軽くなりました。',
+  ]},
   {v:'α1.0.234', items:[
     'ホーリージャッジ（審判の剣・覚醒の聖光の柱）の演出をドット絵アニメに刷新しました！ 白核＋金縁のテーパー柱に光の粒が舞い、地面に着弾リングが広がります。重かったグラデーション塗りをスプライト描画へ置き換えて軽量化しています。',
   ]},
