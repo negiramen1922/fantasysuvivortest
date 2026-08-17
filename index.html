@@ -2983,7 +2983,7 @@ function figInfo(id){
   if(BOSS[id]){ var B=BOSS[id], tt=ETYPE[B.key]||{}; return {nm:B.nm,shape:tt.shape,col:tt.col,dark:tt.dark,desc:BDEX[id]||'',boss:true}; }
   var t=ETYPE[id]||{}; return {nm:t.nm,shape:t.shape,col:t.col,dark:t.dark,desc:DEX[id]||'',boss:false};
 }
-var VERSION='α1.0.238'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
+var VERSION='α1.0.239'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
 function applySave(o){
   for(var i=0;i<UPG.length;i++) META[UPG[i].id]=0;
   try{
@@ -8555,15 +8555,20 @@ function drawBolt(f){
 }
 function drawChain(b){
   var k=b.t/b.life;
-  ctx.save(); ctx.globalAlpha=1-k;
-  ctx.strokeStyle=b.col||'#ffe98a'; ctx.lineWidth=3; ctx.lineCap='round';
-  ctx.beginPath(); ctx.moveTo(b.x1,b.y1);
-  for(var i=1;i<4;i++){
-    ctx.lineTo(b.x1+(b.x2-b.x1)*i/4+(Math.random()-.5)*18,
-               b.y1+(b.y2-b.y1)*i/4+(Math.random()-.5)*18);
+  // ドット絵の電撃：ビーム沿いにジグザグの四角ブロック（黄グロー＋白核）を並べる
+  var dx=b.x2-b.x1, dy=b.y2-b.y1, len=Math.hypot(dx,dy)||1;
+  var ux=dx/len, uy=dy/len, px=-uy, py=ux;   // 進行方向と垂直
+  var seg=6, n=Math.max(2,Math.round(len/seg));
+  ctx.save(); ctx.globalAlpha=1-k; ctx.imageSmoothingEnabled=false;
+  var glow=b.col||'#ffcf33';
+  for(var i=0;i<=n;i++){
+    var t=i/n;
+    var jitter=(i===0||i===n)?0:(Math.random()-0.5)*14*(0.4+Math.sin(t*Math.PI));
+    var cx=b.x1+dx*t+px*jitter, cy=b.y1+dy*t+py*jitter;
+    ctx.fillStyle=glow; ctx.fillRect(Math.round(cx)-3,Math.round(cy)-3,6,6);   // 黄グロー
+    ctx.fillStyle='#ffffff'; ctx.fillRect(Math.round(cx)-1,Math.round(cy)-1,3,3); // 白核
   }
-  ctx.lineTo(b.x2,b.y2); ctx.stroke();
-  ctx.globalAlpha=1; ctx.restore();
+  ctx.imageSmoothingEnabled=true; ctx.globalAlpha=1; ctx.restore();
 }
 function drawDmg(d){
   var k=d.t/d.life;
@@ -10135,6 +10140,9 @@ Array.prototype.forEach.call(document.querySelectorAll('#setview button'),functi
 // 更新履歴：1つのお知らせ内で「バージョン見出し」ごとに変更点を並べる（新しい順）。
 // マージのたびに先頭へ新バージョンを追加し、VERSION も更新する。
 var UPDATES=[
+  {v:'α1.0.239', items:[
+    'チェインライトニング（連鎖電撃）の演出をドット絵化しました！ 敵から敵へ飛ぶビームが、黄グロー＋白核の四角ブロックが連なるジグザグの電撃になり、落雷と色調が統一されました。',
+  ]},
   {v:'α1.0.238', items:[
     'アイスブリザードの演出をドット絵化しました！ 範囲の円＋点線リングはそのままに、中央に6回対称の氷晶（雪片）スプライトをゆっくり回転させて重ねる表現になりました。',
   ]},
