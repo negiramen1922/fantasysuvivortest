@@ -2983,7 +2983,7 @@ function figInfo(id){
   if(BOSS[id]){ var B=BOSS[id], tt=ETYPE[B.key]||{}; return {nm:B.nm,shape:tt.shape,col:tt.col,dark:tt.dark,desc:BDEX[id]||'',boss:true}; }
   var t=ETYPE[id]||{}; return {nm:t.nm,shape:t.shape,col:t.col,dark:t.dark,desc:DEX[id]||'',boss:false};
 }
-var VERSION='α1.0.229'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
+var VERSION='α1.0.230'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
 function applySave(o){
   for(var i=0;i<UPG.length;i++) META[UPG[i].id]=0;
   try{
@@ -3752,7 +3752,7 @@ function doSlash(){
   // 覚醒「飛翔斬撃」：そこまでに伸ばした範囲に応じた大きさの斬撃が飛ぶ
   if(AW('slash')){
     shots.push({x:P.x,y:P.y,vx:Math.cos(P.face)*560,vy:Math.sin(P.face)*560,r:24*ar,sz:ar,
-      src:'slash',kind:'wave',ang:P.face,dmg:dmg*0.85,decay:(dmg*0.85)/5,pierce:99,life:0.85,
+      src:'slash',kind:'wave',ang:P.face,dmg:dmg*0.85,decay:(dmg*0.85)/5,pierce:99,life:0.56,
       col:'#e8e2ff',col2:'#9b8bff',el:null,hit:[]});
     sfx(700,.09,'sawtooth',.045,.7);
   }
@@ -4156,10 +4156,8 @@ function drawSwordZone(w){
   if(!w.landed) return;
   var pulse=Math.max(0,1-(0.85-w.tick)/0.28);
   ctx.save();
-  ctx.globalAlpha=.05+pulse*.10;
-  ctx.fillStyle='#ffffff';
-  ctx.beginPath(); ctx.arc(w.x,w.y,w.rad,0,6.3); ctx.fill();
-  ctx.globalAlpha=.20+pulse*.28;
+  // 塗りつぶし（オーバードロー）は廃止し枠線のみ＝多数展開時の負荷を軽減
+  ctx.globalAlpha=.20+pulse*.30;
   ctx.strokeStyle='#ffffff'; ctx.lineWidth=2;
   ctx.beginPath(); ctx.arc(w.x,w.y,w.rad,0,6.3); ctx.stroke();
   ctx.globalAlpha=1; ctx.restore();
@@ -4262,7 +4260,7 @@ function meteorImpact(m){
   SRC='meteor';
   var col='#ff8a3a';
   fx.push({k:'ring',x:m.x,y:m.y,r:0,to:m.rad,t:0,life:.42,col:col});
-  for(var k=0;k<22;k++) parts.push({x:m.x,y:m.y,vx:(Math.random()-.5)*640,vy:(Math.random()-.5)*640,
+  for(var k=0;k<14;k++) parts.push({x:m.x,y:m.y,vx:(Math.random()-.5)*640,vy:(Math.random()-.5)*640,
     t:0,life:.4+Math.random()*.35,col:(Math.random()<.5?col:'#ffd27a'),s:3+Math.random()*4});
   var hits=0;
   for(var j=enemies.length-1;j>=0;j--){
@@ -4326,7 +4324,7 @@ function moveTwisters(dt){
       var aw=AW('tornado'), er=h.r*(aw?1.35:1.0);
       SRC='tornado';
       fx.push({k:'ring',x:h.x,y:h.y,r:0,to:er,t:0,life:.4,col:'#a8ffcf'});
-      for(var k=0;k<18;k++) parts.push({x:h.x,y:h.y,vx:(Math.random()-.5)*540,vy:(Math.random()-.5)*540,t:0,life:.4+Math.random()*.3,col:'#a8ffcf',s:3+Math.random()*3});
+      for(var k=0;k<12;k++) parts.push({x:h.x,y:h.y,vx:(Math.random()-.5)*540,vy:(Math.random()-.5)*540,t:0,life:.4+Math.random()*.3,col:'#a8ffcf',s:3+Math.random()*3});
       var hits=0;
       for(var j=enemies.length-1;j>=0;j--){
         var e=enemies[j]; if(e.dead) continue;
@@ -4749,7 +4747,7 @@ function label(e,txt,col){
 function boom(x,y,rad,dmg,col,slowSec){
   if(SRC){ var gb=GROW('boom'); if(gb){ dmg*=1+gb; rad*=1+gb; } }
   fx.push({k:'ring',x:x,y:y,r:0,to:rad,t:0,life:.35,col:col});
-  for(var k=0;k<16;k++) parts.push({x:x,y:y,vx:(Math.random()-.5)*520,
+  for(var k=0;k<10;k++) parts.push({x:x,y:y,vx:(Math.random()-.5)*520,
     vy:(Math.random()-.5)*520,t:0,life:.35+Math.random()*.3,col:col,s:3+Math.random()*3});
   for(var i=enemies.length-1;i>=0;i--){
     var e=enemies[i], dx=e.x-x, dy=e.y-y, d=Math.hypot(dx,dy);
@@ -6751,6 +6749,8 @@ function chooseBossRelic(i){
 /* ============ 演出 ============ */
 function stepFx(dt){
   var i;
+  if(parts.length>260) parts.splice(0,parts.length-260);   // バースト時の粒子上限（重さ対策）
+  if(fx.length>140) fx.splice(0,fx.length-140);
   for(i=fx.length-1;i>=0;i--){ fx[i].t+=dt; if(fx[i].t>=fx[i].life) fx.splice(i,1); }
   for(i=bolts.length-1;i>=0;i--){ bolts[i].t+=dt; if(bolts[i].t>=bolts[i].life) bolts.splice(i,1); }
   for(i=dmgs.length-1;i>=0;i--){ var d=dmgs[i]; d.t+=dt; d.y+=d.v*dt; d.v+=170*dt; if(d.t>=d.life) dmgs.splice(i,1); }
@@ -10020,6 +10020,10 @@ Array.prototype.forEach.call(document.querySelectorAll('#setview button'),functi
 // 更新履歴：1つのお知らせ内で「バージョン見出し」ごとに変更点を並べる（新しい順）。
 // マージのたびに先頭へ新バージョンを追加し、VERSION も更新する。
 var UPDATES=[
+  {v:'α1.0.230', items:[
+    '大剣の覚醒「飛翔斬撃」に射程の上限を設けました（近接武器なので、弓や火球の遠距離より短い距離で消えます）。',
+    '動作を軽くする調整：爆発の粒子演出を削減し、ホーリージャッジの重い塗り演出を軽量化、粒子・エフェクトの上限を設けてバースト時のカクつきを抑えました。',
+  ]},
   {v:'α1.0.229', items:[
     '新武器「茨の女王」を追加！ 草・毒の設置型。最寄りの敵へ茨のスパイクを撃ち、着弾地点に茨の茂みが一定時間残って範囲の敵に毒と鈍足を与え続けます（攻撃周期2.3秒）。覚醒「茨獄」で茂みが時間とともに広がります。解放：交換所で武器チケット。',
   ]},
