@@ -2936,7 +2936,7 @@ function figInfo(id){
   if(BOSS[id]){ var B=BOSS[id], tt=ETYPE[B.key]||{}; return {nm:B.nm,shape:tt.shape,col:tt.col,dark:tt.dark,desc:BDEX[id]||'',boss:true}; }
   var t=ETYPE[id]||{}; return {nm:t.nm,shape:t.shape,col:t.col,dark:t.dark,desc:DEX[id]||'',boss:false};
 }
-var VERSION='α1.0.221'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
+var VERSION='α1.0.222'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
 function applySave(o){
   for(var i=0;i<UPG.length;i++) META[UPG[i].id]=0;
   try{
@@ -9641,7 +9641,8 @@ function finish(won){
 /* ============ ホーム / ステージ選択 / 結果 の画面切替 ============ */
 var homeView='home';
 /* ===== PWA インストール誘導（ホーム画面に追加） ===== */
-var deferredPrompt=null, installShown=false;
+/* 自動ポップアップは廃止（しつこさ回避）。ホーム下部の常設ボタンからのみ案内する。 */
+var deferredPrompt=null;
 function isStandalone(){ return (window.matchMedia&&window.matchMedia('(display-mode: standalone)').matches)||navigator.standalone===true; }
 function isIOSdev(){ return /iphone|ipad|ipod/i.test(navigator.userAgent||''); }
 window.addEventListener('beforeinstallprompt',function(e){ e.preventDefault(); deferredPrompt=e; refreshInstallUI(); });
@@ -9662,26 +9663,12 @@ function doInstall(){
   deferredPrompt.prompt();
   deferredPrompt.userChoice.then(function(){ deferredPrompt=null; var el=document.getElementById('install'); if(el) el.classList.remove('on'); refreshInstallUI(); });
 }
-var installScheduled=false;
-function maybePromptInstall(){   // 未インストールの人に、ホームがクリアになったら1回だけ誘導
-  if(isStandalone()||installShown||installScheduled) return;
-  installScheduled=true;
-  var tries=0;
-  function attempt(){
-    if(isStandalone()||installShown){ installScheduled=false; return; }
-    var blocked=document.querySelector('#tutorial.on,#daily.on,#news.on,#settings.on,#install.on,#shop.on,#mast.on,#ban.on,#achieve.on,#lotto.on,#tshop.on,#dex.on,#mailbox.on,#chr.on,#nmc.on,#profile.on');
-    if(homeView==='home'&&!blocked){ installShown=true; installScheduled=false; openInstall(); return; }
-    if(++tries>30){ installScheduled=false; return; }   // 一定時間クリアにならなければ諦め（ホームのボタンから誘導）
-    setTimeout(attempt,900);
-  }
-  setTimeout(attempt,1400);
-}
 function showView(v){
   homeView=v;
   document.getElementById('homeview').style.display  = v==='home' ?'flex':'none';
   document.getElementById('stageview').style.display = v==='stage'?'flex':'none';
   document.getElementById('resultview').style.display= v==='result'?'flex':'none';
-  if(v==='home'){ syncTitle(); refreshResumeBtn(); refreshInstallUI(); playBGM('home'); if(!TUTSEEN) openTutorial(); else if(typeof maybeShowDaily==='function') maybeShowDaily(); maybePromptInstall(); }
+  if(v==='home'){ syncTitle(); refreshResumeBtn(); refreshInstallUI(); playBGM('home'); if(!TUTSEEN) openTutorial(); else if(typeof maybeShowDaily==='function') maybeShowDaily(); }
   else if(v==='stage') renderStageSelect();
 }
 function startRun(n,endless,nightmare){
@@ -9862,6 +9849,9 @@ Array.prototype.forEach.call(document.querySelectorAll('#setview button'),functi
 // 更新履歴：1つのお知らせ内で「バージョン見出し」ごとに変更点を並べる（新しい順）。
 // マージのたびに先頭へ新バージョンを追加し、VERSION も更新する。
 var UPDATES=[
+  {v:'α1.0.222', items:[
+    'ホーム画面に追加の案内を、毎回の自動ポップアップは廃止し、ホーム下部の「📲 ホーム画面に追加」ボタンからの案内に一本化しました（しつこくならないように）。',
+  ]},
   {v:'α1.0.221', items:[
     'ホーム画面への追加（インストール）を案内するようにしました。未追加の方がホームを開くと誘導が表示され、ホームの「📲 ホーム画面に追加」ボタンや攻略のコツからも確認できます。',
     '不具合修正：ホームの「続きから」と一時停止の「再開する」ボタンが内部的に取り違えられ、正しく動作しなかった問題を修正しました。',
