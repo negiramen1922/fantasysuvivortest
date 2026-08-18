@@ -2997,7 +2997,7 @@ function figInfo(id){
   if(BOSS[id]){ var B=BOSS[id], tt=ETYPE[B.key]||{}; return {nm:B.nm,shape:tt.shape,col:tt.col,dark:tt.dark,desc:BDEX[id]||'',boss:true}; }
   var t=ETYPE[id]||{}; return {nm:t.nm,shape:t.shape,col:t.col,dark:t.dark,desc:DEX[id]||'',boss:false};
 }
-var VERSION='α1.0.257'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
+var VERSION='α1.0.258'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
 function applySave(o){
   for(var i=0;i<UPG.length;i++) META[UPG[i].id]=0;
   try{
@@ -3482,7 +3482,7 @@ function runWeapons(dt){
   if(P.w.bow     &&ready('bow',     0.58*RATE('bow'),dt)){     doBow(); queueVolley('bow',0.10); }
   if(P.w.dynamite&&ready('dynamite',1.85*RATE('dynamite'),dt)){ doDyna(); queueVolley('dynamite',0.12); }
   if(P.w.toxin   &&ready('toxin',   1.80*RATE('toxin'),dt))    doToxin();
-  if(P.w.anchor  &&ready('anchor',  1.55*RATE('anchor'),dt))   doAnchor();
+  if(P.w.anchor  &&ready('anchor',  2.80*RATE('anchor'),dt))   doAnchor();
   if(P.w.fire    &&ready('fire',    1.00*RATE('fire'),dt)){    doFire(); queueVolley('fire',0.12); }
   if(P.w.flame)  doFlame(dt);
   if(P.w.ice     &&ready('ice',     1.30*RATE('ice'),dt)){     doIce(); queueVolley('ice',0.12); }
@@ -4011,7 +4011,7 @@ function doAnchor(){
   var a=Math.atan2(e.y-P.y,e.x-P.x), r=13*AREA('anchor'), spd=560;
   // 敵へまっすぐ飛び、最大距離で折り返して手元へ戻る（往復でヒット）
   shots.push({x:P.x,y:P.y,vx:Math.cos(a)*spd,vy:Math.sin(a)*spd,r:r+6,
-    src:'anchor',kind:'anchor',ang:a,dmg:26*DMG('anchor')*pw('anchor'),
+    src:'anchor',kind:'anchor',ang:a,dmg:44*DMG('anchor')*pw('anchor'),
     pierce:99,life:5,col:'#cdd6e0',col2:'#6b7480',el:null,hit:[],anchor:1,
     ox:P.x,oy:P.y,range:RNG('anchor'),ret:0,spd:spd});
   sfx(200,.10,'square',.05,.7);
@@ -8542,7 +8542,7 @@ function drawShot(s){
   if(s.kind==='arrow'&&sprReady('p_arrow')){ drawSprRot('p_arrow',s.x,s.y,s.ang,36); return; }
   if(s.kind==='lance'&&sprReady('p_holy')){ drawSprRot('p_holy',s.x,s.y,s.ang,38); return; }
   if(s.kind==='shuriken'&&sprReady('p_shuriken')){ drawSprRot('p_shuriken',s.x,s.y,s.spin||0,(s.r+8)*2.4); return; }
-  if(s.kind==='anchor'&&sprReady('p_anchor')){ drawSprRot('p_anchor',s.x,s.y,0,(s.r+11)*2.6); return; }   // 錨は立てたまま（進行方向へ回さない）
+  if(s.kind==='anchor'&&sprReady('p_anchor')){ drawSprRot('p_anchor',s.x,s.y,s.ang-Math.PI/2,(s.r+11)*2.6); return; }   // 爪を進行方向へ向けて飛ばす
   if(s.kind==='bullet'&&sprReady('p_bullet')){ drawSprRot('p_bullet',s.x,s.y,s.ang,30); return; }
   if(s.kind==='wave'&&FXSLASH_RDY){   // 飛翔斬撃・真空（カマイタチ）：斬撃スプライトを進行方向へ
     var wimg=slashTint(s.col||'#bff5b0'), WD=(s.sz||1)*88;
@@ -10372,6 +10372,9 @@ Array.prototype.forEach.call(document.querySelectorAll('#setview button'),functi
 // 更新履歴：1つのお知らせ内で「バージョン見出し」ごとに変更点を並べる（新しい順）。
 // マージのたびに先頭へ新バージョンを追加し、VERSION も更新する。
 var UPDATES=[
+  {v:'α1.0.258', items:[
+    '錨（アンカー）を進行方向へ向けて飛ぶように戻し（爪が進む向きを向く）、攻撃力を大きく上げて発射間隔を長くしました（重い一撃タイプに調整）。',
+  ]},
   {v:'α1.0.257', items:[
     '武器の解放価格を「武器チケット 300」に統一しました（全武器共通）。',
   ]},
