@@ -1372,7 +1372,7 @@ var WEAPONS={
   meteor:{ nm:'メテオ', glyph:'\u{1F320}', tag:'岩', max:10,
     tx:'上空から隕石を落とす。着弾まで少しラグがあるが、落ちると大きく爆発して敵を強く吹き飛ばす。単発が非常に重い遠距離の大技。' },
   gale:{ nm:'カマイタチ', glyph:'\u{1F343}', tag:'風', max:10,
-    tx:'緑の風の刃を3連射する。当たった敵に風属性を付与する。風属性は「拡散」で他の武器の元素反応を起こしやすくする起点になる。' },
+    tx:'緑の風の刃を素早く連射する。威力は控えめだが敵を強くノックバックさせる牽制型。当たった敵に風属性を付与し、「拡散」で他の武器の元素反応の起点にもなる。' },
   tornado:{ nm:'トルネード', glyph:'\u{1F300}', tag:'風', max:10,
     tx:'緑の渦を生み、周囲の敵を吸い寄せながら削る（吸引はブラックホールより弱い）。消えるとき爆発し、風属性を付与＝拡散で周囲へ元素を撒き散らす。' },
   harp:{ nm:'ハープ', glyph:'\u{1F3B5}', tag:'音', max:10,
@@ -2486,7 +2486,7 @@ var WKIND={ slash:'phys', scythe:'phys', chakram:'phys', katana:'phys', shuriken
             holy:'mag', aura:'mag', voidh:'mag', dhand:'mag', gatling:'phys', toxin:'mag', anchor:'phys',
             meteor:'phys', gale:'phys', tornado:'mag', harp:'phys', briar:'mag', crimson:'phys', sheep:'phys' };   // 羊（羊飼いの召喚）：武器ではないが会心を物理扱いにするため登録
 // 武器ごとのノックバック強度：0=無し 1=弱 2=中 3=強（未指定は「中」）。ここを編集して調整できる。
-var WKB={ bell:1, aura:0, blizzard:0, inferno:0, toxin:0, meteor:3, gale:1, tornado:0, harp:0, briar:0, crimson:1 };
+var WKB={ bell:1, aura:0, blizzard:0, inferno:0, toxin:0, meteor:3, gale:3, tornado:0, harp:0, briar:0, crimson:1 };
 var KB_BASE=[0,1.1,2.2,4.0], KB_CRIT=[0,2.0,4.0,6.5];   // レベル別のノックバック量（通常/会心）
 function applyKB(e,SRC,crit,nx,ny){
   var kl=(WKB[SRC]!==undefined)?WKB[SRC]:2;   // 既定は中
@@ -2997,7 +2997,7 @@ function figInfo(id){
   if(BOSS[id]){ var B=BOSS[id], tt=ETYPE[B.key]||{}; return {nm:B.nm,shape:tt.shape,col:tt.col,dark:tt.dark,desc:BDEX[id]||'',boss:true}; }
   var t=ETYPE[id]||{}; return {nm:t.nm,shape:t.shape,col:t.col,dark:t.dark,desc:DEX[id]||'',boss:false};
 }
-var VERSION='α1.0.260'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
+var VERSION='α1.0.261'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
 function applySave(o){
   for(var i=0;i<UPG.length;i++) META[UPG[i].id]=0;
   try{
@@ -3491,7 +3491,7 @@ function runWeapons(dt){
   if(P.w.quake   &&ready('quake',   2.30*RATE('quake'),dt))    doQuake();
   if(P.w.rock    &&ready('rock',    2.30*RATE('rock'),dt)){    doRock(); queueVolley('rock',0.20); }
   if(P.w.meteor  &&ready('meteor',  3.00*RATE('meteor'),dt))   doMeteor();
-  if(P.w.gale    &&ready('gale',    0.95*RATE('gale'),dt))      doGale();
+  if(P.w.gale    &&ready('gale',    0.80*RATE('gale'),dt))      doGale();
   if(P.w.crimson &&ready('crimson', 3.00*RATE('crimson'),dt))   doCrimson();
   if(P.w.tornado &&ready('tornado', 3.20*RATE('tornado'),dt))   doTornado();
   if(P.w.bell    &&ready('bell',    3.00*RATE('bell'),dt))     doBell();
@@ -4378,7 +4378,7 @@ function doGale(){
   var aw=AW('gale');
   var n=3+CNT('gale')+(aw?2:0);            // 初期3連（数の軸／覚醒で+2）
   var sz=AREA('gale')*0.9, rng=RNG('gale');
-  var dmg=11*DMG('gale')*pw('gale'), pierce=aw?99:3;
+  var dmg=7*DMG('gale')*pw('gale'), pierce=aw?99:3;
   for(var i=0;i<n;i++){
     var an=a+(i-(n-1)/2)*0.16;
     shots.push({x:P.x,y:P.y,vx:Math.cos(an)*660,vy:Math.sin(an)*660,r:10*sz,sz:sz,
@@ -10372,6 +10372,9 @@ Array.prototype.forEach.call(document.querySelectorAll('#setview button'),functi
 // 更新履歴：1つのお知らせ内で「バージョン見出し」ごとに変更点を並べる（新しい順）。
 // マージのたびに先頭へ新バージョンを追加し、VERSION も更新する。
 var UPDATES=[
+  {v:'α1.0.261', items:[
+    'カマイタチを「ノックバック武器」に調整しました。威力を下げ、発射速度を上げ、敵を強く吹き飛ばす牽制型になりました（風属性の拡散起点はそのまま）。',
+  ]},
   {v:'α1.0.260', items:[
     'ファイヤーボールの爆発が大きすぎたので一回り小さく調整しました。また、爆発エフェクトを自機より下のレイヤーに移し、爆発で自分が見えなくなる問題を解消しました。',
   ]},
