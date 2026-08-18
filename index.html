@@ -2997,7 +2997,7 @@ function figInfo(id){
   if(BOSS[id]){ var B=BOSS[id], tt=ETYPE[B.key]||{}; return {nm:B.nm,shape:tt.shape,col:tt.col,dark:tt.dark,desc:BDEX[id]||'',boss:true}; }
   var t=ETYPE[id]||{}; return {nm:t.nm,shape:t.shape,col:t.col,dark:t.dark,desc:DEX[id]||'',boss:false};
 }
-var VERSION='α1.0.256'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
+var VERSION='α1.0.257'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
 function applySave(o){
   for(var i=0;i<UPG.length;i++) META[UPG[i].id]=0;
   try{
@@ -9407,7 +9407,7 @@ document.getElementById('banclose').onclick=function(){ banEl.classList.remove('
 // 銀貨で引き、釘を落ちてスロットに入り景品を得る。🎫メダル→武器解放 / 🎟チケット→キャラ解放。
 var lottoEl=document.getElementById('lotto');
 var COST_W=1, COST_C=1;             // 引くコスト。武器くじ＝銀貨1 / キャラくじ＝金貨1
-var WPN_TICKET=1000, CHR_TICKET=100; // 解放コスト（武器＝武器チケット🔧 / キャラ＝キャラチケット🎭）
+var WPN_TICKET=300, CHR_TICKET=100; // 解放コスト（武器＝武器チケット🔧 / キャラ＝キャラチケット🎭）
 var LOTTO_SLOTS=[5,2,1,100,1,2,5]; // 各スロットの景品。真ん中＝大当たり／その両隣＝最低（惜しい！）
 var LOTTO_W=[1,6,20,1,20,6,1];      // 当たりやすさ。真ん中は激レア・両隣が最も出やすい＝惜しい演出
 var LOTTO_JP=3;                      // 大当たりスロット（真ん中）
@@ -10372,6 +10372,9 @@ Array.prototype.forEach.call(document.querySelectorAll('#setview button'),functi
 // 更新履歴：1つのお知らせ内で「バージョン見出し」ごとに変更点を並べる（新しい順）。
 // マージのたびに先頭へ新バージョンを追加し、VERSION も更新する。
 var UPDATES=[
+  {v:'α1.0.257', items:[
+    '武器の解放価格を「武器チケット 300」に統一しました（全武器共通）。',
+  ]},
   {v:'α1.0.256', items:[
     '茨の女王の攻撃方法を刷新しました！ スパイクを撃つ方式をやめ、自分を起点に茨のツタが扇状にだんだんと伸びていく方式に変更（エルダートレントの根のようなイメージ）。ツタに触れた敵へ毒と鈍足を与え続けます。覚醒「茨獄」ではツタがより長く扇状に大きく広がります。',
   ]},
