@@ -2997,7 +2997,7 @@ function figInfo(id){
   if(BOSS[id]){ var B=BOSS[id], tt=ETYPE[B.key]||{}; return {nm:B.nm,shape:tt.shape,col:tt.col,dark:tt.dark,desc:BDEX[id]||'',boss:true}; }
   var t=ETYPE[id]||{}; return {nm:t.nm,shape:t.shape,col:t.col,dark:t.dark,desc:DEX[id]||'',boss:false};
 }
-var VERSION='α1.0.259'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
+var VERSION='α1.0.260'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
 function applySave(o){
   for(var i=0;i<UPG.length;i++) META[UPG[i].id]=0;
   try{
@@ -4070,7 +4070,7 @@ function doFire(){
   var e=nearest(P.x,P.y,RNG('fire')); if(!e) return;
   var base=Math.atan2(e.y-P.y,e.x-P.x);
   // 標準で着弾＝爆発。熟練の爆炎/大爆発で爆発が一回り大きくなる。
-  var bm=(TF('fire','explode')?(TF('fire','bigboom')?108:88):64)*AREA('fire');
+  var bm=(TF('fire','explode')?(TF('fire','bigboom')?82:66):48)*AREA('fire');
   for(var i=0;i<cnt;i++){
     var a=base+(i-(cnt-1)/2)*0.17;
     shots.push({x:P.x,y:P.y,vx:Math.cos(a)*400,vy:Math.sin(a)*400,r:8,
@@ -6975,6 +6975,7 @@ function render(){
   for(i=0;i<sheep.length;i++) drawSheep(sheep[i]);
   for(i=0;i<rocks.length;i++) drawRock(rocks[i]);
   drawMeteors();
+  drawBooms();   // ドット絵の爆発は敵より上・自機より下（自機が爆発で隠れないように）
   drawPlayer();
   // ガトリング：リロード中はプレイヤー周囲に進捗リングを表示
   if(P.w&&P.w.gatling&&gat.rl>0){
@@ -7002,7 +7003,6 @@ function render(){
     ctx.globalAlpha=1-p.t/p.life; ctx.fillStyle=p.col;
     ctx.fillRect(p.x-p.s/2,p.y-p.s/2,p.s,p.s); }
   ctx.globalAlpha=1;
-  drawBooms();   // ドット絵の爆発
   for(i=0;i<fx.length;i++){ f=fx[i];
     if(f.k==='slash') drawSlash(f);
     else if(f.k==='bolt') drawBolt(f);
@@ -10372,6 +10372,9 @@ Array.prototype.forEach.call(document.querySelectorAll('#setview button'),functi
 // 更新履歴：1つのお知らせ内で「バージョン見出し」ごとに変更点を並べる（新しい順）。
 // マージのたびに先頭へ新バージョンを追加し、VERSION も更新する。
 var UPDATES=[
+  {v:'α1.0.260', items:[
+    'ファイヤーボールの爆発が大きすぎたので一回り小さく調整しました。また、爆発エフェクトを自機より下のレイヤーに移し、爆発で自分が見えなくなる問題を解消しました。',
+  ]},
   {v:'α1.0.259', items:[
     '銀貨の入手効率を少し上げました（ドロップ率の基準を約45%→約60%に）。',
   ]},
