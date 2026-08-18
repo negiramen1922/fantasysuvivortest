@@ -2997,7 +2997,7 @@ function figInfo(id){
   if(BOSS[id]){ var B=BOSS[id], tt=ETYPE[B.key]||{}; return {nm:B.nm,shape:tt.shape,col:tt.col,dark:tt.dark,desc:BDEX[id]||'',boss:true}; }
   var t=ETYPE[id]||{}; return {nm:t.nm,shape:t.shape,col:t.col,dark:t.dark,desc:DEX[id]||'',boss:false};
 }
-var VERSION='α1.0.258'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
+var VERSION='α1.0.259'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
 function applySave(o){
   for(var i=0;i<UPG.length;i++) META[UPG[i].id]=0;
   try{
@@ -6179,7 +6179,7 @@ function kill(e){
     if(e.elite){
       chests.push({x:e.x,y:e.y,t:0});
       flash=Math.max(flash,.45); shake=Math.min(20,shake+9); hitStop=Math.max(hitStop,.09);
-    }else if(Math.random()<(((ETYPE[e.k]?ETYPE[e.k].sv:e.sv)||0)*0.45*(1+0.15*M('luck')+0.10*(P.p.greed||0)))){   // 銀貨の入手量を絞る（約45%）
+    }else if(Math.random()<(((ETYPE[e.k]?ETYPE[e.k].sv:e.sv)||0)*0.60*(1+0.15*M('luck')+0.10*(P.p.greed||0)))){   // 銀貨の入手効率（約60%）
       coins.push({x:e.x,y:e.y,vx:(Math.random()-.5)*90,vy:(Math.random()-.5)*90,pull:0,sp:0});
     }
   }
@@ -10372,6 +10372,9 @@ Array.prototype.forEach.call(document.querySelectorAll('#setview button'),functi
 // 更新履歴：1つのお知らせ内で「バージョン見出し」ごとに変更点を並べる（新しい順）。
 // マージのたびに先頭へ新バージョンを追加し、VERSION も更新する。
 var UPDATES=[
+  {v:'α1.0.259', items:[
+    '銀貨の入手効率を少し上げました（ドロップ率の基準を約45%→約60%に）。',
+  ]},
   {v:'α1.0.258', items:[
     '錨（アンカー）を進行方向へ向けて飛ぶように戻し（爪が進む向きを向く）、攻撃力を大きく上げて発射間隔を長くしました（重い一撃タイプに調整）。',
   ]},
