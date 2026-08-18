@@ -1378,7 +1378,7 @@ var WEAPONS={
   harp:{ nm:'ハープ', glyph:'\u{1F3B5}', tag:'音', max:10,
     tx:'弦をかき鳴らし、周囲へ音の波紋を放つ。ベルと違い敵を吹き飛ばさない代わりに一撃が重く、密集した敵を高火力で削る。' },
   briar:{ nm:'茨の女王', glyph:'\u{1F339}', tag:'草', max:10,
-    tx:'最寄りの敵へ茨のスパイクを放ち、着弾地点に茨の茂みを残す。茂みは一定時間、範囲の敵に毒と鈍足を与え続け、盤面を茨で制圧する。' },
+    tx:'自分を起点に茨のツタが扇状にだんだんと伸びる。ツタに触れた敵へ毒と鈍足を与え続け、盤面を茨で制圧する。' },
   crimson:{ nm:'クリムゾン', glyph:'\u{1FA78}', tag:'闇', max:10,
     tx:'最寄りの敵へ深紅の斬撃を飛ばす闇の刃。命中した敵からHPを吸い取る（吸血）。' },
 };
@@ -2547,7 +2547,7 @@ var AWT={ chainsaw:'前方だけでなく全方位を削るようになる', mus
   meteor:'着弾ごとに小さな隕石が数個飛び散り、周囲に追撃の爆発を落とす',
   gale:'斬撃が敵を貫通し、本数が増える', tornado:'渦が大きくなり、消滅時の爆発と拡散が拡大する',
   harp:'1回の演奏で内外2重の波を放つようになり、手数が実質2倍になる',
-  briar:'茨の茂みが時間とともに周囲へ広がっていく（制圧範囲が拡大）',
+  briar:'茨のツタがより長く伸び、扇状に大きく広がる（制圧範囲が拡大）',
   crimson:'吸血の回復量が上がり、HPが満タンのときは超過分がシールドになって被ダメージを肩代わりする',
   fire:'着弾の爆発が一回り大きく強くなる', flame:'火の玉が軌道上に炎の帯を残す',
   ice:'貫いた位置に氷柱が立ち、触れた敵を鈍足', thunder:'落雷地点から追加の落雷が1度連鎖',
@@ -2997,7 +2997,7 @@ function figInfo(id){
   if(BOSS[id]){ var B=BOSS[id], tt=ETYPE[B.key]||{}; return {nm:B.nm,shape:tt.shape,col:tt.col,dark:tt.dark,desc:BDEX[id]||'',boss:true}; }
   var t=ETYPE[id]||{}; return {nm:t.nm,shape:t.shape,col:t.col,dark:t.dark,desc:DEX[id]||'',boss:false};
 }
-var VERSION='α1.0.255'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
+var VERSION='α1.0.256'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
 function applySave(o){
   for(var i=0;i<UPG.length;i++) META[UPG[i].id]=0;
   try{
@@ -4623,45 +4623,70 @@ function drawHarp(b){
   ctx.globalAlpha=1; ctx.restore();
 }
 /* ============ 茨の女王：茨スパイクを撃ち、着弾地点に茨の茂み（設置ダメージ床）を残す ============ */
+// 茨の女王：自分を起点に茨のツタが扇状にだんだん伸び、触れた敵に毒と鈍足を与え続ける（エルダートレントの根のイメージ）
 function doBriar(){
-  var n=1+CNT('briar'), rng=RNG('briar'), dmg=12*DMG('briar')*pw('briar');
+  var n=2+CNT('briar'), rng=RNG('briar'), dmg=7*DMG('briar')*pw('briar');
+  var aw=AW('briar');
   var e=nearest(P.x,P.y,rng);
   var base=e?Math.atan2(e.y-P.y,e.x-P.x):P.face;
+  var spread=aw?1.5:1.0, mx=rng*(aw?1.5:1.0), gr=mx/0.55;   // 0.55秒で最大長まで伸びる
   for(var i=0;i<n;i++){
-    var a=base+(i-(n-1)/2)*0.28;
-    briars.push({ x:P.x, y:P.y, vx:Math.cos(a)*500, vy:Math.sin(a)*500, ang:a, life:rng/500, dmg:dmg });
+    var a=base + (n>1?(i/(n-1)-0.5)*spread:0) + (Math.random()-0.5)*0.14;
+    briars.push({ x0:P.x, y0:P.y, ang:a, len:0, max:mx, grow:gr, dmg:dmg,
+      life:(aw?3.6:2.8), wob:Math.random()*6.283, wamp:9+5*AREA('briar'),
+      thornR:13*AREA('briar')*(aw?1.35:1), slow:1.4+DURV('briar')*0.4, tick:0, cd:{} });
   }
-  sfx(280,.08,'sawtooth',.04,.7);
+  sfx(200,.10,'sawtooth',.045,.6);
   wgain('briar',n);
-}
-function plantThorn(x,y){
-  var aw=AW('briar'), r=34*AREA('briar');
-  addZone(x,y, r, 8*DMG('briar')*pw('briar'), (aw?6.0:4.0)+0.6*DURV('briar'), 'grass', 0.55, '#6bbf4a', 'briar');
-  if(aw){ var z=zones[zones.length-1]; if(z){ z.grow=r*2.2; z.gr=r*0.5; } }   // 茨獄：時間で広がる
-  fx.push({k:'ring',x:x,y:y,r:0,to:r,t:0,life:.3,col:'#8fe06a'});
 }
 function moveBriars(dt){
   for(var i=briars.length-1;i>=0;i--){
-    var s=briars[i];
-    s.x+=s.vx*dt; s.y+=s.vy*dt; s.life-=dt;
-    var landed=false;
-    for(var j=enemies.length-1;j>=0;j--){
-      var e=enemies[j]; if(e.dead) continue;
-      var dx=e.x-s.x, dy=e.y-s.y;
-      if(dx*dx+dy*dy < (e.r+8)*(e.r+8)){ SRC='briar'; hurt(e,s.dmg,s.vx/500,s.vy/500,'grass'); SRC=null; landed=true; break; }
+    var s=briars[i]; s.life-=dt;
+    if(s.len<s.max) s.len=Math.min(s.max,s.len+s.grow*dt);   // だんだん伸びる
+    for(var k in s.cd){ if(s.cd[k]>0){ s.cd[k]-=dt; if(s.cd[k]<0) s.cd[k]=0; } }
+    s.tick-=dt;
+    if(s.tick<=0){
+      s.tick=0.35;
+      var ux=Math.cos(s.ang), uy=Math.sin(s.ang), px=-uy, py=ux;
+      SRC='briar';
+      for(var j=enemies.length-1;j>=0;j--){
+        var e=enemies[j]; if(e.dead||(s.cd[e.uid]||0)>0) continue;
+        var rx=e.x-s.x0, ry=e.y-s.y0, along=rx*ux+ry*uy;
+        if(along<-8||along>s.len+8) continue;                // ツタの伸びた範囲だけ
+        var wob=Math.sin(along*0.06+s.wob)*s.wamp;
+        if(Math.abs((rx*px+ry*py)-wob) < e.r+s.thornR){
+          hurt(e,s.dmg,ux,uy,'grass');
+          e.slow=Math.max(e.slow,s.slow); e.slowMul=Math.min(e.slowMul||0.45,0.55);
+          s.cd[e.uid]=0.5;
+        }
+      }
+      SRC=null;
     }
-    if(landed||s.life<=0){ plantThorn(s.x,s.y); briars.splice(i,1); }
+    if(s.life<=0) briars.splice(i,1);
   }
 }
 function drawBriars(){
   for(var i=0;i<briars.length;i++){
     var s=briars[i];
-    ctx.save(); ctx.translate(s.x,s.y); ctx.rotate(s.ang);
-    ctx.strokeStyle='#7ac74f'; ctx.lineWidth=3; ctx.lineCap='round';
-    ctx.beginPath(); ctx.moveTo(-9,0); ctx.lineTo(6,0); ctx.stroke();
-    ctx.fillStyle='#a8e06a';
-    ctx.beginPath(); ctx.moveTo(10,0); ctx.lineTo(2,-3); ctx.lineTo(2,3); ctx.closePath(); ctx.fill();
-    ctx.restore();
+    var ux=Math.cos(s.ang), uy=Math.sin(s.ang), px=-uy, py=ux;
+    var fade=Math.min(1,s.life/0.5), steps=Math.max(2,Math.floor(s.len/10));
+    ctx.save(); ctx.globalAlpha=fade; ctx.lineCap='round'; ctx.lineJoin='round';
+    // ツタ本体（濃い緑の蔓）
+    ctx.strokeStyle='#3f7a2c'; ctx.lineWidth=4;
+    ctx.beginPath();
+    for(var t=0;t<=steps;t++){ var d=s.len*t/steps, wob=Math.sin(d*0.06+s.wob)*s.wamp;
+      var x=s.x0+ux*d+px*wob, y=s.y0+uy*d+py*wob; if(t===0)ctx.moveTo(x,y); else ctx.lineTo(x,y); }
+    ctx.stroke();
+    // トゲ（左右交互）
+    ctx.strokeStyle='#7ac74f'; ctx.lineWidth=2;
+    for(var t2=1;t2<steps;t2++){ var d2=s.len*t2/steps, wob2=Math.sin(d2*0.06+s.wob)*s.wamp;
+      var x2=s.x0+ux*d2+px*wob2, y2=s.y0+uy*d2+py*wob2, side=(t2%2?1:-1);
+      ctx.beginPath(); ctx.moveTo(x2,y2); ctx.lineTo(x2+px*side*6-ux*3, y2+py*side*6-uy*3); ctx.stroke(); }
+    // 先端の花
+    var wt=Math.sin(s.len*0.06+s.wob)*s.wamp, tx=s.x0+ux*s.len+px*wt, ty=s.y0+uy*s.len+py*wt;
+    ctx.fillStyle='#c85a8a'; ctx.beginPath(); ctx.arc(tx,ty,3.6,0,6.3); ctx.fill();
+    ctx.fillStyle='#ffd0e0'; ctx.beginPath(); ctx.arc(tx,ty,1.6,0,6.3); ctx.fill();
+    ctx.globalAlpha=1; ctx.restore();
   }
 }
 // 羊飼い：画面端の一辺から羊の群れが出て横切り、触れた敵を踏みつけて通り抜ける
@@ -10347,6 +10372,9 @@ Array.prototype.forEach.call(document.querySelectorAll('#setview button'),functi
 // 更新履歴：1つのお知らせ内で「バージョン見出し」ごとに変更点を並べる（新しい順）。
 // マージのたびに先頭へ新バージョンを追加し、VERSION も更新する。
 var UPDATES=[
+  {v:'α1.0.256', items:[
+    '茨の女王の攻撃方法を刷新しました！ スパイクを撃つ方式をやめ、自分を起点に茨のツタが扇状にだんだんと伸びていく方式に変更（エルダートレントの根のようなイメージ）。ツタに触れた敵へ毒と鈍足を与え続けます。覚醒「茨獄」ではツタがより長く扇状に大きく広がります。',
+  ]},
   {v:'α1.0.255', items:[
     '新武器「クリムゾン」を追加！ 最寄りの敵へ深紅の斬撃（闇属性）を飛ばし、命中した敵1体ごとにHPを吸い取る吸血の刃です。強化軸は攻撃力・範囲・間隔・吸血。覚醒「渇き」でHP満タン時の超過回復がシールドになり被ダメージを肩代わりします。解放：交換所の武器チケット。',
   ]},
