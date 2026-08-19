@@ -1381,6 +1381,10 @@ var WEAPONS={
     tx:'自分を起点に茨のツタが扇状にだんだんと伸びる。ツタに触れた敵へ毒と鈍足を与え続け、盤面を茨で制圧する。' },
   crimson:{ nm:'クリムゾン', glyph:'\u{1FA78}', tag:'闇', max:10,
     tx:'最寄りの敵へ深紅の斬撃を飛ばす闇の刃。命中した敵からHPを吸い取る（吸血）。' },
+  railgun:{ nm:'竜骨砲', glyph:'\u{1F409}', tag:'闇', max:10,
+    tx:'チャージ→発射→冷却をくり返す骨の砲。発射中は射線上の敵を貫通し続ける極太ビーム。ビームは徐々に太くなり終わり際に細く収束する。持続と冷却を伸ばして撃ち続けろ。' },
+  sharkm:{ nm:'シャークミサイル', glyph:'\u{1F988}', tag:'射撃', max:10,
+    tx:'水を切るように敵を追尾する自動誘導ミサイルを放つ。ゆるやかに旋回して最寄りの敵へ食らいつき、命中すると炸裂して周囲を巻き込む。数を増やして群れで襲わせろ。' },
 };
 // ── 武器の解放（ロック）システム ──
 // 初期解放9種（各系統1つ）は最初から使える。残り13種はロック：金貨10 or 銀貨(武器ごと) or 実績(武器ごと) で解放。
@@ -1410,10 +1414,12 @@ var WLOCK={
   gatling: {s:10000,cond:'kills', val:12000, condTx:'累計討伐 12,000', tkt:1},
   meteor:  {s:8000, tkt:1},
   gale:    {s:3000, tkt:1},
-  tornado: {s:5000, tkt:1},
+  tornado: {s:5000, cond:'stage', val:1, condTx:'フェンリルを倒す（ステージ1クリア）'},
   harp:    {s:4000, tkt:1},
-  briar:   {s:4000, tkt:1},
-  crimson: {s:5000, tkt:1}
+  briar:   {s:4000, cond:'stage', val:2, condTx:'エルダートレントを倒す（ステージ2クリア）'},
+  crimson: {s:5000, tkt:1},
+  railgun: {s:6000, cond:'stage', val:3, condTx:'スケルトンドラゴンを倒す（ステージ3クリア）'},
+  sharkm:  {s:6000, cond:'stage', val:4, condTx:'リヴァイアサンを倒す（ステージ4クリア）'}
 };
 var WUNL={};   // 解放済み武器 {id:1}
 (function(){ for(var k in WSTART) WUNL[k]=1; if(ALLWPN) for(var w in WEAPONS) WUNL[w]=1; })();
@@ -1446,7 +1452,7 @@ var ELEM={
 };
 // 属性ごとの担い手（一時停止画面の付与率表示に使う）
 var ELW={ fire:['fire','flame'], ice:['ice','blizzard'], thunder:['thunder','chain'],
-          holy:['holy','aura','laser'], dark:['voidh','dhand','crimson'], grass:['toxin','briar'], wind:['gale','tornado'] };
+          holy:['holy','aura','laser'], dark:['voidh','dhand','crimson','railgun'], grass:['toxin','briar'], wind:['gale','tornado'] };
 var ETYPE={
   slime:   { nm:'スライム',           res:0.00, hp:34,  spd:46,  r:13, col:'#6ee08a', dark:'#245c35', xp:1, dmg:8,  shape:'blob',   pts:6,   sv:0.035 },
   goblin:  { nm:'ゴブリン',           res:0.08, hp:64,  spd:76,  r:13, col:'#8fd06a', dark:'#3d5c22', xp:2, dmg:11, shape:'goblin', pts:16,  sv:0.06 },
@@ -2387,6 +2393,22 @@ var MAST={
     major:[ {id:'cr_ct',ic:'✳️',nm:'双血刃',tx:'刃 +1',d:'一度に放つ血刃が#増える',dv:'1枚',ef:{count:1}},
             {id:'cr_dr',ic:'🩸',nm:'渇望',tx:'吸血 +',d:'吸血の回復量が#増える',dv:'吸血',ef:{drainT:0.12}},
             {id:'cr_C',ic:'⌛',nm:'速刃',tx:'−8%',d:'放つ間隔が#大きく短くなる',dv:'8%',ef:{cd:-.08}} ]
+  },
+  railgun:{  // 竜骨砲：dmg/area(幅)/rate(チャージ)/dur(持続)/cool(冷却)。チャージ→発射→冷却
+    minor:[ {id:'rg_d',ic:'💪',nm:'攻撃力',tx:'+6%',d:'ビームの威力が#上がる',dv:'6%',ef:{dmg:.06}},
+            {id:'rg_a',ic:'🌀',nm:'砲幅',tx:'+6%',d:'ビームが#太くなり当たりやすくなる',dv:'6%',ef:{area:.06}},
+            {id:'rg_c',ic:'⚡',nm:'チャージ速度',tx:'−5%',d:'チャージにかかる時間が#短くなる',dv:'5%',ef:{cd:-.05}} ],
+    major:[ {id:'rg_D',ic:'💪',nm:'剛・攻撃力',tx:'+12%',d:'ビームの威力が#大きく上がる',dv:'12%',ef:{dmg:.12}},
+            {id:'rg_heat',ic:'❄️',nm:'熱制御',tx:'持続+ 冷却+',d:'発射の持続が#延び、冷却も速くなる',dv:'熱量増加冷却加速',ef:{dur:1,cool:.10}},
+            {id:'rg_A',ic:'🌀',nm:'幅拡大',tx:'+15%',d:'ビームが#大きく太くなる',dv:'15%',ef:{area:.15}} ]
+  },
+  sharkm:{  // シャークミサイル：dmg/area(爆発)/count/rate/range。自動追尾＋炸裂
+    minor:[ {id:'sk_d',ic:'💪',nm:'攻撃力',tx:'+6%',d:'ミサイルの威力が#上がる',dv:'6%',ef:{dmg:.06}},
+            {id:'sk_a',ic:'🌀',nm:'炸裂範囲',tx:'+6%',d:'炸裂の巻き込み範囲が#広がる',dv:'6%',ef:{area:.06}},
+            {id:'sk_c',ic:'⌛',nm:'間隔',tx:'−5%',d:'発射の間隔が#短くなる',dv:'5%',ef:{cd:-.05}} ],
+    major:[ {id:'sk_ct',ic:'✳️',nm:'群れ撃ち',tx:'ミサイル +1',d:'一度に放つミサイルが#増える',dv:'1発',ef:{count:1}},
+            {id:'sk_t',ic:'🎯',nm:'旋回強化',tx:'追尾+',d:'旋回が鋭くなり敵に#食らいつきやすくなる',dv:'追尾性能',ef:{turn:0.35}},
+            {id:'sk_D',ic:'💪',nm:'剛・攻撃力',tx:'+12%',d:'ミサイルの威力が#大きく上がる',dv:'12%',ef:{dmg:.12}} ]
   }
 };
 var MASTIDS={};   // 武器ごとの有効オプションid集合（旧SELの掃除に使う）
@@ -2425,7 +2447,7 @@ function TF(wid,key){ return TR(wid,key)>0; }
 var WCAT={ slash:'剣技', scythe:'剣技', chakram:'剣技', katana:'剣技', shuriken:'射撃', bow:'射撃', dynamite:'射撃',
            fire:'炎', flame:'炎', inferno:'炎', ice:'氷', thunder:'雷', chain:'雷',
            quake:'岩', rock:'岩', voidh:'闇', dhand:'闇', holy:'光', aura:'光',
-           bell:'音', chainsaw:'剣技', musket:'射撃', blizzard:'氷', laser:'光', gatling:'射撃', toxin:'草', anchor:'打撃', meteor:'岩', gale:'風', tornado:'風', harp:'音', briar:'草', crimson:'剣技' };
+           bell:'音', chainsaw:'剣技', musket:'射撃', blizzard:'氷', laser:'光', gatling:'射撃', toxin:'草', anchor:'打撃', meteor:'岩', gale:'風', tornado:'風', harp:'音', briar:'草', crimson:'剣技', railgun:'射撃', sharkm:'射撃' };
 // 武器タグ（間合い・手段・属性）。ナイトメアの属性強化カード等の土台。
 var WTAG={
   slash:['近接','斬撃','物理'], chainsaw:['近接','斬撃','物理'],
@@ -2439,7 +2461,7 @@ var WTAG={
   meteor:['遠距離','落下','爆発','範囲','岩','物理'],
   gale:['遠距離','斬撃','風','物理'], tornado:['自己','設置','範囲','風'],
   harp:['自己','範囲','音','物理'],
-  briar:['遠距離','設置','草','毒'], crimson:['遠距離','斬撃','闇','物理','吸血'],
+  briar:['遠距離','設置','草','毒'], crimson:['遠距離','斬撃','闇','物理','吸血'], railgun:['遠距離','貫通','闇','魔法','チャージ'], sharkm:['遠距離','追尾','爆発','物理'],
   bell:['自己','打撃','範囲','物理'],
   fire:['遠距離','射撃','爆発','範囲','炎'], flame:['自己','炎'], inferno:['中距離','ビーム','炎'],
   ice:['遠距離','射撃','氷'], blizzard:['自己','氷'],
@@ -2474,19 +2496,19 @@ function wgain(id,hits){
 // 1回の強化で必ずレベルが1上がり、選んだ軸に1点入る。
 // 軸ごとに上限があり、上限の合計は取得可能な点数(7)より多いので必ず取捨選択になる。
 var AXN={ dmg:'攻撃力', area:'範囲', rate:'間隔', count:'発射数', dur:'持続',
-          pierce:'貫通', slow:'鈍足', chain:'連鎖', split:'拡散', burst:'連射', ammo:'弾倉', range:'射程', drain:'吸血' };
+          pierce:'貫通', slow:'鈍足', chain:'連鎖', split:'拡散', burst:'連射', ammo:'弾倉', range:'射程', drain:'吸血', cool:'冷却' };
 var AXT={ dmg:'ダメージ +45%', area:'範囲 +18%', rate:'間隔 −15%', count:'発射数 +1', dur:'効果の持続が伸びる（鈍足の時間／延焼／インフェルノの熱容量・冷却速度UP）',
           pierce:'貫通 +2', slow:'鈍足の持続 +1.0秒', chain:'連鎖 +2', split:'拡散 +2',
-          burst:'同じ方向へ続けて撃つ回数 +1', ammo:'弾倉（撃てる弾数）が増える', range:'届く距離・飛距離 +20%', drain:'吸血の回復量が増える（1体あたりの回復と上限）' };
+          burst:'同じ方向へ続けて撃つ回数 +1', ammo:'弾倉（撃てる弾数）が増える', range:'届く距離・飛距離 +20%', drain:'吸血の回復量が増える（1体あたりの回復と上限）', cool:'冷却時間が短くなる（撃てない時間が減る）' };
 // 物理は会心で殲滅、魔法は元素反応で連鎖させる
 var WKIND={ slash:'phys', scythe:'phys', chakram:'phys', katana:'phys', shuriken:'phys', bow:'phys', dynamite:'phys',
             quake:'phys', rock:'phys', bell:'phys', chainsaw:'phys', musket:'phys',
             blizzard:'mag', laser:'mag',
             fire:'mag', flame:'mag', ice:'mag', thunder:'mag', chain:'mag', inferno:'mag',
             holy:'mag', aura:'mag', voidh:'mag', dhand:'mag', gatling:'phys', toxin:'mag', anchor:'phys',
-            meteor:'phys', gale:'phys', tornado:'mag', harp:'phys', briar:'mag', crimson:'phys', sheep:'phys' };   // 羊（羊飼いの召喚）：武器ではないが会心を物理扱いにするため登録
+            meteor:'phys', gale:'phys', tornado:'mag', harp:'phys', briar:'mag', crimson:'phys', railgun:'mag', sharkm:'phys', sheep:'phys' };   // 羊（羊飼いの召喚）：武器ではないが会心を物理扱いにするため登録
 // 武器ごとのノックバック強度：0=無し 1=弱 2=中 3=強（未指定は「中」）。ここを編集して調整できる。
-var WKB={ bell:1, aura:0, blizzard:0, inferno:0, toxin:0, meteor:3, gale:3, tornado:0, harp:0, briar:0, crimson:1 };
+var WKB={ bell:1, aura:0, blizzard:0, inferno:0, toxin:0, meteor:3, gale:3, tornado:0, harp:0, briar:0, crimson:1, railgun:1, sharkm:2 };
 var KB_BASE=[0,1.1,2.2,4.0], KB_CRIT=[0,2.0,4.0,6.5];   // レベル別のノックバック量（通常/会心）
 function applyKB(e,SRC,crit,nx,ny){
   var kl=(WKB[SRC]!==undefined)?WKB[SRC]:2;   // 既定は中
@@ -2526,7 +2548,9 @@ var WAX={
   tornado: { dmg:4, area:4, count:2, rate:3 },
   harp:    { dmg:4, area:4, count:3, rate:3 },
   briar:   { dmg:4, area:4, rate:3, dur:3, count:2 },
-  crimson: { dmg:4, area:3, rate:3, drain:3 }
+  crimson: { dmg:4, area:3, rate:3, drain:3 },
+  railgun: { dmg:4, area:3, rate:3, dur:3, cool:3 },
+  sharkm: { dmg:4, area:3, count:3, rate:3, range:3 }
 };
 // Lv10 到達で覚醒。数値ではなく挙動が変わる。
 var AWK={ chainsaw:'暴走鋸', musket:'貫通弾', blizzard:'絶対氷結', laser:'追尾光線', inferno:'業炎照射',
@@ -2534,7 +2558,7 @@ var AWK={ chainsaw:'暴走鋸', musket:'貫通弾', blizzard:'絶対氷結', las
   dynamite:'連鎖爆破', bell:'共鳴', quake:'地割れ', rock:'巨岩', meteor:'流星群', gale:'真空乱斬', tornado:'大旋風', harp:'協奏', briar:'茨獄',
   fire:'爆炎弾', flame:'業火輪', ice:'氷結槍', thunder:'落雷嵐',
   chain:'無限連鎖', holy:'聖裁', aura:'審判の剣', voidh:'特異点', dhand:'深淵の手',
-  gatling:'双掃射', crimson:'渇き' };
+  gatling:'双掃射', crimson:'渇き', railgun:'竜骨崩し', sharkm:'血の匂い' };
 var AWT={ chainsaw:'前方だけでなく全方位を削るようになる', musket:'弾が敵を貫通する', inferno:'ビームが太く強くなり、当てている敵を延焼させ続ける',
   blizzard:'吹雪の中の敵をときどき凍結させる', laser:'光線が回転しながら残り続ける',
   slash:'斬撃が飛ぶようになる', scythe:'戻りの威力減衰がなくなる',
@@ -2554,6 +2578,8 @@ var AWT={ chainsaw:'前方だけでなく全方位を削るようになる', mus
   chain:'減衰が止まり、跳ぶ距離が倍に', holy:'拡散した破片がさらに1度拡散',
   aura:'剣が消えるとき光の柱が立ち周囲を一掃', voidh:'消滅時に大爆発',
   dhand:'突いた敵の被ダメージが20%上がる',
+  railgun:'ビームの周りに衝撃の余波が広がり、射線から離れるほど弱まる距離減衰ダメージを与える',
+  sharkm:'ミサイルが敵を仕留めるたび、炸裂点から小さな子鮫ミサイルが数匹飛び出して新たな敵へ食らいつく',
   gatling:'銃身が2連になり、左右から同時に連射する（装弾数1.5倍）' };
 function AW(id){ return (P.aw&&P.aw[id])?1:0; }
 function addWLv(id,ax){
@@ -2618,7 +2644,7 @@ function lbOK(w,k){
 // 間合いによる火力補正：近接ほど高く、遠距離ほど低い（射程との住み分け）
 var WCLASS={ slash:'melee', chainsaw:'melee', katana:'melee', shuriken:'mid',
   chakram:'self', flame:'self', blizzard:'self', bell:'self', laser:'self', aura:'self', voidh:'self', tornado:'self', gale:'mid', harp:'self', briar:'mid',
-  scythe:'mid', dhand:'mid', dynamite:'mid', quake:'mid', musket:'mid', inferno:'mid', toxin:'mid', anchor:'mid', crimson:'mid',
+  scythe:'mid', dhand:'mid', dynamite:'mid', quake:'mid', musket:'mid', inferno:'mid', toxin:'mid', anchor:'mid', crimson:'mid', railgun:'self', sharkm:'long',
   fire:'long', ice:'long', bow:'long', holy:'long', thunder:'long', chain:'long', rock:'long', gatling:'long',
   meteor:'mid' };   // メテオ：狙った範囲に落とす大技。威力45をそのまま出すため補正1.0の中距離扱い
 var CLMUL={ melee:1.15, self:1.0, mid:1.0, long:0.78 };
@@ -2643,7 +2669,7 @@ var WRNG={
   dhand:{base:300,cat:'中'}, dynamite:{base:360,cat:'中'}, quake:{base:400,cat:'中'}, musket:{base:320,cat:'中'}, inferno:{base:360,cat:'中'}, toxin:{base:400,cat:'中'}, anchor:{base:420,cat:'中'},
   chain:{base:460,cat:'長'}, thunder:{base:460,cat:'長'},
   fire:{base:520,cat:'長'}, ice:{base:520,cat:'長'}, bow:{base:560,cat:'長'},
-  holy:{base:520,cat:'長'}, rock:{base:540,cat:'長'}, gatling:{base:560,cat:'長'}, meteor:{base:560,cat:'長'}, gale:{base:440,cat:'中'}, briar:{base:400,cat:'中'}, crimson:{base:440,cat:'中'} };
+  holy:{base:520,cat:'長'}, rock:{base:540,cat:'長'}, gatling:{base:560,cat:'長'}, meteor:{base:560,cat:'長'}, gale:{base:440,cat:'中'}, briar:{base:400,cat:'中'}, crimson:{base:440,cat:'中'}, railgun:{base:660,cat:'長'}, sharkm:{base:600,cat:'長'} };
 function RNGM(w){ return Math.pow(1.20,AX(w,'range'))*Math.pow(1.08,LB(w,'range'))*(1+TR(w,'range')); }   // 射程軸の倍率（限界突破ぶんは緩やか）＋熟練度
 function RNG(w){ return (WRNG[w]?WRNG[w].base:640)*RNGM(w); }
 function axLeft(w,k){ return (WAX[w][k]||0)-AX(w,k); }
@@ -2997,7 +3023,7 @@ function figInfo(id){
   if(BOSS[id]){ var B=BOSS[id], tt=ETYPE[B.key]||{}; return {nm:B.nm,shape:tt.shape,col:tt.col,dark:tt.dark,desc:BDEX[id]||'',boss:true}; }
   var t=ETYPE[id]||{}; return {nm:t.nm,shape:t.shape,col:t.col,dark:t.dark,desc:DEX[id]||'',boss:false};
 }
-var VERSION='α1.0.261'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
+var VERSION='α1.0.264'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
 function applySave(o){
   for(var i=0;i<UPG.length;i++) META[UPG[i].id]=0;
   try{
@@ -3189,6 +3215,7 @@ function reset(){
   dexQueue.length=0;
   score=0; silver=0; gold=0; magFx=0; chakSpin=0; wxRun={}; lastCd={}; coolMax={}; WDMG={}; REACTDMG={}; RK=null;
   KILLER=null; INF={tgt:0,ramp:0,tick:0,on:false,ex:0,ey:0,extra:[],heat:0,over:false};
+  RAIL={ph:'charge',t:0,ax:1,ay:0,tick:0,fireLen:0,grow:0};
   contUsed=0; contFlag=0;
   if(ENDLESS){ ENDBLK=0; endBossDone={}; marks=[]; }   // 無限ラン：分経過バナー無し・ブロック管理を初期化
   slotSig='';
@@ -3450,6 +3477,7 @@ function doGatling(dt){
 function runWeapons(dt){
   if(P.w.gatling) doGatling(dt);
   if(P.w.inferno) infernoTick(dt);
+  if(P.w.railgun) railgunTick(dt);
   if(P.w.chainsaw){                              // しばらく出す→しまう→また出す、を繰り返す
     if(P.sawOn==null){ P.sawOn=true; P.sawPh=2.6; P.sawRev=0; P.sawRevCd=1.2; }  // 取得直後は出しっぱなしから
     P.sawPh-=dt;
@@ -3493,6 +3521,7 @@ function runWeapons(dt){
   if(P.w.meteor  &&ready('meteor',  3.00*RATE('meteor'),dt))   doMeteor();
   if(P.w.gale    &&ready('gale',    0.80*RATE('gale'),dt))      doGale();
   if(P.w.crimson &&ready('crimson', 3.00*RATE('crimson'),dt))   doCrimson();
+  if(P.w.sharkm  &&ready('sharkm',  1.60*RATE('sharkm'),dt))    doSharkm();
   if(P.w.tornado &&ready('tornado', 3.20*RATE('tornado'),dt))   doTornado();
   if(P.w.bell    &&ready('bell',    3.00*RATE('bell'),dt))     doBell();
   if(P.w.harp    &&ready('harp',    3.00*RATE('harp'),dt))     doHarp();
@@ -3637,6 +3666,7 @@ function drawLaser(L){
 // インフェルノビーム：最寄りの敵へ照射し続け、同じ敵に当て続けるほど火力が上がる（ramp）。数軸で追加ビーム。
 // オーバーヒート式：撃つほど熱がたまり、満タンで強制冷却（ビーム停止）。持続軸で熱容量アップ＋冷却速度アップ。
 var INF={tgt:0, ramp:0, tick:0, on:false, ex:0, ey:0, extra:[], heat:0, over:false};
+var RAIL={ph:'charge', t:0, ax:1, ay:0, tick:0, fireLen:0, grow:0};
 function infernoTick(dt){
   var rng=RNG('inferno'), extra=Math.round(CNT('inferno'));       // 数軸：追加ビーム本数
   var keep=TF('inferno','rampkeep')||AW('inferno');
@@ -3721,6 +3751,96 @@ function drawInferno(){
   for(var i=0;i<INF.extra.length;i++) infBeam(INF.extra[i].x,INF.extra[i].y,Math.max(3,w*0.6),0.7);  // 追加ビーム（細め）
   infBeam(INF.ex,INF.ey,w,g);
   ctx.globalAlpha=1; ctx.restore();
+}
+// 竜骨砲：チャージ→発射→冷却をくり返す。発射中は射線上の敵を貫通する極太ビーム。
+// 強化軸：dmg / area(砲幅) / rate(チャージ速度) / dur(発射持続) / cool(冷却短縮)。覚醒＝射線周りに距離減衰の余波。
+function railCoolFactor(){ return 1/(1+0.20*AX('railgun','cool')+TR('railgun','cool')); }
+function railgunTick(dt){
+  var chargeDur=1.0*RATE('railgun');
+  var fireDur=0.6*(1+0.35*DURV('railgun'));
+  var coolDur=1.2*railCoolFactor();
+  RAIL.t+=dt;
+  if(RAIL.ph==='charge'){
+    var e=nearest(P.x,P.y,RNG('railgun'));                     // チャージ中は最寄りへ照準を合わせ続ける
+    if(e){ var a=Math.atan2(e.y-P.y,e.x-P.x); RAIL.ax=Math.cos(a); RAIL.ay=Math.sin(a); }
+    else if(P.face!=null){ RAIL.ax=Math.cos(P.face); RAIL.ay=Math.sin(P.face); }
+    if(RAIL.t>=chargeDur){                                     // 照準確定→発射（方向ロック）
+      RAIL.ph='fire'; RAIL.t=0; RAIL.tick=0; RAIL.grow=0; RAIL.fireLen=RNG('railgun');
+      shake=Math.min(12,shake+4); sfx(140,.30,'sawtooth',.09,.5); sfx(520,.10,'square',.05,1.2);
+    }
+  } else if(RAIL.ph==='fire'){
+    var k=RAIL.t/fireDur;                                      // だんだん太く→終わり際に一気に細く収束
+    RAIL.grow = (k<0.80) ? (k/0.80) : Math.max(0,1-(k-0.80)/0.20);
+    RAIL.tick-=dt;
+    if(RAIL.tick<=0){ RAIL.tick=0.1; railBeamHit(); }
+    if(RAIL.t>=fireDur){ RAIL.ph='cool'; RAIL.t=0; RAIL.grow=0; sfx(90,.18,'sawtooth',.05,.4); }
+  } else {                                                     // 冷却：撃てない時間
+    if(RAIL.t>=coolDur){ RAIL.ph='charge'; RAIL.t=0; }
+  }
+}
+function railBeamHit(){
+  SRC='railgun';
+  var ux=RAIL.ax, uy=RAIL.ay, nx=-uy, ny=ux, len=RAIL.fireLen;
+  var wmul=AREA('railgun');
+  var coreHalf=(6+18*RAIL.grow)*0.5*wmul;                      // 判定幅は今のビーム太さに追従
+  var wakeHalf=coreHalf+34*wmul;                               // 覚醒：余波の帯
+  var aw=AW('railgun'), base=15*DMG('railgun')*pw('railgun');
+  for(var i=0;i<enemies.length;i++){ var e=enemies[i]; if(e.dead) continue;
+    var rx=e.x-P.x, ry=e.y-P.y;
+    var proj=rx*ux+ry*uy; if(proj<-e.r||proj>len+e.r) continue;
+    var perp=Math.abs(rx*nx+ry*ny);
+    if(perp<=coreHalf+e.r){ hurt(e,base,ux,uy,'dark'); }
+    else if(aw&&perp<=wakeHalf+e.r){                           // 余波：射線から離れるほど弱まる距離減衰
+      var f=1-(perp-coreHalf)/(wakeHalf-coreHalf); if(f<0)f=0;
+      hurt(e,base*0.5*f,ux,uy,'dark');
+    }
+  }
+  SRC=null; wgain('railgun',1);
+}
+function railBeamBlocks(ux,uy,nx,ny,len,w){
+  var n=Math.max(3,Math.round(len/6));
+  for(var i=0;i<=n;i++){ var t=i/n;
+    var taper=(t>0.9)?(1-(t-0.9)/0.1):1;                       // 先端を細く収束
+    var hw=Math.max(1,w*0.5*taper);
+    var jz=(Math.random()-0.5)*w*0.12;
+    var cx=P.x+ux*len*t+nx*jz, cy=P.y+uy*len*t+ny*jz;
+    ctx.fillRect(Math.round(cx-hw),Math.round(cy-hw),Math.max(1,Math.round(hw*2)),Math.max(1,Math.round(hw*2)));
+  }
+}
+function drawRailgun(){
+  if(!P.w.railgun) return;
+  var ux=RAIL.ax, uy=RAIL.ay, nx=-uy, ny=ux;
+  ctx.save(); ctx.imageSmoothingEnabled=false;
+  if(RAIL.ph==='charge'){
+    var chargeDur=1.0*RATE('railgun'), k=Math.min(1,RAIL.t/chargeDur), len=RNG('railgun');
+    ctx.globalAlpha=0.10+0.18*k; ctx.strokeStyle='#c77dff'; ctx.lineWidth=1+2*k;   // 照準ライン
+    ctx.beginPath(); ctx.moveTo(P.x,P.y); ctx.lineTo(P.x+ux*len,P.y+uy*len); ctx.stroke();
+    var mx=P.x+ux*16, my=P.y+uy*16, gr=3+k*9;                                       // 砲口の充填グロー
+    ctx.globalAlpha=0.45+0.4*k; ctx.fillStyle='#e8c8ff';
+    ctx.beginPath(); ctx.arc(mx,my,gr,0,6.3); ctx.fill();
+    ctx.globalAlpha=0.9; ctx.fillStyle='#ffffff';
+    ctx.beginPath(); ctx.arc(mx,my,Math.max(1,gr*0.4),0,6.3); ctx.fill();
+    for(var i=0;i<6;i++){ var a=(i/6)*6.283+time*3, rr=(1-k)*22+6;                  // 集まる骨片
+      var bx=mx+Math.cos(a)*rr, by=my+Math.sin(a)*rr;
+      ctx.globalAlpha=0.5*k; ctx.fillStyle='#efe7d0'; ctx.fillRect(Math.round(bx)-1,Math.round(by)-1,3,3); }
+  } else if(RAIL.ph==='fire'){
+    var len=RAIL.fireLen, g=RAIL.grow, w=(6+18*g)*AREA('railgun');
+    if(AW('railgun')){ ctx.globalAlpha=0.16*g; ctx.fillStyle='#8a4fd0';            // 余波の帯
+      railBeamBlocks(ux,uy,nx,ny,len,w+34*AREA('railgun')); }
+    ctx.globalAlpha=0.55; ctx.fillStyle='#c77dff'; railBeamBlocks(ux,uy,nx,ny,len,w);
+    ctx.globalAlpha=0.85; ctx.fillStyle='#e8c8ff'; railBeamBlocks(ux,uy,nx,ny,len,w*0.55);
+    ctx.globalAlpha=1;    ctx.fillStyle='#ffffff'; railBeamBlocks(ux,uy,nx,ny,len,Math.max(1.5,w*0.28));
+    var mx=P.x+ux*16, my=P.y+uy*16, fr=Math.max(3,w*0.8);                           // 砲口フラッシュ
+    ctx.globalAlpha=0.9; ctx.fillStyle='#ffffff'; ctx.beginPath(); ctx.arc(mx,my,fr,0,6.3); ctx.fill();
+    for(var j=0;j<4;j++){ var ja=Math.random()*6.283, jr=Math.random()*w*1.3, bs=2+Math.round(Math.random()*2);
+      ctx.globalAlpha=0.7; ctx.fillStyle=(j%2?'#efe7d0':'#d8c8ff');
+      ctx.fillRect(Math.round(mx+Math.cos(ja)*jr)-bs,Math.round(my+Math.sin(ja)*jr)-bs,bs*2,bs*2); }   // 飛び散る骨片
+  } else {
+    var coolDur=1.2*railCoolFactor(), k=Math.min(1,RAIL.t/coolDur), mx=P.x+ux*16, my=P.y+uy*16;
+    for(var s=0;s<4;s++){ var sx=mx+(Math.random()-.5)*10, sy=my-k*14+(Math.random()-.5)*10;             // 冷却の蒸気
+      ctx.globalAlpha=(1-k)*0.4; ctx.fillStyle='#b0a8d0'; ctx.fillRect(Math.round(sx)-1,Math.round(sy)-1,3,3); }
+  }
+  ctx.globalAlpha=1; ctx.imageSmoothingEnabled=true; ctx.restore();
 }
 function drawSaw(f){
   var k=f.t/f.life;
@@ -4407,6 +4527,25 @@ function doCrimson(){
   }
   sfx(300,.09,'sawtooth',.05,.6);
   wgain('crimson',n); SRC=null;
+}
+// シャークミサイル：ゆるやかに旋回して敵を追尾し、命中で炸裂する自動誘導ミサイル
+function doSharkm(){
+  SRC='sharkm';
+  var n=1+CNT('sharkm'), sz=AREA('sharkm'), rng=RNG('sharkm');
+  var dmg=13*DMG('sharkm')*pw('sharkm'), boomR=54*sz;
+  var turn=3.4+2.2*TR('sharkm','turn');                    // 旋回速度（rad/s）。熟練度で鋭く
+  var spd=440;
+  for(var i=0;i<n;i++){
+    var e=nearest(P.x,P.y,900);
+    var base=(e?Math.atan2(e.y-P.y,e.x-P.x):P.face);
+    var an=base+(n>1?(i-(n-1)/2)*0.5:0)+(Math.random()-.5)*0.3;  // 群れは扇状にばらけて発射
+    shots.push({x:P.x,y:P.y,vx:Math.cos(an)*spd,vy:Math.sin(an)*spd,r:9*sz,sz:sz,spd:spd,
+      src:'sharkm',kind:'sharkm',ang:an,dmg:dmg,pierce:1,life:rng/spd+1.4,
+      col:'#5fb0d8',col2:'#274b66',el:null,hit:[],home:1,turn:turn,boom:boomR,
+      wig:Math.random()*6.283,gen:0});
+  }
+  sfx(200,.10,'square',.045,.6); noise(.06,.05);
+  wgain('sharkm',n); SRC=null;
 }
 // トルネード：緑の渦。吸引（ブラックホールより弱め）＋消滅時に爆発して風を付与＝拡散
 function doTornado(){
@@ -6277,6 +6416,20 @@ function moveShots(dt){
       }
       s.ang=Math.atan2(s.vy,s.vx);                          // 進行方向へ尖りを向ける
     }
+    if(s.home){                                             // シャークミサイル：最寄りの敵へゆるやかに旋回追尾
+      var tgt=null,bd=1e18;
+      for(var h=0;h<enemies.length;h++){ var he=enemies[h]; if(he.dead)continue;
+        var hdx=he.x-s.x,hdy=he.y-s.y,hd=hdx*hdx+hdy*hdy; if(hd<bd){bd=hd;tgt=he;} }
+      if(tgt){
+        var cur=Math.atan2(s.vy,s.vx), des=Math.atan2(tgt.y-s.y,tgt.x-s.x), df=des-cur;
+        while(df>Math.PI)df-=6.283; while(df<-Math.PI)df+=6.283;
+        var mx=(s.turn||3.4)*dt; if(df>mx)df=mx; else if(df<-mx)df=-mx;
+        var na=cur+df, sp=s.spd||Math.hypot(s.vx,s.vy);
+        s.vx=Math.cos(na)*sp; s.vy=Math.sin(na)*sp;
+      }
+      s.wig=(s.wig||0)+dt*18;
+      s.ang=Math.atan2(s.vy,s.vx);
+    }
     parts.push({x:s.x,y:s.y,vx:0,vy:0,t:0,life:.22,col:s.col,s:3});
     for(var j=enemies.length-1;j>=0;j--){
       var e=enemies[j];
@@ -6304,6 +6457,7 @@ function moveShots(dt){
         if(s.decay){ s.dmg-=s.decay; if(s.dmg<=0.001){ s.life=0; break; } }   // 覚醒斬撃：貫くほど威力減衰（5体で0）
         if(s.split) { holySplit(s); s.split=0; }
         if(s.src==='fire'&&s.boom) fireBoom(s);  // 敵に当たるたび爆発
+        if(s.kind==='sharkm'&&s.boom){ sharkBoom(s,e.dead); s.life=0; break; }   // 命中で炸裂
         if(s.grow&&s.dmg<s.base*3) s.dmg*=1.35;
         if(s.pierce<=0){ s.life=0; break; }
       }
@@ -6320,6 +6474,25 @@ function fireBoom(s){
   SRC=null;
   shake=Math.min(16,shake+(r>90?5:2.5));
   sfx(170,.18,'sawtooth',.075,.4); noise(.16,.1);
+}
+// シャークミサイル炸裂：AoE＋覚醒「血の匂い」で子鮫を放つ（仕留めた時・1世代のみ）
+function sharkBoom(s,killed){
+  SRC='sharkm';
+  boom(s.x,s.y,s.boom,s.dmg*0.6,'#7fd0e8',0);
+  if(AW('sharkm')&&killed&&(s.gen||0)<1){
+    var fry=3;
+    for(var i=0;i<fry;i++){
+      var a=Math.random()*6.283, sp=380;
+      shots.push({x:s.x,y:s.y,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp,r:(s.r||9)*0.62,sz:(s.sz||1)*0.6,spd:sp,
+        src:'sharkm',kind:'sharkm',ang:a,dmg:s.dmg*0.4,pierce:1,life:1.6,
+        col:'#8fd0e8',col2:'#356b86',el:null,hit:[],home:1,turn:(s.turn||3.4)*1.2,boom:s.boom*0.55,
+        wig:Math.random()*6.283,gen:1});
+    }
+    for(var j=0;j<5;j++) parts.push({x:s.x,y:s.y,vx:(Math.random()-.5)*140,vy:(Math.random()-.5)*140,t:0,life:.4,col:'#bde8f4',s:3});
+  }
+  SRC=null;
+  shake=Math.min(12,shake+2.5);
+  sfx(150,.14,'sawtooth',.06,.4); noise(.10,.07);
 }
 // 磁石：拾うと場に散らばった経験値と銀貨を一気に引き寄せる
 function spawnVac(){
@@ -6994,6 +7167,7 @@ function render(){
   for(i=0;i<shots.length;i++) drawShot(shots[i]);
   for(i=0;i<lasers.length;i++) drawLaser(lasers[i]);
   drawInferno();
+  drawRailgun();
   for(i=0;i<chaks.length;i++) drawChak(chaks[i]);
   for(i=0;i<scys.length;i++) drawScy(scys[i]);
   for(i=0;i<bombs.length;i++) drawBomb(bombs[i]);
@@ -8570,6 +8744,25 @@ function drawShot(s){
     ctx.globalAlpha=.35; ctx.strokeStyle=s.col2; ctx.lineWidth=11*z;
     ctx.beginPath(); ctx.arc(-16*z,0,24*z,-1.0,1.0); ctx.stroke();
     ctx.globalAlpha=1;
+  }else if(s.kind==='sharkm'){
+    ctx.rotate(s.ang);                       // 鼻先を進行方向（+x）へ
+    var kz=s.sz||1, wob=Math.sin(s.wig||0);
+    ctx.fillStyle=s.col;                     // 胴体（涙滴型）
+    ctx.beginPath(); ctx.moveTo(13*kz,0);
+    ctx.quadraticCurveTo(4*kz,-6*kz,-8*kz,-3*kz);
+    ctx.quadraticCurveTo(-11*kz,0,-8*kz,3*kz);
+    ctx.quadraticCurveTo(4*kz,6*kz,13*kz,0); ctx.closePath(); ctx.fill();
+    ctx.fillStyle=s.col2;                    // 背側（濃色）
+    ctx.beginPath(); ctx.moveTo(13*kz,0);
+    ctx.quadraticCurveTo(4*kz,-6*kz,-8*kz,-3*kz);
+    ctx.quadraticCurveTo(2*kz,-2*kz,13*kz,0); ctx.closePath(); ctx.fill();
+    ctx.beginPath(); ctx.moveTo(-1*kz,-4*kz); ctx.lineTo(-5*kz,-11*kz); ctx.lineTo(-6*kz,-4*kz); ctx.closePath(); ctx.fill();  // 背びれ
+    ctx.save(); ctx.translate(-8*kz,wob*2*kz);   // 尾びれ（左右に揺れる）
+    ctx.fillStyle=s.col;
+    ctx.beginPath(); ctx.moveTo(0,0); ctx.lineTo(-8*kz,-7*kz); ctx.lineTo(-5*kz,0); ctx.lineTo(-8*kz,7*kz); ctx.closePath(); ctx.fill();
+    ctx.restore();
+    ctx.fillStyle='#0b1a24'; ctx.beginPath(); ctx.arc(7*kz,-1.5*kz,1.4*kz,0,6.3); ctx.fill();   // 目
+    ctx.globalAlpha=.5; ctx.fillStyle='#bfeaf6'; ctx.beginPath(); ctx.arc(-12*kz,wob*2*kz,2*kz,0,6.3); ctx.fill(); ctx.globalAlpha=1;  // 泡
   }else if(s.kind==='icejav'){
     ctx.rotate(s.ang);
     // 片方（進行方向）が長いひし形の氷槍
@@ -10372,6 +10565,15 @@ Array.prototype.forEach.call(document.querySelectorAll('#setview button'),functi
 // 更新履歴：1つのお知らせ内で「バージョン見出し」ごとに変更点を並べる（新しい順）。
 // マージのたびに先頭へ新バージョンを追加し、VERSION も更新する。
 var UPDATES=[
+  {v:'α1.0.264', items:[
+    '新武器「シャークミサイル」を追加しました。リヴァイアサン（ステージ4クリア）で解放される自動追尾ミサイルで、ゆるやかに旋回して最寄りの敵へ食らいつき、命中すると炸裂して周囲を巻き込みます。強化軸は攻撃力・炸裂範囲・発射数・間隔・射程で、熟練度メジャーの「旋回強化」で追尾が鋭くなります。覚醒「血の匂い」で、敵を仕留めた炸裂点から子鮫ミサイルが飛び出して次の敵を襲います。',
+  ]},
+  {v:'α1.0.263', items:[
+    '新武器「竜骨砲」を追加しました。スケルトンドラゴン（ステージ3クリア）で解放される闇属性の砲で、チャージ→発射→冷却をくり返します。発射中は射線上の敵を貫く極太ビームで、ビームは徐々に太くなり終わり際に細く収束します。強化軸は攻撃力・砲幅・チャージ速度・発射持続・冷却で、熟練度メジャーの「熱制御」で持続を延ばしつつ冷却を速められます。覚醒「竜骨崩し」でビーム周囲に距離減衰の余波が広がります。',
+  ]},
+  {v:'α1.0.262', items:[
+    'トルネードとイバラの女王を「ボス撃破で解放」に変更しました。フェンリル（ステージ1クリア）でトルネード、エルダートレント（ステージ2クリア）で茨の女王が解放されます。',
+  ]},
   {v:'α1.0.261', items:[
     'カマイタチを「ノックバック武器」に調整しました。威力を下げ、発射速度を上げ、敵を強く吹き飛ばす牽制型になりました（風属性の拡散起点はそのまま）。',
   ]},
