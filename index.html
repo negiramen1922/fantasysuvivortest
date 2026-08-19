@@ -3023,7 +3023,7 @@ function figInfo(id){
   if(BOSS[id]){ var B=BOSS[id], tt=ETYPE[B.key]||{}; return {nm:B.nm,shape:tt.shape,col:tt.col,dark:tt.dark,desc:BDEX[id]||'',boss:true}; }
   var t=ETYPE[id]||{}; return {nm:t.nm,shape:t.shape,col:t.col,dark:t.dark,desc:DEX[id]||'',boss:false};
 }
-var VERSION='α1.0.268'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
+var VERSION='α1.0.269'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
 function applySave(o){
   for(var i=0;i<UPG.length;i++) META[UPG[i].id]=0;
   try{
@@ -3871,6 +3871,26 @@ function railBeamBlocks(ux,uy,nx,ny,len,w){
     ctx.fillRect(Math.round(cx-hw),Math.round(cy-hw),Math.max(1,Math.round(hw*2)),Math.max(1,Math.round(hw*2)));
   }
 }
+// ビーム本体：タイル(FXBEAM)を砲口mx,myから射線方向へ連結して伸ばす。先端で細く収束
+function railBeamSprite(ux,uy,mx,my,len,beamH){
+  ctx.save(); ctx.translate(mx,my); ctx.rotate(Math.atan2(uy,ux)); ctx.imageSmoothingEnabled=false;
+  var bf=Math.floor(time*16)%FXBEAM_FR;                          // フレーム送り＝節が流れる
+  var tileW=Math.max(6,FXBEAM_FW*(beamH/FXBEAM_FH));
+  for(var x=0;x<len;x+=tileW){
+    var t=x/len, taper=(t>0.82)?Math.max(0.12,1-(t-0.82)/0.18):1;  // 先端を細く
+    var h=beamH*taper, tw=Math.min(tileW,len-x), sw=FXBEAM_FW*(tw/tileW);
+    ctx.drawImage(FXBEAM, bf*FXBEAM_FW,0, sw,FXBEAM_FH, x,-h/2, tw,h);
+  }
+  ctx.imageSmoothingEnabled=true; ctx.restore();
+}
+// ビームの光：爆発のような差分フレア(FXBEAMGLOW)を1枚描く
+function railGlow(cx,cy,size,phase){
+  if(!FXBEAMGLOW_RDY||size<=0) return;
+  var gf=Math.floor(phase)%FXBEAMGLOW_FR; if(gf<0)gf+=FXBEAMGLOW_FR;
+  ctx.imageSmoothingEnabled=false;
+  ctx.drawImage(FXBEAMGLOW, gf*FXBEAMGLOW_FW,0,FXBEAMGLOW_FW,FXBEAMGLOW_FH, cx-size/2,cy-size/2,size,size);
+  ctx.imageSmoothingEnabled=true;
+}
 function drawRailgun(){
   if(!P.w.railgun) return;
   var ux=RAIL.ax, uy=RAIL.ay, nx=-uy, ny=ux;
@@ -3889,16 +3909,17 @@ function drawRailgun(){
       ctx.globalAlpha=0.5*k; ctx.fillStyle='#efe7d0'; ctx.fillRect(Math.round(bx)-1,Math.round(by)-1,3,3); }
   } else if(RAIL.ph==='fire'){
     var len=RAIL.fireLen, g=RAIL.grow, w=(6+18*g)*AREA('railgun');
-    if(AW('railgun')){ ctx.globalAlpha=0.16*g; ctx.fillStyle='#8a4fd0';            // 余波の帯
-      railBeamBlocks(ux,uy,nx,ny,len,w+34*AREA('railgun')); }
-    ctx.globalAlpha=0.55; ctx.fillStyle='#c77dff'; railBeamBlocks(ux,uy,nx,ny,len,w);
-    ctx.globalAlpha=0.85; ctx.fillStyle='#e8c8ff'; railBeamBlocks(ux,uy,nx,ny,len,w*0.55);
-    ctx.globalAlpha=1;    ctx.fillStyle='#ffffff'; railBeamBlocks(ux,uy,nx,ny,len,Math.max(1.5,w*0.28));
-    var mx=P.x+ux*16, my=P.y+uy*16, fr=Math.max(3,w*0.8);                           // 砲口フラッシュ
-    ctx.globalAlpha=0.9; ctx.fillStyle='#ffffff'; ctx.beginPath(); ctx.arc(mx,my,fr,0,6.3); ctx.fill();
-    for(var j=0;j<4;j++){ var ja=Math.random()*6.283, jr=Math.random()*w*1.3, bs=2+Math.round(Math.random()*2);
-      ctx.globalAlpha=0.7; ctx.fillStyle=(j%2?'#efe7d0':'#d8c8ff');
-      ctx.fillRect(Math.round(mx+Math.cos(ja)*jr)-bs,Math.round(my+Math.sin(ja)*jr)-bs,bs*2,bs*2); }   // 飛び散る骨片
+    var mx=P.x+ux*14, my=P.y+uy*14, beamLen=Math.max(1,len-14), beamH=Math.max(4,w*2.2);
+    if(FXBEAM_RDY){
+      if(AW('railgun')){ ctx.globalAlpha=0.22*g;                                   // 覚醒：余波（外側の薄い太ビーム）
+        railBeamSprite(ux,uy,mx,my,beamLen,beamH+40*AREA('railgun')); ctx.globalAlpha=1; }
+      railBeamSprite(ux,uy,mx,my,beamLen,beamH);                                    // 本体タイル
+    }else{                                                                          // フォールバック（旧ブロック描画）
+      ctx.globalAlpha=0.55; ctx.fillStyle='#c77dff'; railBeamBlocks(ux,uy,nx,ny,len,w);
+      ctx.globalAlpha=1;    ctx.fillStyle='#ffffff'; railBeamBlocks(ux,uy,nx,ny,len,Math.max(1.5,w*0.28));
+    }
+    railGlow(mx,my,beamH*2.4,time*20);                                              // 砲口の光（爆発差分）
+    var ex=P.x+ux*len, ey=P.y+uy*len; railGlow(ex,ey,beamH*1.4*g+6,time*20+2);      // 着弾先端の光
   } else {
     var coolDur=1.2*railCoolFactor(), k=Math.min(1,RAIL.t/coolDur), mx=P.x+ux*16, my=P.y+uy*16;
     for(var s=0;s<4;s++){ var sx=mx+(Math.random()-.5)*10, sy=my-k*14+(Math.random()-.5)*10;             // 冷却の蒸気
@@ -4863,28 +4884,42 @@ function moveBriars(dt){
     if(s.life<=0) briars.splice(i,1);
   }
 }
+// 波打つ曲線上の点（d=起点からの距離）
+function briarPt(s,ux,uy,px,py,d){ var wob=Math.sin(d*0.06+s.wob)*s.wamp; return [s.x0+ux*d+px*wob, s.y0+uy*d+py*wob]; }
 function drawBriars(){
   for(var i=0;i<briars.length;i++){
     var s=briars[i];
     var ux=Math.cos(s.ang), uy=Math.sin(s.ang), px=-uy, py=ux;
-    var fade=Math.min(1,s.life/0.5), steps=Math.max(2,Math.floor(s.len/10));
-    ctx.save(); ctx.globalAlpha=fade; ctx.lineCap='round'; ctx.lineJoin='round';
-    // ツタ本体（濃い緑の蔓）
-    ctx.strokeStyle='#3f7a2c'; ctx.lineWidth=4;
-    ctx.beginPath();
-    for(var t=0;t<=steps;t++){ var d=s.len*t/steps, wob=Math.sin(d*0.06+s.wob)*s.wamp;
-      var x=s.x0+ux*d+px*wob, y=s.y0+uy*d+py*wob; if(t===0)ctx.moveTo(x,y); else ctx.lineTo(x,y); }
-    ctx.stroke();
-    // トゲ（左右交互）
-    ctx.strokeStyle='#7ac74f'; ctx.lineWidth=2;
-    for(var t2=1;t2<steps;t2++){ var d2=s.len*t2/steps, wob2=Math.sin(d2*0.06+s.wob)*s.wamp;
-      var x2=s.x0+ux*d2+px*wob2, y2=s.y0+uy*d2+py*wob2, side=(t2%2?1:-1);
-      ctx.beginPath(); ctx.moveTo(x2,y2); ctx.lineTo(x2+px*side*6-ux*3, y2+py*side*6-uy*3); ctx.stroke(); }
-    // 先端の花
-    var wt=Math.sin(s.len*0.06+s.wob)*s.wamp, tx=s.x0+ux*s.len+px*wt, ty=s.y0+uy*s.len+py*wt;
-    ctx.fillStyle='#c85a8a'; ctx.beginPath(); ctx.arc(tx,ty,3.6,0,6.3); ctx.fill();
-    ctx.fillStyle='#ffd0e0'; ctx.beginPath(); ctx.arc(tx,ty,1.6,0,6.3); ctx.fill();
-    ctx.globalAlpha=1; ctx.restore();
+    var fade=Math.min(1,s.life/0.5);
+    if(FXBRIAR_RDY){
+      // 蔓の太さ＝トゲ半径に合わせる。セグメントを曲線に沿って回転連結
+      var segH=Math.max(12,s.thornR*1.7), segLen=FXBRIAR_FW*(segH/FXBRIAR_FH);
+      ctx.save(); ctx.globalAlpha=fade; ctx.imageSmoothingEnabled=false;
+      var idx=0;
+      for(var d=0; d<s.len; d+=segLen, idx++){
+        var p1=briarPt(s,ux,uy,px,py,d), p2=briarPt(s,ux,uy,px,py,Math.min(s.len,d+segLen));
+        var a=Math.atan2(p2[1]-p1[1],p2[0]-p1[0]), L=Math.hypot(p2[0]-p1[0],p2[1]-p1[1]);
+        var fr=idx%FXBRIAR_FR;
+        ctx.save(); ctx.translate(p1[0],p1[1]); ctx.rotate(a);
+        ctx.drawImage(FXBRIAR, fr*FXBRIAR_FW,0,FXBRIAR_FW,FXBRIAR_FH, 0,-segH/2, L,segH);
+        ctx.restore();
+      }
+      // 先端の花
+      if(FXBRIARTIP_RDY){
+        var tp=briarPt(s,ux,uy,px,py,s.len), tf=Math.floor(time*4)%FXBRIARTIP_FR, tsz=Math.max(14,s.thornR*2.0);
+        ctx.drawImage(FXBRIARTIP, tf*FXBRIARTIP_FW,0,FXBRIARTIP_FW,FXBRIARTIP_FH, tp[0]-tsz/2,tp[1]-tsz/2, tsz,tsz);
+      }
+      ctx.imageSmoothingEnabled=true; ctx.globalAlpha=1; ctx.restore();
+    }else{
+      var steps=Math.max(2,Math.floor(s.len/10));                       // フォールバック（旧ベクター描画）
+      ctx.save(); ctx.globalAlpha=fade; ctx.lineCap='round'; ctx.lineJoin='round';
+      ctx.strokeStyle='#3f7a2c'; ctx.lineWidth=4; ctx.beginPath();
+      for(var t=0;t<=steps;t++){ var pp=briarPt(s,ux,uy,px,py,s.len*t/steps); if(t===0)ctx.moveTo(pp[0],pp[1]); else ctx.lineTo(pp[0],pp[1]); }
+      ctx.stroke();
+      var wt=Math.sin(s.len*0.06+s.wob)*s.wamp, tx=s.x0+ux*s.len+px*wt, ty=s.y0+uy*s.len+py*wt;
+      ctx.fillStyle='#c85a8a'; ctx.beginPath(); ctx.arc(tx,ty,3.6,0,6.3); ctx.fill();
+      ctx.globalAlpha=1; ctx.restore();
+    }
   }
 }
 // 羊飼い：画面端の一辺から羊の群れが出て横切り、触れた敵を踏みつけて通り抜ける
@@ -7445,6 +7480,19 @@ var FXMETEOR=new Image(), FXMETEOR_RDY=0; FXMETEOR.onload=function(){ FXMETEOR_R
 var FXMETEOR_FW=78, FXMETEOR_FH=132, FXMETEOR_FR=2;
 // チェーンソーのバズソー刃ドット絵スプライト：回転させて丸ノコを表現（1フレーム）
 var FXSAW=new Image(), FXSAW_RDY=0; FXSAW.onload=function(){ FXSAW_RDY=1; }; FXSAW.src='assets/fx_saw.png';
+// シャークミサイルのドット絵スプライト：鼻先＝進行方向(+x)。尾びれの4フレームで泳がせる
+var FXSHARKM=new Image(), FXSHARKM_RDY=0; FXSHARKM.onload=function(){ FXSHARKM_RDY=1; }; FXSHARKM.src='assets/fx_sharkm.png';
+var FXSHARKM_FW=48, FXSHARKM_FH=32, FXSHARKM_FR=4;
+// 竜骨砲ビーム：本体タイル（横に連結）＋光の差分（爆発のように膨らむフレア）
+var FXBEAM=new Image(), FXBEAM_RDY=0; FXBEAM.onload=function(){ FXBEAM_RDY=1; }; FXBEAM.src='assets/fx_beam.png';
+var FXBEAM_FW=32, FXBEAM_FH=40, FXBEAM_FR=3;
+var FXBEAMGLOW=new Image(), FXBEAMGLOW_RDY=0; FXBEAMGLOW.onload=function(){ FXBEAMGLOW_RDY=1; }; FXBEAMGLOW.src='assets/fx_beamglow.png';
+var FXBEAMGLOW_FW=64, FXBEAMGLOW_FH=64, FXBEAMGLOW_FR=6;
+// 茨：蔓セグメントタイル（曲線に沿って回転連結）＋先端の花
+var FXBRIAR=new Image(), FXBRIAR_RDY=0; FXBRIAR.onload=function(){ FXBRIAR_RDY=1; }; FXBRIAR.src='assets/fx_briar.png';
+var FXBRIAR_FW=24, FXBRIAR_FH=20, FXBRIAR_FR=2;
+var FXBRIARTIP=new Image(), FXBRIARTIP_RDY=0; FXBRIARTIP.onload=function(){ FXBRIARTIP_RDY=1; }; FXBRIARTIP.src='assets/fx_briartip.png';
+var FXBRIARTIP_FW=24, FXBRIARTIP_FH=24, FXBRIARTIP_FR=2;
 // 属性・パッシブ・床装備アイコン（16px格子・8列×3行のスプライトシート）
 var ICONS_IMG=new Image(), ICONS_RDY=0; ICONS_IMG.onload=function(){ ICONS_RDY=1; }; ICONS_IMG.src='assets/icons.png';
 var ICONMAP={"fire":[0,0],"ice":[1,0],"thunder":[2,0],"holy":[3,0],"dark":[4,0],"grass":[5,0],"wind":[6,0],"power":[7,0],"swift":[0,1],"magnet":[1,1],"haste":[2,1],"vital":[3,1],"crit":[4,1],"critd":[5,1],"affinity":[6,1],"mastery":[7,1],"bulwark":[0,2],"heal":[1,2],"exp":[2,2],"reach":[3,2],"greed":[4,2],"fortune":[5,2],"debuff":[6,2]};
@@ -8806,23 +8854,16 @@ function drawShot(s){
     ctx.globalAlpha=1;
   }else if(s.kind==='sharkm'){
     ctx.rotate(s.ang);                       // 鼻先を進行方向（+x）へ
-    var kz=(s.sz||1)*1.9, wob=Math.sin(s.wig||0);   // 見た目を約2倍に
-    ctx.fillStyle=s.col;                     // 胴体（涙滴型）
-    ctx.beginPath(); ctx.moveTo(13*kz,0);
-    ctx.quadraticCurveTo(4*kz,-6*kz,-8*kz,-3*kz);
-    ctx.quadraticCurveTo(-11*kz,0,-8*kz,3*kz);
-    ctx.quadraticCurveTo(4*kz,6*kz,13*kz,0); ctx.closePath(); ctx.fill();
-    ctx.fillStyle=s.col2;                    // 背側（濃色）
-    ctx.beginPath(); ctx.moveTo(13*kz,0);
-    ctx.quadraticCurveTo(4*kz,-6*kz,-8*kz,-3*kz);
-    ctx.quadraticCurveTo(2*kz,-2*kz,13*kz,0); ctx.closePath(); ctx.fill();
-    ctx.beginPath(); ctx.moveTo(-1*kz,-4*kz); ctx.lineTo(-5*kz,-11*kz); ctx.lineTo(-6*kz,-4*kz); ctx.closePath(); ctx.fill();  // 背びれ
-    ctx.save(); ctx.translate(-8*kz,wob*2*kz);   // 尾びれ（左右に揺れる）
-    ctx.fillStyle=s.col;
-    ctx.beginPath(); ctx.moveTo(0,0); ctx.lineTo(-8*kz,-7*kz); ctx.lineTo(-5*kz,0); ctx.lineTo(-8*kz,7*kz); ctx.closePath(); ctx.fill();
-    ctx.restore();
-    ctx.fillStyle='#0b1a24'; ctx.beginPath(); ctx.arc(7*kz,-1.5*kz,1.4*kz,0,6.3); ctx.fill();   // 目
-    ctx.globalAlpha=.5; ctx.fillStyle='#bfeaf6'; ctx.beginPath(); ctx.arc(-12*kz,wob*2*kz,2*kz,0,6.3); ctx.fill(); ctx.globalAlpha=1;  // 泡
+    if(FXSHARKM_RDY){
+      var kf=Math.floor((s.wig||0)/1.2)%FXSHARKM_FR; if(kf<0)kf+=FXSHARKM_FR;   // wigで尾びれをパラパラ
+      var kw=(s.r||14)*3.2, kh=kw*FXSHARKM_FH/FXSHARKM_FW;                       // 当たり判定rに合わせて拡大
+      ctx.imageSmoothingEnabled=false;
+      ctx.drawImage(FXSHARKM, kf*FXSHARKM_FW,0,FXSHARKM_FW,FXSHARKM_FH, -kw/2,-kh/2, kw,kh);
+      ctx.imageSmoothingEnabled=true;
+    }else{
+      var kz=(s.sz||1)*1.9; ctx.fillStyle=s.col;   // フォールバック（画像未ロード時）
+      ctx.beginPath(); ctx.moveTo(13*kz,0); ctx.lineTo(-9*kz,-6*kz); ctx.lineTo(-9*kz,6*kz); ctx.closePath(); ctx.fill();
+    }
   }else if(s.kind==='icejav'){
     ctx.rotate(s.ang);
     // 片方（進行方向）が長いひし形の氷槍
@@ -10625,6 +10666,9 @@ Array.prototype.forEach.call(document.querySelectorAll('#setview button'),functi
 // 更新履歴：1つのお知らせ内で「バージョン見出し」ごとに変更点を並べる（新しい順）。
 // マージのたびに先頭へ新バージョンを追加し、VERSION も更新する。
 var UPDATES=[
+  {v:'α1.0.269', items:[
+    'シャークミサイル・竜骨砲のビーム・茨の女王をドット絵にしました。サメミサイルは尾びれが泳ぐ金属質のドット絵に、竜骨砲のビームは「本体＝タイルを連結して伸ばす／光＝爆発のように膨らむ放射フレア」の構成に、茨は蔓のセグメントタイルを曲線に沿って連結し先端に茨のバラを咲かせる形にしました。',
+  ]},
   {v:'α1.0.268', items:[
     'シャークミサイルを調整しました。ミサイルの見た目を約2倍に大きくし、発射のたびに「ブシュー」という噴射音を追加。さらにリロード式に変更しました（基本3発撃つとリロード、強化軸「弾倉」でリロードまでの発射回数が+1ずつ増加）。リロード中はプレイヤーの周りに青いゲージが表示されます。覚醒「群狼」は装填数+2＆リロード短縮に変更しました。',
   ]},
