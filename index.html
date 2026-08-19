@@ -5200,6 +5200,28 @@ function applyBleed(e,perMul){
   e.bleedT=4;
   e.bleedPer=Math.max(e.bleedPer||0, BLEED_PER*(perMul||1));
 }
+// ===== 物理反応「崩し→破砕」（DEV限定）=====
+// 物理武器のヒットで「崩し」スタックが付き、崩し中は被ダメが増える（デバフ）。
+// 別の物理武器で崩し中の敵を叩くと「破砕」＝スタック数に応じた大ダメージで起爆（＝2武器以上で成立）。
+var BRK_MAX=5, BRK_VULN=0.05, BRK_DUR=3.0, BRK_CD=0.45;   // 最大5スタック／1スタック被ダメ+5%（最大+25%）／寿命3秒／起爆CD
+function physBreak(e){
+  if(e.dead||e.hp<=0) return;
+  if(e.brk>0 && e.brkW && e.brkW!==SRC && (e.brkCd||0)<=0){   // 別の物理武器で起爆＝破砕
+    var burst=(5+P.lv*1.2)*e.brk;                            // 激変系ライク：Lv基準×スタック（起爆武器の強弱に左右されない）
+    var keepSRC=SRC, keepRK=RK; SRC=null; RK='破砕';         // 破砕は会心を継がず、反応として集計
+    e.hp-=burst; dmgSec+=burst;
+    WDMG._react=(WDMG._react||0)+burst; REACTDMG['破砕']=(REACTDMG['破砕']||0)+burst;
+    SRC=keepSRC; RK=keepRK;
+    label(e,'破砕','#ffd24d');
+    if(dmgs.length<=110) dmgs.push({x:e.x,y:e.y-e.r-4,v:-52,t:0,life:.7,txt:Math.round(burst),crit:true,col:'#ffd24d'});
+    fx.push({k:'ring',x:e.x,y:e.y,r:0,to:e.r+22,t:0,life:.3,col:'#ffe08a'});
+    sfx(180,.1,'square',.05,.8);
+    e.brk=0; e.brkW=null; e.brkCd=BRK_CD;
+    if(e.hp<=0) kill(e);
+  }else{                                                      // 同じ武器/初撃＝崩しスタックを積む
+    e.brk=Math.min(BRK_MAX,(e.brk||0)+1); e.brkW=SRC; e.brkT=BRK_DUR;
+  }
+}
 // 毒（草属性）：継続ダメージ（DoT）。時間経過で周囲の敵へ拡散する。
 function applyPois(e,dps,dur){
   if(!(e.poisT>0)){ e.poisStk=0; e.poisD=0; }   // 毒が切れていたらスタックをリセットしてから積む
@@ -6260,6 +6282,8 @@ function moveEnemies(dt){
     if(e.elT>0){ e.elT-=dt; if(e.elT<=0) e.el=0; }
     if(e.rcd>0) e.rcd-=dt;
     if(e.vuln>0) e.vuln-=dt;
+    if(e.brkT>0){ e.brkT-=dt; if(e.brkT<=0){ e.brk=0; e.brkW=null; } }   // 崩し：時間で解除
+    if(e.brkCd>0) e.brkCd-=dt;
 
     // --- プレイヤーへの接触 ---
     if(e.dmg>0&&e.st!=='burrow'&&d<e.r+P.r&&P.hurt<=0&&P.inv<=0&&!P.god){
@@ -6359,6 +6383,7 @@ function hurt(e,dmg,nx,ny,el){
   if(e.vuln>0) d*=1.2;                     // 深淵の手：被ダメージ上昇
   var bfrac=(e.bleedStk>0)?(e.bleedPer||0)*e.bleedStk:0;   // 出血：スタックぶん被ダメージ増幅
   if(bfrac>0) d*=1+bfrac;
+  if(DEV&&e.brk>0) d*=1+e.brk*BRK_VULN;     // 崩し：崩し中は被ダメージ増幅（全ダメージに乗る＝物理で崩して魔法で叩く等も活きる）
   if(e.flat) d=Math.max(d*0.25,d-e.flat);   // 甲羅：軽い攻撃ほど通らない
   if(e.buffT>0) d*=0.8;                      // リッチのオーラ：被ダメージ -20%
   if(e.shield>0){                            // 盾の戦士：割れるまで本体HPに通さない（この一撃も本体には行かない）
@@ -6384,6 +6409,7 @@ function hurt(e,dmg,nx,ny,el){
   if(bb>=1&&dmgs.length<=110)   // 出血ぶんを赤字で別表示
     dmgs.push({x:e.x+12,y:e.y-e.r-20,v:-46,t:0,life:.6,txt:'+'+Math.round(bb),crit:false,col:'#ff4d5e',rx:1});
   if(el) applyElem(e,el,d);
+  if(DEV&&SRC&&WKIND[SRC]==='phys'&&!e.dead) physBreak(e);   // 物理反応：崩しを積む／別武器なら破砕
   if(e.hp<=0) kill(e);
 }
 function kill(e){
