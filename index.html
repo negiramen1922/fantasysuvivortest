@@ -3229,15 +3229,20 @@ var cool={}, busy={};   // busy=発射中ロック（撃ち切るまで次のク
 /* ============ 連携コンボ ============ */
 // 直近 COMBOWIN 秒以内に「別々の武器」が敵に当てるほどコンボが伸びる。
 // ダメージ倍率は“当てている武器の種類数”で決まる＝1武器では絶対に伸びない（多武器ほど強い）。
-var COMBOWIN=1.6, COMBO_STEP=0.10;   // 種類が1つ増えるごとに +10%
+var COMBOWIN=1.0, COMBO_STEP=0.10;   // 継続の猶予1.0秒。種類が1つ増えるごとに +10%
 var comboN=0, comboT=0, comboWpn={}, comboMulV=1, comboFlash=0;
-function comboHit(w){
-  if(!WEAPONS[w]) return;              // 実武器のヒットのみ（羊などは除外）
-  comboWpn[w]=COMBOWIN;                // この武器を新鮮に
-  comboN++; comboT=COMBOWIN;
-  var before=comboMulV; recalcComboMul();
-  if(comboMulV>before+0.0001) comboFlash=0.5;   // 種類が増えた瞬間だけ演出
+// コンボの「継続」は敵を倒したときだけ（攻撃を当てるだけでは維持できない＝短い猶予内に倒し続ける必要）。
+// 倍率は「コンボ中に当てている武器の種類数」で決まる＝多武器ほど強い。
+function comboTouch(w){                            // ヒットした武器を倍率へ反映（コンボ継続中のみ）
+  if(!w||!WEAPONS[w]) return;
+  var fresh=!comboWpn[w]; comboWpn[w]=COMBOWIN;
+  if(fresh){ recalcComboMul(); comboFlash=0.5; }   // 種類が増えた瞬間だけ演出
 }
+function comboKill(w){                             // 撃破でコンボ継続・加算
+  comboN++; comboT=COMBOWIN;
+  comboTouch(w);
+}
+function comboBreak(){ comboN=0; comboT=0; comboWpn={}; comboMulV=1; }   // リロード等でコンボ途切れ
 function recalcComboMul(){
   var n=0; for(var k in comboWpn){ if(comboWpn[k]>0) n++; }
   comboMulV=1+COMBO_STEP*Math.max(0,n-1);
@@ -3484,6 +3489,7 @@ function sharkTick(dt){
   if(shark.mag<=0){                                      // 撃ち切り → リロード
     shark.rl=shark.rlmax=Math.max(0.6,1.5*RATE('sharkm')*(AW('sharkm')?0.6:1));   // 覚醒でリロード短縮
     sfx(90,.2,'sawtooth',.05,.4); noise(.12,.07);
+    if(DEV) comboBreak();   // リロードの弱点：コンボが途切れる
   }
 }
 // 発射音「ブシュー」：噴射のノイズ＋軽い下降音
@@ -3524,6 +3530,7 @@ function doGatling(dt){
     gat.rl=gat.rlmax=Math.max(2.0,4.5*r);
     gat.mag=GATMAG();
     sfx(90,.22,'sawtooth',.06,.4); noise(.12,.06);
+    if(DEV) comboBreak();   // リロードの弱点：コンボが途切れる
   }
 }
 function runWeapons(dt){
@@ -6346,7 +6353,7 @@ function hurt(e,dmg,nx,ny,el){
   var crit=Math.random()<CRITC();
   if(crit) crits++;
   var d=crit?dmg*CRITD():dmg;
-  if(DEV){ if(SRC) comboHit(SRC); d*=comboMul(); }   // 連携コンボ（DEV限定）：武器を記録し、種類数ぶんの与ダメージ倍率
+  if(DEV){ if(SRC&&comboT>0) comboTouch(SRC); d*=comboMul(); }   // 連携コンボ（DEV限定）：継続中の武器を倍率へ、倍率を与ダメージへ
   d*=dexDealMul(figKey(e));                // 図鑑ボーナス：その敵への与ダメージ+
   if(NIGHTMARE) d*=contractDmgMul(SRC,e);  // 契約：全体/武器タグ/敵タグ特効の倍率
   if(crit&&NIGHTMARE){ var _ch=contractStat('critheal'); if(_ch&&P.hp<P.max) P.hp=Math.min(P.max,P.hp+d*_ch); }   // 吸命：会心で回復
@@ -6384,6 +6391,7 @@ function hurt(e,dmg,nx,ny,el){
 function kill(e){
   if(e.dead) return;
   e.dead=1; kills++;
+  if(DEV) comboKill(SRC);   // 連携コンボ（DEV限定）：撃破で継続・加算。とどめの武器の種類数で倍率
   // 属性別キル数（解放条件用）：とどめの武器(SRC)が雷/氷属性なら加算
   if(SRC){
     if(ELW.thunder.indexOf(SRC)>=0) ACH.killTh=(ACH.killTh||0)+1;
