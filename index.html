@@ -2406,7 +2406,7 @@ var MAST={
     minor:[ {id:'sk_d',ic:'💪',nm:'攻撃力',tx:'+6%',d:'ミサイルの威力が#上がる',dv:'6%',ef:{dmg:.06}},
             {id:'sk_a',ic:'🌀',nm:'炸裂範囲',tx:'+6%',d:'炸裂の巻き込み範囲が#広がる',dv:'6%',ef:{area:.06}},
             {id:'sk_c',ic:'⌛',nm:'間隔',tx:'−5%',d:'発射の間隔が#短くなる',dv:'5%',ef:{cd:-.05}} ],
-    major:[ {id:'sk_b',ic:'⚡',nm:'連射',tx:'連射 +1',d:'続けて#多く撃つ',dv:'1発',ef:{burst:1}},
+    major:[ {id:'sk_m',ic:'🧰',nm:'弾倉',tx:'装填 +1',d:'リロードまでに撃てる回数が#増える',dv:'1発',ef:{ammo:1}},
             {id:'sk_t',ic:'🎯',nm:'追尾強化',tx:'追尾+',d:'旋回が鋭くなり敵に#食らいつきやすくなる',dv:'追尾性能',ef:{turn:0.4}},
             {id:'sk_D',ic:'💪',nm:'剛・攻撃力',tx:'+12%',d:'ミサイルの威力が#大きく上がる',dv:'12%',ef:{dmg:.12}} ]
   }
@@ -2461,7 +2461,7 @@ var WTAG={
   meteor:['遠距離','落下','爆発','範囲','岩','物理'],
   gale:['遠距離','斬撃','風','物理'], tornado:['自己','設置','範囲','風'],
   harp:['自己','範囲','音','物理'],
-  briar:['遠距離','設置','草','毒'], crimson:['遠距離','斬撃','闇','物理','吸血'], railgun:['遠距離','貫通','闇','魔法','チャージ'], sharkm:['遠距離','追尾','連射','物理'],
+  briar:['遠距離','設置','草','毒'], crimson:['遠距離','斬撃','闇','物理','吸血'], railgun:['遠距離','貫通','闇','魔法','チャージ'], sharkm:['遠距離','追尾','弾倉','物理'],
   bell:['自己','打撃','範囲','物理'],
   fire:['遠距離','射撃','爆発','範囲','炎'], flame:['自己','炎'], inferno:['中距離','ビーム','炎'],
   ice:['遠距離','射撃','氷'], blizzard:['自己','氷'],
@@ -2550,7 +2550,7 @@ var WAX={
   briar:   { dmg:4, area:4, rate:3, dur:3, count:2 },
   crimson: { dmg:4, area:3, rate:3, drain:3 },
   railgun: { dmg:4, area:3, rate:3, dur:3, cool:3 },
-  sharkm: { dmg:4, area:3, burst:4, rate:3, range:3 }
+  sharkm: { dmg:4, area:3, ammo:4, rate:3, range:3 }
 };
 // Lv10 到達で覚醒。数値ではなく挙動が変わる。
 var AWK={ chainsaw:'暴走鋸', musket:'貫通弾', blizzard:'絶対氷結', laser:'追尾光線', inferno:'業炎照射',
@@ -2579,7 +2579,7 @@ var AWT={ chainsaw:'前方だけでなく全方位を削るようになる', mus
   aura:'剣が消えるとき光の柱が立ち周囲を一掃', voidh:'消滅時に大爆発',
   dhand:'突いた敵の被ダメージが20%上がる',
   railgun:'ビームの周りに衝撃の余波が広がり、射線から離れるほど弱まる距離減衰ダメージを与える',
-  sharkm:'連射数が常に+1され、ミサイルの追尾がより鋭くなる',
+  sharkm:'装填数が+2され、リロードも速くなる。ミサイルの追尾もより鋭くなる',
   gatling:'銃身が2連になり、左右から同時に連射する（装弾数1.5倍）' };
 function AW(id){ return (P.aw&&P.aw[id])?1:0; }
 function addWLv(id,ax){
@@ -3023,7 +3023,7 @@ function figInfo(id){
   if(BOSS[id]){ var B=BOSS[id], tt=ETYPE[B.key]||{}; return {nm:B.nm,shape:tt.shape,col:tt.col,dark:tt.dark,desc:BDEX[id]||'',boss:true}; }
   var t=ETYPE[id]||{}; return {nm:t.nm,shape:t.shape,col:t.col,dark:t.dark,desc:DEX[id]||'',boss:false};
 }
-var VERSION='α1.0.267'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
+var VERSION='α1.0.268'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
 function applySave(o){
   for(var i=0;i<UPG.length;i++) META[UPG[i].id]=0;
   try{
@@ -3210,6 +3210,7 @@ function reset(){
   boss=null; bossN=0; lasers=[];
   time=0; kills=0; spawnT=0; eliteT=55; swarmT=3; swarmWarnT=0; umiT=8; umiWarnT=0; inkT=0; shake=0; hitStop=0; flash=0; chain=0; chainT=0;
   gat.t=0; gat.mag=-1; gat.rl=0;
+  shark.t=0; shark.mag=-1; shark.rl=0;
   whirlA=0; marks=[1140]; reacts=0; crits=0; rdep=0; rtok=8; pending=0; bossRelicQ=0; swingT=0; swingDir=1;
   dpsVal=0; dpmVal=0; dmgSec=0; dmgRing=[]; dmgRingI=0; dpsClock=1;
   dexQueue.length=0;
@@ -3439,6 +3440,27 @@ function ready(id,cd,dt){
 // ガトリングガン：弾倉を高速連射し、撃ち切ると長いリロード。ピーキーな超高DPS。
 var gat={t:0,mag:-1,rl:0,rlmax:1};
 function GATMAG(){ var m=40+AMMO('gatling')*8; return AW('gatling')?Math.round(m*1.5):m; }  // 弾数軸+8/pt、覚醒で1.5倍
+// シャークミサイル：リロード式。マガジンぶん撃ち切ったらリロード。弾倉軸＝装填数+1、覚醒＝装填数+2
+var shark={t:0,mag:-1,rl:0,rlmax:1};
+function SHARKMAG(){ return 3+AMMO('sharkm')+(AW('sharkm')?2:0); }
+function sharkTick(dt){
+  if(shark.mag<0) shark.mag=SHARKMAG();
+  if(shark.rl>0){ shark.rl-=dt; if(shark.rl<=0){ shark.mag=SHARKMAG(); shark.t=0; } return; }  // リロード中は撃てない
+  shark.t-=dt;
+  if(shark.t>0) return;
+  shark.t=Math.max(0.12,0.42*RATE('sharkm'));            // マガジン内の発射間隔
+  doSharkm();
+  shark.mag--;
+  if(shark.mag<=0){                                      // 撃ち切り → リロード
+    shark.rl=shark.rlmax=Math.max(0.6,1.5*RATE('sharkm')*(AW('sharkm')?0.6:1));   // 覚醒でリロード短縮
+    sfx(90,.2,'sawtooth',.05,.4); noise(.12,.07);
+  }
+}
+// 発射音「ブシュー」：噴射のノイズ＋軽い下降音
+function sharkFireSfx(){
+  noise(.2,.09);
+  sfx(600,.16,'sawtooth',.024,.28);
+}
 function doGatling(dt){
   if(gat.mag<0) gat.mag=GATMAG();
   if(gat.rl>0){ gat.rl-=dt; return; }                    // リロード中は撃てない
@@ -3521,9 +3543,7 @@ function runWeapons(dt){
   if(P.w.meteor  &&ready('meteor',  3.00*RATE('meteor'),dt))   doMeteor();
   if(P.w.gale    &&ready('gale',    0.80*RATE('gale'),dt))      doGale();
   if(P.w.crimson &&ready('crimson', 3.00*RATE('crimson'),dt))   doCrimson();
-  if(P.w.sharkm  &&ready('sharkm',  1.30*RATE('sharkm'),dt)){    doSharkm();
-    var skb=BST('sharkm')+(AW('sharkm')?1:0);                   // 連射：1発ずつ追撃（覚醒「群狼」で常に+1）
-    for(var _sk=1;_sk<=skb;_sk++) volley.push({w:'sharkm',t:_sk*0.12}); }
+  if(P.w.sharkm) sharkTick(dt);
   if(P.w.tornado &&ready('tornado', 3.20*RATE('tornado'),dt))   doTornado();
   if(P.w.bell    &&ready('bell',    3.00*RATE('bell'),dt))     doBell();
   if(P.w.harp    &&ready('harp',    3.00*RATE('harp'),dt))     doHarp();
@@ -4580,10 +4600,10 @@ function doSharkm(){
   var turn=3.4+2.4*TR('sharkm','turn')+(AW('sharkm')?1.0:0);  // 旋回速度(rad/s)：熟練度・覚醒で鋭く
   var e=nearest(P.x,P.y,900);
   var a=(e?Math.atan2(e.y-P.y,e.x-P.x):P.face)+(Math.random()-.5)*0.35;   // 少し散らして連射がばらける
-  shots.push({x:P.x,y:P.y,vx:Math.cos(a)*spd,vy:Math.sin(a)*spd,r:8*sz,sz:sz,spd:spd,
+  shots.push({x:P.x,y:P.y,vx:Math.cos(a)*spd,vy:Math.sin(a)*spd,r:14*sz,sz:sz,spd:spd,
     src:'sharkm',kind:'sharkm',ang:a,dmg:dmg,pierce:1,life:rng/spd+1.2,
     col:'#5fb0d8',col2:'#274b66',el:null,hit:[],home:1,turn:turn,boom:boomR,wig:Math.random()*6.283});
-  sfx(220,.07,'square',.038,.7);
+  sharkFireSfx();
   wgain('sharkm',1); SRC=null;
 }
 // トルネード：緑の渦。吸引（ブラックホールより弱め）＋消滅時に爆発して風を付与＝拡散
@@ -6520,7 +6540,7 @@ function sharkBoom(s){
   boom(s.x,s.y,s.boom,s.dmg*0.6,'#7fd0e8',0);
   SRC=null;
   shake=Math.min(9,shake+1.2);
-  if(!inBurst){ sfx(150,.09,'sawtooth',.045,.4); noise(.06,.05); }   // 連射中は先頭だけ鳴らして音の飽和を防ぐ
+  sfx(140,.08,'sawtooth',.035,.4);   // 着弾のごく短い炸裂音
 }
 // 磁石：拾うと場に散らばった経験値と銀貨を一気に引き寄せる
 function spawnVac(){
@@ -7188,6 +7208,18 @@ function render(){
     ctx.beginPath(); ctx.arc(0,0,P.r+11,-Math.PI/2,-Math.PI/2+6.283*grk); ctx.stroke();
     ctx.fillStyle='#ffd24d'; ctx.font='10px sans-serif'; ctx.textAlign='center';
     ctx.fillText('RELOAD',0,-P.r-18);
+    ctx.restore();
+  }
+  // シャークミサイル：リロード中はプレイヤー周囲に青い進捗リングを表示
+  if(P.w&&P.w.sharkm&&shark.rl>0){
+    var srk=1-shark.rl/(shark.rlmax||1);
+    ctx.save(); ctx.translate(P.x,P.y);
+    ctx.strokeStyle='rgba(95,176,216,.30)'; ctx.lineWidth=3;
+    ctx.beginPath(); ctx.arc(0,0,P.r+15,0,6.3); ctx.stroke();
+    ctx.strokeStyle='#5fd8e8'; ctx.lineWidth=3; ctx.lineCap='round';
+    ctx.beginPath(); ctx.arc(0,0,P.r+15,-Math.PI/2,-Math.PI/2+6.283*srk); ctx.stroke();
+    ctx.fillStyle='#5fd8e8'; ctx.font='10px sans-serif'; ctx.textAlign='center';
+    ctx.fillText('RELOAD',0,-P.r-22);
     ctx.restore();
   }
 
@@ -8774,7 +8806,7 @@ function drawShot(s){
     ctx.globalAlpha=1;
   }else if(s.kind==='sharkm'){
     ctx.rotate(s.ang);                       // 鼻先を進行方向（+x）へ
-    var kz=s.sz||1, wob=Math.sin(s.wig||0);
+    var kz=(s.sz||1)*1.9, wob=Math.sin(s.wig||0);   // 見た目を約2倍に
     ctx.fillStyle=s.col;                     // 胴体（涙滴型）
     ctx.beginPath(); ctx.moveTo(13*kz,0);
     ctx.quadraticCurveTo(4*kz,-6*kz,-8*kz,-3*kz);
@@ -10593,6 +10625,9 @@ Array.prototype.forEach.call(document.querySelectorAll('#setview button'),functi
 // 更新履歴：1つのお知らせ内で「バージョン見出し」ごとに変更点を並べる（新しい順）。
 // マージのたびに先頭へ新バージョンを追加し、VERSION も更新する。
 var UPDATES=[
+  {v:'α1.0.268', items:[
+    'シャークミサイルを調整しました。ミサイルの見た目を約2倍に大きくし、発射のたびに「ブシュー」という噴射音を追加。さらにリロード式に変更しました（基本3発撃つとリロード、強化軸「弾倉」でリロードまでの発射回数が+1ずつ増加）。リロード中はプレイヤーの周りに青いゲージが表示されます。覚醒「群狼」は装填数+2＆リロード短縮に変更しました。',
+  ]},
   {v:'α1.0.267', items:[
     '新武器「シャークミサイル」を実装しました。リヴァイアサン（ステージ4クリア）で解放される、敵を追尾する小型ミサイルです。1回の発射は必ず1発ですが、強化軸「連射」を伸ばすほど立て続けに発射する本数が増えます。飛翔中はゆるやかに旋回して敵に食らいつき、命中で小さく炸裂します。覚醒「群狼」で連射が常に+1され、追尾がより鋭くなります。',
   ]},
@@ -11860,7 +11895,7 @@ document.getElementById('profclose').onclick=function(){ pendingRank=null; docum
 document.getElementById('profauth').onclick=function(){ audio(); if(FBUSER) fbLogout(); else fbLogin(); };
 document.getElementById('profnicksave').onclick=function(){ audio(); saveProfNick(); };
 
-VOLLEY={bow:doBow,fire:doFire,ice:doIce,holy:doHoly,rock:doRock,musket:doMusket,dynamite:doDyna,sharkm:doSharkm};
+VOLLEY={bow:doBow,fire:doFire,ice:doIce,holy:doHoly,rock:doRock,musket:doMusket,dynamite:doDyna};
 resize();
 reset();
 backfillFirstClear();   // 既にクリア済みのステージへ初回クリア報酬を遡及配布（受け取りボックスへ）
