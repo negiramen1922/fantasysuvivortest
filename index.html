@@ -2669,7 +2669,7 @@ var WRNG={
   dhand:{base:300,cat:'中'}, dynamite:{base:360,cat:'中'}, quake:{base:400,cat:'中'}, musket:{base:320,cat:'中'}, inferno:{base:360,cat:'中'}, toxin:{base:400,cat:'中'}, anchor:{base:420,cat:'中'},
   chain:{base:460,cat:'長'}, thunder:{base:460,cat:'長'},
   fire:{base:520,cat:'長'}, ice:{base:520,cat:'長'}, bow:{base:560,cat:'長'},
-  holy:{base:520,cat:'長'}, rock:{base:540,cat:'長'}, gatling:{base:560,cat:'長'}, meteor:{base:560,cat:'長'}, gale:{base:440,cat:'中'}, briar:{base:400,cat:'中'}, crimson:{base:440,cat:'中'}, railgun:{base:660,cat:'長'}, sharkm:{base:600,cat:'長'} };
+  holy:{base:520,cat:'長'}, rock:{base:540,cat:'長'}, gatling:{base:560,cat:'長'}, meteor:{base:560,cat:'長'}, gale:{base:440,cat:'中'}, briar:{base:400,cat:'中'}, crimson:{base:440,cat:'中'}, railgun:{base:950,cat:'長'}, sharkm:{base:600,cat:'長'} };
 function RNGM(w){ return Math.pow(1.20,AX(w,'range'))*Math.pow(1.08,LB(w,'range'))*(1+TR(w,'range')); }   // 射程軸の倍率（限界突破ぶんは緩やか）＋熟練度
 function RNG(w){ return (WRNG[w]?WRNG[w].base:640)*RNGM(w); }
 function axLeft(w,k){ return (WAX[w][k]||0)-AX(w,k); }
@@ -3023,7 +3023,7 @@ function figInfo(id){
   if(BOSS[id]){ var B=BOSS[id], tt=ETYPE[B.key]||{}; return {nm:B.nm,shape:tt.shape,col:tt.col,dark:tt.dark,desc:BDEX[id]||'',boss:true}; }
   var t=ETYPE[id]||{}; return {nm:t.nm,shape:t.shape,col:t.col,dark:t.dark,desc:DEX[id]||'',boss:false};
 }
-var VERSION='α1.0.264'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
+var VERSION='α1.0.265'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
 function applySave(o){
   for(var i=0;i<UPG.length;i++) META[UPG[i].id]=0;
   try{
@@ -3215,7 +3215,7 @@ function reset(){
   dexQueue.length=0;
   score=0; silver=0; gold=0; magFx=0; chakSpin=0; wxRun={}; lastCd={}; coolMax={}; WDMG={}; REACTDMG={}; RK=null;
   KILLER=null; INF={tgt:0,ramp:0,tick:0,on:false,ex:0,ey:0,extra:[],heat:0,over:false};
-  RAIL={ph:'charge',t:0,ax:1,ay:0,tick:0,fireLen:0,grow:0};
+  RAIL={ph:'charge',t:0,ax:1,ay:0,tick:0,fireLen:0,grow:0,pph:''};
   contUsed=0; contFlag=0;
   if(ENDLESS){ ENDBLK=0; endBossDone={}; marks=[]; }   // 無限ラン：分経過バナー無し・ブロック管理を初期化
   slotSig='';
@@ -3666,7 +3666,7 @@ function drawLaser(L){
 // インフェルノビーム：最寄りの敵へ照射し続け、同じ敵に当て続けるほど火力が上がる（ramp）。数軸で追加ビーム。
 // オーバーヒート式：撃つほど熱がたまり、満タンで強制冷却（ビーム停止）。持続軸で熱容量アップ＋冷却速度アップ。
 var INF={tgt:0, ramp:0, tick:0, on:false, ex:0, ey:0, extra:[], heat:0, over:false};
-var RAIL={ph:'charge', t:0, ax:1, ay:0, tick:0, fireLen:0, grow:0};
+var RAIL={ph:'charge', t:0, ax:1, ay:0, tick:0, fireLen:0, grow:0, pph:''};
 function infernoTick(dt){
   var rng=RNG('inferno'), extra=Math.round(CNT('inferno'));       // 数軸：追加ビーム本数
   var keep=TF('inferno','rampkeep')||AW('inferno');
@@ -3755,18 +3755,60 @@ function drawInferno(){
 // 竜骨砲：チャージ→発射→冷却をくり返す。発射中は射線上の敵を貫通する極太ビーム。
 // 強化軸：dmg / area(砲幅) / rate(チャージ速度) / dur(発射持続) / cool(冷却短縮)。覚醒＝射線周りに距離減衰の余波。
 function railCoolFactor(){ return 1/(1+0.20*AX('railgun','cool')+TR('railgun','cool')); }
+// チャージ音「チュイイイン」：低→高へ立ち上がる電子的なうなり
+function railChargeSfx(dur){
+  dur=Math.max(0.35,Math.min(1.2,dur||1.0));
+  sfx(300,dur,'sawtooth',.05,3.8);       // 主音（300→約1140Hzへ上昇）
+  sfx(450,dur,'triangle',.03,3.5);       // 倍音を重ねてキラッと
+}
+// 射撃音「ゴゴゴゴ」：低い持続した轟音＋脈打つノイズ
+function railFireSfx(){
+  sfx(70,.55,'sawtooth',.10,.7);         // 深い持続グロウル（70→約49Hz）
+  sfx(46,.55,'square',.06,.85);          // サブの地鳴り
+  noise(.5,.11);                          // 轟音の質感
+  setTimeout(function(){ noise(.15,.09); },120);   // ゴ
+  setTimeout(function(){ noise(.15,.09); },260);   // ゴ
+  setTimeout(function(){ noise(.15,.08); },400);   // ゴ
+}
+// 敵が密集している方向を選ぶ：射程内の敵の角度分布から、最も敵が集まる向きを返す
+// （最寄り1体だけを狙って、すれ違いのはぐれ敵に照準を取られる問題を解消）
+function railAimDir(){
+  var rng=RNG('railgun'), r2=rng*rng, list=[];
+  for(var i=0;i<enemies.length;i++){ var e=enemies[i]; if(e.dead)continue;
+    var dx=e.x-P.x, dy=e.y-P.y, d2=dx*dx+dy*dy; if(d2>r2)continue;
+    list.push({a:Math.atan2(dy,dx), d:Math.sqrt(d2)});
+  }
+  var n=list.length; if(!n) return null;
+  var step=n>60?Math.ceil(n/60):1;                             // 候補方向は最大60個にサンプリング（重さ制限）
+  var best=null, bestScore=-1, cone=0.42;                      // ±約24°を「射線に乗っている」とみなす
+  for(var c=0;c<n;c+=step){
+    var ca=list[c].a, score=0;
+    for(var j=0;j<n;j++){
+      var da=list[j].a-ca; while(da>Math.PI)da-=6.283; while(da<-Math.PI)da+=6.283;
+      if(da<cone&&da>-cone){
+        var align=1-(da<0?-da:da)/cone;                        // 射線に近いほど重い
+        var near=0.5+0.5*(1-list[j].d/rng);                    // 近い群れをわずかに優先
+        score+=align*near;
+      }
+    }
+    if(score>bestScore){ bestScore=score; best=ca; }
+  }
+  return best==null?null:{ax:Math.cos(best),ay:Math.sin(best)};
+}
 function railgunTick(dt){
   var chargeDur=1.0*RATE('railgun');
   var fireDur=0.6*(1+0.35*DURV('railgun'));
   var coolDur=1.2*railCoolFactor();
+  if(RAIL.pph!=='charge'&&RAIL.ph==='charge') railChargeSfx(chargeDur);   // チャージ突入でチュイイイン
+  RAIL.pph=RAIL.ph;
   RAIL.t+=dt;
   if(RAIL.ph==='charge'){
-    var e=nearest(P.x,P.y,RNG('railgun'));                     // チャージ中は最寄りへ照準を合わせ続ける
-    if(e){ var a=Math.atan2(e.y-P.y,e.x-P.x); RAIL.ax=Math.cos(a); RAIL.ay=Math.sin(a); }
+    var dir=railAimDir();                                      // チャージ中は敵が密集する方向へ照準を合わせ続ける
+    if(dir){ RAIL.ax=dir.ax; RAIL.ay=dir.ay; }
     else if(P.face!=null){ RAIL.ax=Math.cos(P.face); RAIL.ay=Math.sin(P.face); }
     if(RAIL.t>=chargeDur){                                     // 照準確定→発射（方向ロック）
       RAIL.ph='fire'; RAIL.t=0; RAIL.tick=0; RAIL.grow=0; RAIL.fireLen=RNG('railgun');
-      shake=Math.min(12,shake+4); sfx(140,.30,'sawtooth',.09,.5); sfx(520,.10,'square',.05,1.2);
+      shake=Math.min(12,shake+4); railFireSfx();               // ゴゴゴゴ
     }
   } else if(RAIL.ph==='fire'){
     var k=RAIL.t/fireDur;                                      // だんだん太く→終わり際に一気に細く収束
@@ -10565,6 +10607,9 @@ Array.prototype.forEach.call(document.querySelectorAll('#setview button'),functi
 // 更新履歴：1つのお知らせ内で「バージョン見出し」ごとに変更点を並べる（新しい順）。
 // マージのたびに先頭へ新バージョンを追加し、VERSION も更新する。
 var UPDATES=[
+  {v:'α1.0.265', items:[
+    '竜骨砲を調整しました。チャージ音（チュイイイン）と発射音（ゴゴゴゴ）を追加し、射程を大きく伸ばしました。また照準アルゴリズムを改良し、すれ違うはぐれ敵ではなく敵が密集している方向へ狙いを定めるようにしました。',
+  ]},
   {v:'α1.0.264', items:[
     '新武器「シャークミサイル」を追加しました。リヴァイアサン（ステージ4クリア）で解放される自動追尾ミサイルで、ゆるやかに旋回して最寄りの敵へ食らいつき、命中すると炸裂して周囲を巻き込みます。強化軸は攻撃力・炸裂範囲・発射数・間隔・射程で、熟練度メジャーの「旋回強化」で追尾が鋭くなります。覚醒「血の匂い」で、敵を仕留めた炸裂点から子鮫ミサイルが飛び出して次の敵を襲います。',
   ]},
