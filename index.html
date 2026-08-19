@@ -2611,11 +2611,11 @@ function CRITD(){      // 会心倍率：全武器共通＋その武器の限界
 function AX(w,k){ var a=P.wa[w]; return (a&&a[k])||0; }
 // 限界突破：各軸のカンスト後に積める追加ステータス。武器ごとに「その武器の育成軸(WAX)」に沿った軸だけ出す。
 var LBN={ dmg:'攻撃力', area:'範囲', rate:'間隔', count:'発射数', pierce:'貫通', dur:'持続', range:'射程', burst:'連射', ammo:'弾倉', chain:'連鎖', split:'拡散', crit:'会心', critd:'剛撃' };
-var LBT={ dmg:'ダメージ +8%（上限なし）', area:'範囲 +4%', rate:'間隔 −1.5%',
+var LBT={ dmg:'ダメージ +8%', area:'範囲 +4%', rate:'間隔 −1.5%',
           count:'発射数 +1', pierce:'貫通 +1', dur:'効果の持続 +1（延焼・氷・熱量など）',
           range:'射程 +8%', burst:'連射 +1', ammo:'弾倉 +1', chain:'連鎖 +1', split:'拡散 +1',
           crit:'この武器の会心率 +2%', critd:'この武器の会心ダメージ +15%' };
-var LBCAP={ dmg:0, area:25, rate:0, count:8, pierce:10, dur:8, range:15, burst:5, ammo:8, chain:8, split:8, crit:10, critd:10 };   // 0 = 上限なし
+var LBCAP={ dmg:20, area:25, rate:0, count:8, pierce:10, dur:8, range:15, burst:5, ammo:8, chain:8, split:8, crit:10, critd:10 };   // 0 = 上限なし（dmgは単一武器の青天井を防ぐため上限あり）
 var LBSUP={ dmg:1, area:1, rate:1, count:1, pierce:1, dur:1, range:1, burst:1, ammo:1, chain:1, split:1, crit:1, critd:1 };   // 効果を実装済みの軸
 // 武器ごとの限界突破の軸。未指定なら WAX（その武器の育成軸）を流用＝その武器に効く軸だけ出る。
 // ここで武器を上書きすれば軸を個別に増減できる（例：ガトリングに範囲は出したくない→WAXに範囲が無いので自動で出ない）。
@@ -3023,7 +3023,7 @@ function figInfo(id){
   if(BOSS[id]){ var B=BOSS[id], tt=ETYPE[B.key]||{}; return {nm:B.nm,shape:tt.shape,col:tt.col,dark:tt.dark,desc:BDEX[id]||'',boss:true}; }
   var t=ETYPE[id]||{}; return {nm:t.nm,shape:t.shape,col:t.col,dark:t.dark,desc:DEX[id]||'',boss:false};
 }
-var VERSION='α1.0.269'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
+var VERSION='α1.0.270'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
 function applySave(o){
   for(var i=0;i<UPG.length;i++) META[UPG[i].id]=0;
   try{
@@ -3220,10 +3220,10 @@ function reset(){
   contUsed=0; contFlag=0;
   if(ENDLESS){ ENDBLK=0; endBossDone={}; marks=[]; }   // 無限ラン：分経過バナー無し・ブロック管理を初期化
   slotSig='';
-  cool={};
+  cool={}; busy={};
   syncHud();
 }
-var cool={};
+var cool={}, busy={};   // busy=発射中ロック（撃ち切るまで次のクールを開始しない）
 
 /* ============ 派生ステータス ============ */
 function GROW(k){ var g=CH().grow; return (g&&g.k===k)?g.v*(P.lv-1):0; }
@@ -3433,6 +3433,7 @@ function aim(){
 var coolMax={};
 function ready(id,cd,dt){
   lastCd[id]=cd;
+  if(busy[id]>0){ busy[id]-=dt; return false; }   // 発射（連射）が終わるまでクールダウンを開始しない＝発射→リキャストを直列化
   cool[id]=(cool[id]||0)-dt;
   if(cool[id]<=0){ cool[id]=Math.max(0.12,cd*cdr()); coolMax[id]=cool[id]; return true; }
   return false;
@@ -6651,6 +6652,7 @@ var VOLLEY={};
 function queueVolley(w,gap){
   var n=BST(w);
   for(var i=1;i<=n;i++) volley.push({w:w,t:i*gap});
+  if(n>0) busy[w]=n*gap;   // 連射を撃ち切るまで次のクールダウンを止める（発射→リキャスト直列化）
 }
 function moveVolley(dt){
   for(var i=volley.length-1;i>=0;i--){
@@ -10666,6 +10668,9 @@ Array.prototype.forEach.call(document.querySelectorAll('#setview button'),functi
 // 更新履歴：1つのお知らせ内で「バージョン見出し」ごとに変更点を並べる（新しい順）。
 // マージのたびに先頭へ新バージョンを追加し、VERSION も更新する。
 var UPDATES=[
+  {v:'α1.0.270', items:[
+    '「1武器に集中しすぎると強すぎる」問題への対策を入れました。(1) 連射（ボレー）を撃ち切ってから次のクールダウンを開始する「発射→リキャストの直列化」により、過剰に高速化した単一武器が途切れなく撃ち続ける問題を抑制。(2) ダメージの限界突破に上限（+8%×20）を追加し、1つの武器へ延々と積み込む青天井を防止しました（分散編成には影響しません）。',
+  ]},
   {v:'α1.0.269', items:[
     'シャークミサイル・竜骨砲のビーム・茨の女王をドット絵にしました。サメミサイルは尾びれが泳ぐ金属質のドット絵に、竜骨砲のビームは「本体＝タイルを連結して伸ばす／光＝爆発のように膨らむ放射フレア」の構成に、茨は蔓のセグメントタイルを曲線に沿って連結し先端に茨のバラを咲かせる形にしました。',
   ]},
