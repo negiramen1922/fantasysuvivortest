@@ -3227,35 +3227,33 @@ function reset(){
 var cool={}, busy={};   // busy=発射中ロック（撃ち切るまで次のクールを開始しない）
 
 /* ============ 連携コンボ ============ */
-// 直近 COMBOWIN 秒以内に「別々の武器」が敵に当てるほどコンボが伸びる。
-// ダメージ倍率は“当てている武器の種類数”で決まる＝1武器では絶対に伸びない（多武器ほど強い）。
-var COMBOWIN=1.0, COMBO_STEP=0.10;   // 継続の猶予1.0秒。種類が1つ増えるごとに +10%
+// コンボ倍率：コンボ数が伸びるほど上がり（＝伸ばすメリット）、武器の種類数がその上限を引き上げる。
+//   倍率 = 1 + min( 種類数×COMBO_CAPPER , コンボ数×COMBO_RATE )
+//   ・コンボは「2種以上の武器を当てている状態で敵を倒す」と加算＝1武器では絶対に伸びない
+//   ・伸ばすほど上限（種類数×12%）に向かって火力が上がる。多武器ほど天井が高い
+var COMBOWIN=1.0, COMBO_RATE=0.02, COMBO_CAPPER=0.12;   // +2%/コンボ、種類ごとに上限+12%
 var comboN=0, comboT=0, comboWpn={}, comboMulV=1, comboFlash=0;
-// コンボの「継続」は敵を倒したときだけ（攻撃を当てるだけでは維持できない＝短い猶予内に倒し続ける必要）。
-// 倍率は「コンボ中に当てている武器の種類数」で決まる＝多武器ほど強い。
-function comboTouch(w){                            // ヒットした武器を倍率へ反映（コンボ継続中のみ）
+function comboKinds(){ var n=0; for(var k in comboWpn){ if(comboWpn[k]>0) n++; } return n; }
+function comboMul(){
+  var kinds=comboKinds();
+  comboMulV=(comboN>=1&&kinds>=2) ? 1+Math.min(kinds*COMBO_CAPPER, comboN*COMBO_RATE) : 1;
+  return comboMulV;
+}
+function comboTouch(w){                            // ヒットした武器を記録（種類数＝倍率の上限を決める）
   if(!w||!WEAPONS[w]) return;
   var fresh=!comboWpn[w]; comboWpn[w]=COMBOWIN;
-  if(fresh){ recalcComboMul(); comboFlash=0.5; }   // 種類が増えた瞬間だけ演出
+  if(fresh) comboFlash=0.5;
 }
-function comboKill(w){                             // 撃破でコンボ継続・加算
-  comboN++; comboT=COMBOWIN;
+function comboKill(w){                             // 撃破でコンボ加算。ただし2種以上当てているときだけ伸びる
   comboTouch(w);
+  if(comboKinds()>=2){ comboN++; comboT=COMBOWIN; }
 }
 function comboBreak(){ comboN=0; comboT=0; comboWpn={}; comboMulV=1; }   // リロード等でコンボ途切れ
-function recalcComboMul(){
-  var n=0; for(var k in comboWpn){ if(comboWpn[k]>0) n++; }
-  comboMulV=1+COMBO_STEP*Math.max(0,n-1);
-}
-function comboMul(){ return comboMulV; }
-function comboKinds(){ var n=0; for(var k in comboWpn){ if(comboWpn[k]>0) n++; } return n; }
 function stepCombo(dt){
-  if(!DEV||comboT<=0) return;
-  comboT-=dt; if(comboFlash>0) comboFlash-=dt;
-  var changed=false;
-  for(var k in comboWpn){ comboWpn[k]-=dt; if(comboWpn[k]<=0){ delete comboWpn[k]; changed=true; } }
-  if(comboT<=0){ comboN=0; comboWpn={}; comboMulV=1; }
-  else if(changed) recalcComboMul();
+  if(!DEV) return;
+  if(comboFlash>0) comboFlash-=dt;
+  for(var k in comboWpn){ comboWpn[k]-=dt; if(comboWpn[k]<=0) delete comboWpn[k]; }   // 各武器の鮮度を減衰
+  if(comboT>0){ comboT-=dt; if(comboT<=0){ comboN=0; comboMulV=1; } }                // 撃破が途切れたらコンボ消滅
 }
 
 /* ============ 派生ステータス ============ */
@@ -6353,7 +6351,7 @@ function hurt(e,dmg,nx,ny,el){
   var crit=Math.random()<CRITC();
   if(crit) crits++;
   var d=crit?dmg*CRITD():dmg;
-  if(DEV){ if(SRC&&comboT>0) comboTouch(SRC); d*=comboMul(); }   // 連携コンボ（DEV限定）：継続中の武器を倍率へ、倍率を与ダメージへ
+  if(DEV){ if(SRC) comboTouch(SRC); d*=comboMul(); }   // 連携コンボ（DEV限定）：当てた武器を記録（種類数＝上限）、倍率を与ダメージへ
   d*=dexDealMul(figKey(e));                // 図鑑ボーナス：その敵への与ダメージ+
   if(NIGHTMARE) d*=contractDmgMul(SRC,e);  // 契約：全体/武器タグ/敵タグ特効の倍率
   if(crit&&NIGHTMARE){ var _ch=contractStat('critheal'); if(_ch&&P.hp<P.max) P.hp=Math.min(P.max,P.hp+d*_ch); }   // 吸命：会心で回復
@@ -7341,6 +7339,7 @@ function drawCombo(){
   if(!DEV||state!=='playing') return;
   var kinds=comboKinds();
   if(comboN<2||kinds<2) return;
+  comboMul();   // 表示用に倍率を最新化
   var pop=1+(comboFlash>0?comboFlash*0.7:0), cx=W/2, cy=H*0.24;
   ctx.save(); ctx.textAlign='center';
   ctx.globalAlpha=Math.min(1,comboT/0.4);
