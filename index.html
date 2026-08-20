@@ -1320,7 +1320,7 @@ var WEAPONS={
   scythe:{ nm:'鎌', glyph:'\u{1F5E1}', tag:'剣技', max:10,
     tx:'鎌を前方へ投げ、手元へ引き戻す。戻りは威力が落ちる。斬った敵に出血（被ダメージ増加）を与える。' },
   chakram:{ nm:'チャクラム', glyph:'\u25CE', tag:'剣技', max:10,
-    tx:'手元から円を描いて飛び出し、大きく回って戻る。行きは重く、戻りは軽い。' },
+    tx:'手元から円を描いて飛び出し、大きく回って戻る。行きは重く、戻りは軽い。触れた敵に裂傷（継続ダメージ）を与える。' },
   katana:{ nm:'刀', glyph:'\u{1F5E1}️', tag:'剣技', max:10,
     tx:'前方を斬り払う近接剣。斬った敵に出血（被ダメージ増加・最大5重）を与える。数秒ごとにカウンターで敵弾を弾く。' },
   bow:{ nm:'弓', glyph:'\u{1F3F9}', tag:'射撃', max:10,
@@ -1350,7 +1350,7 @@ var WEAPONS={
   rock:{ nm:'ロックボール', glyph:'\u26AB', tag:'岩', max:10,
     tx:'巨大な岩を転がす。盤面に残り続け、進路の敵をなぎ倒す。' },
   chainsaw:{ nm:'チェンソー', glyph:'\u{1FA9A}', tag:'剣技', max:10,
-    tx:'向いている方向を削り続ける。一撃は軽いが刃は止まらず、たまに高速回転（暴走）してダメージが跳ね上がる。' },
+    tx:'向いている方向を削り続ける。一撃は軽いが刃は止まらず、たまに高速回転（暴走）してダメージが跳ね上がる。斬った敵に裂傷（継続ダメージ）を与える。' },
   musket:{ nm:'マスケット', glyph:'\u{1F52B}', tag:'射撃', max:10,
     tx:'散弾を撒き散らす。近いほど多くの玉が突き刺さる。' },
   blizzard:{ nm:'アイスブリザード', glyph:'\u{1F32A}', tag:'氷', max:10,
@@ -3023,7 +3023,7 @@ function figInfo(id){
   if(BOSS[id]){ var B=BOSS[id], tt=ETYPE[B.key]||{}; return {nm:B.nm,shape:tt.shape,col:tt.col,dark:tt.dark,desc:BDEX[id]||'',boss:true}; }
   var t=ETYPE[id]||{}; return {nm:t.nm,shape:t.shape,col:t.col,dark:t.dark,desc:DEX[id]||'',boss:false};
 }
-var VERSION='α1.0.272'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
+var VERSION='α1.0.273'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
 function applySave(o){
   for(var i=0;i<UPG.length;i++) META[UPG[i].id]=0;
   try{
@@ -3609,7 +3609,7 @@ function arcHit(rad,arc,dmg,el,onHit,face){
 function doChainHit(rev,fa,arc,rad){                       // ダメージのみ（描画は runWeapons が持続管理）
   SRC='chainsaw';
   var dmg=5*DMG('chainsaw')*pw('chainsaw')*(rev?1.8:1);   // 暴走中は威力アップ
-  var n=arcHit(rad,arc,dmg,null,null,fa);
+  var n=arcHit(rad,arc,dmg,null,function(e){ applyLacer(e,dmg); },fa);   // 裂傷（物理DoT）を付与
   if(n) sfx((rev?200:120)+Math.random()*40,.05,'sawtooth',.03,1.1);
   wgain('chainsaw',n); SRC=null;
 }
@@ -4223,7 +4223,9 @@ function moveChaks(dt){
       var e=enemies[j];
       if(e.dead||c.hit.indexOf(e)>=0) continue;
       var dx=e.x-c.x, dy=e.y-c.y, d=Math.hypot(dx,dy);
-      if(d<e.r+14){ SRC='chakram'; hurt(e,c.dmg*mul,dx/(d||1),dy/(d||1),null); SRC=null; c.hit.push(e); }
+      if(d<e.r+14){ SRC='chakram'; hurt(e,c.dmg*mul,dx/(d||1),dy/(d||1),null); SRC=null;
+        if(!e.dead) applyLacer(e,c.dmg*mul);   // 裂傷（物理DoT）を付与
+        c.hit.push(e); }
     }
   }
 }
@@ -5210,6 +5212,11 @@ function applyWeak(e,per,mx){
   e.wkPer=Math.max(e.wkPer||0, per||WK_PER);
   e.wkT=WK_DUR;
 }
+// ===== 裂傷（物理DoT）=====
+// 命中で「与えたダメージの一部」を継続ダメージのプールに加え、時間で削る（毒とは別枠の物理DoT）。
+// 弱点デバフが乗ると裂傷も増える（効果の組み合わせ）。チェンソー・チャクラムが付与。
+var LAC_RATIO=0.4, LAC_DRAIN=2.0;   // 与ダメの40%を約2秒かけて継続ダメージに
+function applyLacer(e,hitDmg){ if(e.dead)return; e.lac=(e.lac||0)+hitDmg*LAC_RATIO; }
 // 毒（草属性）：継続ダメージ（DoT）。時間経過で周囲の敵へ拡散する。
 function applyPois(e,dps,dur){
   if(!(e.poisT>0)){ e.poisStk=0; e.poisD=0; }   // 毒が切れていたらスタックをリセットしてから積む
@@ -5547,6 +5554,19 @@ function moveEnemies(dt){
         if(dmgs.length<=110) dmgs.push({x:e.x,y:e.y-e.r-4,v:-40,t:0,life:.5,txt:Math.round(pd*0.5),crit:false,col:'#8fe36a',rx:1}); }
       e.poisSp=(e.poisSp||0.7)-dt;
       if(e.poisSp<=0){ e.poisSp=0.7; spreadPoison(e); }
+      if(e.hp<=0){ kill(e); continue; }
+    }
+    // 裂傷（物理DoT）：プールを時間で削る。弱点デバフで威力増（組み合わせ）
+    if(e.lac>0.1){
+      var ldps=e.lac/LAC_DRAIN;                                   // 現在の秒間ダメージ
+      var lmul=(e.wk>0)?1+e.wk*(e.wkPer||WK_PER):1;
+      var ldd=ldps*lmul*dt;
+      if(e.shield>0){ e.shield-=ldd; if(e.shield<0) e.shield=0; }
+      else e.hp-=ldd;
+      e.lac=Math.max(0,e.lac-ldps*dt); dmgSec+=ldd;
+      e.lacN=(e.lacN||0)-dt;
+      if(e.lacN<=0){ e.lacN=0.45;
+        if(dmgs.length<=110) dmgs.push({x:e.x+8,y:e.y-e.r-14,v:-40,t:0,life:.5,txt:Math.max(1,Math.round(ldps*lmul*0.45)),crit:false,col:'#ff6a4d',rx:1}); }
       if(e.hp<=0){ kill(e); continue; }
     }
     // 凍結：完全に動きが止まる
@@ -10733,6 +10753,9 @@ Array.prototype.forEach.call(document.querySelectorAll('#setview button'),functi
 // 更新履歴：1つのお知らせ内で「バージョン見出し」ごとに変更点を並べる（新しい順）。
 // マージのたびに先頭へ新バージョンを追加し、VERSION も更新する。
 var UPDATES=[
+  {v:'α1.0.273', items:[
+    '新しい状態異常「裂傷」（継続ダメージ／物理のDoT）を追加しました。チェンソーとチャクラムが、当てた敵に裂傷を与えます（与えたダメージの一部を数秒かけて継続ダメージに）。毒とは別枠で、ハープの「弱点」など被ダメージ増加が乗ると裂傷のダメージも増えます。',
+  ]},
   {v:'α1.0.272', items:[
     '物理武器に効果を追加・調整しました。鎌に「出血」（被ダメージ増加）を付与。ハープは一撃の威力を下げた代わりに、当てた敵へ「弱点」（被ダメージ +10%・最大3スタック）を付与する支援型に変更（味方全体の火力を底上げ）。シャークミサイルは爆発を主体に切り替え、炸裂の範囲と威力を強化しました。',
   ]},
