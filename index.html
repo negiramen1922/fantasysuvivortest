@@ -2180,7 +2180,7 @@ var MAST={
   },
   gatling:{  // ガトリング：dmg/rate/pierce（通常）＋ count/ammo（特別）。※範囲(area)は無し
     minor:[ {id:'ga_d',ic:'💪',nm:'攻撃力',tx:'+6%',d:'弾の威力が#上がる',dv:'6%',ef:{dmg:.06}},
-            {id:'ga_c',ic:'⌛',nm:'間隔',tx:'−5%',d:'連射のテンポが#速くなる',dv:'5%',ef:{cd:-.05}},
+            {id:'ga_am2',ic:'🔋',nm:'弾倉',tx:'+1',d:'リロードまでに撃てる弾数が#増える',dv:'1発',ef:{ammo:1}},
             {id:'ga_p',ic:'➹',nm:'貫通',tx:'+1',d:'弾が#多くの敵を貫く',dv:'1体',ef:{pierce:1}} ],
     major:[ {id:'ga_ct',ic:'✳️',nm:'多銃身',tx:'発射数 +1',d:'一度に発射する弾が#増える',dv:'1発',ef:{count:1}},
             {id:'ga_am',ic:'🔋',nm:'大弾倉',tx:'弾倉 +2',d:'リロードまでに撃てる弾数が#増える',dv:'2発',ef:{ammo:2}},
@@ -2516,10 +2516,10 @@ function applyKB(e,SRC,crit,nx,ny){
   e.kb=Math.max(e.kb,(crit?KB_CRIT[kl]:KB_BASE[kl])*(1+TR(SRC,'knock'))); e.kbx=nx||0; e.kby=ny||0;
 }
 var WAX={
-  slash:   { dmg:5, area:4, rate:3 },
+  slash:   { dmg:5, area:4, rate:3, burst:3 },
   scythe:  { dmg:4, area:4, count:3, rate:3, range:2 },
   chakram: { dmg:4, area:4, count:3, rate:3 },
-  katana:  { dmg:5, area:4, rate:3 },
+  katana:  { dmg:5, area:4, rate:3, burst:3 },
   shuriken:{ dmg:4, count:3, pierce:3, rate:3, range:2 },
   bow:     { dmg:4, pierce:3, count:3, rate:3, burst:3, range:3 },
   dynamite:{ dmg:4, area:4, burst:4, rate:3, range:2 },
@@ -2529,20 +2529,20 @@ var WAX={
   rock:    { dmg:4, area:4, count:2, rate:3, burst:3, range:3 },
   fire:    { dmg:4, count:3, pierce:3, rate:3, burst:3, range:3 },
   flame:   { dmg:4, count:4, area:3, rate:3 },
-  ice:     { dmg:4, pierce:3, dur:3, count:3, rate:3, burst:3, range:3 },
+  ice:     { dmg:2, pierce:3, dur:3, count:3, rate:3, burst:3 },
   thunder: { dmg:4, count:4, area:3, rate:3, range:2 },
   chain:   { dmg:4, chain:4, count:3, rate:3, range:2 },
-  holy:    { dmg:4, count:3, split:3, pierce:2, rate:3, burst:3, range:3 },
+  holy:    { dmg:4, count:3, split:2, pierce:2, rate:3, burst:3 },
   aura:    { dmg:3, area:3, count:3, rate:3 },
   voidh:   { dmg:4, area:4, count:2, rate:3 },
   dhand:   { dmg:4, count:6, rate:3, range:2 },
   bell:    { dmg:3, area:4, count:3, rate:3 },
-  chainsaw:{ dmg:4, area:3, rate:3 },
+  chainsaw:{ dmg:4, area:3, rate:3, dur:3 },
   musket:  { dmg:4, rate:3, burst:5, ammo:3, range:2 },
   blizzard:{ dmg:4, area:3, rate:3, dur:3 },
   laser:   { dmg:3, count:4, rate:3, area:3 },
   inferno: { dmg:4, count:3, dur:3, rate:3, range:3 },
-  gatling: { dmg:5, rate:4, count:3, pierce:3, ammo:3, range:3 },
+  gatling: { dmg:5, count:3, pierce:3, ammo:3, range:3 },
   meteor:  { dmg:4, area:4, rate:3, range:2 },
   gale:    { dmg:4, range:3, area:3, rate:3, count:3 },
   tornado: { dmg:4, area:4, count:2, rate:3 },
@@ -2641,17 +2641,26 @@ function lbOK(w,k){
   if(LBCAP[k]&&LB(w,k)>=LBCAP[k]) return 0;
   return 1;
 }
-// 間合いによる火力補正：近接ほど高く、遠距離ほど低い（射程との住み分け）
+// 武器の間合い分類（近接/中/長/自己）。武器候補カードのラベル表示に使用（火力補正は廃止し基礎攻撃力へ折込済み）
 var WCLASS={ slash:'melee', chainsaw:'melee', katana:'melee', shuriken:'mid',
   chakram:'self', flame:'self', blizzard:'self', bell:'self', laser:'self', aura:'self', voidh:'self', tornado:'self', gale:'mid', harp:'self', briar:'mid',
   scythe:'mid', dhand:'mid', dynamite:'mid', quake:'mid', musket:'mid', inferno:'mid', toxin:'mid', anchor:'mid', crimson:'mid', railgun:'self', sharkm:'long',
   fire:'long', ice:'long', bow:'long', holy:'long', thunder:'long', chain:'long', rock:'long', gatling:'long',
   meteor:'mid' };   // メテオ：狙った範囲に落とす大技。威力45をそのまま出すため補正1.0の中距離扱い
-var CLMUL={ melee:1.15, self:1.0, mid:1.0, long:0.78 };
-function RCM(w){ return CLMUL[WCLASS[w]||'mid']; }
 // 各軸の効き。ダメージと範囲は乗算、頻度はクールダウンの短縮。
-// 軸の指数だけ残し、熟練度・限界突破・パッシブなどの細かい％は「加算してまとめて掛ける」(乗算の積み重なりを抑制)。RCMは基礎攻撃力に含む扱い。
-function DMG(w){ return RCM(w)*Math.pow(1.45,AX(w,'dmg'))*(1 + TR(w,'dmg') + 0.08*LB(w,'dmg')); }
+// 軸の指数だけ残し、熟練度・限界突破・パッシブなどの細かい％は「加算してまとめて掛ける」(乗算の積み重なりを抑制)。
+// ※旧「間合い係数(RCM)」は廃止。各武器の基礎攻撃力(WBASE)に折り込み済み。
+function DMG(w){ return Math.pow(1.45,AX(w,'dmg'))*(1 + TR(w,'dmg') + 0.08*LB(w,'dmg')); }
+// 各武器の基礎攻撃力（＝各doXxxの `N*DMG(w)` の N）。武器詳細の攻撃力表示に使う基準値。
+// ※旧間合い係数を折り込み済み：近接×1.15 / 長距離×0.78 は既にこの数値に反映。編集時はdo関数側の N と一致させること。
+var WBASE={ slash:25, scythe:20, chakram:16, katana:23, bow:10, shuriken:9, dynamite:34, toxin:4, anchor:44,
+  fire:15, inferno:24, flame:7, ice:13, thunder:23, chain:17, quake:26, rock:17, chainsaw:6, musket:9,
+  blizzard:7, laser:11, bell:7, dhand:17, voidh:2.2, holy:14, aura:8, gatling:6, meteor:45, gale:7,
+  tornado:2.0, harp:9, briar:7, crimson:10, railgun:15, sharkm:6 };
+// 攻撃力が「毎フレーム刻む持続」や「多数の弾/刃の1枚分」の武器（詳細表示で注記）
+var WBASE_NOTE={ inferno:'照射中に上昇', railgun:'ビーム判定ごと', chainsaw:'刃の判定ごと', flame:'接触ごと', blizzard:'接触ごと',
+  briar:'接触ごと', toxin:'毒沼ごと', voidh:'吸引ごと', tornado:'渦ごと', musket:'散弾1発ごと', gatling:'弾1発ごと', sharkm:'直撃ぶん（主体は爆発）' };
+function wAtk(w){ return Math.round((WBASE[w]||0)*DMG(w)*pw(w)); }   // 現在の実効・1ヒット攻撃力
 function AREA(w){ return Math.pow(1.18,AX(w,'area'))*(1 + TR(w,'area') + 0.04*LB(w,'area') + 0.05*(P.p.reach||0) + (CH().area-1) + (contractArea(w)-1)); }
 function RATE(w){ return Math.max(0.20,Math.pow(0.85,AX(w,'rate'))*(1 + TR(w,'cd') - 0.015*LB(w,'rate'))); }
 function CNT(w){ return AX(w,'count')+TR(w,'count')+LB(w,'count'); }
@@ -3024,7 +3033,7 @@ function figInfo(id){
   if(BOSS[id]){ var B=BOSS[id], tt=ETYPE[B.key]||{}; return {nm:B.nm,shape:tt.shape,col:tt.col,dark:tt.dark,desc:BDEX[id]||'',boss:true}; }
   var t=ETYPE[id]||{}; return {nm:t.nm,shape:t.shape,col:t.col,dark:t.dark,desc:DEX[id]||'',boss:false};
 }
-var VERSION='α1.0.277'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
+var VERSION='α1.0.278'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
 function applySave(o){
   for(var i=0;i<UPG.length;i++) META[UPG[i].id]=0;
   try{
@@ -3464,11 +3473,20 @@ function aim(){
 
 /* ============ 武器 ============ */
 var coolMax={};
+// 攻撃モーションの「稼働時間」。発射した瞬間からこの秒数はリキャストを進めない（＝攻撃中はリキャストが進まない）。
+// これにより、間隔を極端に縮めても「モーションが終わる前に次が撃てる」挙動を防ぎ、単発・重量武器の過剰DPSも抑える。
+// 未登録の武器は0（従来どおり）。連射(VOLLEY)武器は連射の撃ち切り時間と max を取る。
+var WACT={ meteor:0.45, anchor:0.32, dynamite:0.26, quake:0.26, thunder:0.24, rock:0.22,
+  scythe:0.30, chakram:0.28, slash:0.20, katana:0.18, crimson:0.22, bell:0.22, harp:0.22, aura:0.20 };
 function ready(id,cd,dt){
   lastCd[id]=cd;
-  if(busy[id]>0){ busy[id]-=dt; return false; }   // 発射（連射）が終わるまでクールダウンを開始しない＝発射→リキャストを直列化
+  if(busy[id]>0){ busy[id]-=dt; return false; }   // 発射（連射／稼働）が終わるまでクールダウンを開始しない＝発射→リキャストを直列化
   cool[id]=(cool[id]||0)-dt;
-  if(cool[id]<=0){ cool[id]=Math.max(0.12,cd*cdr()); coolMax[id]=cool[id]; return true; }
+  if(cool[id]<=0){
+    cool[id]=Math.max(0.12,cd*cdr()); coolMax[id]=cool[id];
+    if(WACT[id]) busy[id]=Math.max(busy[id]||0,WACT[id]);   // 攻撃の稼働時間ぶんはリキャストを止める
+    return true;
+  }
   return false;
 }
 // ガトリングガン：弾倉を高速連射し、撃ち切ると長いリロード。ピーキーな超高DPS。
@@ -3507,7 +3525,7 @@ function doGatling(dt){
   var a=e?Math.atan2(e.y-P.y,e.x-P.x):P.face;
   P.face=a;
   SRC='gatling';
-  var cnt=1+CNT('gatling'), dmg=8*DMG('gatling')*pw('gatling');
+  var cnt=1+CNT('gatling'), dmg=6*DMG('gatling')*pw('gatling');
   // 覚醒：左右2連バレルから同時発射
   var barrels=AW('gatling')?[-1,1]:[0];
   var perpx=-Math.sin(a), perpy=Math.cos(a);
@@ -3537,11 +3555,12 @@ function runWeapons(dt){
   if(P.w.inferno) infernoTick(dt);
   if(P.w.railgun) railgunTick(dt);
   if(P.w.chainsaw){                              // しばらく出す→しまう→また出す、を繰り返す
-    if(P.sawOn==null){ P.sawOn=true; P.sawPh=2.6; P.sawRev=0; P.sawRevCd=1.2; }  // 取得直後は出しっぱなしから
+    var sawOnDur=2.6+0.8*DURV('chainsaw');        // 持続軸で「出し続ける時間」を延長（+0.8秒/pt）
+    if(P.sawOn==null){ P.sawOn=true; P.sawPh=sawOnDur; P.sawRev=0; P.sawRevCd=1.2; }  // 取得直後は出しっぱなしから
     P.sawPh-=dt;
     if(P.sawPh<=0){
       P.sawOn=!P.sawOn;
-      P.sawPh=P.sawOn?2.6:1.4;                   // 稼働2.6秒 / 収納1.4秒
+      P.sawPh=P.sawOn?sawOnDur:1.4;               // 稼働(持続軸で延長) / 収納1.4秒
       if(P.sawOn){ P.sawRev=0; P.sawRevCd=1.2+Math.random(); sfx(120,.14,'sawtooth',.05,.6); }
     }
     if(P.sawOn){
@@ -3560,10 +3579,10 @@ function runWeapons(dt){
   if(P.w.musket  &&ready('musket',  1.50*RATE('musket'),dt)){  doMusket(); queueVolley('musket',0.13); }
   if(P.w.blizzard&&ready('blizzard',1.10*RATE('blizzard'),dt)) doBlizzard();
   if(P.w.laser   &&ready('laser',   2.00*RATE('laser'),dt))    doLaser();
-  if(P.w.slash&&ready('slash',0.85*RATE('slash'),dt)) doSlash();
+  if(P.w.slash&&ready('slash',0.85*RATE('slash'),dt)){ doSlash(); queueVolley('slash',0.12); }
   if(P.w.scythe  &&ready('scythe',  1.45*RATE('scythe'),dt))   doScythe();
   if(P.w.chakram &&ready('chakram', 1.65*RATE('chakram'),dt))  doChakram();
-  if(P.w.katana){ if(ready('katana', 0.80*RATE('katana'),dt)) doKatana(); katanaCounter(dt); }
+  if(P.w.katana){ if(ready('katana', 0.80*RATE('katana'),dt)){ doKatana(); queueVolley('katana',0.12); } katanaCounter(dt); }
   if(P.w.shuriken&&ready('shuriken',0.42*RATE('shuriken'),dt)) doShuriken();
   if(P.w.bow     &&ready('bow',     0.58*RATE('bow'),dt)){     doBow(); queueVolley('bow',0.10); }
   if(P.w.dynamite&&ready('dynamite',1.85*RATE('dynamite'),dt)){ doDyna(); queueVolley('dynamite',0.12); }
@@ -3609,7 +3628,7 @@ function arcHit(rad,arc,dmg,el,onHit,face){
 // チェンソー：前方を削り続ける。覚醒で全方位になる。
 function doChainHit(rev,fa,arc,rad){                       // ダメージのみ（描画は runWeapons が持続管理）
   SRC='chainsaw';
-  var dmg=5*DMG('chainsaw')*pw('chainsaw')*(rev?1.8:1);   // 暴走中は威力アップ
+  var dmg=6*DMG('chainsaw')*pw('chainsaw')*(rev?1.8:1);   // 暴走中は威力アップ
   var n=arcHit(rad,arc,dmg,null,function(e){ applyLacer(e,dmg); },fa);   // 出血（物理DoT）を付与
   if(n) sfx((rev?200:120)+Math.random()*40,.05,'sawtooth',.03,1.1);
   wgain('chainsaw',n); SRC=null;
@@ -4072,7 +4091,7 @@ function doSlash(){
   SRC='slash';
   var ar=AREA('slash');
   var arc=TF('slash','fullarc')?6.3:Math.min(3.5,1.55*ar), r2=96*ar;
-  var dmg=22*DMG('slash')*pw('slash');
+  var dmg=25*DMG('slash')*pw('slash');
   var n=arcHit(r2,arc,dmg,null);
   fx.push({k:'slash',x:P.x,y:P.y,a:P.face,arc:arc,rad:r2,t:0,life:.18,col:'#dcd6ff'});
   swingT=SWDUR;   // 立ち絵の大剣を振り下ろすアニメを起動
@@ -4092,7 +4111,7 @@ function doKatana(){
   SRC='katana';
   var ar=AREA('katana');
   var arc=TF('katana','fullarc')?6.3:Math.min(3.5,1.55*ar), r2=96*ar;   // 範囲arの効き方を大剣と同一に（角度3.5cap・1.55倍／間合い96倍）
-  var dmg=20*DMG('katana')*pw('katana');
+  var dmg=23*DMG('katana')*pw('katana');
   var wper=WK_PER*(1+TR('katana','weak'));   // 刀：弱点（被ダメ増）を付与。熟練度で効果量UP
   var n=arcHit(r2,arc,dmg,null,function(e){ if(Math.random()<ccChance(STAT_CHANCE)) applyWeak(e,wper,WK_MAX); });
   fx.push({k:'slash',x:P.x,y:P.y,a:P.face,arc:arc,rad:r2,t:0,life:.16,col:'#ffd0d6'});
@@ -4236,7 +4255,7 @@ function doBow(){
   for(var i=0;i<cnt;i++){
     var an=a+(i-(cnt-1)/2)*0.13;
     shots.push({x:P.x,y:P.y,vx:Math.cos(an)*760,vy:Math.sin(an)*760,r:6,
-      src:'bow',kind:'arrow',ang:an,dmg:13*DMG('bow')*pw('bow'),grow:AW('bow')?1:0,base:13*DMG('bow')*pw('bow'),
+      src:'bow',kind:'arrow',ang:an,dmg:10*DMG('bow')*pw('bow'),grow:AW('bow')?1:0,base:10*DMG('bow')*pw('bow'),
       pierce:2+PRC('bow'),life:RNG('bow')/760,col:'#e6dcc0',col2:'#8d7c50',el:null,hit:[]});
   }
   sfx(880,.05,'triangle',.04,1.6);
@@ -4319,7 +4338,7 @@ function doFire(){
   for(var i=0;i<cnt;i++){
     var a=base+(i-(cnt-1)/2)*0.17;
     shots.push({x:P.x,y:P.y,vx:Math.cos(a)*400,vy:Math.sin(a)*400,r:8,
-      src:'fire',dmg:19*DMG('fire')*pw('fire'),pierce:1+PRC('fire'),life:RNG('fire')/400,
+      src:'fire',dmg:15*DMG('fire')*pw('fire'),pierce:1+PRC('fire'),life:RNG('fire')/400,
       col:'#ffd08a',col2:'#ff6a1f',el:'fire',boom:bm,hit:[]});
   }
   sfx(300,.08,'triangle',.05,1.9);
@@ -4331,7 +4350,7 @@ function doIce(){
   for(var i=0;i<cnt;i++){
     var an=a+(i-(cnt-1)/2)*0.28;
     shots.push({x:P.x,y:P.y,vx:Math.cos(an)*640,vy:Math.sin(an)*640,r:7,
-      src:'ice',kind:'icejav',ang:an,dmg:17*DMG('ice')*pw('ice'),pierce:3+PRC('ice'),life:RNG('ice')/640,
+      src:'ice',kind:'icejav',ang:an,dmg:13*DMG('ice')*pw('ice'),pierce:3+PRC('ice'),life:RNG('ice')/640,
       col:'#bff0ff',col2:'#3aa9e0',slow:2.0+DURV('ice'),slowMul:0.45*(1-TR('ice','slowmag')),el:'ice',hit:[]});
   }
   sfx(1240,.08,'sine',.05,.5);
@@ -4340,7 +4359,7 @@ function doIce(){
 function doThunder(){
   SRC='thunder';
   var cnt=1+CNT('thunder'), used=[];
-  var dmg=30*DMG('thunder')*pw('thunder'), rad=56*AREA('thunder'), trng=RNG('thunder');
+  var dmg=23*DMG('thunder')*pw('thunder'), rad=56*AREA('thunder'), trng=RNG('thunder');
   for(var i=0;i<cnt;i++){
     var pick=null,bd=1e9;
     for(var j=0;j<enemies.length;j++){
@@ -4368,7 +4387,7 @@ function doChain(){
   var e0=nearest(P.x,P.y,RNG('chain')); if(!e0) return;
   SRC='chain';
   var beams=1+CNT('chain');
-  var jumps=2+CHN('chain'), dmg0=22*DMG('chain')*pw('chain');
+  var jumps=2+CHN('chain'), dmg0=17*DMG('chain')*pw('chain');
   var decay=AW('chain')?1.0:(TF('chain','keep')?0.86:0.70);
   var reach=AW('chain')?420:210;
   var used=[], n=0;
@@ -4405,7 +4424,7 @@ function doHoly(){
   for(var i=0;i<cnt;i++){
     var an=a+(i-(cnt-1)/2)*0.22;
     shots.push({x:P.x,y:P.y,vx:Math.cos(an)*620,vy:Math.sin(an)*620,r:7,
-      src:'holy',kind:'lance',ang:an,dmg:18*DMG('holy')*pw('holy'),
+      src:'holy',kind:'lance',ang:an,dmg:14*DMG('holy')*pw('holy'),
       pierce:1+PRC('holy'),life:RNG('holy')/620,col:'#ffffff',col2:'#cfd8e8',el:'holy',
       split:3+SPL('holy'),hit:[]});
   }
@@ -4657,7 +4676,7 @@ function doCrimson(){
 function doSharkm(){
   SRC='sharkm';
   var sz=AREA('sharkm'), rng=RNG('sharkm');
-  var dmg=8*DMG('sharkm')*pw('sharkm'), boomR=66*sz, spd=460;   // 直撃は控えめ、爆発をメインに（範囲拡大）
+  var dmg=6*DMG('sharkm')*pw('sharkm'), boomR=66*sz, spd=460;   // 直撃は控えめ、爆発をメインに（範囲拡大）
   var turn=3.4+2.4*TR('sharkm','turn')+(AW('sharkm')?1.0:0);  // 旋回速度(rad/s)：熟練度・覚醒で鋭く
   var e=nearest(P.x,P.y,900);
   var a=(e?Math.atan2(e.y-P.y,e.x-P.x):P.face)+(Math.random()-.5)*0.35;   // 少し散らして連射がばらける
@@ -4747,7 +4766,7 @@ function drawTwisters(){
 }
 // ロックボール：転がり続けて進路の敵をなぎ倒す
 function doRock(){
-  var cnt=1+CNT('rock'), rr=Math.min(86,30*AREA('rock')), dmg=22*DMG('rock')*pw('rock');
+  var cnt=1+CNT('rock'), rr=Math.min(86,30*AREA('rock')), dmg=17*DMG('rock')*pw('rock');
   var life=(2.4+(TF('rock','life')?1.6:0))*RNGM('rock');
   var e=nearest(P.x,P.y,RNG('rock'));
   var base=e?Math.atan2(e.y-P.y,e.x-P.x):P.face;
@@ -6709,7 +6728,7 @@ var VOLLEY={};
 function queueVolley(w,gap){
   var n=BST(w);
   for(var i=1;i<=n;i++) volley.push({w:w,t:i*gap});
-  if(n>0) busy[w]=n*gap;   // 連射を撃ち切るまで次のクールダウンを止める（発射→リキャスト直列化）
+  if(n>0) busy[w]=Math.max(busy[w]||0,n*gap);   // 連射を撃ち切るまで次のクールダウンを止める（稼働時間WACTと共存＝max）
 }
 function moveVolley(dt){
   for(var i=volley.length-1;i>=0;i--){
@@ -9654,6 +9673,11 @@ function openWeaponDetail(w){
       '</div>'+
       '<div class="wdtx">'+(WEAPONS[w].tx||'')+'</div>'+
       lockHtml+
+      (WBASE[w]?('<div style="display:flex;align-items:center;gap:6px;margin:6px 0;padding:7px 10px;border-radius:8px;background:#1c2340;border:1px solid #3a4674">'+
+        '<span style="font-size:13px">⚔️</span><span style="font-size:12px;color:#9fb0e0">攻撃力</span>'+
+        '<b style="font-size:17px;color:#ffe27a">'+wAtk(w)+'</b>'+
+        (WBASE_NOTE[w]?'<span style="font-size:10px;color:#8f86b8">（'+WBASE_NOTE[w]+'）</span>':'')+
+        '<span style="margin-left:auto;font-size:10px;color:#6f7ba8">現在の強化込み</span></div>'):'')+
       '<div class="wdbarlabel">熟練度 Lv '+lv+'/10<span>'+fmt(x)+(nx?' / '+fmt(nx):' — MAX')+'</span></div>'+
       '<div class="wbar"><div style="width:'+pct+'%"></div></div>'+
       statusHtml+
@@ -10743,6 +10767,13 @@ Array.prototype.forEach.call(document.querySelectorAll('#setview button'),functi
 // 更新履歴：1つのお知らせ内で「バージョン見出し」ごとに変更点を並べる（新しい順）。
 // マージのたびに先頭へ新バージョンを追加し、VERSION も更新する。
 var UPDATES=[
+  {v:'α1.0.278', items:[
+    '「間合い係数」を廃止し、各武器の基礎攻撃力に直接折り込みました（計算がシンプルに）。近接は約1.15倍・長距離は約0.78倍ぶんを基礎値へ反映済みで、実際の火力はほぼ据え置きです。',
+    '武器詳細画面に「攻撃力」の数値を表示するようにしました（現在の強化・キャラ補正込み）。',
+    '各武器の強化軸を整理：ほぼ全武器を4〜6種・最大強化Lv合計12〜20の範囲に。アイスジャベリンは射程軸を廃止し攻撃軸を控えめに、ホーリーランスは射程軸を廃止し拡散を抑制。ガトリングの「間隔」軸（連射短縮）は廃止しました。',
+    '大剣・刀に「連射」軸を追加（続けて斬る）。チェンソーに「持続」軸を追加（出し続ける時間が伸びる）。',
+    '「発射→リキャスト直列化」を強化：攻撃の稼働時間ぶんは次のリキャストが進まないようにし、間隔を縮めても「モーション中に次が撃てる」挙動を抑制。単発・重量武器の過剰な手数も緩やかに抑えます。',
+  ]},
   {v:'α1.0.277', items:[
     'インフェルノビームを調整しました。追加ビームが主ビームより弱い（威力6割）ままだったのを、他の武器と同じく全ビーム同威力に統一。本数を増やすと素直に火力が伸びます（見た目の太さも揃えました）。',
   ]},
@@ -12041,7 +12072,7 @@ document.getElementById('profclose').onclick=function(){ pendingRank=null; docum
 document.getElementById('profauth').onclick=function(){ audio(); if(FBUSER) fbLogout(); else fbLogin(); };
 document.getElementById('profnicksave').onclick=function(){ audio(); saveProfNick(); };
 
-VOLLEY={bow:doBow,fire:doFire,ice:doIce,holy:doHoly,rock:doRock,musket:doMusket,dynamite:doDyna};
+VOLLEY={bow:doBow,fire:doFire,ice:doIce,holy:doHoly,rock:doRock,musket:doMusket,dynamite:doDyna,slash:doSlash,katana:doKatana};
 resize();
 reset();
 backfillFirstClear();   // 既にクリア済みのステージへ初回クリア報酬を遡及配布（受け取りボックスへ）
