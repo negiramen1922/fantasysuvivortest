@@ -2650,9 +2650,19 @@ var WCLASS={ slash:'melee', chainsaw:'melee', katana:'melee', shuriken:'mid',
 var CLMUL={ melee:1.15, self:1.0, mid:1.0, long:0.78 };
 function RCM(w){ return CLMUL[WCLASS[w]||'mid']; }
 // 各軸の効き。ダメージと範囲は乗算、頻度はクールダウンの短縮。
-function DMG(w){ return RCM(w)*Math.pow(1.45,AX(w,'dmg'))*(1+TR(w,'dmg'))*(1+0.08*LB(w,'dmg')); }
-function AREA(w){ return Math.pow(1.18,AX(w,'area'))*(1+TR(w,'area'))*(1+0.04*LB(w,'area'))*CH().area*(1+0.05*(P.p.reach||0))*contractArea(w); }
-function RATE(w){ return Math.max(0.20,Math.pow(0.85,AX(w,'rate'))*(1+TR(w,'cd'))*(1-0.015*LB(w,'rate'))); }
+// DEV：軸の指数だけ残し、熟練度・限界突破などの細かい％は「加算してまとめて掛ける」(乗算の積み重なりを抑制)
+function DMG(w){
+  if(DEV) return RCM(w)*Math.pow(1.45,AX(w,'dmg'))*(1 + TR(w,'dmg') + 0.08*LB(w,'dmg'));   // 熟練度＋限界突破を加算統合（RCMは基礎に含む扱い）
+  return RCM(w)*Math.pow(1.45,AX(w,'dmg'))*(1+TR(w,'dmg'))*(1+0.08*LB(w,'dmg'));
+}
+function AREA(w){
+  if(DEV) return Math.pow(1.18,AX(w,'area'))*(1 + TR(w,'area') + 0.04*LB(w,'area') + 0.05*(P.p.reach||0) + (CH().area-1) + (contractArea(w)-1));   // 加算統合
+  return Math.pow(1.18,AX(w,'area'))*(1+TR(w,'area'))*(1+0.04*LB(w,'area'))*CH().area*(1+0.05*(P.p.reach||0))*contractArea(w);
+}
+function RATE(w){
+  if(DEV) return Math.max(0.20,Math.pow(0.85,AX(w,'rate'))*(1 + TR(w,'cd') - 0.015*LB(w,'rate')));   // 加算統合
+  return Math.max(0.20,Math.pow(0.85,AX(w,'rate'))*(1+TR(w,'cd'))*(1-0.015*LB(w,'rate')));
+}
 function CNT(w){ return AX(w,'count')+TR(w,'count')+LB(w,'count'); }
 function BST(w){ return AX(w,'burst')+TR(w,'burst')+LB(w,'burst'); }
 function PRC(w){ return AX(w,'pierce')*2+TR(w,'pierce')+LB(w,'pierce'); }
@@ -3280,6 +3290,20 @@ function growNow(){
 }
 // 爆弾魔：武器由来の爆発だけを伸ばす（元素反応の爆発は対象外）
 function pw(w){
+  if(DEV){   // DEV：パッシブ攻撃力・might・属性/カテゴリ成長を加算してまとめる（キャラpwのみ乗算）
+    var add=0.12*(P.p.power||0)+0.06*M('might');
+    if(w){
+      if(GROW('light')  &&ELW.holy.indexOf(w)>=0)    add+=GROW('light');
+      if(GROW('icep')   &&ELW.ice.indexOf(w)>=0)     add+=GROW('icep');
+      if(GROW('thunp')  &&ELW.thunder.indexOf(w)>=0) add+=GROW('thunp');
+      if(GROW('darkp')  &&ELW.dark.indexOf(w)>=0)    add+=GROW('darkp');
+      if(GROW('grassp') &&ELW.grass.indexOf(w)>=0)   add+=GROW('grassp');
+      var gwd=CH().grow;
+      if(gwd&&gwd.k==='wpn'&&gwd.wk===w) add+=gwd.v*(P.lv-1);
+      if(gwd&&gwd.k==='cat'&&WCAT[w]===gwd.cat) add+=gwd.v*(P.lv-1);
+    }
+    return (1+add)*CH().pw;
+  }
   var m=(1+0.12*(P.p.power||0)+0.06*M('might'))*CH().pw;
   // 属性キャラ：その属性の武器だけが伸びる（聖女=光／氷術師=氷／雷鳴使い=雷）
   if(w){
@@ -6374,13 +6398,24 @@ function hurt(e,dmg,nx,ny,el){
   var crit=Math.random()<CRITC();
   if(crit) crits++;
   var d=crit?dmg*CRITD():dmg;
-  if(DEV){ if(SRC) comboTouch(SRC); d*=comboMul(); }   // 連携コンボ（DEV限定）：当てた武器を記録（種類数＝上限）、倍率を与ダメージへ
-  d*=dexDealMul(figKey(e));                // 図鑑ボーナス：その敵への与ダメージ+
-  if(NIGHTMARE) d*=contractDmgMul(SRC,e);  // 契約：全体/武器タグ/敵タグ特効の倍率
-  if(crit&&NIGHTMARE){ var _ch=contractStat('critheal'); if(_ch&&P.hp<P.max) P.hp=Math.min(P.max,P.hp+d*_ch); }   // 吸命：会心で回復
-  if(P.nodmg) d=0;                         // テスト：判定は走るが敵は死なない
-  if(e.vuln>0) d*=1.2;                     // 深淵の手：被ダメージ上昇
-  if(e.wk>0) d*=1+e.wk*(e.wkPer||WK_PER);   // 弱点：被ダメージ増加（ハープ・刀の付与、全ダメージに乗る）
+  if(DEV){   // DEV：命中時の細かい倍率（図鑑・契約・深淵・弱点・連携コンボ）を「加算してまとめて掛ける」＝乗算の積み重なりを抑制
+    if(SRC) comboTouch(SRC);
+    var add=(dexDealMul(figKey(e))-1)
+          + (NIGHTMARE?(contractDmgMul(SRC,e)-1):0)
+          + (e.vuln>0?0.2:0)
+          + (e.wk>0?e.wk*(e.wkPer||WK_PER):0)
+          + (comboMul()-1);
+    d*=(1+add);
+    if(crit&&NIGHTMARE){ var _chd=contractStat('critheal'); if(_chd&&P.hp<P.max) P.hp=Math.min(P.max,P.hp+d*_chd); }
+    if(P.nodmg) d=0;
+  }else{
+    d*=dexDealMul(figKey(e));                // 図鑑ボーナス：その敵への与ダメージ+
+    if(NIGHTMARE) d*=contractDmgMul(SRC,e);  // 契約：全体/武器タグ/敵タグ特効の倍率
+    if(crit&&NIGHTMARE){ var _ch=contractStat('critheal'); if(_ch&&P.hp<P.max) P.hp=Math.min(P.max,P.hp+d*_ch); }   // 吸命：会心で回復
+    if(P.nodmg) d=0;                         // テスト：判定は走るが敵は死なない
+    if(e.vuln>0) d*=1.2;                     // 深淵の手：被ダメージ上昇
+    if(e.wk>0) d*=1+e.wk*(e.wkPer||WK_PER);  // 弱点：被ダメージ増加
+  }
   if(e.flat) d=Math.max(d*0.25,d-e.flat);   // 甲羅：軽い攻撃ほど通らない
   if(e.buffT>0) d*=0.8;                      // リッチのオーラ：被ダメージ -20%
   if(e.shield>0){                            // 盾の戦士：割れるまで本体HPに通さない（この一撃も本体には行かない）
