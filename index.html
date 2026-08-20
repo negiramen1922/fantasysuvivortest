@@ -3033,7 +3033,7 @@ function figInfo(id){
   if(BOSS[id]){ var B=BOSS[id], tt=ETYPE[B.key]||{}; return {nm:B.nm,shape:tt.shape,col:tt.col,dark:tt.dark,desc:BDEX[id]||'',boss:true}; }
   var t=ETYPE[id]||{}; return {nm:t.nm,shape:t.shape,col:t.col,dark:t.dark,desc:DEX[id]||'',boss:false};
 }
-var VERSION='α1.0.281'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
+var VERSION='α1.0.282'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
 function applySave(o){
   for(var i=0;i<UPG.length;i++) META[UPG[i].id]=0;
   try{
@@ -3241,18 +3241,19 @@ var cool={}, busy={};   // busy=発射中ロック（撃ち切るまで次のク
 //   ・継続の猶予は「コンボが伸びるほど短くなる」：100コンボごとに縮み、最短0.02秒まで。
 //     → 高コンボは倒し続けるテンポがどんどんシビアになり、自然と難易度キャップになる。
 //   ・最大コンボ 99999。
-//   ・火力ボーナスは控えめ：100コンボごとに +0.2%（膨張しない・伸ばした証としての小ボーナス）。
+//   ・火力ボーナス：100コンボごとに +1%、上限 +50%（膨張防止）。コンボ数自体はスコア/自慢用。
 var COMBO_FRESH=1.0;          // 武器の「当てた鮮度」＝種類数のカウント窓
 var COMBO_W0=0.8;             // 継続の基本猶予（コンボ0のとき）
 var COMBO_WSHRINK=0.02;       // 100コンボごとに猶予を縮める量
 var COMBO_WMIN=0.02;          // 猶予の下限
 var COMBO_MAX=99999;          // 最大コンボ数
-var COMBO_DMG_PER100=0.002;   // 100コンボごとの火力上昇（+0.2%）
+var COMBO_DMG_PER100=0.01;    // 100コンボごとの火力上昇（+1%）
+var COMBO_DMG_CAP=0.50;       // 火力上昇の上限（+50%）＝膨張防止。コンボ数(最大99999)はスコア/自慢用
 var comboN=0, comboT=0, comboWpn={}, comboMulV=1, comboFlash=0;
 function comboKinds(){ var n=0; for(var k in comboWpn){ if(comboWpn[k]>0) n++; } return n; }
 function comboWindow(n){ return Math.max(COMBO_WMIN, COMBO_W0 - COMBO_WSHRINK*Math.floor(n/100)); }
 function comboMul(){
-  comboMulV = comboN>0 ? 1 + COMBO_DMG_PER100*Math.floor(comboN/100) : 1;
+  comboMulV = comboN>0 ? 1 + Math.min(COMBO_DMG_CAP, COMBO_DMG_PER100*Math.floor(comboN/100)) : 1;
   return comboMulV;
 }
 function comboTouch(w){                            // ヒットした武器を記録（種類数＝伸ばせる条件）
@@ -3266,7 +3267,6 @@ function comboKill(w){                             // 撃破でコンボ加算�
 }
 function comboBreak(){ comboN=0; comboT=0; comboWpn={}; comboMulV=1; }   // リロード・被ダメ等でコンボ途切れ
 function stepCombo(dt){
-  if(!DEV) return;
   if(comboFlash>0) comboFlash-=dt;
   for(var k in comboWpn){ comboWpn[k]-=dt; if(comboWpn[k]<=0) delete comboWpn[k]; }   // 各武器の鮮度を減衰
   if(comboT>0){ comboT-=dt; if(comboT<=0){ comboN=0; comboMulV=1; } }                // 猶予切れでコンボ消滅
@@ -3285,7 +3285,7 @@ function juukiCut(){ var g=CH().grow; if(!g||g.k!=='dmgcut') return 0; return Ma
 // プレイヤーの被ダメージ共通係数（永続防護・防護パッシブ・重騎士カット）
 function armorMul(){ return (1-0.04*M('armor'))*(1-0.03*(P.p.bulwark||0))*(1-juukiCut()); }
 // プレイヤー被ダメージの適用：シールド(P.sh)があれば先に肩代わりしてからHPを減らす
-function phurt(raw){ if(!(raw>0)) return; if(P.sh>0){ var ab=Math.min(P.sh,raw); P.sh-=ab; raw-=ab; if(P.sh<0.001)P.sh=0; } P.hp-=raw; if(DEV&&raw>0) comboBreak(); }   // 被ダメでコンボ途切れ（DEV／シールドで完全に防げた場合は途切れない）
+function phurt(raw){ if(!(raw>0)) return; if(P.sh>0){ var ab=Math.min(P.sh,raw); P.sh-=ab; raw-=ab; if(P.sh<0.001)P.sh=0; } P.hp-=raw; if(raw>0) comboBreak(); }   // 被ダメでコンボ途切れ（シールドで完全に防げた場合は途切れない）
 // キャラ成長の「現在値」表示文字列（符号・単位つき）
 function growNow(){
   var g=CH().grow; if(!g) return '';
@@ -3512,7 +3512,7 @@ function sharkTick(dt){
   if(shark.mag<=0){                                      // 撃ち切り → リロード
     shark.rl=shark.rlmax=Math.max(0.6,1.5*RATE('sharkm')*(AW('sharkm')?0.6:1));   // 覚醒でリロード短縮
     sfx(90,.2,'sawtooth',.05,.4); noise(.12,.07);
-    if(DEV) comboBreak();   // リロードの弱点：コンボが途切れる
+    comboBreak();   // リロードの弱点：コンボが途切れる
   }
 }
 // 発射音「ブシュー」：噴射のノイズ＋軽い下降音
@@ -3553,7 +3553,7 @@ function doGatling(dt){
     gat.rl=gat.rlmax=Math.max(2.0,4.5*r);
     gat.mag=GATMAG();
     sfx(90,.22,'sawtooth',.06,.4); noise(.12,.06);
-    if(DEV) comboBreak();   // リロードの弱点：コンボが途切れる
+    comboBreak();   // リロードの弱点：コンボが途切れる
   }
 }
 function runWeapons(dt){
@@ -6400,13 +6400,13 @@ function hurt(e,dmg,nx,ny,el){
   var crit=Math.random()<CRITC();
   if(crit) crits++;
   var d=crit?dmg*CRITD():dmg;
-  // 命中時の細かい倍率（図鑑・契約・深淵・弱点・連携コンボ[DEV]）を「加算してまとめて掛ける」＝乗算の積み重なりを抑制
-  if(DEV&&SRC) comboTouch(SRC);
+  // 命中時の細かい倍率（図鑑・契約・深淵・弱点・連携コンボ）を「加算してまとめて掛ける」＝乗算の積み重なりを抑制
+  if(SRC) comboTouch(SRC);
   var add=(dexDealMul(figKey(e))-1)
         + (NIGHTMARE?(contractDmgMul(SRC,e)-1):0)
         + (e.vuln>0?0.2:0)
         + (e.wk>0?e.wk*(e.wkPer||WK_PER):0)
-        + (DEV?(comboMul()-1):0);
+        + (comboMul()-1);
   d*=(1+add);
   if(crit&&NIGHTMARE){ var _ch=contractStat('critheal'); if(_ch&&P.hp<P.max) P.hp=Math.min(P.max,P.hp+d*_ch); }   // 吸命：会心で回復
   if(P.nodmg) d=0;                         // テスト：判定は走るが敵は死なない
@@ -6435,7 +6435,7 @@ function hurt(e,dmg,nx,ny,el){
 function kill(e){
   if(e.dead) return;
   e.dead=1; kills++;
-  if(DEV) comboKill(SRC);   // 連携コンボ（DEV限定）：撃破で継続・加算。とどめの武器の種類数で倍率
+  comboKill(SRC);   // 連携コンボ：撃破で継続・加算。2種以上当てているときだけ伸びる
   // 属性別キル数（解放条件用）：とどめの武器(SRC)が雷/氷属性なら加算
   if(SRC){
     if(ELW.thunder.indexOf(SRC)>=0) ACH.killTh=(ACH.killTh||0)+1;
@@ -7382,7 +7382,7 @@ function render(){
 }
 // 連携コンボの表示：2ヒット以上かつ2種以上の武器が当たっているときだけ「N COMBO！」
 function drawCombo(){
-  if(!DEV||state!=='playing') return;
+  if(state!=='playing') return;
   var kinds=comboKinds();
   if(comboN<2||kinds<2) return;
   comboMul();   // 表示用に倍率を最新化
@@ -10774,6 +10774,11 @@ Array.prototype.forEach.call(document.querySelectorAll('#setview button'),functi
 // 更新履歴：1つのお知らせ内で「バージョン見出し」ごとに変更点を並べる（新しい順）。
 // マージのたびに先頭へ新バージョンを追加し、VERSION も更新する。
 var UPDATES=[
+  {v:'α1.0.282', items:[
+    '「連携コンボ」を正式に追加しました（全員に開放）。2種類以上の武器を当てている状態で敵を倒すとコンボが加算され、画面に「N COMBO!」が出ます。',
+    'コンボは倒し続けるほど継続の猶予が短くなり（最短0.02秒）、最大99999コンボ。被ダメージを受けると途切れます（シールドで完全に防げた場合は途切れません）。',
+    'コンボの火力ボーナスは100コンボごとに+1%（上限+50%）。多武器で倒し続けるほど火力が伸びます。',
+  ]},
   {v:'α1.0.281', items:[
     '（実験中・開発版のみ）連携コンボは「被ダメージ」でも途切れるようにしました。倒し続けるだけでなく、被弾を避けることも必要に。シールドで完全に防げた場合は途切れません。',
   ]},
