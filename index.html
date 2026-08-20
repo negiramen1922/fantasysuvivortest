@@ -1318,15 +1318,15 @@ var WEAPONS={
   slash:{ nm:'大剣', glyph:'\u2694', tag:'剣技', max:10,
     tx:'前方を薙ぎ払う。レベルで刃の届く角度と速さが伸びる。' },
   scythe:{ nm:'鎌', glyph:'\u{1F5E1}', tag:'剣技', max:10,
-    tx:'鎌を前方へ投げ、手元へ引き戻す。戻りは威力が落ちる。斬った敵に出血（被ダメージ増加）を与える。' },
+    tx:'鎌を前方へ投げ、手元へ引き戻す。戻りは威力が落ちる。斬った敵に出血（継続ダメージ）を与える。' },
   chakram:{ nm:'チャクラム', glyph:'\u25CE', tag:'剣技', max:10,
-    tx:'手元から円を描いて飛び出し、大きく回って戻る。行きは重く、戻りは軽い。触れた敵に裂傷（継続ダメージ）を与える。' },
+    tx:'手元から円を描いて飛び出し、大きく回って戻る。行きは重く、戻りは軽い。触れた敵に出血（継続ダメージ）を与える。' },
   katana:{ nm:'刀', glyph:'\u{1F5E1}️', tag:'剣技', max:10,
-    tx:'前方を斬り払う近接剣。斬った敵に出血（被ダメージ増加・最大5重）を与える。数秒ごとにカウンターで敵弾を弾く。' },
+    tx:'前方を斬り払う近接剣。斬った敵に弱点（被ダメージ増加・最大3重）を与える。数秒ごとにカウンターで敵弾を弾く。' },
   bow:{ nm:'弓', glyph:'\u{1F3F9}', tag:'射撃', max:10,
     tx:'矢を速射する。貫通力が高く、遠くの敵まで届く。' },
   shuriken:{ nm:'手裏剣', glyph:'✴️', tag:'射撃', max:10,
-    tx:'手裏剣を高速で投げる。当てた敵に出血（被ダメージ増加・最大5重）を与える。' },
+    tx:'手裏剣を高速で投げる。当てた敵に出血（継続ダメージ）を与える。' },
   dynamite:{ nm:'ダイナマイト', glyph:'\u{1F9E8}', tag:'射撃', max:10,
     tx:'放物線を描いて投げ、着弾地点で爆発する。' },
   toxin:{ nm:'毒瓶', glyph:'\u{1F9EA}', tag:'草', max:10,
@@ -1350,7 +1350,7 @@ var WEAPONS={
   rock:{ nm:'ロックボール', glyph:'\u26AB', tag:'岩', max:10,
     tx:'巨大な岩を転がす。盤面に残り続け、進路の敵をなぎ倒す。' },
   chainsaw:{ nm:'チェンソー', glyph:'\u{1FA9A}', tag:'剣技', max:10,
-    tx:'向いている方向を削り続ける。一撃は軽いが刃は止まらず、たまに高速回転（暴走）してダメージが跳ね上がる。斬った敵に裂傷（継続ダメージ）を与える。' },
+    tx:'向いている方向を削り続ける。一撃は軽いが刃は止まらず、たまに高速回転（暴走）してダメージが跳ね上がる。斬った敵に出血（継続ダメージ）を与える。' },
   musket:{ nm:'マスケット', glyph:'\u{1F52B}', tag:'射撃', max:10,
     tx:'散弾を撒き散らす。近いほど多くの玉が突き刺さる。' },
   blizzard:{ nm:'アイスブリザード', glyph:'\u{1F32A}', tag:'氷', max:10,
@@ -1834,7 +1834,7 @@ function contractDmgMul(w,e){
     if(ef.magdown&&w&&WKIND[w]==='mag') m*=1-ef.magdown;             // 魔法DOWN
     if(ef.magup&&w&&WKIND[w]==='mag') m*=1+ef.magup;                 // 魔法UP
     if(ef.physdown&&w&&WKIND[w]==='phys') m*=1-ef.physdown;          // 物理DOWN
-    if(ef.dotup&&e&&((e.poisT>0)||(e.bleedStk>0))) m*=1+ef.dotup;    // 毒・出血中の敵に特効
+    if(ef.dotup&&e&&((e.poisT>0)||(e.lac>0))) m*=1+ef.dotup;    // 毒・出血中の敵に特効
     if(ef.density&&nmNear>=10) m*=1+ef.density;                      // 周囲密集
   }
   return m;
@@ -2159,7 +2159,7 @@ var MAST={
             {id:'kt_a',ic:'🌀',nm:'範囲',tx:'+6%',d:'斬撃の届く範囲が#広がる',dv:'6%',ef:{area:.06}},
             {id:'kt_c',ic:'⌛',nm:'間隔',tx:'−5%',d:'刀を振る間隔が#短くなる',dv:'5%',ef:{cd:-.05}} ],
     major:[ {id:'kt_D',ic:'💪',nm:'剛・攻撃力',tx:'+12%',d:'斬撃の威力が#大きく上がる',dv:'12%',ef:{dmg:.12}},
-            {id:'kt_bl',ic:'🩸',nm:'深手',tx:'出血+40%',d:'出血中の敵が受ける追加ダメージが#強くなる',dv:'40%',ef:{bleed:.40}},
+            {id:'kt_bl',ic:'🩸',nm:'痛打',tx:'弱点+40%',d:'弱点による被ダメージ増加が#強くなる',dv:'40%',ef:{weak:.40}},
             {id:'kt_cr',ic:'💥',nm:'剛撃',tx:'+10%',d:'会心（クリティカル）のダメージが#上がる',dv:'10%',ef:{critd:.10}} ]
   },
   bow:{  // 弓：dmg/pierce/rate（通常）＋ count/pierce大（特別）
@@ -2175,7 +2175,7 @@ var MAST={
             {id:'sh_p',ic:'➹',nm:'貫通',tx:'+1',d:'手裏剣が#多くの敵を貫く',dv:'1体',ef:{pierce:1}},
             {id:'sh_c',ic:'⌛',nm:'間隔',tx:'−5%',d:'投げる間隔が#短くなる',dv:'5%',ef:{cd:-.05}} ],
     major:[ {id:'sh_ct',ic:'✳️',nm:'多重手裏剣',tx:'発射数 +1',d:'一度に投げる手裏剣が#増える',dv:'1枚',ef:{count:1}},
-            {id:'sh_bl',ic:'🩸',nm:'深手',tx:'出血+40%',d:'出血中の敵が受ける追加ダメージが#強くなる',dv:'40%',ef:{bleed:.40}},
+            {id:'sh_bl',ic:'🩸',nm:'深手',tx:'出血+40%',d:'出血の継続ダメージが#強くなる',dv:'40%',ef:{bleed:.40}},
             {id:'sh_D',ic:'💪',nm:'剛・攻撃力',tx:'+12%',d:'手裏剣の威力が#大きく上がる',dv:'12%',ef:{dmg:.12}} ]
   },
   gatling:{  // ガトリング：dmg/rate/pierce（通常）＋ count/ammo（特別）。※範囲(area)は無し
@@ -2450,9 +2450,9 @@ var WCAT={ slash:'剣技', scythe:'剣技', chakram:'剣技', katana:'剣技', s
            bell:'音', chainsaw:'剣技', musket:'射撃', blizzard:'氷', laser:'光', gatling:'射撃', toxin:'草', anchor:'打撃', meteor:'岩', gale:'風', tornado:'風', harp:'音', briar:'草', crimson:'剣技', railgun:'射撃', sharkm:'射撃' };
 // 武器タグ（間合い・手段・属性）。ナイトメアの属性強化カード等の土台。
 var WTAG={
-  slash:['近接','斬撃','物理'], chainsaw:['近接','斬撃','物理'],
-  katana:['近接','斬撃','物理','出血'], shuriken:['遠距離','射撃','投擲','物理','出血'],
-  scythe:['中距離','斬撃','物理'], chakram:['自己','斬撃','物理'],
+  slash:['近接','斬撃','物理'], chainsaw:['近接','斬撃','物理','出血'],
+  katana:['近接','斬撃','物理','弱点'], shuriken:['遠距離','射撃','投擲','物理','出血'],
+  scythe:['中距離','斬撃','物理','出血'], chakram:['自己','斬撃','物理','出血'],
   bow:['遠距離','射撃','物理'], gatling:['遠距離','射撃','物理'], musket:['中距離','射撃','物理'],
   toxin:['中距離','投擲','草','毒'],
   anchor:['中距離','投擲','物理','スタン'],
@@ -3023,7 +3023,7 @@ function figInfo(id){
   if(BOSS[id]){ var B=BOSS[id], tt=ETYPE[B.key]||{}; return {nm:B.nm,shape:tt.shape,col:tt.col,dark:tt.dark,desc:BDEX[id]||'',boss:true}; }
   var t=ETYPE[id]||{}; return {nm:t.nm,shape:t.shape,col:t.col,dark:t.dark,desc:DEX[id]||'',boss:false};
 }
-var VERSION='α1.0.273'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
+var VERSION='α1.0.274'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
 function applySave(o){
   for(var i=0;i<UPG.length;i++) META[UPG[i].id]=0;
   try{
@@ -3609,7 +3609,7 @@ function arcHit(rad,arc,dmg,el,onHit,face){
 function doChainHit(rev,fa,arc,rad){                       // ダメージのみ（描画は runWeapons が持続管理）
   SRC='chainsaw';
   var dmg=5*DMG('chainsaw')*pw('chainsaw')*(rev?1.8:1);   // 暴走中は威力アップ
-  var n=arcHit(rad,arc,dmg,null,function(e){ applyLacer(e,dmg); },fa);   // 裂傷（物理DoT）を付与
+  var n=arcHit(rad,arc,dmg,null,function(e){ applyLacer(e,dmg); },fa);   // 出血（物理DoT）を付与
   if(n) sfx((rev?200:120)+Math.random()*40,.05,'sawtooth',.03,1.1);
   wgain('chainsaw',n); SRC=null;
 }
@@ -4092,8 +4092,8 @@ function doKatana(){
   var ar=AREA('katana');
   var arc=TF('katana','fullarc')?6.3:Math.min(3.5,1.55*ar), r2=96*ar;   // 範囲arの効き方を大剣と同一に（角度3.5cap・1.55倍／間合い96倍）
   var dmg=20*DMG('katana')*pw('katana');
-  var bmul=1+TR('katana','bleed');
-  var n=arcHit(r2,arc,dmg,null,function(e){ if(Math.random()<ccChance(BLEED_CHANCE)) applyBleed(e,bmul); });
+  var wper=WK_PER*(1+TR('katana','weak'));   // 刀：弱点（被ダメ増）を付与。熟練度で効果量UP
+  var n=arcHit(r2,arc,dmg,null,function(e){ if(Math.random()<ccChance(STAT_CHANCE)) applyWeak(e,wper,WK_MAX); });
   fx.push({k:'slash',x:P.x,y:P.y,a:P.face,arc:arc,rad:r2,t:0,life:.16,col:'#ffd0d6'});
   swingT=SWDUR; swingDir=(swingDir>0?-1:1);
   if(n){ shake=Math.min(8,shake+1.4); hitStop=Math.max(hitStop,.02); }
@@ -4126,12 +4126,12 @@ function doShuriken(){
   var e=nearest(P.x,P.y,RNG('shuriken')); if(!e) return;
   var a=Math.atan2(e.y-P.y,e.x-P.x), cnt=1+CNT('shuriken');
   var dmg=9*DMG('shuriken')*pw('shuriken');
-  var bmul=1+TR('shuriken','bleed');
+  var lmul=1+TR('shuriken','bleed');   // 出血(DoT)倍率（熟練度）
   for(var i=0;i<cnt;i++){
     var an=a+(i-(cnt-1)/2)*0.17;
     shots.push({x:P.x,y:P.y,vx:Math.cos(an)*680,vy:Math.sin(an)*680,r:9,
       src:'shuriken',kind:'shuriken',ang:an,spin:0,dmg:dmg,
-      pierce:PRC('shuriken'),life:RNG('shuriken')/680,col:'#e6f2ff',col2:'#6a8fb0',el:null,hit:[],bleed:bmul});
+      pierce:PRC('shuriken'),life:RNG('shuriken')/680,col:'#e6f2ff',col2:'#6a8fb0',el:null,hit:[],lacer:lmul});
   }
   sfx(900,.04,'square',.03,1.4);
   wgain('shuriken',cnt);
@@ -4189,7 +4189,7 @@ function moveScys(dt){
       if(e.dead||c.hit.indexOf(e)>=0) continue;
       var dx=e.x-c.x, dy=e.y-c.y, d=Math.hypot(dx,dy);
       if(d<e.r+17*(c.ar||1)){ SRC='scythe'; hurt(e,c.dmg*mul,dx/(d||1),dy/(d||1),null); SRC=null;
-        if(!e.dead&&Math.random()<ccChance(BLEED_CHANCE)) applyBleed(e,1+TR('scythe','bleed'));   // 鎌：出血を付与
+        if(!e.dead&&Math.random()<ccChance(STAT_CHANCE)) applyLacer(e,c.dmg*mul);   // 鎌：出血(DoT)を付与
         c.hit.push(e); }
     }
   }
@@ -4224,7 +4224,7 @@ function moveChaks(dt){
       if(e.dead||c.hit.indexOf(e)>=0) continue;
       var dx=e.x-c.x, dy=e.y-c.y, d=Math.hypot(dx,dy);
       if(d<e.r+14){ SRC='chakram'; hurt(e,c.dmg*mul,dx/(d||1),dy/(d||1),null); SRC=null;
-        if(!e.dead) applyLacer(e,c.dmg*mul);   // 裂傷（物理DoT）を付与
+        if(!e.dead) applyLacer(e,c.dmg*mul);   // 出血（物理DoT）を付与
         c.hit.push(e); }
     }
   }
@@ -5195,28 +5195,22 @@ function spread(from,el,dmg){
 function dot(e,dps,sec,col){
   e.dotD=Math.max(e.dotD||0,dps); e.dotT=Math.max(e.dotT||0,sec); e.dotC=col;
 }
-// 出血：DoTではなく「被弾ダメージ増幅」。最大5スタック、被弾のたびに (per×スタック) ぶん上乗せ。
-var BLEED_MAX=5, BLEED_PER=0.08, BLEED_CHANCE=0.30;   // 1スタックあたり被ダメ+8%（最大5で+40%）／基本付与率30%
+var STAT_CHANCE=0.30;   // 状態異常の基本付与率（付与率パッシブで上昇）
 // 状態異常の付与率（付与率パッシブ debuff で +8%/Lv・最大3＝+24%）
 function ccChance(base){ return (base||0)+0.08*(P.p.debuff||0)+GROW('debuff'); }
-function applyBleed(e,perMul){
-  e.bleedStk=Math.min(BLEED_MAX,(e.bleedStk||0)+1);
-  e.bleedT=4;
-  e.bleedPer=Math.max(e.bleedPer||0, BLEED_PER*(perMul||1));
-}
 // ===== 弱点（被ダメージ増加スタック）=====
-// ハープなどが付与。スタックぶん敵の被ダメージが増える（最大3＝+30%）。
+// スタックぶん敵の被ダメージが増える（最大3＝+30%）。ハープ・刀が付与。
 var WK_MAX=3, WK_PER=0.10, WK_DUR=4.0;
 function applyWeak(e,per,mx){
   e.wk=Math.min(mx||WK_MAX,(e.wk||0)+1);
   e.wkPer=Math.max(e.wkPer||0, per||WK_PER);
   e.wkT=WK_DUR;
 }
-// ===== 裂傷（物理DoT）=====
+// ===== 出血（物理DoT）=====
 // 命中で「与えたダメージの一部」を継続ダメージのプールに加え、時間で削る（毒とは別枠の物理DoT）。
-// 弱点デバフが乗ると裂傷も増える（効果の組み合わせ）。チェンソー・チャクラムが付与。
+// 弱点デバフが乗ると出血も増える（効果の組み合わせ）。チェンソー・チャクラム・手裏剣・鎌が付与。
 var LAC_RATIO=0.4, LAC_DRAIN=2.0;   // 与ダメの40%を約2秒かけて継続ダメージに
-function applyLacer(e,hitDmg){ if(e.dead)return; e.lac=(e.lac||0)+hitDmg*LAC_RATIO; }
+function applyLacer(e,hitDmg,mul){ if(e.dead)return; e.lac=(e.lac||0)+hitDmg*LAC_RATIO*(mul||1); }
 // 毒（草属性）：継続ダメージ（DoT）。時間経過で周囲の敵へ拡散する。
 function applyPois(e,dps,dur){
   if(!(e.poisT>0)){ e.poisStk=0; e.poisD=0; }   // 毒が切れていたらスタックをリセットしてから積む
@@ -5541,8 +5535,6 @@ function moveEnemies(dt){
       }
       if(e.hp<=0){ kill(e); continue; }
     }
-    // 出血：時間経過でスタック解除（DoTではないのでHPは直接削らない）
-    if(e.bleedT>0){ e.bleedT-=dt; if(e.bleedT<=0){ e.bleedStk=0; e.bleedPer=0; } }
     // 毒（草）：継続ダメージ＋周囲へ拡散
     if(e.poisT>0){
       e.poisT-=dt;
@@ -5556,14 +5548,14 @@ function moveEnemies(dt){
       if(e.poisSp<=0){ e.poisSp=0.7; spreadPoison(e); }
       if(e.hp<=0){ kill(e); continue; }
     }
-    // 裂傷（物理DoT）：プールを時間で削る。弱点デバフで威力増（組み合わせ）
+    // 出血（物理DoT）：プールを時間で削る。弱点デバフで威力増（組み合わせ）
     if(e.lac>0.1){
       var ldps=e.lac/LAC_DRAIN;                                   // 現在の秒間ダメージ
       var lmul=(e.wk>0)?1+e.wk*(e.wkPer||WK_PER):1;
       var ldd=ldps*lmul*dt;
       if(e.shield>0){ e.shield-=ldd; if(e.shield<0) e.shield=0; }
       else e.hp-=ldd;
-      e.lac=Math.max(0,e.lac-ldps*dt); dmgSec+=ldd;
+      e.lac=Math.max(0,e.lac-ldps*dt); dmgSec+=ldd; WDMG._bleed=(WDMG._bleed||0)+ldd;   // リザルト内訳「出血」へ計上
       e.lacN=(e.lacN||0)-dt;
       if(e.lacN<=0){ e.lacN=0.45;
         if(dmgs.length<=110) dmgs.push({x:e.x+8,y:e.y-e.r-14,v:-40,t:0,life:.5,txt:Math.max(1,Math.round(ldps*lmul*0.45)),crit:false,col:'#ff6a4d',rx:1}); }
@@ -6388,9 +6380,7 @@ function hurt(e,dmg,nx,ny,el){
   if(crit&&NIGHTMARE){ var _ch=contractStat('critheal'); if(_ch&&P.hp<P.max) P.hp=Math.min(P.max,P.hp+d*_ch); }   // 吸命：会心で回復
   if(P.nodmg) d=0;                         // テスト：判定は走るが敵は死なない
   if(e.vuln>0) d*=1.2;                     // 深淵の手：被ダメージ上昇
-  var bfrac=(e.bleedStk>0)?(e.bleedPer||0)*e.bleedStk:0;   // 出血：スタックぶん被ダメージ増幅
-  if(bfrac>0) d*=1+bfrac;
-  if(e.wk>0) d*=1+e.wk*(e.wkPer||WK_PER);   // 弱点：被ダメージ増加（ハープ等の付与、全ダメージに乗る）
+  if(e.wk>0) d*=1+e.wk*(e.wkPer||WK_PER);   // 弱点：被ダメージ増加（ハープ・刀の付与、全ダメージに乗る）
   if(e.flat) d=Math.max(d*0.25,d-e.flat);   // 甲羅：軽い攻撃ほど通らない
   if(e.buffT>0) d*=0.8;                      // リッチのオーラ：被ダメージ -20%
   if(e.shield>0){                            // 盾の戦士：割れるまで本体HPに通さない（この一撃も本体には行かない）
@@ -6406,15 +6396,10 @@ function hurt(e,dmg,nx,ny,el){
   e.hp-=d; e.ht=0.12; dmgSec+=d;   // DPS/DPM 集計
   // ノックバックは武器ごとのレベル（WKB）で決定：ベル=弱／ホーリージャッジ・ブリザード・インフェルノ・毒瓶=無し／他=中
   applyKB(e,SRC,crit,nx,ny);
-  var bb=(bfrac>0)?d*bfrac/(1+bfrac):0;                    // このヒットの出血ぶん
-  if(bb>0) WDMG._bleed=(WDMG._bleed||0)+bb;                // リザルト内訳：出血の総量
-  var credit=d-bb;
-  if(SRC) WDMG[SRC]=(WDMG[SRC]||0)+credit;                 // 与ダメージ集計（出血ぶんは別枠へ）
-  else { WDMG._react=(WDMG._react||0)+credit; if(RK) REACTDMG[RK]=(REACTDMG[RK]||0)+credit; }
+  if(SRC) WDMG[SRC]=(WDMG[SRC]||0)+d;                      // 与ダメージ集計
+  else { WDMG._react=(WDMG._react||0)+d; if(RK) REACTDMG[RK]=(REACTDMG[RK]||0)+d; }
   if(dmgs.length>110) dmgs.shift();
   dmgs.push({x:e.x,y:e.y-e.r-4,v:-52,t:0,life:.65,txt:Math.round(d),crit:crit});
-  if(bb>=1&&dmgs.length<=110)   // 出血ぶんを赤字で別表示
-    dmgs.push({x:e.x+12,y:e.y-e.r-20,v:-46,t:0,life:.6,txt:'+'+Math.round(bb),crit:false,col:'#ff4d5e',rx:1});
   if(el) applyElem(e,el,d);
   if(e.hp<=0) kill(e);
 }
@@ -6602,7 +6587,7 @@ function moveShots(dt){
         SRC=s.src;
         hurt(e,s.dmg,s.vx/d,s.vy/d,s.el);
         SRC=null;
-        if(s.bleed&&Math.random()<ccChance(BLEED_CHANCE)) applyBleed(e,s.bleed*(s.src==='shuriken'&&AW('shuriken')?1.8:1));   // 出血スタック付与（確率・覚醒で強化）
+        if(s.lacer&&Math.random()<ccChance(STAT_CHANCE)) applyLacer(e,s.dmg,s.lacer*(s.src==='shuriken'&&AW('shuriken')?1.8:1));   // 出血(DoT)付与（確率・覚醒で強化）
         if(s.anchor){                                        // 錨：確率スタン（引き寄せなし）
           var stunC=AW('anchor')?1:(0.35+0.08*(P.p.debuff||0)+TR('anchor','stun'));
           if(Math.random()<stunC){ e.frz=Math.max(e.frz||0,1.1*(1-(e.res||0)));
@@ -9634,7 +9619,8 @@ function openWeaponDetail(w){
       '<div class="wdawk-note">ラン中に武器レベルを10まで上げると覚醒します</div>'+
     '</div>') : '';
   // 状態異常の効果説明（武器タグに応じて表示）
-  var STATUS_DESC={ '出血':'命中時に確率で付与（基本30%）。出血中の敵は受けるダメージが増加し、最大5回まで重なる。「付与率」の強化で発生率が上がる。',
+  var STATUS_DESC={ '出血':'与えたダメージの一部を、数秒かけて継続ダメージ（DoT）として与える。毒とは別枠。弱点など被ダメージ増加が乗るとダメージも増える。',
+    '弱点':'当てた敵の被ダメージを増加させるデバフ（1スタック +10%・最大3＝+30%）。あらゆる攻撃のダメージが増える。',
     '毒':'草属性。継続ダメージを与え、時間とともに周囲の敵へ拡散していく。',
     'スタン':'当てた敵を確率で一定時間動きを止める。「付与率」の強化で発生率が上がる。' };
   var stxt=(WTAG[w]||[]).map(function(t){ return STATUS_DESC[t]?('<div class="wdst"><b>'+t+'</b>'+STATUS_DESC[t]+'</div>'):''; }).join('');
@@ -10753,8 +10739,11 @@ Array.prototype.forEach.call(document.querySelectorAll('#setview button'),functi
 // 更新履歴：1つのお知らせ内で「バージョン見出し」ごとに変更点を並べる（新しい順）。
 // マージのたびに先頭へ新バージョンを追加し、VERSION も更新する。
 var UPDATES=[
+  {v:'α1.0.274', items:[
+    '状態異常「出血」と「弱点」を整理しました。これまでの「出血」は実は“被ダメージ増加”だったため、名前と中身を一致させました。今後は――「出血」＝与えたダメージの一部を数秒かけて継続ダメージにする本来のDoT（チェンソー・チャクラム・手裏剣・鎌が付与）。「弱点」＝被ダメージ増加デバフ（+10%・最大3。ハープ・刀が付与）。弱点が乗ると出血のダメージも増えます。',
+  ]},
   {v:'α1.0.273', items:[
-    '新しい状態異常「裂傷」（継続ダメージ／物理のDoT）を追加しました。チェンソーとチャクラムが、当てた敵に裂傷を与えます（与えたダメージの一部を数秒かけて継続ダメージに）。毒とは別枠で、ハープの「弱点」など被ダメージ増加が乗ると裂傷のダメージも増えます。',
+    '新しい継続ダメージ（物理DoT）の状態異常を追加しました（後にα1.0.274で「出血」に統合）。',
   ]},
   {v:'α1.0.272', items:[
     '物理武器に効果を追加・調整しました。鎌に「出血」（被ダメージ増加）を付与。ハープは一撃の威力を下げた代わりに、当てた敵へ「弱点」（被ダメージ +10%・最大3スタック）を付与する支援型に変更（味方全体の火力を底上げ）。シャークミサイルは爆発を主体に切り替え、炸裂の範囲と威力を強化しました。',
