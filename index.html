@@ -3033,7 +3033,7 @@ function figInfo(id){
   if(BOSS[id]){ var B=BOSS[id], tt=ETYPE[B.key]||{}; return {nm:B.nm,shape:tt.shape,col:tt.col,dark:tt.dark,desc:BDEX[id]||'',boss:true}; }
   var t=ETYPE[id]||{}; return {nm:t.nm,shape:t.shape,col:t.col,dark:t.dark,desc:DEX[id]||'',boss:false};
 }
-var VERSION='α1.0.279'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
+var VERSION='α1.0.280'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
 function applySave(o){
   for(var i=0;i<UPG.length;i++) META[UPG[i].id]=0;
   try{
@@ -3237,33 +3237,39 @@ function reset(){
 var cool={}, busy={};   // busy=発射中ロック（撃ち切るまで次のクールを開始しない）
 
 /* ============ 連携コンボ ============ */
-// コンボ倍率：コンボ数が伸びるほど上がり（＝伸ばすメリット）、武器の種類数がその上限を引き上げる。
-//   倍率 = 1 + min( 種類数×COMBO_CAPPER , コンボ数×COMBO_RATE )
-//   ・コンボは「2種以上の武器を当てている状態で敵を倒す」と加算＝1武器では絶対に伸びない
-//   ・伸ばすほど上限（種類数×12%）に向かって火力が上がる。多武器ほど天井が高い
-var COMBOWIN=1.0, COMBO_RATE=0.02, COMBO_CAPPER=0.12;   // +2%/コンボ、種類ごとに上限+12%
+// 連携コンボ：2種以上の武器を当てている状態で敵を倒すと加算（1武器では絶対に伸びない）。
+//   ・継続の猶予は「コンボが伸びるほど短くなる」：100コンボごとに縮み、最短0.02秒まで。
+//     → 高コンボは倒し続けるテンポがどんどんシビアになり、自然と難易度キャップになる。
+//   ・最大コンボ 99999。
+//   ・火力ボーナスは控えめ：100コンボごとに +0.2%（膨張しない・伸ばした証としての小ボーナス）。
+var COMBO_FRESH=1.0;          // 武器の「当てた鮮度」＝種類数のカウント窓
+var COMBO_W0=0.8;             // 継続の基本猶予（コンボ0のとき）
+var COMBO_WSHRINK=0.02;       // 100コンボごとに猶予を縮める量
+var COMBO_WMIN=0.02;          // 猶予の下限
+var COMBO_MAX=99999;          // 最大コンボ数
+var COMBO_DMG_PER100=0.002;   // 100コンボごとの火力上昇（+0.2%）
 var comboN=0, comboT=0, comboWpn={}, comboMulV=1, comboFlash=0;
 function comboKinds(){ var n=0; for(var k in comboWpn){ if(comboWpn[k]>0) n++; } return n; }
+function comboWindow(n){ return Math.max(COMBO_WMIN, COMBO_W0 - COMBO_WSHRINK*Math.floor(n/100)); }
 function comboMul(){
-  var kinds=comboKinds();
-  comboMulV=(comboN>=1&&kinds>=2) ? 1+Math.min(kinds*COMBO_CAPPER, comboN*COMBO_RATE) : 1;
+  comboMulV = comboN>0 ? 1 + COMBO_DMG_PER100*Math.floor(comboN/100) : 1;
   return comboMulV;
 }
-function comboTouch(w){                            // ヒットした武器を記録（種類数＝倍率の上限を決める）
+function comboTouch(w){                            // ヒットした武器を記録（種類数＝伸ばせる条件）
   if(!w||!WEAPONS[w]) return;
-  var fresh=!comboWpn[w]; comboWpn[w]=COMBOWIN;
+  var fresh=!comboWpn[w]; comboWpn[w]=COMBO_FRESH;
   if(fresh) comboFlash=0.5;
 }
 function comboKill(w){                             // 撃破でコンボ加算。ただし2種以上当てているときだけ伸びる
   comboTouch(w);
-  if(comboKinds()>=2){ comboN++; comboT=COMBOWIN; }
+  if(comboKinds()>=2){ if(comboN<COMBO_MAX) comboN++; comboT=comboWindow(comboN); }   // 猶予はコンボ数に応じて短縮
 }
 function comboBreak(){ comboN=0; comboT=0; comboWpn={}; comboMulV=1; }   // リロード等でコンボ途切れ
 function stepCombo(dt){
   if(!DEV) return;
   if(comboFlash>0) comboFlash-=dt;
   for(var k in comboWpn){ comboWpn[k]-=dt; if(comboWpn[k]<=0) delete comboWpn[k]; }   // 各武器の鮮度を減衰
-  if(comboT>0){ comboT-=dt; if(comboT<=0){ comboN=0; comboMulV=1; } }                // 撃破が途切れたらコンボ消滅
+  if(comboT>0){ comboT-=dt; if(comboT<=0){ comboN=0; comboMulV=1; } }                // 猶予切れでコンボ消滅
 }
 
 /* ============ 派生ステータス ============ */
@@ -7381,13 +7387,14 @@ function drawCombo(){
   if(comboN<2||kinds<2) return;
   comboMul();   // 表示用に倍率を最新化
   var pop=1+(comboFlash>0?comboFlash*0.7:0), cx=W/2, cy=H*0.24;
+  var bonus=(COMBO_DMG_PER100*100*Math.floor(comboN/100)).toFixed(1);   // +0.2%/100コンボ
   ctx.save(); ctx.textAlign='center';
-  ctx.globalAlpha=Math.min(1,comboT/0.4);
+  ctx.globalAlpha=1;                                                     // 猶予が縮んでも見えるよう常時表示
   ctx.font='bold '+Math.round(38*pop)+'px sans-serif';
   ctx.lineWidth=5; ctx.strokeStyle='rgba(0,0,0,0.55)'; ctx.fillStyle='#ffe14d';
   ctx.strokeText(comboN+' COMBO', cx, cy); ctx.fillText(comboN+' COMBO', cx, cy);
   ctx.font='bold 16px sans-serif'; ctx.fillStyle='#ff9b4d';
-  ctx.fillText('火力 ×'+comboMulV.toFixed(2)+'  ('+kinds+'種)', cx, cy+22);
+  ctx.fillText('火力 +'+bonus+'%  ('+kinds+'種)', cx, cy+22);
   ctx.globalAlpha=1; ctx.restore();
 }
 function drawStick(){
@@ -10767,6 +10774,9 @@ Array.prototype.forEach.call(document.querySelectorAll('#setview button'),functi
 // 更新履歴：1つのお知らせ内で「バージョン見出し」ごとに変更点を並べる（新しい順）。
 // マージのたびに先頭へ新バージョンを追加し、VERSION も更新する。
 var UPDATES=[
+  {v:'α1.0.280', items:[
+    '（実験中・開発版のみ）連携コンボを作り直しました。コンボが伸びるほど継続の猶予が短くなり（100コンボごとに縮み、最短0.02秒）、伸ばし続けるほどシビアに。最大99999コンボ。火力ボーナスは膨張しないよう控えめ（100コンボごとに+0.2%）にしました。',
+  ]},
   {v:'α1.0.279', items:[
     'インフェルノビームの見た目を細くしました。火力上昇や持続を伸ばしてもビームが太くなりすぎないよう、以前の「メインではない方」のビームくらいの細さに統一（威力は変わりません）。',
   ]},
