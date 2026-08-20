@@ -3033,7 +3033,7 @@ function figInfo(id){
   if(BOSS[id]){ var B=BOSS[id], tt=ETYPE[B.key]||{}; return {nm:B.nm,shape:tt.shape,col:tt.col,dark:tt.dark,desc:BDEX[id]||'',boss:true}; }
   var t=ETYPE[id]||{}; return {nm:t.nm,shape:t.shape,col:t.col,dark:t.dark,desc:DEX[id]||'',boss:false};
 }
-var VERSION='α1.0.278'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
+var VERSION='α1.0.279'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
 function applySave(o){
   for(var i=0;i<UPG.length;i++) META[UPG[i].id]=0;
   try{
@@ -3823,9 +3823,9 @@ function infBeam(tx,ty,w,g){
 }
 function drawInferno(){
   if(!P.w.inferno||!INF.on) return;
-  var w=(6+INF.ramp*1.4)*AREA('inferno'), g=Math.min(1,0.45+INF.ramp*0.2);   // 主ビームが太くなりすぎないよう抑える（通常の細さに）
+  var w=Math.max(3,(3.6+INF.ramp*0.85)*AREA('inferno')), g=Math.min(1,0.45+INF.ramp*0.2);   // 旧「非メイン(細め)」相当の細さに統一（太さは見た目のみ・威力は幅非依存で不変）
   ctx.save();
-  for(var i=0;i<INF.extra.length;i++) infBeam(INF.extra[i].x,INF.extra[i].y,w,0.85);  // 追加ビームも主ビームと同じ太さ（同威力）
+  for(var i=0;i<INF.extra.length;i++) infBeam(INF.extra[i].x,INF.extra[i].y,w,0.85);  // 全ビーム同じ細さ・同威力
   infBeam(INF.ex,INF.ey,w,g);
   ctx.globalAlpha=1; ctx.restore();
 }
@@ -10767,6 +10767,9 @@ Array.prototype.forEach.call(document.querySelectorAll('#setview button'),functi
 // 更新履歴：1つのお知らせ内で「バージョン見出し」ごとに変更点を並べる（新しい順）。
 // マージのたびに先頭へ新バージョンを追加し、VERSION も更新する。
 var UPDATES=[
+  {v:'α1.0.279', items:[
+    'インフェルノビームの見た目を細くしました。火力上昇や持続を伸ばしてもビームが太くなりすぎないよう、以前の「メインではない方」のビームくらいの細さに統一（威力は変わりません）。',
+  ]},
   {v:'α1.0.278', items:[
     '「間合い係数」を廃止し、各武器の基礎攻撃力に直接折り込みました（計算がシンプルに）。近接は約1.15倍・長距離は約0.78倍ぶんを基礎値へ反映済みで、実際の火力はほぼ据え置きです。',
     '武器詳細画面に「攻撃力」の数値を表示するようにしました（現在の強化・キャラ補正込み）。',
