@@ -2650,19 +2650,10 @@ var WCLASS={ slash:'melee', chainsaw:'melee', katana:'melee', shuriken:'mid',
 var CLMUL={ melee:1.15, self:1.0, mid:1.0, long:0.78 };
 function RCM(w){ return CLMUL[WCLASS[w]||'mid']; }
 // 各軸の効き。ダメージと範囲は乗算、頻度はクールダウンの短縮。
-// DEV：軸の指数だけ残し、熟練度・限界突破などの細かい％は「加算してまとめて掛ける」(乗算の積み重なりを抑制)
-function DMG(w){
-  if(DEV) return RCM(w)*Math.pow(1.45,AX(w,'dmg'))*(1 + TR(w,'dmg') + 0.08*LB(w,'dmg'));   // 熟練度＋限界突破を加算統合（RCMは基礎に含む扱い）
-  return RCM(w)*Math.pow(1.45,AX(w,'dmg'))*(1+TR(w,'dmg'))*(1+0.08*LB(w,'dmg'));
-}
-function AREA(w){
-  if(DEV) return Math.pow(1.18,AX(w,'area'))*(1 + TR(w,'area') + 0.04*LB(w,'area') + 0.05*(P.p.reach||0) + (CH().area-1) + (contractArea(w)-1));   // 加算統合
-  return Math.pow(1.18,AX(w,'area'))*(1+TR(w,'area'))*(1+0.04*LB(w,'area'))*CH().area*(1+0.05*(P.p.reach||0))*contractArea(w);
-}
-function RATE(w){
-  if(DEV) return Math.max(0.20,Math.pow(0.85,AX(w,'rate'))*(1 + TR(w,'cd') - 0.015*LB(w,'rate')));   // 加算統合
-  return Math.max(0.20,Math.pow(0.85,AX(w,'rate'))*(1+TR(w,'cd'))*(1-0.015*LB(w,'rate')));
-}
+// 軸の指数だけ残し、熟練度・限界突破・パッシブなどの細かい％は「加算してまとめて掛ける」(乗算の積み重なりを抑制)。RCMは基礎攻撃力に含む扱い。
+function DMG(w){ return RCM(w)*Math.pow(1.45,AX(w,'dmg'))*(1 + TR(w,'dmg') + 0.08*LB(w,'dmg')); }
+function AREA(w){ return Math.pow(1.18,AX(w,'area'))*(1 + TR(w,'area') + 0.04*LB(w,'area') + 0.05*(P.p.reach||0) + (CH().area-1) + (contractArea(w)-1)); }
+function RATE(w){ return Math.max(0.20,Math.pow(0.85,AX(w,'rate'))*(1 + TR(w,'cd') - 0.015*LB(w,'rate'))); }
 function CNT(w){ return AX(w,'count')+TR(w,'count')+LB(w,'count'); }
 function BST(w){ return AX(w,'burst')+TR(w,'burst')+LB(w,'burst'); }
 function PRC(w){ return AX(w,'pierce')*2+TR(w,'pierce')+LB(w,'pierce'); }
@@ -3033,7 +3024,7 @@ function figInfo(id){
   if(BOSS[id]){ var B=BOSS[id], tt=ETYPE[B.key]||{}; return {nm:B.nm,shape:tt.shape,col:tt.col,dark:tt.dark,desc:BDEX[id]||'',boss:true}; }
   var t=ETYPE[id]||{}; return {nm:t.nm,shape:t.shape,col:t.col,dark:t.dark,desc:DEX[id]||'',boss:false};
 }
-var VERSION='α1.0.274'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
+var VERSION='α1.0.275'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
 function applySave(o){
   for(var i=0;i<UPG.length;i++) META[UPG[i].id]=0;
   try{
@@ -3290,33 +3281,19 @@ function growNow(){
 }
 // 爆弾魔：武器由来の爆発だけを伸ばす（元素反応の爆発は対象外）
 function pw(w){
-  if(DEV){   // DEV：パッシブ攻撃力・might・属性/カテゴリ成長を加算してまとめる（キャラpwのみ乗算）
-    var add=0.12*(P.p.power||0)+0.06*M('might');
-    if(w){
-      if(GROW('light')  &&ELW.holy.indexOf(w)>=0)    add+=GROW('light');
-      if(GROW('icep')   &&ELW.ice.indexOf(w)>=0)     add+=GROW('icep');
-      if(GROW('thunp')  &&ELW.thunder.indexOf(w)>=0) add+=GROW('thunp');
-      if(GROW('darkp')  &&ELW.dark.indexOf(w)>=0)    add+=GROW('darkp');
-      if(GROW('grassp') &&ELW.grass.indexOf(w)>=0)   add+=GROW('grassp');
-      var gwd=CH().grow;
-      if(gwd&&gwd.k==='wpn'&&gwd.wk===w) add+=gwd.v*(P.lv-1);
-      if(gwd&&gwd.k==='cat'&&WCAT[w]===gwd.cat) add+=gwd.v*(P.lv-1);
-    }
-    return (1+add)*CH().pw;
-  }
-  var m=(1+0.12*(P.p.power||0)+0.06*M('might'))*CH().pw;
-  // 属性キャラ：その属性の武器だけが伸びる（聖女=光／氷術師=氷／雷鳴使い=雷）
+  // パッシブ攻撃力・might・属性/カテゴリ成長を加算してまとめる（キャラpwのみ乗算）
+  var add=0.12*(P.p.power||0)+0.06*M('might');
   if(w){
-    if(GROW('light')  &&ELW.holy.indexOf(w)>=0)    m*=(1+GROW('light'));
-    if(GROW('icep')   &&ELW.ice.indexOf(w)>=0)     m*=(1+GROW('icep'));
-    if(GROW('thunp')  &&ELW.thunder.indexOf(w)>=0) m*=(1+GROW('thunp'));
-    if(GROW('darkp')  &&ELW.dark.indexOf(w)>=0)    m*=(1+GROW('darkp'));
-    if(GROW('grassp') &&ELW.grass.indexOf(w)>=0)   m*=(1+GROW('grassp'));
-    var gw=CH().grow;   // 持ち武器強化キャラ：毎レベル攻撃力アップ（wpn=特定武器／cat=カテゴリ）
-    if(gw&&gw.k==='wpn'&&gw.wk===w) m*=(1+gw.v*(P.lv-1));
-    if(gw&&gw.k==='cat'&&WCAT[w]===gw.cat) m*=(1+gw.v*(P.lv-1));
+    if(GROW('light')  &&ELW.holy.indexOf(w)>=0)    add+=GROW('light');
+    if(GROW('icep')   &&ELW.ice.indexOf(w)>=0)     add+=GROW('icep');
+    if(GROW('thunp')  &&ELW.thunder.indexOf(w)>=0) add+=GROW('thunp');
+    if(GROW('darkp')  &&ELW.dark.indexOf(w)>=0)    add+=GROW('darkp');
+    if(GROW('grassp') &&ELW.grass.indexOf(w)>=0)   add+=GROW('grassp');
+    var gwd=CH().grow;   // 持ち武器強化キャラ：毎レベル攻撃力アップ（wpn=特定武器／cat=カテゴリ）
+    if(gwd&&gwd.k==='wpn'&&gwd.wk===w) add+=gwd.v*(P.lv-1);
+    if(gwd&&gwd.k==='cat'&&WCAT[w]===gwd.cat) add+=gwd.v*(P.lv-1);
   }
-  return m;
+  return (1+add)*CH().pw;
 }
 function cdr(){ return Math.pow(0.92,(P.p.haste||0))*(1-0.04*M('haste'))*(1-GROW('rof')); }
 function mag(){ return 96*(1+0.40*(P.p.magnet||0)+0.10*M('magnet')); }
@@ -3827,7 +3804,7 @@ function infBeam(tx,ty,w,g){
 }
 function drawInferno(){
   if(!P.w.inferno||!INF.on) return;
-  var w=(6+INF.ramp*4)*AREA('inferno'), g=Math.min(1,0.45+INF.ramp*0.2);
+  var w=(6+INF.ramp*1.4)*AREA('inferno'), g=Math.min(1,0.45+INF.ramp*0.2);   // 主ビームが太くなりすぎないよう抑える（通常の細さに）
   ctx.save();
   for(var i=0;i<INF.extra.length;i++) infBeam(INF.extra[i].x,INF.extra[i].y,Math.max(3,w*0.6),0.7);  // 追加ビーム（細め）
   infBeam(INF.ex,INF.ey,w,g);
@@ -6398,24 +6375,16 @@ function hurt(e,dmg,nx,ny,el){
   var crit=Math.random()<CRITC();
   if(crit) crits++;
   var d=crit?dmg*CRITD():dmg;
-  if(DEV){   // DEV：命中時の細かい倍率（図鑑・契約・深淵・弱点・連携コンボ）を「加算してまとめて掛ける」＝乗算の積み重なりを抑制
-    if(SRC) comboTouch(SRC);
-    var add=(dexDealMul(figKey(e))-1)
-          + (NIGHTMARE?(contractDmgMul(SRC,e)-1):0)
-          + (e.vuln>0?0.2:0)
-          + (e.wk>0?e.wk*(e.wkPer||WK_PER):0)
-          + (comboMul()-1);
-    d*=(1+add);
-    if(crit&&NIGHTMARE){ var _chd=contractStat('critheal'); if(_chd&&P.hp<P.max) P.hp=Math.min(P.max,P.hp+d*_chd); }
-    if(P.nodmg) d=0;
-  }else{
-    d*=dexDealMul(figKey(e));                // 図鑑ボーナス：その敵への与ダメージ+
-    if(NIGHTMARE) d*=contractDmgMul(SRC,e);  // 契約：全体/武器タグ/敵タグ特効の倍率
-    if(crit&&NIGHTMARE){ var _ch=contractStat('critheal'); if(_ch&&P.hp<P.max) P.hp=Math.min(P.max,P.hp+d*_ch); }   // 吸命：会心で回復
-    if(P.nodmg) d=0;                         // テスト：判定は走るが敵は死なない
-    if(e.vuln>0) d*=1.2;                     // 深淵の手：被ダメージ上昇
-    if(e.wk>0) d*=1+e.wk*(e.wkPer||WK_PER);  // 弱点：被ダメージ増加
-  }
+  // 命中時の細かい倍率（図鑑・契約・深淵・弱点・連携コンボ[DEV]）を「加算してまとめて掛ける」＝乗算の積み重なりを抑制
+  if(DEV&&SRC) comboTouch(SRC);
+  var add=(dexDealMul(figKey(e))-1)
+        + (NIGHTMARE?(contractDmgMul(SRC,e)-1):0)
+        + (e.vuln>0?0.2:0)
+        + (e.wk>0?e.wk*(e.wkPer||WK_PER):0)
+        + (DEV?(comboMul()-1):0);
+  d*=(1+add);
+  if(crit&&NIGHTMARE){ var _ch=contractStat('critheal'); if(_ch&&P.hp<P.max) P.hp=Math.min(P.max,P.hp+d*_ch); }   // 吸命：会心で回復
+  if(P.nodmg) d=0;                         // テスト：判定は走るが敵は死なない
   if(e.flat) d=Math.max(d*0.25,d-e.flat);   // 甲羅：軽い攻撃ほど通らない
   if(e.buffT>0) d*=0.8;                      // リッチのオーラ：被ダメージ -20%
   if(e.shield>0){                            // 盾の戦士：割れるまで本体HPに通さない（この一撃も本体には行かない）
@@ -10774,6 +10743,10 @@ Array.prototype.forEach.call(document.querySelectorAll('#setview button'),functi
 // 更新履歴：1つのお知らせ内で「バージョン見出し」ごとに変更点を並べる（新しい順）。
 // マージのたびに先頭へ新バージョンを追加し、VERSION も更新する。
 var UPDATES=[
+  {v:'α1.0.275', items:[
+    'ダメージ・範囲・間隔の計算をシンプルにしました。これまで細かい強化（熟練度・限界突破・パッシブ・図鑑・契約・弱点など）が全部“掛け算”で積み重なって伸びすぎていたのを、「軸のレベルと会心だけ別枠、それ以外はまとめて加算」に変更。数値の暴走を抑え、伸びが素直になります。',
+    'インフェルノビームの主ビームが太くなりすぎていたのを、通常の細さに調整しました。',
+  ]},
   {v:'α1.0.274', items:[
     '状態異常「出血」と「弱点」を整理しました。これまでの「出血」は実は“被ダメージ増加”だったため、名前と中身を一致させました。今後は――「出血」＝与えたダメージの一部を数秒かけて継続ダメージにする本来のDoT（チェンソー・チャクラム・手裏剣・鎌が付与）。「弱点」＝被ダメージ増加デバフ（+10%・最大3。ハープ・刀が付与）。弱点が乗ると出血のダメージも増えます。',
   ]},
