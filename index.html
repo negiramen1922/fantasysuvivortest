@@ -3024,7 +3024,7 @@ function figInfo(id){
   if(BOSS[id]){ var B=BOSS[id], tt=ETYPE[B.key]||{}; return {nm:B.nm,shape:tt.shape,col:tt.col,dark:tt.dark,desc:BDEX[id]||'',boss:true}; }
   var t=ETYPE[id]||{}; return {nm:t.nm,shape:t.shape,col:t.col,dark:t.dark,desc:DEX[id]||'',boss:false};
 }
-var VERSION='α1.0.276'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
+var VERSION='α1.0.277'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
 function applySave(o){
   for(var i=0;i<UPG.length;i++) META[UPG[i].id]=0;
   try{
@@ -3773,8 +3773,8 @@ function infernoTick(dt){
     hurt(e, base*mul*0.12, dx/dd, dy/dd, 'fire');
     if(AW('inferno')){ e.dotD=Math.max(e.dotD,base*mul*0.25); e.dotT=Math.max(e.dotT,burnT); e.dotC='#ff7a2f'; }
     for(var q=0;q<ex.length;q++){ var oe=ex[q], ox=oe.x-P.x, oy=oe.y-P.y, od=Math.hypot(ox,oy)||1;
-      hurt(oe, base*mul*0.6*0.12, ox/od, oy/od, 'fire');          // 追加ビームもランプを反映（主の6割の威力で一緒に上がる）
-      if(AW('inferno')){ oe.dotD=Math.max(oe.dotD,base*mul*0.6*0.25); oe.dotT=Math.max(oe.dotT,burnT); oe.dotC='#ff7a2f'; }
+      hurt(oe, base*mul*0.12, ox/od, oy/od, 'fire');              // 追加ビームも主ビームと同威力（ランプ反映）
+      if(AW('inferno')){ oe.dotD=Math.max(oe.dotD,base*mul*0.25); oe.dotT=Math.max(oe.dotT,burnT); oe.dotC='#ff7a2f'; }
     }
     SRC=null; wgain('inferno',1+ex.length);
   }
@@ -3806,7 +3806,7 @@ function drawInferno(){
   if(!P.w.inferno||!INF.on) return;
   var w=(6+INF.ramp*1.4)*AREA('inferno'), g=Math.min(1,0.45+INF.ramp*0.2);   // 主ビームが太くなりすぎないよう抑える（通常の細さに）
   ctx.save();
-  for(var i=0;i<INF.extra.length;i++) infBeam(INF.extra[i].x,INF.extra[i].y,Math.max(3,w*0.6),0.7);  // 追加ビーム（細め）
+  for(var i=0;i<INF.extra.length;i++) infBeam(INF.extra[i].x,INF.extra[i].y,w,0.85);  // 追加ビームも主ビームと同じ太さ（同威力）
   infBeam(INF.ex,INF.ey,w,g);
   ctx.globalAlpha=1; ctx.restore();
 }
@@ -10743,6 +10743,9 @@ Array.prototype.forEach.call(document.querySelectorAll('#setview button'),functi
 // 更新履歴：1つのお知らせ内で「バージョン見出し」ごとに変更点を並べる（新しい順）。
 // マージのたびに先頭へ新バージョンを追加し、VERSION も更新する。
 var UPDATES=[
+  {v:'α1.0.277', items:[
+    'インフェルノビームを調整しました。追加ビームが主ビームより弱い（威力6割）ままだったのを、他の武器と同じく全ビーム同威力に統一。本数を増やすと素直に火力が伸びます（見た目の太さも揃えました）。',
+  ]},
   {v:'α1.0.276', items:[
     'インフェルノビームの不具合を修正しました。ビームの本数を増やしたとき、これまで最初の1本しか「当て続けて火力が上がる」効果が乗らず、追加ビームは固定威力のままでした。追加ビームにもランプ（火力上昇）が乗るようにし、全ビームが一緒に強くなります。',
   ]},
