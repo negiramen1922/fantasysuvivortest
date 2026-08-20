@@ -3033,7 +3033,7 @@ function figInfo(id){
   if(BOSS[id]){ var B=BOSS[id], tt=ETYPE[B.key]||{}; return {nm:B.nm,shape:tt.shape,col:tt.col,dark:tt.dark,desc:BDEX[id]||'',boss:true}; }
   var t=ETYPE[id]||{}; return {nm:t.nm,shape:t.shape,col:t.col,dark:t.dark,desc:DEX[id]||'',boss:false};
 }
-var VERSION='α1.0.280'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
+var VERSION='α1.0.281'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
 function applySave(o){
   for(var i=0;i<UPG.length;i++) META[UPG[i].id]=0;
   try{
@@ -3264,7 +3264,7 @@ function comboKill(w){                             // 撃破でコンボ加算�
   comboTouch(w);
   if(comboKinds()>=2){ if(comboN<COMBO_MAX) comboN++; comboT=comboWindow(comboN); }   // 猶予はコンボ数に応じて短縮
 }
-function comboBreak(){ comboN=0; comboT=0; comboWpn={}; comboMulV=1; }   // リロード等でコンボ途切れ
+function comboBreak(){ comboN=0; comboT=0; comboWpn={}; comboMulV=1; }   // リロード・被ダメ等でコンボ途切れ
 function stepCombo(dt){
   if(!DEV) return;
   if(comboFlash>0) comboFlash-=dt;
@@ -3285,7 +3285,7 @@ function juukiCut(){ var g=CH().grow; if(!g||g.k!=='dmgcut') return 0; return Ma
 // プレイヤーの被ダメージ共通係数（永続防護・防護パッシブ・重騎士カット）
 function armorMul(){ return (1-0.04*M('armor'))*(1-0.03*(P.p.bulwark||0))*(1-juukiCut()); }
 // プレイヤー被ダメージの適用：シールド(P.sh)があれば先に肩代わりしてからHPを減らす
-function phurt(raw){ if(!(raw>0)) return; if(P.sh>0){ var ab=Math.min(P.sh,raw); P.sh-=ab; raw-=ab; if(P.sh<0.001)P.sh=0; } P.hp-=raw; }
+function phurt(raw){ if(!(raw>0)) return; if(P.sh>0){ var ab=Math.min(P.sh,raw); P.sh-=ab; raw-=ab; if(P.sh<0.001)P.sh=0; } P.hp-=raw; if(DEV&&raw>0) comboBreak(); }   // 被ダメでコンボ途切れ（DEV／シールドで完全に防げた場合は途切れない）
 // キャラ成長の「現在値」表示文字列（符号・単位つき）
 function growNow(){
   var g=CH().grow; if(!g) return '';
@@ -10774,6 +10774,9 @@ Array.prototype.forEach.call(document.querySelectorAll('#setview button'),functi
 // 更新履歴：1つのお知らせ内で「バージョン見出し」ごとに変更点を並べる（新しい順）。
 // マージのたびに先頭へ新バージョンを追加し、VERSION も更新する。
 var UPDATES=[
+  {v:'α1.0.281', items:[
+    '（実験中・開発版のみ）連携コンボは「被ダメージ」でも途切れるようにしました。倒し続けるだけでなく、被弾を避けることも必要に。シールドで完全に防げた場合は途切れません。',
+  ]},
   {v:'α1.0.280', items:[
     '（実験中・開発版のみ）連携コンボを作り直しました。コンボが伸びるほど継続の猶予が短くなり（100コンボごとに縮み、最短0.02秒）、伸ばし続けるほどシビアに。最大99999コンボ。火力ボーナスは膨張しないよう控えめ（100コンボごとに+0.2%）にしました。',
   ]},
