@@ -237,8 +237,88 @@ def e_sarcher():
     poly(im, [(58, 30), (63, 32), (58, 34)], (210, 210, 216, 255))
     return im
 
+def e_skeledragon():
+    """スケルトンドラゴン（ステージ③ラストボス）：骨の竜。横向きで「竜」と分かる構図。
+    長い頭骨＋開いた顎、首の椎骨、肋骨の胴、背後に広げた骨の翼、伸びる尾。眼窩は紫の炎。"""
+    im = new()
+    BONE  = hexc('#e2dbc0'); BONE_L = lighten(BONE, 0.26); BONE_D = darken(BONE, 0.24)
+    BONE_S = darken(BONE, 0.46)
+    DARK  = (22, 18, 30, 255); FIRE = hexc('#b06aff'); FIRE_L = hexc('#e8caff')
+
+    # ── 翼（体の後ろ＝右上に大きく広げる。指の骨と骨膜）
+    root = (38, 34)
+    tips = [(63, 2), (63, 16), (58, 28), (50, 36)]
+    MEM = (58, 52, 62, 255)                                           # 骨膜（暗くして骨と分ける）
+    for i in range(len(tips)-1):
+        a, b = tips[i], tips[i+1]
+        mid = ((a[0]+b[0])//2 - 3, (a[1]+b[1])//2 + 2)                # 後縁をえぐって膜らしく
+        poly(im, [root, a, mid, b], MEM)
+    for t in tips:                                                    # 指の骨
+        line(im, [root, t], BONE_D, 2)
+        line(im, [(root[0], root[1]-1), (t[0], t[1]-1)], BONE_L)
+        for f in (0.4, 0.72):                                         # 指の関節
+            px(im, int(root[0]+(t[0]-root[0])*f), int(root[1]+(t[1]-root[1])*f), BONE_L)
+        px(im, t[0]-1, t[1]+1, BONE_L); px(im, t[0]-2, t[1]+2, BONE_D)
+    ell(im, (root[0]-4, root[1]-4, root[0]+4, root[1]+4), BONE)       # 肩の関節
+    px(im, root[0]-1, root[1]-2, BONE_L)
+
+    # ── 尾（右下へ細くなる椎骨）
+    for k in range(8):
+        x = 44 + k*2 + (k*k)//6; y = 50 + (k*k)//7
+        r = max(1, 4 - k//2)
+        ell(im, (x-r, y-r, x+r, y+r), BONE if k % 2 == 0 else BONE_D)
+    poly(im, [(60, 57), (63, 60), (58, 61)], BONE_L)
+
+    # ── 肋骨の胴
+    ell(im, (24, 34, 48, 56), BONE_D)
+    ell(im, (26, 35, 46, 53), BONE)
+    for k, y in enumerate((38, 42, 46, 50)):
+        w = 10 - k
+        line(im, [(36 - w, y), (36 + w, y)], BONE_S)
+        line(im, [(36 - w, y-1), (36 + w, y-1)], BONE_L)
+    line(im, [(36, 35), (36, 54)], BONE_S)
+
+    # ── 後ろ脚（爪）
+    for bx in (28, 40):
+        poly(im, [(bx, 48), (bx+9, 50), (bx+8, 60), (bx-1, 58)], BONE)
+        poly(im, [(bx+1, 50), (bx+7, 51), (bx+6, 57), (bx, 56)], BONE_D)
+        for c in range(3):
+            px(im, bx + c*3, 61, BONE_L); px(im, bx + c*3, 62, BONE_L)
+
+    # ── 首（椎骨を頭へつなぐ）
+    neck = [(30, 34), (26, 30), (23, 26), (21, 22)]
+    for i, (x, y) in enumerate(neck):
+        r = 4 - i//2
+        ell(im, (x-r, y-r, x+r, y+r), BONE if i % 2 == 0 else BONE_D)
+        px(im, x, y-r, BONE_L)
+
+    # ── 頭骨（左を向く。長い鼻面＋開いた顎）
+    poly(im, [(16, 14), (28, 16), (30, 26), (22, 30), (12, 28), (8, 22)], BONE)   # 頭蓋
+    poly(im, [(17, 15), (26, 17), (27, 22), (14, 22)], BONE_L)
+    poly(im, [(12, 22), (2, 26), (1, 30), (14, 30)], BONE)                        # 鼻面
+    poly(im, [(12, 23), (4, 26), (4, 27), (13, 26)], BONE_L)
+    px(im, 5, 27, DARK); px(im, 7, 26, DARK)                                      # 鼻孔
+    poly(im, [(14, 31), (3, 33), (6, 37), (18, 35)], BONE_D)                      # 下顎（開いている）
+    for x in range(4, 16, 3):                                                     # 牙（上下）
+        poly(im, [(x, 29), (x+2, 29), (x+1, 34)], BONE_L)
+        px(im, x+1, 33, BONE_D)
+    for x in range(5, 16, 3):
+        poly(im, [(x, 35), (x+2, 35), (x+1, 31)], BONE_L)
+    # 眼窩＋紫の炎
+    poly(im, [(15, 19), (23, 20), (22, 26), (14, 25)], DARK)
+    ell(im, (16, 21, 21, 25), FIRE)
+    px(im, 18, 22, FIRE_L)
+    for x, y in [(16, 17), (19, 15), (22, 17)]:
+        px(im, x, y, FIRE); px(im, x, y-1, FIRE_L)
+    # 角（後方＝右上へ反る2本）
+    poly(im, [(24, 16), (40, 6), (42, 10), (28, 20)], BONE_L)
+    poly(im, [(23, 20), (38, 16), (38, 20), (26, 24)], BONE_D)
+    px(im, 40, 7, BONE_L); px(im, 39, 17, BONE_L)
+    return im
+
 ENEMIES = {'lich': e_lich, 'necro': e_necro, 'dullahan': e_dullahan,
-           'boomer': e_boomer, 'gargoyle': e_gargoyle, 'sarcher': e_sarcher}
+           'boomer': e_boomer, 'gargoyle': e_gargoyle, 'sarcher': e_sarcher,
+           'skeledragon': e_skeledragon}
 
 def main():
     ids = sys.argv[1:] or list(ENEMIES.keys())

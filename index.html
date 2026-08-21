@@ -3033,7 +3033,7 @@ function figInfo(id){
   if(BOSS[id]){ var B=BOSS[id], tt=ETYPE[B.key]||{}; return {nm:B.nm,shape:tt.shape,col:tt.col,dark:tt.dark,desc:BDEX[id]||'',boss:true}; }
   var t=ETYPE[id]||{}; return {nm:t.nm,shape:t.shape,col:t.col,dark:t.dark,desc:DEX[id]||'',boss:false};
 }
-var VERSION='α1.0.284'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
+var VERSION='α1.0.285'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
 function applySave(o){
   for(var i=0;i<UPG.length;i++) META[UPG[i].id]=0;
   try{
@@ -7543,7 +7543,8 @@ var SPRDATA={
   dullahan:'assets/dullahan.png',
   boomer:'assets/boomer.png',
   gargoyle:'assets/gargoyle.png',
-  sarcher:'assets/sarcher.png'
+  sarcher:'assets/sarcher.png',
+  skeledragon:'assets/skeledragon.png'
 };
 // キャラID→立ち絵スプライト名（プレイヤー描画＆キャラリストのアイコン）
 var CHAR_SPR={ knight:'knight', hunter:'hunter', bomber:'bomber', mage:'mage', saint:'saint',
@@ -7717,7 +7718,8 @@ function enemySpr(e){
     return sprReady(gkN)?gkN:null;
   }
   if(e.boss&&e.bkey==='skeletonking') return sprReady('skeletonking')?'skeletonking':null; // ボス専用絵（スケルトンキング）
-  if(e.boss&&e.bkey==='hecaton') return sprReady('hecaton')?'hecaton':null;               // ボス専用絵（ヘカトンケイル）
+  if(e.boss&&e.bkey==='hecaton') return sprReady('hecaton')?'hecaton':null;
+  if(e.boss&&e.bkey==='skeledragon') return sprReady('skeledragon')?'skeledragon':null;   // ボス専用絵（骨の竜。ETYPE の key はガーゴイル流用のため必ずここで拾う）               // ボス専用絵（ヘカトンケイル）
   var n=SHAPE_SPR[e.shape]; return (n&&sprReady(n))?n:null;
 }
 
@@ -8321,7 +8323,8 @@ var SPRSZ={blob:{s:3.0,oy:0.35}, goblin:{s:3.2,oy:0.55}, orc:{s:3.0,oy:0.50},
   ghoul:{s:3.2,oy:0.30},
   skeleton:{s:3.2,oy:0.42}, shieldman:{s:3.1,oy:0.42}, wraith:{s:3.4,oy:0.16}, mummy:{s:3.0,oy:0.42}, shadow:{s:3.4,oy:0.28},
   lich:{s:3.4,oy:0.40}, necro:{s:3.4,oy:0.40}, dullahan:{s:3.2,oy:0.40},
-  boomer:{s:3.0,oy:0.34}, gargoyle:{s:3.3,oy:0.32}, sarcher:{s:3.3,oy:0.42}};
+  boomer:{s:3.0,oy:0.34}, gargoyle:{s:3.3,oy:0.32}, sarcher:{s:3.3,oy:0.42},
+  skeledragon:{s:2.7,oy:0.30}};
 // 毒の沼（ブーマー）：緑の沼＋泡。消える直前にフェード。
 function drawPuddle(q){
   var a=Math.min(1,q.life/1.2)*0.55;
@@ -10834,6 +10837,9 @@ Array.prototype.forEach.call(document.querySelectorAll('#setview button'),functi
 // 更新履歴：1つのお知らせ内で「バージョン見出し」ごとに変更点を並べる（新しい順）。
 // マージのたびに先頭へ新バージョンを追加し、VERSION も更新する。
 var UPDATES=[
+  {v:'α1.0.285', items:[
+    'ステージ③のラストボス「スケルトンドラゴン」に専用の立ち絵を追加しました。これまでは内部でガーゴイルの見た目を借りていたため、巨大なガーゴイルの姿で出ていました。骨の翼と長い頭骨、紫の炎が灯る眼窩の竜になっています。',
+  ]},
   {v:'α1.0.284', items:[
     'ステージ③（古代の王墓）の敵6種にドット絵を追加しました。これまでリッチ・ネクロマンサー・デュラハン・ブーマー・ガーゴイル・スケルトンアーチャーは、ゴブリンやオークの絵を借りた仮の見た目でした。それぞれ専用の絵になっています。',
   ]},
