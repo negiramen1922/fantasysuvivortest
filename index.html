@@ -3033,7 +3033,7 @@ function figInfo(id){
   if(BOSS[id]){ var B=BOSS[id], tt=ETYPE[B.key]||{}; return {nm:B.nm,shape:tt.shape,col:tt.col,dark:tt.dark,desc:BDEX[id]||'',boss:true}; }
   var t=ETYPE[id]||{}; return {nm:t.nm,shape:t.shape,col:t.col,dark:t.dark,desc:DEX[id]||'',boss:false};
 }
-var VERSION='α1.0.290'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
+var VERSION='α1.0.291'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
 function applySave(o){
   for(var i=0;i<UPG.length;i++) META[UPG[i].id]=0;
   try{
@@ -3119,10 +3119,11 @@ function runSnapshot(){
   var el=[];
   for(var i=0;i<enemies.length;i++){ var e=enemies[i];
     if(e.elite&&!e.dead&&!e.boss) el.push({k:e.k,hp:e.hp,mhp:e.mhp,x:e.x,y:e.y,r:e.r,res:e.res,kbr:e.kbr}); }
+  var rls=(relics&&relics.map)?relics.map(function(r){ return {x:r.x,y:r.y,id:r.id,t:r.t}; }):[];   // 未回収の床装備（再開時に再ドロップさせない）
   return { v:1, ch:SELCH, endless:ENDLESS, nightmare:NIGHTMARE, stage:curStage,
     contract:(!ENDLESS&&NIGHTMARE&&CONTRACT.slice)?CONTRACT.slice():[],
     time:time, kills:kills, score:score, silver:silver, gold:gold,
-    bossN:bossN, endblk:ENDBLK, ebd:endBossDone, P:P, boss:bs, elites:el };
+    bossN:bossN, endblk:ENDBLK, ebd:endBossDone, P:P, boss:bs, elites:el, relics:rls };
 }
 function saveRun(){ if(!runActive) return; try{ var s=runSnapshot(); if(s) localStorage.setItem('bsv_run',JSON.stringify(s)); }catch(e){} }
 function clearRun(){ runActive=false; try{ localStorage.removeItem('bsv_run'); }catch(e){} }
@@ -3167,6 +3168,8 @@ function resumeRun(save){
     var e=makeEnemy(s.k);
     if(e){ e.elite=1; e.hp=s.hp; e.mhp=s.mhp||s.hp; e.r=s.r; e.res=s.res; if(s.kbr!=null)e.kbr=s.kbr; e.x=s.x; e.y=s.y; e.st=''; e.stT=0; }
   }
+  // 床装備：reset()で新規配置されたぶんを破棄し、保存済みの未回収ぶんだけ復元（取得済みの再ドロップ・再回収を防ぐ）
+  relics=(save.relics&&save.relics.map)?save.relics.map(function(r){ return {x:r.x,y:r.y,id:r.id,t:r.t||0}; }):[];
   runActive=true; runSaveT=4;
   state='playing'; last=performance.now();
   playBGM('s'+curStage);
@@ -10869,6 +10872,9 @@ Array.prototype.forEach.call(document.querySelectorAll('#setview button'),functi
 // 更新履歴：1つのお知らせ内で「バージョン見出し」ごとに変更点を並べる（新しい順）。
 // マージのたびに先頭へ新バージョンを追加し、VERSION も更新する。
 var UPDATES=[
+  {v:'α1.0.291', items:[
+    'リロード（リログ）で続きから再開したとき、床の装備（光る柱）が毎回4つ再出現して何度も回収できてしまう不具合を修正しました。未回収の床装備だけを保存・復元するようにし、取得済みのぶんは再ドロップしなくなります。',
+  ]},
   {v:'α1.0.290', items:[
     'フライ・スウォームナット・ゴブリンアーチャー・サメミサイルにドット絵を追加しました。これで全ての敵・ボスが専用の絵になり、他のモンスターの絵を借りて表示している敵はいなくなりました。',
   ]},
@@ -10893,6 +10899,7 @@ var UPDATES=[
   {v:'α1.0.283', items:[
     '立ち絵が無かった11キャラ（忍者・サムライ・重騎士・氷術師・雷鳴使い・銃士・農夫・調剤師・羊飼い・死霊術師・ヴァルカン）にドット絵の立ち絵を追加しました。これで全16キャラに立ち絵が付き、絵文字表示のキャラはいなくなりました。',
     'ステージの地面を描き直しました。これまでの格子線に代わり、ステージごとのドット絵タイル（草原＝夜の草地／森＝下草と落ち葉／古代の王墓＝石畳／大海原＝波紋）を敷き詰め、さらに岩・きのこ・骨・珊瑚などの飾りを地面に散りばめています。飾りの位置は場所ごとに固定なので、動いてもちらつきません。',
+  {v:'α1.0.283', items:[
   ]},
   {v:'α1.0.282', items:[
     '「連携コンボ」を正式に追加しました（全員に開放）。2種類以上の武器を当てている状態で敵を倒すとコンボが加算され、画面に「N COMBO!」が出ます。',
