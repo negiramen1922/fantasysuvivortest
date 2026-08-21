@@ -2180,7 +2180,7 @@ var MAST={
   },
   gatling:{  // ガトリング：dmg/rate/pierce（通常）＋ count/ammo（特別）。※範囲(area)は無し
     minor:[ {id:'ga_d',ic:'💪',nm:'攻撃力',tx:'+6%',d:'弾の威力が#上がる',dv:'6%',ef:{dmg:.06}},
-            {id:'ga_c',ic:'⌛',nm:'間隔',tx:'−5%',d:'連射のテンポが#速くなる',dv:'5%',ef:{cd:-.05}},
+            {id:'ga_am2',ic:'🔋',nm:'弾倉',tx:'+1',d:'リロードまでに撃てる弾数が#増える',dv:'1発',ef:{ammo:1}},
             {id:'ga_p',ic:'➹',nm:'貫通',tx:'+1',d:'弾が#多くの敵を貫く',dv:'1体',ef:{pierce:1}} ],
     major:[ {id:'ga_ct',ic:'✳️',nm:'多銃身',tx:'発射数 +1',d:'一度に発射する弾が#増える',dv:'1発',ef:{count:1}},
             {id:'ga_am',ic:'🔋',nm:'大弾倉',tx:'弾倉 +2',d:'リロードまでに撃てる弾数が#増える',dv:'2発',ef:{ammo:2}},
@@ -2516,10 +2516,10 @@ function applyKB(e,SRC,crit,nx,ny){
   e.kb=Math.max(e.kb,(crit?KB_CRIT[kl]:KB_BASE[kl])*(1+TR(SRC,'knock'))); e.kbx=nx||0; e.kby=ny||0;
 }
 var WAX={
-  slash:   { dmg:5, area:4, rate:3 },
+  slash:   { dmg:5, area:4, rate:3, burst:3 },
   scythe:  { dmg:4, area:4, count:3, rate:3, range:2 },
   chakram: { dmg:4, area:4, count:3, rate:3 },
-  katana:  { dmg:5, area:4, rate:3 },
+  katana:  { dmg:5, area:4, rate:3, burst:3 },
   shuriken:{ dmg:4, count:3, pierce:3, rate:3, range:2 },
   bow:     { dmg:4, pierce:3, count:3, rate:3, burst:3, range:3 },
   dynamite:{ dmg:4, area:4, burst:4, rate:3, range:2 },
@@ -2529,20 +2529,20 @@ var WAX={
   rock:    { dmg:4, area:4, count:2, rate:3, burst:3, range:3 },
   fire:    { dmg:4, count:3, pierce:3, rate:3, burst:3, range:3 },
   flame:   { dmg:4, count:4, area:3, rate:3 },
-  ice:     { dmg:4, pierce:3, dur:3, count:3, rate:3, burst:3, range:3 },
+  ice:     { dmg:2, pierce:3, dur:3, count:3, rate:3, burst:3 },
   thunder: { dmg:4, count:4, area:3, rate:3, range:2 },
   chain:   { dmg:4, chain:4, count:3, rate:3, range:2 },
-  holy:    { dmg:4, count:3, split:3, pierce:2, rate:3, burst:3, range:3 },
+  holy:    { dmg:4, count:3, split:2, pierce:2, rate:3, burst:3 },
   aura:    { dmg:3, area:3, count:3, rate:3 },
   voidh:   { dmg:4, area:4, count:2, rate:3 },
   dhand:   { dmg:4, count:6, rate:3, range:2 },
   bell:    { dmg:3, area:4, count:3, rate:3 },
-  chainsaw:{ dmg:4, area:3, rate:3 },
+  chainsaw:{ dmg:4, area:3, rate:3, dur:3 },
   musket:  { dmg:4, rate:3, burst:5, ammo:3, range:2 },
   blizzard:{ dmg:4, area:3, rate:3, dur:3 },
   laser:   { dmg:3, count:4, rate:3, area:3 },
   inferno: { dmg:4, count:3, dur:3, rate:3, range:3 },
-  gatling: { dmg:5, rate:4, count:3, pierce:3, ammo:3, range:3 },
+  gatling: { dmg:5, count:3, pierce:3, ammo:3, range:3 },
   meteor:  { dmg:4, area:4, rate:3, range:2 },
   gale:    { dmg:4, range:3, area:3, rate:3, count:3 },
   tornado: { dmg:4, area:4, count:2, rate:3 },
@@ -2641,17 +2641,26 @@ function lbOK(w,k){
   if(LBCAP[k]&&LB(w,k)>=LBCAP[k]) return 0;
   return 1;
 }
-// 間合いによる火力補正：近接ほど高く、遠距離ほど低い（射程との住み分け）
+// 武器の間合い分類（近接/中/長/自己）。武器候補カードのラベル表示に使用（火力補正は廃止し基礎攻撃力へ折込済み）
 var WCLASS={ slash:'melee', chainsaw:'melee', katana:'melee', shuriken:'mid',
   chakram:'self', flame:'self', blizzard:'self', bell:'self', laser:'self', aura:'self', voidh:'self', tornado:'self', gale:'mid', harp:'self', briar:'mid',
   scythe:'mid', dhand:'mid', dynamite:'mid', quake:'mid', musket:'mid', inferno:'mid', toxin:'mid', anchor:'mid', crimson:'mid', railgun:'self', sharkm:'long',
   fire:'long', ice:'long', bow:'long', holy:'long', thunder:'long', chain:'long', rock:'long', gatling:'long',
   meteor:'mid' };   // メテオ：狙った範囲に落とす大技。威力45をそのまま出すため補正1.0の中距離扱い
-var CLMUL={ melee:1.15, self:1.0, mid:1.0, long:0.78 };
-function RCM(w){ return CLMUL[WCLASS[w]||'mid']; }
 // 各軸の効き。ダメージと範囲は乗算、頻度はクールダウンの短縮。
-// 軸の指数だけ残し、熟練度・限界突破・パッシブなどの細かい％は「加算してまとめて掛ける」(乗算の積み重なりを抑制)。RCMは基礎攻撃力に含む扱い。
-function DMG(w){ return RCM(w)*Math.pow(1.45,AX(w,'dmg'))*(1 + TR(w,'dmg') + 0.08*LB(w,'dmg')); }
+// 軸の指数だけ残し、熟練度・限界突破・パッシブなどの細かい％は「加算してまとめて掛ける」(乗算の積み重なりを抑制)。
+// ※旧「間合い係数(RCM)」は廃止。各武器の基礎攻撃力(WBASE)に折り込み済み。
+function DMG(w){ return Math.pow(1.45,AX(w,'dmg'))*(1 + TR(w,'dmg') + 0.08*LB(w,'dmg')); }
+// 各武器の基礎攻撃力（＝各doXxxの `N*DMG(w)` の N）。武器詳細の攻撃力表示に使う基準値。
+// ※旧間合い係数を折り込み済み：近接×1.15 / 長距離×0.78 は既にこの数値に反映。編集時はdo関数側の N と一致させること。
+var WBASE={ slash:25, scythe:20, chakram:16, katana:23, bow:10, shuriken:9, dynamite:34, toxin:4, anchor:44,
+  fire:15, inferno:24, flame:7, ice:13, thunder:23, chain:17, quake:26, rock:17, chainsaw:6, musket:9,
+  blizzard:7, laser:11, bell:7, dhand:17, voidh:2.2, holy:14, aura:8, gatling:6, meteor:45, gale:7,
+  tornado:2.0, harp:9, briar:7, crimson:10, railgun:15, sharkm:6 };
+// 攻撃力が「毎フレーム刻む持続」や「多数の弾/刃の1枚分」の武器（詳細表示で注記）
+var WBASE_NOTE={ inferno:'照射中に上昇', railgun:'ビーム判定ごと', chainsaw:'刃の判定ごと', flame:'接触ごと', blizzard:'接触ごと',
+  briar:'接触ごと', toxin:'毒沼ごと', voidh:'吸引ごと', tornado:'渦ごと', musket:'散弾1発ごと', gatling:'弾1発ごと', sharkm:'直撃ぶん（主体は爆発）' };
+function wAtk(w){ return Math.round((WBASE[w]||0)*DMG(w)*pw(w)); }   // 現在の実効・1ヒット攻撃力
 function AREA(w){ return Math.pow(1.18,AX(w,'area'))*(1 + TR(w,'area') + 0.04*LB(w,'area') + 0.05*(P.p.reach||0) + (CH().area-1) + (contractArea(w)-1)); }
 function RATE(w){ return Math.max(0.20,Math.pow(0.85,AX(w,'rate'))*(1 + TR(w,'cd') - 0.015*LB(w,'rate'))); }
 function CNT(w){ return AX(w,'count')+TR(w,'count')+LB(w,'count'); }
@@ -3024,7 +3033,7 @@ function figInfo(id){
   if(BOSS[id]){ var B=BOSS[id], tt=ETYPE[B.key]||{}; return {nm:B.nm,shape:tt.shape,col:tt.col,dark:tt.dark,desc:BDEX[id]||'',boss:true}; }
   var t=ETYPE[id]||{}; return {nm:t.nm,shape:t.shape,col:t.col,dark:t.dark,desc:DEX[id]||'',boss:false};
 }
-var VERSION='α1.0.280'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
+var VERSION='α1.0.283'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
 function applySave(o){
   for(var i=0;i<UPG.length;i++) META[UPG[i].id]=0;
   try{
@@ -3228,33 +3237,39 @@ function reset(){
 var cool={}, busy={};   // busy=発射中ロック（撃ち切るまで次のクールを開始しない）
 
 /* ============ 連携コンボ ============ */
-// コンボ倍率：コンボ数が伸びるほど上がり（＝伸ばすメリット）、武器の種類数がその上限を引き上げる。
-//   倍率 = 1 + min( 種類数×COMBO_CAPPER , コンボ数×COMBO_RATE )
-//   ・コンボは「2種以上の武器を当てている状態で敵を倒す」と加算＝1武器では絶対に伸びない
-//   ・伸ばすほど上限（種類数×12%）に向かって火力が上がる。多武器ほど天井が高い
-var COMBOWIN=1.0, COMBO_RATE=0.02, COMBO_CAPPER=0.12;   // +2%/コンボ、種類ごとに上限+12%
+// 連携コンボ：2種以上の武器を当てている状態で敵を倒すと加算（1武器では絶対に伸びない）。
+//   ・継続の猶予は「コンボが伸びるほど短くなる」：100コンボごとに縮み、最短0.02秒まで。
+//     → 高コンボは倒し続けるテンポがどんどんシビアになり、自然と難易度キャップになる。
+//   ・最大コンボ 99999。
+//   ・火力ボーナス：100コンボごとに +1%、上限 +50%（膨張防止）。コンボ数自体はスコア/自慢用。
+var COMBO_FRESH=1.0;          // 武器の「当てた鮮度」＝種類数のカウント窓
+var COMBO_W0=0.8;             // 継続の基本猶予（コンボ0のとき）
+var COMBO_WSHRINK=0.02;       // 100コンボごとに猶予を縮める量
+var COMBO_WMIN=0.02;          // 猶予の下限
+var COMBO_MAX=99999;          // 最大コンボ数
+var COMBO_DMG_PER100=0.01;    // 100コンボごとの火力上昇（+1%）
+var COMBO_DMG_CAP=0.50;       // 火力上昇の上限（+50%）＝膨張防止。コンボ数(最大99999)はスコア/自慢用
 var comboN=0, comboT=0, comboWpn={}, comboMulV=1, comboFlash=0;
 function comboKinds(){ var n=0; for(var k in comboWpn){ if(comboWpn[k]>0) n++; } return n; }
+function comboWindow(n){ return Math.max(COMBO_WMIN, COMBO_W0 - COMBO_WSHRINK*Math.floor(n/100)); }
 function comboMul(){
-  var kinds=comboKinds();
-  comboMulV=(comboN>=1&&kinds>=2) ? 1+Math.min(kinds*COMBO_CAPPER, comboN*COMBO_RATE) : 1;
+  comboMulV = comboN>0 ? 1 + Math.min(COMBO_DMG_CAP, COMBO_DMG_PER100*Math.floor(comboN/100)) : 1;
   return comboMulV;
 }
-function comboTouch(w){                            // ヒットした武器を記録（種類数＝倍率の上限を決める）
+function comboTouch(w){                            // ヒットした武器を記録（種類数＝伸ばせる条件）
   if(!w||!WEAPONS[w]) return;
-  var fresh=!comboWpn[w]; comboWpn[w]=COMBOWIN;
+  var fresh=!comboWpn[w]; comboWpn[w]=COMBO_FRESH;
   if(fresh) comboFlash=0.5;
 }
 function comboKill(w){                             // 撃破でコンボ加算。ただし2種以上当てているときだけ伸びる
   comboTouch(w);
-  if(comboKinds()>=2){ comboN++; comboT=COMBOWIN; }
+  if(comboKinds()>=2){ if(comboN<COMBO_MAX) comboN++; comboT=comboWindow(comboN); }   // 猶予はコンボ数に応じて短縮
 }
-function comboBreak(){ comboN=0; comboT=0; comboWpn={}; comboMulV=1; }   // リロード等でコンボ途切れ
+function comboBreak(){ comboN=0; comboT=0; comboWpn={}; comboMulV=1; }   // リロード・被ダメ等でコンボ途切れ
 function stepCombo(dt){
-  if(!DEV) return;
   if(comboFlash>0) comboFlash-=dt;
   for(var k in comboWpn){ comboWpn[k]-=dt; if(comboWpn[k]<=0) delete comboWpn[k]; }   // 各武器の鮮度を減衰
-  if(comboT>0){ comboT-=dt; if(comboT<=0){ comboN=0; comboMulV=1; } }                // 撃破が途切れたらコンボ消滅
+  if(comboT>0){ comboT-=dt; if(comboT<=0){ comboN=0; comboMulV=1; } }                // 猶予切れでコンボ消滅
 }
 
 /* ============ 派生ステータス ============ */
@@ -3270,7 +3285,7 @@ function juukiCut(){ var g=CH().grow; if(!g||g.k!=='dmgcut') return 0; return Ma
 // プレイヤーの被ダメージ共通係数（永続防護・防護パッシブ・重騎士カット）
 function armorMul(){ return (1-0.04*M('armor'))*(1-0.03*(P.p.bulwark||0))*(1-juukiCut()); }
 // プレイヤー被ダメージの適用：シールド(P.sh)があれば先に肩代わりしてからHPを減らす
-function phurt(raw){ if(!(raw>0)) return; if(P.sh>0){ var ab=Math.min(P.sh,raw); P.sh-=ab; raw-=ab; if(P.sh<0.001)P.sh=0; } P.hp-=raw; }
+function phurt(raw){ if(!(raw>0)) return; if(P.sh>0){ var ab=Math.min(P.sh,raw); P.sh-=ab; raw-=ab; if(P.sh<0.001)P.sh=0; } P.hp-=raw; if(raw>0) comboBreak(); }   // 被ダメでコンボ途切れ（シールドで完全に防げた場合は途切れない）
 // キャラ成長の「現在値」表示文字列（符号・単位つき）
 function growNow(){
   var g=CH().grow; if(!g) return '';
@@ -3464,11 +3479,20 @@ function aim(){
 
 /* ============ 武器 ============ */
 var coolMax={};
+// 攻撃モーションの「稼働時間」。発射した瞬間からこの秒数はリキャストを進めない（＝攻撃中はリキャストが進まない）。
+// これにより、間隔を極端に縮めても「モーションが終わる前に次が撃てる」挙動を防ぎ、単発・重量武器の過剰DPSも抑える。
+// 未登録の武器は0（従来どおり）。連射(VOLLEY)武器は連射の撃ち切り時間と max を取る。
+var WACT={ meteor:0.45, anchor:0.32, dynamite:0.26, quake:0.26, thunder:0.24, rock:0.22,
+  scythe:0.30, chakram:0.28, slash:0.20, katana:0.18, crimson:0.22, bell:0.22, harp:0.22, aura:0.20 };
 function ready(id,cd,dt){
   lastCd[id]=cd;
-  if(busy[id]>0){ busy[id]-=dt; return false; }   // 発射（連射）が終わるまでクールダウンを開始しない＝発射→リキャストを直列化
+  if(busy[id]>0){ busy[id]-=dt; return false; }   // 発射（連射／稼働）が終わるまでクールダウンを開始しない＝発射→リキャストを直列化
   cool[id]=(cool[id]||0)-dt;
-  if(cool[id]<=0){ cool[id]=Math.max(0.12,cd*cdr()); coolMax[id]=cool[id]; return true; }
+  if(cool[id]<=0){
+    cool[id]=Math.max(0.12,cd*cdr()); coolMax[id]=cool[id];
+    if(WACT[id]) busy[id]=Math.max(busy[id]||0,WACT[id]);   // 攻撃の稼働時間ぶんはリキャストを止める
+    return true;
+  }
   return false;
 }
 // ガトリングガン：弾倉を高速連射し、撃ち切ると長いリロード。ピーキーな超高DPS。
@@ -3488,7 +3512,7 @@ function sharkTick(dt){
   if(shark.mag<=0){                                      // 撃ち切り → リロード
     shark.rl=shark.rlmax=Math.max(0.6,1.5*RATE('sharkm')*(AW('sharkm')?0.6:1));   // 覚醒でリロード短縮
     sfx(90,.2,'sawtooth',.05,.4); noise(.12,.07);
-    if(DEV) comboBreak();   // リロードの弱点：コンボが途切れる
+    comboBreak();   // リロードの弱点：コンボが途切れる
   }
 }
 // 発射音「ブシュー」：噴射のノイズ＋軽い下降音
@@ -3507,7 +3531,7 @@ function doGatling(dt){
   var a=e?Math.atan2(e.y-P.y,e.x-P.x):P.face;
   P.face=a;
   SRC='gatling';
-  var cnt=1+CNT('gatling'), dmg=8*DMG('gatling')*pw('gatling');
+  var cnt=1+CNT('gatling'), dmg=6*DMG('gatling')*pw('gatling');
   // 覚醒：左右2連バレルから同時発射
   var barrels=AW('gatling')?[-1,1]:[0];
   var perpx=-Math.sin(a), perpy=Math.cos(a);
@@ -3529,7 +3553,7 @@ function doGatling(dt){
     gat.rl=gat.rlmax=Math.max(2.0,4.5*r);
     gat.mag=GATMAG();
     sfx(90,.22,'sawtooth',.06,.4); noise(.12,.06);
-    if(DEV) comboBreak();   // リロードの弱点：コンボが途切れる
+    comboBreak();   // リロードの弱点：コンボが途切れる
   }
 }
 function runWeapons(dt){
@@ -3537,11 +3561,12 @@ function runWeapons(dt){
   if(P.w.inferno) infernoTick(dt);
   if(P.w.railgun) railgunTick(dt);
   if(P.w.chainsaw){                              // しばらく出す→しまう→また出す、を繰り返す
-    if(P.sawOn==null){ P.sawOn=true; P.sawPh=2.6; P.sawRev=0; P.sawRevCd=1.2; }  // 取得直後は出しっぱなしから
+    var sawOnDur=2.6+0.8*DURV('chainsaw');        // 持続軸で「出し続ける時間」を延長（+0.8秒/pt）
+    if(P.sawOn==null){ P.sawOn=true; P.sawPh=sawOnDur; P.sawRev=0; P.sawRevCd=1.2; }  // 取得直後は出しっぱなしから
     P.sawPh-=dt;
     if(P.sawPh<=0){
       P.sawOn=!P.sawOn;
-      P.sawPh=P.sawOn?2.6:1.4;                   // 稼働2.6秒 / 収納1.4秒
+      P.sawPh=P.sawOn?sawOnDur:1.4;               // 稼働(持続軸で延長) / 収納1.4秒
       if(P.sawOn){ P.sawRev=0; P.sawRevCd=1.2+Math.random(); sfx(120,.14,'sawtooth',.05,.6); }
     }
     if(P.sawOn){
@@ -3560,10 +3585,10 @@ function runWeapons(dt){
   if(P.w.musket  &&ready('musket',  1.50*RATE('musket'),dt)){  doMusket(); queueVolley('musket',0.13); }
   if(P.w.blizzard&&ready('blizzard',1.10*RATE('blizzard'),dt)) doBlizzard();
   if(P.w.laser   &&ready('laser',   2.00*RATE('laser'),dt))    doLaser();
-  if(P.w.slash&&ready('slash',0.85*RATE('slash'),dt)) doSlash();
+  if(P.w.slash&&ready('slash',0.85*RATE('slash'),dt)){ doSlash(); queueVolley('slash',0.12); }
   if(P.w.scythe  &&ready('scythe',  1.45*RATE('scythe'),dt))   doScythe();
   if(P.w.chakram &&ready('chakram', 1.65*RATE('chakram'),dt))  doChakram();
-  if(P.w.katana){ if(ready('katana', 0.80*RATE('katana'),dt)) doKatana(); katanaCounter(dt); }
+  if(P.w.katana){ if(ready('katana', 0.80*RATE('katana'),dt)){ doKatana(); queueVolley('katana',0.12); } katanaCounter(dt); }
   if(P.w.shuriken&&ready('shuriken',0.42*RATE('shuriken'),dt)) doShuriken();
   if(P.w.bow     &&ready('bow',     0.58*RATE('bow'),dt)){     doBow(); queueVolley('bow',0.10); }
   if(P.w.dynamite&&ready('dynamite',1.85*RATE('dynamite'),dt)){ doDyna(); queueVolley('dynamite',0.12); }
@@ -3609,7 +3634,7 @@ function arcHit(rad,arc,dmg,el,onHit,face){
 // チェンソー：前方を削り続ける。覚醒で全方位になる。
 function doChainHit(rev,fa,arc,rad){                       // ダメージのみ（描画は runWeapons が持続管理）
   SRC='chainsaw';
-  var dmg=5*DMG('chainsaw')*pw('chainsaw')*(rev?1.8:1);   // 暴走中は威力アップ
+  var dmg=6*DMG('chainsaw')*pw('chainsaw')*(rev?1.8:1);   // 暴走中は威力アップ
   var n=arcHit(rad,arc,dmg,null,function(e){ applyLacer(e,dmg); },fa);   // 出血（物理DoT）を付与
   if(n) sfx((rev?200:120)+Math.random()*40,.05,'sawtooth',.03,1.1);
   wgain('chainsaw',n); SRC=null;
@@ -3773,8 +3798,8 @@ function infernoTick(dt){
     hurt(e, base*mul*0.12, dx/dd, dy/dd, 'fire');
     if(AW('inferno')){ e.dotD=Math.max(e.dotD,base*mul*0.25); e.dotT=Math.max(e.dotT,burnT); e.dotC='#ff7a2f'; }
     for(var q=0;q<ex.length;q++){ var oe=ex[q], ox=oe.x-P.x, oy=oe.y-P.y, od=Math.hypot(ox,oy)||1;
-      hurt(oe, base*mul*0.6*0.12, ox/od, oy/od, 'fire');          // 追加ビームもランプを反映（主の6割の威力で一緒に上がる）
-      if(AW('inferno')){ oe.dotD=Math.max(oe.dotD,base*mul*0.6*0.25); oe.dotT=Math.max(oe.dotT,burnT); oe.dotC='#ff7a2f'; }
+      hurt(oe, base*mul*0.12, ox/od, oy/od, 'fire');              // 追加ビームも主ビームと同威力（ランプ反映）
+      if(AW('inferno')){ oe.dotD=Math.max(oe.dotD,base*mul*0.25); oe.dotT=Math.max(oe.dotT,burnT); oe.dotC='#ff7a2f'; }
     }
     SRC=null; wgain('inferno',1+ex.length);
   }
@@ -3804,9 +3829,9 @@ function infBeam(tx,ty,w,g){
 }
 function drawInferno(){
   if(!P.w.inferno||!INF.on) return;
-  var w=(6+INF.ramp*1.4)*AREA('inferno'), g=Math.min(1,0.45+INF.ramp*0.2);   // 主ビームが太くなりすぎないよう抑える（通常の細さに）
+  var w=Math.max(3,(3.6+INF.ramp*0.85)*AREA('inferno')), g=Math.min(1,0.45+INF.ramp*0.2);   // 旧「非メイン(細め)」相当の細さに統一（太さは見た目のみ・威力は幅非依存で不変）
   ctx.save();
-  for(var i=0;i<INF.extra.length;i++) infBeam(INF.extra[i].x,INF.extra[i].y,Math.max(3,w*0.6),0.7);  // 追加ビーム（細め）
+  for(var i=0;i<INF.extra.length;i++) infBeam(INF.extra[i].x,INF.extra[i].y,w,0.85);  // 全ビーム同じ細さ・同威力
   infBeam(INF.ex,INF.ey,w,g);
   ctx.globalAlpha=1; ctx.restore();
 }
@@ -4072,7 +4097,7 @@ function doSlash(){
   SRC='slash';
   var ar=AREA('slash');
   var arc=TF('slash','fullarc')?6.3:Math.min(3.5,1.55*ar), r2=96*ar;
-  var dmg=22*DMG('slash')*pw('slash');
+  var dmg=25*DMG('slash')*pw('slash');
   var n=arcHit(r2,arc,dmg,null);
   fx.push({k:'slash',x:P.x,y:P.y,a:P.face,arc:arc,rad:r2,t:0,life:.18,col:'#dcd6ff'});
   swingT=SWDUR;   // 立ち絵の大剣を振り下ろすアニメを起動
@@ -4092,7 +4117,7 @@ function doKatana(){
   SRC='katana';
   var ar=AREA('katana');
   var arc=TF('katana','fullarc')?6.3:Math.min(3.5,1.55*ar), r2=96*ar;   // 範囲arの効き方を大剣と同一に（角度3.5cap・1.55倍／間合い96倍）
-  var dmg=20*DMG('katana')*pw('katana');
+  var dmg=23*DMG('katana')*pw('katana');
   var wper=WK_PER*(1+TR('katana','weak'));   // 刀：弱点（被ダメ増）を付与。熟練度で効果量UP
   var n=arcHit(r2,arc,dmg,null,function(e){ if(Math.random()<ccChance(STAT_CHANCE)) applyWeak(e,wper,WK_MAX); });
   fx.push({k:'slash',x:P.x,y:P.y,a:P.face,arc:arc,rad:r2,t:0,life:.16,col:'#ffd0d6'});
@@ -4236,7 +4261,7 @@ function doBow(){
   for(var i=0;i<cnt;i++){
     var an=a+(i-(cnt-1)/2)*0.13;
     shots.push({x:P.x,y:P.y,vx:Math.cos(an)*760,vy:Math.sin(an)*760,r:6,
-      src:'bow',kind:'arrow',ang:an,dmg:13*DMG('bow')*pw('bow'),grow:AW('bow')?1:0,base:13*DMG('bow')*pw('bow'),
+      src:'bow',kind:'arrow',ang:an,dmg:10*DMG('bow')*pw('bow'),grow:AW('bow')?1:0,base:10*DMG('bow')*pw('bow'),
       pierce:2+PRC('bow'),life:RNG('bow')/760,col:'#e6dcc0',col2:'#8d7c50',el:null,hit:[]});
   }
   sfx(880,.05,'triangle',.04,1.6);
@@ -4319,7 +4344,7 @@ function doFire(){
   for(var i=0;i<cnt;i++){
     var a=base+(i-(cnt-1)/2)*0.17;
     shots.push({x:P.x,y:P.y,vx:Math.cos(a)*400,vy:Math.sin(a)*400,r:8,
-      src:'fire',dmg:19*DMG('fire')*pw('fire'),pierce:1+PRC('fire'),life:RNG('fire')/400,
+      src:'fire',dmg:15*DMG('fire')*pw('fire'),pierce:1+PRC('fire'),life:RNG('fire')/400,
       col:'#ffd08a',col2:'#ff6a1f',el:'fire',boom:bm,hit:[]});
   }
   sfx(300,.08,'triangle',.05,1.9);
@@ -4331,7 +4356,7 @@ function doIce(){
   for(var i=0;i<cnt;i++){
     var an=a+(i-(cnt-1)/2)*0.28;
     shots.push({x:P.x,y:P.y,vx:Math.cos(an)*640,vy:Math.sin(an)*640,r:7,
-      src:'ice',kind:'icejav',ang:an,dmg:17*DMG('ice')*pw('ice'),pierce:3+PRC('ice'),life:RNG('ice')/640,
+      src:'ice',kind:'icejav',ang:an,dmg:13*DMG('ice')*pw('ice'),pierce:3+PRC('ice'),life:RNG('ice')/640,
       col:'#bff0ff',col2:'#3aa9e0',slow:2.0+DURV('ice'),slowMul:0.45*(1-TR('ice','slowmag')),el:'ice',hit:[]});
   }
   sfx(1240,.08,'sine',.05,.5);
@@ -4340,7 +4365,7 @@ function doIce(){
 function doThunder(){
   SRC='thunder';
   var cnt=1+CNT('thunder'), used=[];
-  var dmg=30*DMG('thunder')*pw('thunder'), rad=56*AREA('thunder'), trng=RNG('thunder');
+  var dmg=23*DMG('thunder')*pw('thunder'), rad=56*AREA('thunder'), trng=RNG('thunder');
   for(var i=0;i<cnt;i++){
     var pick=null,bd=1e9;
     for(var j=0;j<enemies.length;j++){
@@ -4368,7 +4393,7 @@ function doChain(){
   var e0=nearest(P.x,P.y,RNG('chain')); if(!e0) return;
   SRC='chain';
   var beams=1+CNT('chain');
-  var jumps=2+CHN('chain'), dmg0=22*DMG('chain')*pw('chain');
+  var jumps=2+CHN('chain'), dmg0=17*DMG('chain')*pw('chain');
   var decay=AW('chain')?1.0:(TF('chain','keep')?0.86:0.70);
   var reach=AW('chain')?420:210;
   var used=[], n=0;
@@ -4405,7 +4430,7 @@ function doHoly(){
   for(var i=0;i<cnt;i++){
     var an=a+(i-(cnt-1)/2)*0.22;
     shots.push({x:P.x,y:P.y,vx:Math.cos(an)*620,vy:Math.sin(an)*620,r:7,
-      src:'holy',kind:'lance',ang:an,dmg:18*DMG('holy')*pw('holy'),
+      src:'holy',kind:'lance',ang:an,dmg:14*DMG('holy')*pw('holy'),
       pierce:1+PRC('holy'),life:RNG('holy')/620,col:'#ffffff',col2:'#cfd8e8',el:'holy',
       split:3+SPL('holy'),hit:[]});
   }
@@ -4657,7 +4682,7 @@ function doCrimson(){
 function doSharkm(){
   SRC='sharkm';
   var sz=AREA('sharkm'), rng=RNG('sharkm');
-  var dmg=8*DMG('sharkm')*pw('sharkm'), boomR=66*sz, spd=460;   // 直撃は控えめ、爆発をメインに（範囲拡大）
+  var dmg=6*DMG('sharkm')*pw('sharkm'), boomR=66*sz, spd=460;   // 直撃は控えめ、爆発をメインに（範囲拡大）
   var turn=3.4+2.4*TR('sharkm','turn')+(AW('sharkm')?1.0:0);  // 旋回速度(rad/s)：熟練度・覚醒で鋭く
   var e=nearest(P.x,P.y,900);
   var a=(e?Math.atan2(e.y-P.y,e.x-P.x):P.face)+(Math.random()-.5)*0.35;   // 少し散らして連射がばらける
@@ -4747,7 +4772,7 @@ function drawTwisters(){
 }
 // ロックボール：転がり続けて進路の敵をなぎ倒す
 function doRock(){
-  var cnt=1+CNT('rock'), rr=Math.min(86,30*AREA('rock')), dmg=22*DMG('rock')*pw('rock');
+  var cnt=1+CNT('rock'), rr=Math.min(86,30*AREA('rock')), dmg=17*DMG('rock')*pw('rock');
   var life=(2.4+(TF('rock','life')?1.6:0))*RNGM('rock');
   var e=nearest(P.x,P.y,RNG('rock'));
   var base=e?Math.atan2(e.y-P.y,e.x-P.x):P.face;
@@ -6375,13 +6400,13 @@ function hurt(e,dmg,nx,ny,el){
   var crit=Math.random()<CRITC();
   if(crit) crits++;
   var d=crit?dmg*CRITD():dmg;
-  // 命中時の細かい倍率（図鑑・契約・深淵・弱点・連携コンボ[DEV]）を「加算してまとめて掛ける」＝乗算の積み重なりを抑制
-  if(DEV&&SRC) comboTouch(SRC);
+  // 命中時の細かい倍率（図鑑・契約・深淵・弱点・連携コンボ）を「加算してまとめて掛ける」＝乗算の積み重なりを抑制
+  if(SRC) comboTouch(SRC);
   var add=(dexDealMul(figKey(e))-1)
         + (NIGHTMARE?(contractDmgMul(SRC,e)-1):0)
         + (e.vuln>0?0.2:0)
         + (e.wk>0?e.wk*(e.wkPer||WK_PER):0)
-        + (DEV?(comboMul()-1):0);
+        + (comboMul()-1);
   d*=(1+add);
   if(crit&&NIGHTMARE){ var _ch=contractStat('critheal'); if(_ch&&P.hp<P.max) P.hp=Math.min(P.max,P.hp+d*_ch); }   // 吸命：会心で回復
   if(P.nodmg) d=0;                         // テスト：判定は走るが敵は死なない
@@ -6410,7 +6435,7 @@ function hurt(e,dmg,nx,ny,el){
 function kill(e){
   if(e.dead) return;
   e.dead=1; kills++;
-  if(DEV) comboKill(SRC);   // 連携コンボ（DEV限定）：撃破で継続・加算。とどめの武器の種類数で倍率
+  comboKill(SRC);   // 連携コンボ：撃破で継続・加算。2種以上当てているときだけ伸びる
   // 属性別キル数（解放条件用）：とどめの武器(SRC)が雷/氷属性なら加算
   if(SRC){
     if(ELW.thunder.indexOf(SRC)>=0) ACH.killTh=(ACH.killTh||0)+1;
@@ -6709,7 +6734,7 @@ var VOLLEY={};
 function queueVolley(w,gap){
   var n=BST(w);
   for(var i=1;i<=n;i++) volley.push({w:w,t:i*gap});
-  if(n>0) busy[w]=n*gap;   // 連射を撃ち切るまで次のクールダウンを止める（発射→リキャスト直列化）
+  if(n>0) busy[w]=Math.max(busy[w]||0,n*gap);   // 連射を撃ち切るまで次のクールダウンを止める（稼働時間WACTと共存＝max）
 }
 function moveVolley(dt){
   for(var i=volley.length-1;i>=0;i--){
@@ -7357,18 +7382,19 @@ function render(){
 }
 // 連携コンボの表示：2ヒット以上かつ2種以上の武器が当たっているときだけ「N COMBO！」
 function drawCombo(){
-  if(!DEV||state!=='playing') return;
+  if(state!=='playing') return;
   var kinds=comboKinds();
   if(comboN<2||kinds<2) return;
   comboMul();   // 表示用に倍率を最新化
   var pop=1+(comboFlash>0?comboFlash*0.7:0), cx=W/2, cy=H*0.24;
+  var bonus=(COMBO_DMG_PER100*100*Math.floor(comboN/100)).toFixed(1);   // +0.2%/100コンボ
   ctx.save(); ctx.textAlign='center';
-  ctx.globalAlpha=Math.min(1,comboT/0.4);
+  ctx.globalAlpha=1;                                                     // 猶予が縮んでも見えるよう常時表示
   ctx.font='bold '+Math.round(38*pop)+'px sans-serif';
   ctx.lineWidth=5; ctx.strokeStyle='rgba(0,0,0,0.55)'; ctx.fillStyle='#ffe14d';
   ctx.strokeText(comboN+' COMBO', cx, cy); ctx.fillText(comboN+' COMBO', cx, cy);
   ctx.font='bold 16px sans-serif'; ctx.fillStyle='#ff9b4d';
-  ctx.fillText('火力 ×'+comboMulV.toFixed(2)+'  ('+kinds+'種)', cx, cy+22);
+  ctx.fillText('火力 +'+bonus+'%  ('+kinds+'種)', cx, cy+22);
   ctx.globalAlpha=1; ctx.restore();
 }
 function drawStick(){
@@ -9705,6 +9731,11 @@ function openWeaponDetail(w){
       '</div>'+
       '<div class="wdtx">'+(WEAPONS[w].tx||'')+'</div>'+
       lockHtml+
+      (WBASE[w]?('<div style="display:flex;align-items:center;gap:6px;margin:6px 0;padding:7px 10px;border-radius:8px;background:#1c2340;border:1px solid #3a4674">'+
+        '<span style="font-size:13px">⚔️</span><span style="font-size:12px;color:#9fb0e0">攻撃力</span>'+
+        '<b style="font-size:17px;color:#ffe27a">'+wAtk(w)+'</b>'+
+        (WBASE_NOTE[w]?'<span style="font-size:10px;color:#8f86b8">（'+WBASE_NOTE[w]+'）</span>':'')+
+        '<span style="margin-left:auto;font-size:10px;color:#6f7ba8">現在の強化込み</span></div>'):'')+
       '<div class="wdbarlabel">熟練度 Lv '+lv+'/10<span>'+fmt(x)+(nx?' / '+fmt(nx):' — MAX')+'</span></div>'+
       '<div class="wbar"><div style="width:'+pct+'%"></div></div>'+
       statusHtml+
@@ -10794,17 +10825,33 @@ Array.prototype.forEach.call(document.querySelectorAll('#setview button'),functi
 // 更新履歴：1つのお知らせ内で「バージョン見出し」ごとに変更点を並べる（新しい順）。
 // マージのたびに先頭へ新バージョンを追加し、VERSION も更新する。
 var UPDATES=[
-  {v:'α1.0.280', items:[
+  {v:'α1.0.283', items:[
+    '立ち絵が無かった11キャラ（忍者・サムライ・重騎士・氷術師・雷鳴使い・銃士・農夫・調剤師・羊飼い・死霊術師・ヴァルカン）にドット絵の立ち絵を追加しました。これで全16キャラに立ち絵が付き、絵文字表示のキャラはいなくなりました。',
     'ステージの地面を描き直しました。これまでの格子線に代わり、ステージごとのドット絵タイル（草原＝夜の草地／森＝下草と落ち葉／古代の王墓＝石畳／大海原＝波紋）を敷き詰め、さらに岩・きのこ・骨・珊瑚などの飾りを地面に散りばめています。飾りの位置は場所ごとに固定なので、動いてもちらつきません。',
   ]},
+  {v:'α1.0.282', items:[
+    '「連携コンボ」を正式に追加しました（全員に開放）。2種類以上の武器を当てている状態で敵を倒すとコンボが加算され、画面に「N COMBO!」が出ます。',
+    'コンボは倒し続けるほど継続の猶予が短くなり（最短0.02秒）、最大99999コンボ。被ダメージを受けると途切れます（シールドで完全に防げた場合は途切れません）。',
+    'コンボの火力ボーナスは100コンボごとに+1%（上限+50%）。多武器で倒し続けるほど火力が伸びます。',
+  ]},
+  {v:'α1.0.281', items:[
+    '（実験中・開発版のみ）連携コンボは「被ダメージ」でも途切れるようにしました。倒し続けるだけでなく、被弾を避けることも必要に。シールドで完全に防げた場合は途切れません。',
+  ]},
+  {v:'α1.0.280', items:[
+    '（実験中・開発版のみ）連携コンボを作り直しました。コンボが伸びるほど継続の猶予が短くなり（100コンボごとに縮み、最短0.02秒）、伸ばし続けるほどシビアに。最大99999コンボ。火力ボーナスは膨張しないよう控えめ（100コンボごとに+0.2%）にしました。',
+  ]},
   {v:'α1.0.279', items:[
-    '農夫・調剤師・羊飼い・死霊術師・ヴァルカンの立ち絵（ドット絵）を追加しました。これで全16キャラに立ち絵が付き、絵文字表示のキャラはいなくなりました。',
+    'インフェルノビームの見た目を細くしました。火力上昇や持続を伸ばしてもビームが太くなりすぎないよう、以前の「メインではない方」のビームくらいの細さに統一（威力は変わりません）。',
   ]},
   {v:'α1.0.278', items:[
-    '氷術師・雷鳴使い・銃士の立ち絵（ドット絵）を追加しました。',
+    '「間合い係数」を廃止し、各武器の基礎攻撃力に直接折り込みました（計算がシンプルに）。近接は約1.15倍・長距離は約0.78倍ぶんを基礎値へ反映済みで、実際の火力はほぼ据え置きです。',
+    '武器詳細画面に「攻撃力」の数値を表示するようにしました（現在の強化・キャラ補正込み）。',
+    '各武器の強化軸を整理：ほぼ全武器を4〜6種・最大強化Lv合計12〜20の範囲に。アイスジャベリンは射程軸を廃止し攻撃軸を控えめに、ホーリーランスは射程軸を廃止し拡散を抑制。ガトリングの「間隔」軸（連射短縮）は廃止しました。',
+    '大剣・刀に「連射」軸を追加（続けて斬る）。チェンソーに「持続」軸を追加（出し続ける時間が伸びる）。',
+    '「発射→リキャスト直列化」を強化：攻撃の稼働時間ぶんは次のリキャストが進まないようにし、間隔を縮めても「モーション中に次が撃てる」挙動を抑制。単発・重量武器の過剰な手数も緩やかに抑えます。',
   ]},
   {v:'α1.0.277', items:[
-    '忍者・サムライ・重騎士の立ち絵（ドット絵）を追加しました。これまでグリフ（絵文字）で表示していたキャラクターに、他のキャラと同じ描き込みの立ち絵が付きます。',
+    'インフェルノビームを調整しました。追加ビームが主ビームより弱い（威力6割）ままだったのを、他の武器と同じく全ビーム同威力に統一。本数を増やすと素直に火力が伸びます（見た目の太さも揃えました）。',
   ]},
   {v:'α1.0.276', items:[
     'インフェルノビームの不具合を修正しました。ビームの本数を増やしたとき、これまで最初の1本しか「当て続けて火力が上がる」効果が乗らず、追加ビームは固定威力のままでした。追加ビームにもランプ（火力上昇）が乗るようにし、全ビームが一緒に強くなります。',
@@ -12101,7 +12148,7 @@ document.getElementById('profclose').onclick=function(){ pendingRank=null; docum
 document.getElementById('profauth').onclick=function(){ audio(); if(FBUSER) fbLogout(); else fbLogin(); };
 document.getElementById('profnicksave').onclick=function(){ audio(); saveProfNick(); };
 
-VOLLEY={bow:doBow,fire:doFire,ice:doIce,holy:doHoly,rock:doRock,musket:doMusket,dynamite:doDyna};
+VOLLEY={bow:doBow,fire:doFire,ice:doIce,holy:doHoly,rock:doRock,musket:doMusket,dynamite:doDyna,slash:doSlash,katana:doKatana};
 resize();
 reset();
 backfillFirstClear();   // 既にクリア済みのステージへ初回クリア報酬を遡及配布（受け取りボックスへ）
