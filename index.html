@@ -3024,7 +3024,7 @@ function figInfo(id){
   if(BOSS[id]){ var B=BOSS[id], tt=ETYPE[B.key]||{}; return {nm:B.nm,shape:tt.shape,col:tt.col,dark:tt.dark,desc:BDEX[id]||'',boss:true}; }
   var t=ETYPE[id]||{}; return {nm:t.nm,shape:t.shape,col:t.col,dark:t.dark,desc:DEX[id]||'',boss:false};
 }
-var VERSION='α1.0.278'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
+var VERSION='α1.0.279'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
 function applySave(o){
   for(var i=0;i<UPG.length;i++) META[UPG[i].id]=0;
   try{
@@ -7469,12 +7469,18 @@ var SPRDATA={
   hknight:'assets/hknight.png',
   cryo:'assets/cryo.png',
   thundr:'assets/thundr.png',
-  gunner:'assets/gunner.png'
+  gunner:'assets/gunner.png',
+  farmer:'assets/farmer.png',
+  apoth:'assets/apoth.png',
+  shepd:'assets/shepd.png',
+  necro:'assets/necro.png',
+  android:'assets/android.png'
 };
 // キャラID→立ち絵スプライト名（プレイヤー描画＆キャラリストのアイコン）
 var CHAR_SPR={ knight:'knight', hunter:'hunter', bomber:'bomber', mage:'mage', saint:'saint',
                 ninja:'ninja', samurai:'samurai', hknight:'hknight',
-                cryo:'cryo', thundr:'thundr', gunner:'gunner' };
+                cryo:'cryo', thundr:'thundr', gunner:'gunner',
+                farmer:'farmer', apoth:'apoth', shepd:'shepd', necro:'necro', android:'android' };
 var SPR={}, SPRT={}, SPRRDY={};
 // 端に接する白（不透明な白背景）だけをフラッドフィルで透過に。内部の白ハイライトは残す。
 // Pages（同一オリジン）では実行時に効き、file:// 等で getImageData が使えない時は例外を握って
@@ -10751,6 +10757,9 @@ Array.prototype.forEach.call(document.querySelectorAll('#setview button'),functi
 // 更新履歴：1つのお知らせ内で「バージョン見出し」ごとに変更点を並べる（新しい順）。
 // マージのたびに先頭へ新バージョンを追加し、VERSION も更新する。
 var UPDATES=[
+  {v:'α1.0.279', items:[
+    '農夫・調剤師・羊飼い・死霊術師・ヴァルカンの立ち絵（ドット絵）を追加しました。これで全16キャラに立ち絵が付き、絵文字表示のキャラはいなくなりました。',
+  ]},
   {v:'α1.0.278', items:[
     '氷術師・雷鳴使い・銃士の立ち絵（ドット絵）を追加しました。',
   ]},

@@ -48,6 +48,20 @@ def outline(im, col=OUT):
                     add.append((x, y)); break
     for x, y in add: p[x, y] = col
 
+def edged(im, draw_fn, oc=OUT):
+    """draw_fn(色) で描く図形に 1px の内縁を付ける（体に重なる小物用）。"""
+    for dx in (-1, 0, 1):
+        for dy in (-1, 0, 1):
+            if dx or dy:
+                tmp = new(); draw_fn(tmp, oc)
+                px_ = tmp.load()
+                for y in range(S):
+                    for x in range(S):
+                        if px_[x, y][3]:
+                            nx, ny = x+dx, y+dy
+                            if 0 <= nx < S and 0 <= ny < S: im.putpixel((nx, ny), oc)
+    draw_fn(im, None)
+
 def feet(im, base, y=51, dx=11, w=13, h=9):
     cx = S//2
     for s in (-1, 1):
@@ -349,8 +363,242 @@ def c_gunner():
     poly(im, [(45, 52), (52, 50), (50, 57), (44, 57)], darken(WOOD, 0.25))
     outline(im)
     return im
+def c_farmer():
+    """農夫：麦わら帽子＋前掛け。鎌を担ぎ、麦の穂を差している。"""
+    im = new()
+    TUNIC= (126, 148, 84, 255); STRAW = (226, 194, 108, 255)
+    APRON= (196, 176, 140, 255); SKIN = (238, 204, 164, 255)
+    WOOD = (128, 88, 50, 255);   STEEL= (196, 204, 218, 255)
+    WHEAT= (232, 206, 118, 255)
+    feet(im, (86, 66, 44, 255))
+    sphere(im, (11, 17, 53, 55), TUNIC)
+    # 前掛け
+    poly(im, [(22, 38), (42, 38), (46, 52), (40, 56), (24, 56), (18, 52)], APRON)
+    poly(im, [(24, 39), (40, 39), (42, 47), (22, 47)], lighten(APRON, 0.22))
+    line(im, [(32, 40), (32, 55)], darken(APRON, 0.25))
+    # 顔（帽子の下）
+    ell(im, (20, 26, 44, 45), SKIN)
+    ell(im, (22, 27, 42, 36), lighten(SKIN, 0.18))
+    eye(im, 26, 33, iris=(96, 66, 40, 255), w=6, h=8)
+    eye(im, 38, 33, iris=(96, 66, 40, 255), w=6, h=8)
+    line(im, [(29, 40), (35, 40)], (172, 122, 90, 255))
+    # 麦わら帽子（広いつば＋山）
+    ell(im, (4, 20, 60, 34), STRAW)
+    ell(im, (7, 21, 45, 29), lighten(STRAW, 0.30))
+    ell(im, (14, 10, 50, 28), STRAW)
+    ell(im, (17, 11, 42, 22), lighten(STRAW, 0.34))
+    for x in range(8, 58, 5):
+        px(im, x, 30, darken(STRAW, 0.28))
+    rect(im, (16, 22, 48, 25), (150, 106, 62, 255))          # 帽子のリボン
+    rect(im, (16, 22, 48, 22), lighten((150, 106, 62, 255), 0.30))
+    # 麦の穂（帽子に差す）
+    line(im, [(48, 20), (56, 6)], (176, 148, 70, 255))
+    for i in range(5):
+        y = 8 + i*2; x = 55 - i
+        px(im, x, y, WHEAT); px(im, x+2, y, WHEAT); px(im, x-2, y+1, WHEAT)
+    # 鎌（体・帽子に重なるので内縁を付ける）
+    def _scythe(t, oc):
+        line(t, [(49, 56), (60, 22)], oc or WOOD, 3)
+        if not oc: line(t, [(50, 55), (59, 25)], lighten(WOOD, 0.30))
+        poly(t, [(60, 22), (46, 13), (33, 17), (45, 18), (58, 27)], oc or STEEL)
+        if not oc:
+            poly(t, [(58, 22), (47, 15), (39, 17), (48, 19)], lighten(STEEL, 0.40))
+            poly(t, [(60, 24), (52, 20), (58, 27)], darken(STEEL, 0.28))
+    edged(im, _scythe)
+    outline(im)
+    return im
+
+def c_apoth():
+    """調剤師：ゴーグルを額に上げた薬師。深緑の前掛けと薬瓶。"""
+    im = new()
+    COAT = (58, 92, 84, 255);  APRON = (196, 190, 172, 255)
+    BRASS= (214, 168, 84, 255); GLASS = (146, 214, 108, 255)
+    SKIN = (238, 210, 180, 255); HAIR = (86, 66, 52, 255)
+    feet(im, darken(COAT, 0.35))
+    sphere(im, (11, 17, 53, 55), COAT)
+    # 前掛け＋ベルト
+    poly(im, [(21, 40), (43, 40), (45, 54), (19, 54)], APRON)
+    poly(im, [(23, 41), (41, 41), (42, 47), (22, 47)], lighten(APRON, 0.20))
+    rect(im, (18, 47, 46, 50), (92, 64, 44, 255))
+    rect(im, (30, 46, 35, 51), BRASS)
+    # 小瓶を差したベルト
+    for x in (21, 40):
+        rect(im, (x, 43, x+3, 48), GLASS); px(im, x+1, 43, BRASS)
+    # 顔
+    ell(im, (20, 24, 44, 44), SKIN)
+    ell(im, (22, 25, 42, 35), lighten(SKIN, 0.18))
+    eye(im, 26, 32, iris=(72, 108, 76, 255), w=6, h=8)
+    eye(im, 38, 32, iris=(72, 108, 76, 255), w=6, h=8)
+    # 髪
+    ell(im, (16, 12, 48, 32), HAIR)
+    ell(im, (19, 13, 43, 24), lighten(HAIR, 0.24))
+    ell(im, (20, 24, 44, 40), TR)
+    ell(im, (20, 24, 44, 44), SKIN)
+    ell(im, (22, 25, 42, 35), lighten(SKIN, 0.18))
+    eye(im, 26, 32, iris=(72, 108, 76, 255), w=6, h=8)
+    eye(im, 38, 32, iris=(72, 108, 76, 255), w=6, h=8)
+    poly(im, [(17, 24), (22, 14), (30, 12), (24, 20), (20, 26)], HAIR)
+    poly(im, [(47, 24), (42, 14), (34, 12), (40, 20), (44, 26)], HAIR)
+    # ゴーグル（額に上げている）
+    rect(im, (15, 18, 49, 23), (72, 54, 44, 255))
+    ell(im, (18, 15, 29, 25), BRASS); ell(im, (20, 17, 27, 23), (108, 176, 200, 255))
+    ell(im, (35, 15, 46, 25), BRASS); ell(im, (37, 17, 44, 23), (108, 176, 200, 255))
+    px(im, 22, 19, (240, 250, 255, 255)); px(im, 39, 19, (240, 250, 255, 255))
+    # 薬瓶（泡立つ緑）
+    rect(im, (54, 30, 58, 36), (208, 214, 220, 255))
+    poly(im, [(50, 36), (62, 36), (60, 50), (52, 50)], (208, 214, 220, 255))
+    poly(im, [(52, 40), (60, 40), (59, 49), (53, 49)], GLASS)
+    poly(im, [(53, 41), (56, 41), (55, 48), (54, 48)], lighten(GLASS, 0.40))
+    px(im, 55, 38, GLASS); px(im, 58, 36, lighten(GLASS, 0.4)); px(im, 53, 34, GLASS)
+    rect(im, (53, 28, 59, 30), BRASS)
+    outline(im)
+    return im
+
+def c_shepd():
+    """羊飼い：羊毛のフード＋杖と鈴。"""
+    im = new()
+    WOOL = (236, 228, 208, 255); TUNIC = (150, 118, 82, 255)
+    GOLD = (228, 186, 76, 255);  SKIN = (240, 212, 182, 255)
+    WOOD = (122, 86, 52, 255)
+    feet(im, darken(TUNIC, 0.35))
+    sphere(im, (11, 17, 53, 55), TUNIC)
+    # 羊毛のケープ（もこもこ）
+    for i, (x, y) in enumerate([(12, 34), (19, 31), (27, 30), (35, 30), (43, 31), (49, 34),
+                                (14, 40), (22, 38), (30, 37), (38, 37), (46, 39)]):
+        ell(im, (x, y, x+11, y+11), WOOL)
+    for x, y in [(20, 33), (30, 32), (40, 33)]:
+        ell(im, (x, y, x+7, y+6), lighten(WOOL, 0.35))
+    # 顔
+    ell(im, (21, 25, 43, 43), SKIN)
+    ell(im, (23, 26, 41, 34), lighten(SKIN, 0.18))
+    eye(im, 27, 32, iris=(104, 78, 50, 255), w=6, h=8)
+    eye(im, 38, 32, iris=(104, 78, 50, 255), w=6, h=8)
+    line(im, [(30, 38), (35, 38)], (180, 132, 104, 255))
+    # 羊毛のフード
+    for x, y in [(13, 14), (21, 10), (30, 8), (39, 10), (47, 14), (11, 22), (49, 22)]:
+        ell(im, (x, y, x+13, y+13), WOOL)
+    ell(im, (21, 24, 43, 40), TR)
+    ell(im, (21, 25, 43, 43), SKIN)
+    ell(im, (23, 26, 41, 34), lighten(SKIN, 0.18))
+    eye(im, 27, 32, iris=(104, 78, 50, 255), w=6, h=8)
+    eye(im, 38, 32, iris=(104, 78, 50, 255), w=6, h=8)
+    line(im, [(30, 38), (35, 38)], (180, 132, 104, 255))
+    for x, y in [(18, 13), (28, 10), (38, 12)]:
+        ell(im, (x, y, x+8, y+7), lighten(WOOL, 0.35))
+    # 羊の耳
+    ell(im, (8, 26, 16, 32), WOOL); ell(im, (48, 26, 56, 32), WOOL)
+    # 杖（右端に寄せる。体に重なるので内縁付き）
+    def _crook(t, oc):
+        line(t, [(57, 56), (57, 20)], oc or WOOD, 3)
+        if not oc: line(t, [(56, 55), (56, 22)], lighten(WOOD, 0.30))
+        poly(t, [(58, 20), (58, 12), (50, 10), (46, 16), (49, 18), (52, 14), (55, 15), (55, 20)], oc or WOOD)
+        if not oc: poly(t, [(57, 19), (57, 13), (51, 12), (49, 15), (51, 16), (53, 13), (56, 14)], lighten(WOOD, 0.26))
+    edged(im, _crook)
+    # 鈴（杖から下げる）
+    def _bell(t, oc):
+        poly(t, [(45, 40), (53, 40), (55, 48), (43, 48)], oc or GOLD)
+        if not oc:
+            poly(t, [(46, 41), (50, 41), (51, 46), (45, 46)], lighten(GOLD, 0.40))
+            poly(t, [(53, 42), (55, 48), (51, 48)], darken(GOLD, 0.28))
+        rect(t, (43, 48, 55, 49), oc or darken(GOLD, 0.30))
+        rect(t, (47, 50, 51, 52), oc or darken(GOLD, 0.45))
+    edged(im, _bell)
+    outline(im)
+    return im
+
+def c_necro():
+    """死霊術師：漆黒のフード＋髑髏の面。紫に光る眼と骨の杖。"""
+    im = new()
+    ROBE = (48, 38, 66, 255);  DEEP = (30, 24, 46, 255)
+    BONE = (226, 220, 204, 255); GLOW = (186, 110, 250, 255)
+    feet(im, darken(ROBE, 0.40))
+    sphere(im, (11, 17, 53, 55), ROBE)
+    # 裾のぼろ
+    for x in range(14, 50, 6):
+        poly(im, [(x, 48), (x+3, 56), (x+6, 48)], DEEP)
+    # 髑髏の面
+    ell(im, (19, 25, 45, 46), BONE)
+    ell(im, (21, 26, 43, 36), lighten(BONE, 0.25))
+    ell(im, (23, 41, 41, 47), BONE)
+    for x in range(25, 40, 3):
+        line(im, [(x, 42), (x, 47)], darken(BONE, 0.35))
+    line(im, [(23, 43), (41, 43)], darken(BONE, 0.35))
+    # 眼窩（紫の光）
+    ell(im, (23, 30, 30, 38), (26, 20, 34, 255))
+    ell(im, (34, 30, 41, 38), (26, 20, 34, 255))
+    ell(im, (24, 32, 28, 36), GLOW); ell(im, (35, 32, 39, 36), GLOW)
+    px(im, 25, 33, (250, 230, 255, 255)); px(im, 36, 33, (250, 230, 255, 255))
+    poly(im, [(31, 37), (33, 37), (32, 40)], (26, 20, 34, 255))     # 鼻孔
+    # フード
+    ell(im, (8, 9, 56, 40), DEEP)
+    ell(im, (12, 10, 46, 27), lighten(DEEP, 0.22))
+    ell(im, (18, 23, 46, 44), TR)
+    ell(im, (19, 25, 45, 46), BONE)
+    ell(im, (21, 26, 43, 36), lighten(BONE, 0.25))
+    ell(im, (23, 41, 41, 47), BONE)
+    for x in range(25, 40, 3):
+        line(im, [(x, 42), (x, 47)], darken(BONE, 0.35))
+    ell(im, (23, 30, 30, 38), (26, 20, 34, 255))
+    ell(im, (34, 30, 41, 38), (26, 20, 34, 255))
+    ell(im, (24, 32, 28, 36), GLOW); ell(im, (35, 32, 39, 36), GLOW)
+    px(im, 25, 33, (250, 230, 255, 255)); px(im, 36, 33, (250, 230, 255, 255))
+    poly(im, [(31, 37), (33, 37), (32, 40)], (26, 20, 34, 255))
+    # フードの尖り
+    poly(im, [(26, 12), (32, 2), (38, 12)], DEEP)
+    poly(im, [(30, 11), (32, 4), (33, 11)], lighten(DEEP, 0.30))
+    # 骨の杖＋浮かぶ闇の手
+    line(im, [(56, 54), (56, 24)], BONE, 3)
+    line(im, [(55, 54), (55, 26)], lighten(BONE, 0.30))
+    ell(im, (51, 16, 61, 26), BONE)
+    ell(im, (53, 18, 56, 21), (40, 30, 56, 255)); ell(im, (57, 18, 60, 21), (40, 30, 56, 255))
+    ell(im, (52, 12, 60, 18), GLOW)
+    outline(im)
+    return im
+
+def c_android():
+    """ヴァルカン：灼熱ビームの自律機。金属の体＋橙に光るバイザー。"""
+    im = new()
+    HULL = (140, 150, 168, 255); DARKM = (54, 60, 76, 255)
+    HOT  = (255, 138, 48, 255);  CORE = (255, 226, 140, 255)
+    RED  = (188, 62, 48, 255)
+    feet(im, darken(HULL, 0.42), y=52, dx=11, w=13, h=9)
+    sphere(im, (11, 16, 53, 55), HULL)
+    # 装甲の分割線とリベット
+    line(im, [(13, 44), (51, 44)], darken(HULL, 0.45))
+    line(im, [(32, 44), (32, 56)], darken(HULL, 0.45))
+    for x in (18, 46): px(im, x, 47, darken(HULL, 0.5))
+    # 胸の炉心
+    ell(im, (26, 45, 38, 55), DARKM)
+    ell(im, (28, 47, 36, 53), HOT)
+    ell(im, (30, 48, 34, 51), CORE)
+    # 頭部（バイザー）
+    ell(im, (12, 12, 52, 42), DARKM)
+    ell(im, (14, 13, 46, 30), lighten(DARKM, 0.30))
+    rect(im, (14, 26, 50, 36), DARKM)
+    poly(im, [(16, 27), (48, 27), (46, 35), (18, 35)], (18, 20, 30, 255))
+    rect(im, (19, 29, 45, 33), HOT)
+    rect(im, (19, 29, 45, 30), CORE)
+    rect(im, (21, 30, 26, 32), (255, 255, 240, 255))
+    # 天板の金属とアンテナ
+    ell(im, (14, 10, 50, 26), HULL)
+    ell(im, (17, 11, 43, 21), lighten(HULL, 0.34))
+    rect(im, (30, 2, 34, 12), HULL); rect(im, (30, 2, 31, 12), lighten(HULL, 0.40))
+    ell(im, (28, 0, 36, 7), RED); ell(im, (30, 2, 33, 5), (255, 190, 170, 255))
+    # 側面の排熱口
+    for y in (24, 28, 32):
+        rect(im, (8, y, 12, y+2), DARKM); rect(im, (52, y, 56, y+2), DARKM)
+    # 砲身（インフェルノ）
+    rect(im, (50, 36, 62, 44), HULL)
+    rect(im, (50, 36, 62, 38), lighten(HULL, 0.36))
+    rect(im, (50, 42, 62, 44), darken(HULL, 0.32))
+    rect(im, (60, 34, 64, 46), DARKM)
+    ell(im, (61, 36, 66, 44), HOT); ell(im, (62, 38, 65, 42), CORE)
+    outline(im)
+    return im
 CHARS = {'ninja': c_ninja, 'samurai': c_samurai, 'hknight': c_hknight,
-         'cryo': c_cryo, 'thundr': c_thundr, 'gunner': c_gunner}
+         'cryo': c_cryo, 'thundr': c_thundr, 'gunner': c_gunner,
+         'farmer': c_farmer, 'apoth': c_apoth, 'shepd': c_shepd,
+         'necro': c_necro, 'android': c_android}
 
 def main():
     ids = sys.argv[1:] or list(CHARS.keys())
