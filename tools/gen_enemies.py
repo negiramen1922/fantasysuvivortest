@@ -489,11 +489,191 @@ def e_serpent():
     ell(im, (12, 30, 16, 35), EYE); px(im, 14, 32, DARK)
     return im
 
+def e_shark():
+    """サメ：突進してくる灰色のサメ。左向き。"""
+    im = new()
+    BODY = hexc('#9aa8b8'); BODY_L = lighten(BODY, 0.26); BODY_D = darken(BODY, 0.34)
+    BELLY = hexc('#e8eef4'); DARK = (20, 26, 36, 255); GUM = hexc('#d47a86')
+    # 尾びれ
+    poly(im, [(48, 30), (62, 16), (58, 32), (63, 44), (48, 40)], BODY_D)
+    poly(im, [(50, 30), (59, 20), (57, 31), (52, 36)], BODY)
+    # 胴（左が頭）
+    poly(im, [(4, 32), (16, 22), (34, 20), (50, 28), (52, 36), (34, 46), (16, 46), (4, 38)], BODY)
+    poly(im, [(8, 28), (22, 24), (38, 24), (48, 30), (34, 34), (16, 34)], BODY_L)
+    poly(im, [(6, 38), (20, 42), (38, 42), (50, 36), (34, 46), (16, 46)], BELLY)
+    # 背びれ
+    poly(im, [(24, 21), (32, 6), (38, 22)], BODY_D)
+    poly(im, [(27, 20), (32, 10), (34, 20)], BODY)
+    # 胸びれ
+    poly(im, [(18, 40), (10, 54), (26, 46)], BODY_D)
+    poly(im, [(34, 40), (30, 52), (44, 44)], BODY_D)
+    # えら
+    for k in range(3):
+        line(im, [(18 + k*3, 30), (18 + k*3, 38)], BODY_D)
+    # 口と牙
+    poly(im, [(3, 36), (20, 38), (18, 44), (4, 41)], GUM)
+    for x in range(5, 18, 3):
+        poly(im, [(x, 37), (x+2, 37), (x+1, 41)], (250, 252, 250, 255))
+        poly(im, [(x+1, 43), (x+3, 43), (x+2, 39)], (250, 252, 250, 255))
+    # 目
+    ell(im, (10, 28, 16, 34), (250, 250, 250, 255))
+    ell(im, (11, 29, 15, 33), DARK); px(im, 12, 30, (255, 255, 255, 255))
+    return im
+
+def e_manta():
+    """マンタ：真上から見た大きなエイ。ゆったり飛ぶように泳ぐ。"""
+    im = new()
+    BODY = hexc('#5a6a8a'); BODY_L = lighten(BODY, 0.26); BODY_D = darken(BODY, 0.34)
+    BELLY = hexc('#c8d4e4'); DARK = (14, 18, 28, 255)
+    # 尾
+    poly(im, [(30, 44), (34, 44), (33, 62), (31, 62)], BODY_D)
+    # 翼（ひし形）
+    poly(im, [(32, 12), (62, 34), (46, 44), (32, 48), (18, 44), (2, 34)], BODY)
+    poly(im, [(32, 16), (54, 33), (42, 39), (32, 41), (22, 39), (10, 33)], BODY_L)
+    # 翼の先の陰
+    poly(im, [(2, 34), (16, 30), (18, 44)], BODY_D)
+    poly(im, [(62, 34), (48, 30), (46, 44)], BODY_D)
+    # 頭のひれ（頭鰭）
+    poly(im, [(24, 14), (20, 4), (27, 12)], BODY_D)
+    poly(im, [(40, 14), (44, 4), (37, 12)], BODY_D)
+    # 白い斑点
+    for cx, cy in [(20, 26), (44, 26), (32, 22), (14, 33), (50, 33)]:
+        ell(im, (cx-3, cy-2, cx+3, cy+2), BELLY)
+    # 目
+    ell(im, (24, 18, 29, 23), (250, 250, 250, 255)); ell(im, (35, 18, 40, 23), (250, 250, 250, 255))
+    ell(im, (25, 19, 28, 22), DARK); ell(im, (36, 19, 39, 22), DARK)
+    return im
+
+def e_hermit():
+    """ヤドカリ：渦巻の宿を背負い、ハサミを構える。素早い。"""
+    im = new()
+    SHELL = hexc('#d0a060'); SHELL_L = lighten(SHELL, 0.28); SHELL_D = darken(SHELL, 0.36)
+    BODY = hexc('#e0705a'); BODY_D = darken(BODY, 0.30); DARK = (36, 20, 12, 255)
+    # 脚
+    for s2 in (-1, 1):
+        for k, y in enumerate((46, 52)):
+            poly(im, [(32 + s2*8, y), (32 + s2*18, y+3), (32 + s2*17, y+7), (32 + s2*7, y+4)], BODY_D)
+    # 宿（渦巻の貝）
+    ell(im, (18, 8, 58, 48), SHELL)
+    ell(im, (22, 10, 50, 34), SHELL_L)
+    # 渦
+    for k, r in enumerate((16, 11, 6, 3)):
+        cx, cy = 40 - k, 28 - k
+        D(im).arc((cx-r, cy-r, cx+r, cy+r), 20 + k*40, 320 + k*40, fill=SHELL_D if k % 2 == 0 else SHELL)
+    for x, y in [(24, 40), (34, 44), (46, 42), (52, 32)]:
+        px(im, x, y, SHELL_D)
+    # 体（貝から出た前半身）
+    ell(im, (8, 28, 30, 48), BODY)
+    ell(im, (11, 30, 24, 39), lighten(BODY, 0.24))
+    # 目（柄）
+    for s2 in (-1, 1):
+        x = 18 + s2*5
+        line(im, [(x, 30), (x + s2*2, 20)], BODY_D, 2)
+        ell(im, (x + s2*2 - 3, 16, x + s2*2 + 3, 22), (250, 250, 250, 255))
+        ell(im, (x + s2*2 - 1, 18, x + s2*2 + 1, 20), DARK)
+    # ハサミ（前に構える）
+    for by, sz in ((34, 8), (42, 6)):
+        ell(im, (2, by, 2 + sz + 6, by + sz), BODY)
+        poly(im, [(2, by), (2 - 2, by - 4), (8, by + 2)], BODY_D)
+        line(im, [(3, by + sz//2), (2 + sz + 4, by + sz//2)], DARK)
+    return im
+
+def e_clam():
+    """カイ：砂に潜む二枚貝。開いた殻の奥に真珠。"""
+    im = new()
+    SH = hexc('#c09ac0'); SH_L = lighten(SH, 0.30); SH_D = darken(SH, 0.34)
+    FLESH = hexc('#e88aa0'); PEARL = (250, 250, 240, 255); DARK = (40, 22, 44, 255)
+    SAND = hexc('#c8b088')
+    # 砂
+    ell(im, (6, 48, 58, 60), SAND)
+    ell(im, (12, 50, 52, 56), lighten(SAND, 0.22))
+    # 下の殻
+    poly(im, [(8, 34), (32, 30), (56, 34), (52, 52), (12, 52)], SH)
+    for k in range(6):                                   # 放射状の筋
+        line(im, [(32, 32), (10 + k*9, 52)], SH_D)
+    poly(im, [(12, 46), (52, 46), (50, 52), (14, 52)], SH_L)
+    # 中身と真珠
+    ell(im, (18, 30, 46, 44), FLESH)
+    ell(im, (22, 32, 42, 40), lighten(FLESH, 0.26))
+    ell(im, (27, 31, 37, 41), PEARL)
+    ell(im, (29, 33, 33, 37), (255, 255, 255, 255))
+    # 上の殻（扇形に開く）
+    D(im).pieslice((6, 6, 58, 50), 180, 360, fill=SH)
+    D(im).pieslice((10, 10, 54, 46), 180, 360, fill=SH_L)
+    for k in range(7):
+        line(im, [(32, 30), (8 + k*8, 12 if 1 < k < 5 else 18)], SH_D)
+    D(im).arc((6, 6, 58, 50), 180, 360, fill=SH_D)
+    rect(im, (8, 28, 56, 31), SH)
+    rect(im, (8, 30, 56, 31), SH_D)
+    # 目
+    ell(im, (24, 34, 29, 39), (250, 250, 250, 255)); ell(im, (35, 34, 40, 39), (250, 250, 250, 255))
+    ell(im, (25, 35, 28, 38), DARK); ell(im, (36, 35, 39, 38), DARK)
+    return im
+
+def e_siren():
+    """セイレーン：歌で光線を放つ海妖。長い髪と魚の尾。"""
+    im = new()
+    SKIN = hexc('#f0c0b0'); SKIN_L = lighten(SKIN, 0.22)
+    HAIR = hexc('#7ad0c8'); HAIR_L = lighten(HAIR, 0.26); HAIR_D = darken(HAIR, 0.32)
+    TAIL = hexc('#e0a0b0'); TAIL_L = lighten(TAIL, 0.28); TAIL_D = darken(TAIL, 0.32)
+    DARK = (52, 26, 40, 255); GLOW = hexc('#fff0a0')
+    # 尾（下半身）
+    poly(im, [(22, 38), (42, 38), (44, 50), (36, 56), (28, 56), (20, 50)], TAIL)
+    for y in (42, 47, 52):
+        line(im, [(23, y), (41, y)], TAIL_D)
+    poly(im, [(28, 54), (16, 62), (32, 58), (48, 62), (36, 54)], TAIL_L)   # 尾びれ
+    # 髪（後ろ）
+    ell(im, (10, 8, 54, 46), HAIR)
+    poly(im, [(10, 30), (6, 50), (16, 44), (18, 30)], HAIR_D)
+    poly(im, [(54, 30), (58, 50), (48, 44), (46, 30)], HAIR_D)
+    # 顔と上半身
+    ell(im, (22, 28, 42, 42), SKIN)                                        # 胴
+    ell(im, (21, 12, 43, 34), SKIN)                                        # 顔
+    ell(im, (24, 14, 40, 24), SKIN_L)
+    # 前髪
+    poly(im, [(20, 22), (22, 10), (32, 6), (44, 10), (44, 22), (40, 14), (32, 12), (24, 15)], HAIR)
+    poly(im, [(23, 18), (26, 10), (33, 8), (28, 14)], HAIR_L)
+    # 目と歌う口
+    ell(im, (25, 21, 30, 27), (250, 250, 250, 255)); ell(im, (34, 21, 39, 27), (250, 250, 250, 255))
+    ell(im, (26, 22, 29, 26), DARK); ell(im, (35, 22, 38, 26), DARK)
+    ell(im, (29, 30, 35, 35), DARK); ell(im, (30, 31, 34, 34), hexc('#8a3a50'))
+    px(im, 32, 32, GLOW)
+    for r in (7, 11):                                  # 口から右へ広がる歌の輪（顔にかからないように）
+        D(im).arc((36-r, 33-r, 36+r, 33+r), 300, 60, fill=GLOW)
+    # 歌（音符）
+    for cx, cy in [(50, 16), (56, 24)]:
+        ell(im, (cx-3, cy-2, cx+1, cy+2), GLOW)
+        line(im, [(cx+1, cy), (cx+1, cy-6)], GLOW)
+    return im
+
+def e_flyingfish():
+    """トビウオ：まっすぐ突っ切る小魚。大きな胸びれ。"""
+    im = new()
+    BODY = hexc('#8fd4ff'); BODY_L = lighten(BODY, 0.30); BODY_D = darken(BODY, 0.34)
+    BELLY = (240, 250, 255, 255); DARK = (18, 40, 60, 255)
+    # 胸びれ（大きな翼）
+    poly(im, [(28, 28), (52, 8), (48, 26), (30, 34)], BODY_D)
+    poly(im, [(28, 34), (50, 52), (46, 38), (30, 32)], BODY_D)
+    poly(im, [(30, 28), (46, 14), (44, 25)], BODY_L)
+    # 胴（左向き）
+    poly(im, [(6, 30), (18, 22), (36, 24), (48, 32), (36, 40), (18, 42)], BODY)
+    poly(im, [(10, 28), (22, 25), (38, 28), (44, 32), (26, 33)], BODY_L)
+    poly(im, [(10, 36), (26, 38), (40, 36), (34, 40), (18, 41)], BELLY)
+    # 尾びれ
+    poly(im, [(46, 32), (60, 22), (56, 32), (60, 44)], BODY)
+    poly(im, [(48, 32), (57, 26), (55, 32)], BODY_L)
+    # 目
+    ell(im, (10, 28, 16, 34), (250, 252, 255, 255))
+    ell(im, (11, 29, 15, 33), DARK); px(im, 12, 30, (255, 255, 255, 255))
+    return im
+
 ENEMIES = {'lich': e_lich, 'necro': e_necro, 'dullahan': e_dullahan,
            'boomer': e_boomer, 'gargoyle': e_gargoyle, 'sarcher': e_sarcher,
            'skeledragon': e_skeledragon,
            'sahagin': e_sahagin, 'crab': e_crab, 'jelly': e_jelly,
-           'kelpie': e_kelpie, 'serpent': e_serpent}
+           'kelpie': e_kelpie, 'serpent': e_serpent,
+           'shark': e_shark, 'manta': e_manta, 'hermit': e_hermit,
+           'clam': e_clam, 'siren': e_siren, 'flyingfish': e_flyingfish}
 
 def main():
     ids = sys.argv[1:] or list(ENEMIES.keys())
