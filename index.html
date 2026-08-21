@@ -3033,7 +3033,7 @@ function figInfo(id){
   if(BOSS[id]){ var B=BOSS[id], tt=ETYPE[B.key]||{}; return {nm:B.nm,shape:tt.shape,col:tt.col,dark:tt.dark,desc:BDEX[id]||'',boss:true}; }
   var t=ETYPE[id]||{}; return {nm:t.nm,shape:t.shape,col:t.col,dark:t.dark,desc:DEX[id]||'',boss:false};
 }
-var VERSION='α1.0.283'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
+var VERSION='α1.0.284'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
 function applySave(o){
   for(var i=0;i<UPG.length;i++) META[UPG[i].id]=0;
   try{
@@ -7537,7 +7537,13 @@ var SPRDATA={
   apoth:'assets/apoth.png',
   shepd:'assets/shepd.png',
   necro:'assets/necro.png',
-  android:'assets/android.png'
+  android:'assets/android.png',
+  lich:'assets/lich.png',
+  necro:'assets/necro.png',
+  dullahan:'assets/dullahan.png',
+  boomer:'assets/boomer.png',
+  gargoyle:'assets/gargoyle.png',
+  sarcher:'assets/sarcher.png'
 };
 // キャラID→立ち絵スプライト名（プレイヤー描画＆キャラリストのアイコン）
 var CHAR_SPR={ knight:'knight', hunter:'hunter', bomber:'bomber', mage:'mage', saint:'saint',
@@ -7695,7 +7701,8 @@ var SHAPE_SPR={blob:'blob',goblin:'goblin',orc:'orc',bat:'bat',spirit:'spirit',o
   wolf:'wolf',turtle:'turtle',harpy:'harpy',rider:'goat',
   bird:'bird',myconid:'myconid',bee:'bee',spider:'spider',beetle:'beetle',dryad:'maneater',
   panther:'panther',mantis:'mantis',treant:'treant',deer:'deer',moth:'moth',
-  skeleton:'skeleton',shieldman:'shieldman',wraith:'wraith',mummy:'mummy',shadow:'shadow',ghoul:'ghoul'};
+  skeleton:'skeleton',shieldman:'shieldman',wraith:'wraith',mummy:'mummy',shadow:'shadow',ghoul:'ghoul',
+  lich:'lich',necro:'necro',dullahan:'dullahan',boomer:'boomer',gargoyle:'gargoyle',sarcher:'sarcher'};
 // 棍棒持ち（素体＋棍棒レイヤーで攻撃時に棍棒を振る）。値＝棍棒レイヤーの握り位置（フレーム比 0..1）
 var CLUBBER={goblin:[0.34,0.77], orc:[0.31,0.67], cyclops:[0.34,0.75], skeleton:[0.78,0.72]};
 function enemySpr(e){
@@ -8158,8 +8165,8 @@ function drawOceanShape(s,R,col,dark,t){
 // ステージ1の手続き描画（刷新）。ctx は敵中心へ translate 済み。
 function drawS1Shape(s,R,col,dark,t){
   // ステージ3の敵は当面プレースホルダ：近い既存図形で代用（スプライトは後日差し替え）
-  var S3A={skeleton:'goblin',ghoul:'goblin',shieldman:'orc',sarcher:'archer',necro:'archer',lich:'archer',
-           mummy:'orc',dullahan:'orc',boomer:'orc',gargoyle:'harpy',wraith:'goblin',shadow:'goblin',fly:'harpy'};
+  // ステージ3のうち、まだ専用スプライトが無いものだけ近い既存図形で代用する（絵ができたら行を消す）
+  var S3A={fly:'harpy'};
   if(S3A[s]) s=S3A[s];
   if(s==='blob'){
     var w=1+Math.sin(t*4)*0.07;
@@ -8312,7 +8319,9 @@ var SPRSZ={blob:{s:3.0,oy:0.35}, goblin:{s:3.2,oy:0.55}, orc:{s:3.0,oy:0.50},
   deer:{s:3.0,oy:0.42}, moth:{s:3.0,oy:0.22},
   gravekeeper:{s:3.0,oy:0.42}, gravekeeper_bare:{s:3.0,oy:0.42}, skeletonking:{s:2.9,oy:0.34}, hecaton:{s:2.7,oy:0.42},
   ghoul:{s:3.2,oy:0.30},
-  skeleton:{s:3.2,oy:0.42}, shieldman:{s:3.1,oy:0.42}, wraith:{s:3.4,oy:0.16}, mummy:{s:3.0,oy:0.42}, shadow:{s:3.4,oy:0.28}};
+  skeleton:{s:3.2,oy:0.42}, shieldman:{s:3.1,oy:0.42}, wraith:{s:3.4,oy:0.16}, mummy:{s:3.0,oy:0.42}, shadow:{s:3.4,oy:0.28},
+  lich:{s:3.4,oy:0.40}, necro:{s:3.4,oy:0.40}, dullahan:{s:3.2,oy:0.40},
+  boomer:{s:3.0,oy:0.34}, gargoyle:{s:3.3,oy:0.32}, sarcher:{s:3.3,oy:0.42}};
 // 毒の沼（ブーマー）：緑の沼＋泡。消える直前にフェード。
 function drawPuddle(q){
   var a=Math.min(1,q.life/1.2)*0.55;
@@ -10825,6 +10834,9 @@ Array.prototype.forEach.call(document.querySelectorAll('#setview button'),functi
 // 更新履歴：1つのお知らせ内で「バージョン見出し」ごとに変更点を並べる（新しい順）。
 // マージのたびに先頭へ新バージョンを追加し、VERSION も更新する。
 var UPDATES=[
+  {v:'α1.0.284', items:[
+    'ステージ③（古代の王墓）の敵6種にドット絵を追加しました。これまでリッチ・ネクロマンサー・デュラハン・ブーマー・ガーゴイル・スケルトンアーチャーは、ゴブリンやオークの絵を借りた仮の見た目でした。それぞれ専用の絵になっています。',
+  ]},
   {v:'α1.0.283', items:[
     '立ち絵が無かった11キャラ（忍者・サムライ・重騎士・氷術師・雷鳴使い・銃士・農夫・調剤師・羊飼い・死霊術師・ヴァルカン）にドット絵の立ち絵を追加しました。これで全16キャラに立ち絵が付き、絵文字表示のキャラはいなくなりました。',
     'ステージの地面を描き直しました。これまでの格子線に代わり、ステージごとのドット絵タイル（草原＝夜の草地／森＝下草と落ち葉／古代の王墓＝石畳／大海原＝波紋）を敷き詰め、さらに岩・きのこ・骨・珊瑚などの飾りを地面に散りばめています。飾りの位置は場所ごとに固定なので、動いてもちらつきません。',
