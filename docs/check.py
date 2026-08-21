@@ -4,10 +4,14 @@
 import re, subprocess, sys, tempfile, os
 src = 'index.html'
 s = open(src, encoding='utf-8').read()
-m = re.search(r'<script>(.*?)</script>', s, re.S)
-if not m:
+# インラインの <script> は複数ある（gtag 用の小さいものなど）。
+# 一番大きいブロック＝ゲーム本体を検査対象にする。
+# （以前は最初の1つだけを見ており、本体に構文エラーがあっても素通りしていた）
+blocks = re.findall(r'<script>(.*?)</script>', s, re.S)
+if not blocks:
     print('NG: <script> が見つからない'); sys.exit(1)
-js = m.group(1)
+js = max(blocks, key=len)
+print('検査対象: %d 個中の最大ブロック（%d 文字）' % (len(blocks), len(js)))
 tmp = os.path.join(tempfile.gettempdir(), 'bsv_check.js')
 open(tmp, 'w', encoding='utf-8').write(js)
 
