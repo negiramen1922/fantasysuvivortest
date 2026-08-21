@@ -3033,7 +3033,7 @@ function figInfo(id){
   if(BOSS[id]){ var B=BOSS[id], tt=ETYPE[B.key]||{}; return {nm:B.nm,shape:tt.shape,col:tt.col,dark:tt.dark,desc:BDEX[id]||'',boss:true}; }
   var t=ETYPE[id]||{}; return {nm:t.nm,shape:t.shape,col:t.col,dark:t.dark,desc:DEX[id]||'',boss:false};
 }
-var VERSION='α1.0.285'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
+var VERSION='α1.0.286'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
 function applySave(o){
   for(var i=0;i<UPG.length;i++) META[UPG[i].id]=0;
   try{
@@ -7544,7 +7544,12 @@ var SPRDATA={
   boomer:'assets/boomer.png',
   gargoyle:'assets/gargoyle.png',
   sarcher:'assets/sarcher.png',
-  skeledragon:'assets/skeledragon.png'
+  skeledragon:'assets/skeledragon.png',
+  sahagin:'assets/sahagin.png',
+  crab:'assets/crab.png',
+  jelly:'assets/jelly.png',
+  kelpie:'assets/kelpie.png',
+  serpent:'assets/serpent.png'
 };
 // キャラID→立ち絵スプライト名（プレイヤー描画＆キャラリストのアイコン）
 var CHAR_SPR={ knight:'knight', hunter:'hunter', bomber:'bomber', mage:'mage', saint:'saint',
@@ -7703,7 +7708,8 @@ var SHAPE_SPR={blob:'blob',goblin:'goblin',orc:'orc',bat:'bat',spirit:'spirit',o
   bird:'bird',myconid:'myconid',bee:'bee',spider:'spider',beetle:'beetle',dryad:'maneater',
   panther:'panther',mantis:'mantis',treant:'treant',deer:'deer',moth:'moth',
   skeleton:'skeleton',shieldman:'shieldman',wraith:'wraith',mummy:'mummy',shadow:'shadow',ghoul:'ghoul',
-  lich:'lich',necro:'necro',dullahan:'dullahan',boomer:'boomer',gargoyle:'gargoyle',sarcher:'sarcher'};
+  lich:'lich',necro:'necro',dullahan:'dullahan',boomer:'boomer',gargoyle:'gargoyle',sarcher:'sarcher',
+  sahagin:'sahagin',crab:'crab',jelly:'jelly',kelpie:'kelpie',serpent:'serpent'};
 // 棍棒持ち（素体＋棍棒レイヤーで攻撃時に棍棒を振る）。値＝棍棒レイヤーの握り位置（フレーム比 0..1）
 var CLUBBER={goblin:[0.34,0.77], orc:[0.31,0.67], cyclops:[0.34,0.75], skeleton:[0.78,0.72]};
 function enemySpr(e){
@@ -8324,7 +8330,9 @@ var SPRSZ={blob:{s:3.0,oy:0.35}, goblin:{s:3.2,oy:0.55}, orc:{s:3.0,oy:0.50},
   skeleton:{s:3.2,oy:0.42}, shieldman:{s:3.1,oy:0.42}, wraith:{s:3.4,oy:0.16}, mummy:{s:3.0,oy:0.42}, shadow:{s:3.4,oy:0.28},
   lich:{s:3.4,oy:0.40}, necro:{s:3.4,oy:0.40}, dullahan:{s:3.2,oy:0.40},
   boomer:{s:3.0,oy:0.34}, gargoyle:{s:3.3,oy:0.32}, sarcher:{s:3.3,oy:0.42},
-  skeledragon:{s:2.7,oy:0.30}};
+  skeledragon:{s:2.7,oy:0.30},
+  sahagin:{s:3.2,oy:0.40}, crab:{s:3.0,oy:0.30}, jelly:{s:3.4,oy:0.24},
+  kelpie:{s:3.3,oy:0.30}, serpent:{s:3.4,oy:0.26}};
 // 毒の沼（ブーマー）：緑の沼＋泡。消える直前にフェード。
 function drawPuddle(q){
   var a=Math.min(1,q.life/1.2)*0.55;
@@ -10837,6 +10845,9 @@ Array.prototype.forEach.call(document.querySelectorAll('#setview button'),functi
 // 更新履歴：1つのお知らせ内で「バージョン見出し」ごとに変更点を並べる（新しい順）。
 // マージのたびに先頭へ新バージョンを追加し、VERSION も更新する。
 var UPDATES=[
+  {v:'α1.0.286', items:[
+    'ステージ④（大海原）の敵5種にドット絵を追加しました（サハギン・カニ・クラゲ・ケルピー・ミズチ）。これまでは図形を組み合わせた簡易描画でした。',
+  ]},
   {v:'α1.0.285', items:[
     'ステージ③のラストボス「スケルトンドラゴン」に専用の立ち絵を追加しました。これまでは内部でガーゴイルの見た目を借りていたため、巨大なガーゴイルの姿で出ていました。骨の翼と長い頭骨、紫の炎が灯る眼窩の竜になっています。',
   ]},
