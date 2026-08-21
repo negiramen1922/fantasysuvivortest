@@ -215,7 +215,142 @@ def c_hknight():
     outline(im)
     return im
 
-CHARS = {'ninja': c_ninja, 'samurai': c_samurai, 'hknight': c_hknight}
+def c_cryo():
+    """氷術師：淡い氷青のローブ＋毛皮の縁＋雪の結晶の飾り。氷の槍を持つ。"""
+    im = new()
+    ROBE = (108, 158, 208, 255); FUR = (226, 238, 250, 255)
+    ICE  = (150, 224, 246, 255); DEEP = (52, 84, 138, 255)
+    SKIN = (238, 214, 196, 255)
+    feet(im, darken(ROBE, 0.34))
+    sphere(im, (11, 17, 53, 55), ROBE)
+    # ローブの裾の襞
+    for x in range(16, 50, 6):
+        line(im, [(x, 46), (x-1, 55)], darken(ROBE, 0.35))
+    # 毛皮の襟（控えめ）
+    ell(im, (16, 40, 48, 48), FUR)
+    ell(im, (18, 41, 46, 45), lighten(FUR, 0.30))
+    for x in range(19, 46, 5):
+        px(im, x, 44, darken(FUR, 0.18)); px(im, x+2, 46, darken(FUR, 0.14))
+    # 顔
+    ell(im, (20, 26, 44, 44), SKIN)
+    ell(im, (22, 27, 42, 36), lighten(SKIN, 0.20))
+    eye(im, 26, 33, iris=(46, 108, 158, 255), w=6, h=8)
+    eye(im, 38, 33, iris=(46, 108, 158, 255), w=6, h=8)
+    # フード
+    ell(im, (9, 10, 55, 40), DEEP)
+    ell(im, (12, 11, 48, 30), lighten(DEEP, 0.26))
+    ell(im, (19, 24, 45, 42), TR)               # 顔の穴を抜く
+    ell(im, (20, 26, 44, 44), SKIN)
+    ell(im, (22, 27, 42, 36), lighten(SKIN, 0.20))
+    eye(im, 26, 33, iris=(46, 108, 158, 255), w=6, h=8)
+    eye(im, 38, 33, iris=(46, 108, 158, 255), w=6, h=8)
+    # フードの縁だけ細い毛皮
+    for x in range(18, 47, 4):
+        ell(im, (x, 23, x+3, 26), FUR)
+    ell(im, (15, 27, 19, 33), FUR); ell(im, (45, 27, 49, 33), FUR)
+    # 雪の結晶（フードの前立て）
+    cx, cy = 32, 16
+    for dx, dy in ((0, 5), (4, 2), (4, -2)):
+        line(im, [(cx-dx, cy-dy), (cx+dx, cy+dy)], ICE)
+    px(im, cx, cy, (255, 255, 255, 255))
+    # 氷の槍
+    poly(im, [(56, 20), (60, 30), (58, 46), (54, 46), (52, 30)], ICE)
+    poly(im, [(56, 20), (58, 30), (57, 44), (55, 44), (55, 30)], lighten(ICE, 0.45))
+    poly(im, [(58, 30), (58, 46), (56, 46)], darken(ICE, 0.30))
+    ell(im, (52, 44, 60, 52), lighten(ICE, 0.20))
+    outline(im)
+    return im
+
+def c_thundr():
+    """雷鳴使い：紫紺の外套＋金の雷紋＋角つきの兜巾。雷の球を連れる。"""
+    im = new()
+    ROBE = (98, 74, 158, 255); GOLD = (250, 224, 96, 255)
+    DEEP = (58, 40, 100, 255); SKIN = (236, 206, 176, 255)
+    SPARK= (168, 220, 255, 255)
+    feet(im, darken(ROBE, 0.34))
+    sphere(im, (11, 17, 53, 55), ROBE)
+    # 外套の雷紋
+    poly(im, [(20, 44), (27, 44), (23, 49), (29, 49), (19, 56), (22, 50), (17, 50)], GOLD)
+    poly(im, [(40, 44), (47, 44), (43, 49), (49, 49), (39, 56), (42, 50), (37, 50)], darken(GOLD, 0.25))
+    # 顔
+    ell(im, (20, 26, 44, 45), SKIN)
+    ell(im, (22, 27, 42, 37), lighten(SKIN, 0.20))
+    eye(im, 26, 33, iris=(120, 84, 40, 255), w=6, h=8)
+    eye(im, 38, 33, iris=(120, 84, 40, 255), w=6, h=8)
+    # 兜巾（頭巾）
+    ell(im, (10, 10, 54, 36), DEEP)
+    ell(im, (13, 11, 47, 28), lighten(DEEP, 0.28))
+    ell(im, (19, 24, 45, 42), TR)
+    ell(im, (20, 26, 44, 45), SKIN)
+    ell(im, (22, 27, 42, 37), lighten(SKIN, 0.20))
+    eye(im, 26, 33, iris=(120, 84, 40, 255), w=6, h=8)
+    eye(im, 38, 33, iris=(120, 84, 40, 255), w=6, h=8)
+    # 角（左右）
+    poly(im, [(12, 22), (4, 8), (18, 16)], DEEP)
+    poly(im, [(52, 22), (60, 8), (46, 16)], DEEP)
+    poly(im, [(12, 21), (7, 12), (15, 17)], lighten(DEEP, 0.30))
+    poly(im, [(52, 21), (57, 12), (49, 17)], lighten(DEEP, 0.18))
+    # 額の雷
+    poly(im, [(30, 18), (36, 18), (32, 23), (37, 23), (28, 31), (31, 24), (27, 24)], GOLD)
+    poly(im, [(31, 19), (34, 19), (31, 23)], lighten(GOLD, 0.40))
+    # 雷球
+    ell(im, (48, 34, 62, 48), (86, 62, 140, 255))
+    ell(im, (50, 36, 60, 46), GOLD)
+    ell(im, (52, 38, 57, 43), lighten(GOLD, 0.45))
+    line(im, [(55, 30), (53, 35)], SPARK); line(im, [(63, 40), (58, 41)], SPARK)
+    line(im, [(55, 52), (56, 47)], SPARK); line(im, [(46, 42), (50, 42)], SPARK)
+    outline(im)
+    return im
+
+def c_gunner():
+    """銃士：三角帽＋外套＋白い襟飾り。マスケット銃を担ぐ。"""
+    im = new()
+    COAT = (122, 52, 62, 255); HAT = (48, 42, 60, 255)
+    GOLD = (226, 186, 84, 255); LACE = (244, 240, 232, 255)
+    SKIN = (238, 208, 178, 255); WOOD = (118, 76, 44, 255)
+    STEEL= (172, 182, 198, 255)
+    feet(im, darken(COAT, 0.40))
+    sphere(im, (11, 17, 53, 55), COAT)
+    # 前合わせと金ボタン
+    line(im, [(32, 40), (32, 56)], darken(COAT, 0.40))
+    for y in (44, 49, 54):
+        px(im, 29, y, GOLD); px(im, 35, y, GOLD)
+    # 襟飾り（ジャボ）
+    poly(im, [(26, 38), (38, 38), (36, 48), (32, 44), (28, 48)], LACE)
+    poly(im, [(28, 39), (34, 39), (33, 44), (30, 42)], lighten(LACE, 0.20))
+    # 顔
+    ell(im, (20, 24, 44, 43), SKIN)
+    ell(im, (22, 25, 42, 35), lighten(SKIN, 0.20))
+    eye(im, 26, 31, iris=(62, 92, 60, 255), w=6, h=8)
+    eye(im, 38, 31, iris=(62, 92, 60, 255), w=6, h=8)
+    line(im, [(29, 37), (35, 37)], (168, 118, 96, 255))
+    # 三角帽（山＋反り返ったつば。両端が跳ね上がる）
+    ell(im, (14, 8, 50, 26), HAT)                       # 山
+    ell(im, (17, 9, 43, 20), lighten(HAT, 0.26))
+    poly(im, [(2, 24), (16, 14), (32, 11), (48, 14), (62, 24),
+              (54, 26), (48, 19), (32, 16), (16, 19), (10, 26)], HAT)   # 反り返ったつば
+    poly(im, [(4, 24), (16, 15), (26, 12), (24, 15), (14, 19), (9, 24)], lighten(HAT, 0.22))
+    poly(im, [(2, 24), (10, 26), (18, 25), (10, 27)], darken(HAT, 0.30))
+    poly(im, [(62, 24), (54, 26), (46, 25), (54, 27)], darken(HAT, 0.30))
+    rect(im, (16, 20, 48, 22), GOLD)
+    rect(im, (16, 20, 48, 20), lighten(GOLD, 0.40))
+    # 帽章と羽根
+    poly(im, [(28, 13), (32, 6), (36, 13), (32, 11)], GOLD)
+    poly(im, [(44, 14), (62, 2), (57, 12), (63, 11), (46, 20)], (234, 236, 242, 255))
+    poly(im, [(46, 15), (58, 5), (55, 11)], (192, 198, 212, 255))
+    # マスケット銃（太め）
+    poly(im, [(46, 52), (60, 22), (64, 24), (50, 54)], WOOD)
+    poly(im, [(47, 52), (60, 24), (62, 25), (49, 53)], lighten(WOOD, 0.30))
+    poly(im, [(55, 34), (63, 14), (67, 16), (59, 36)], STEEL)
+    poly(im, [(56, 34), (63, 16), (64, 17), (57, 35)], lighten(STEEL, 0.40))
+    rect(im, (52, 38, 58, 43), darken(STEEL, 0.15))
+    rect(im, (53, 39, 57, 42), STEEL)
+    px(im, 55, 40, GOLD)
+    poly(im, [(45, 52), (52, 50), (50, 57), (44, 57)], darken(WOOD, 0.25))
+    outline(im)
+    return im
+CHARS = {'ninja': c_ninja, 'samurai': c_samurai, 'hknight': c_hknight,
+         'cryo': c_cryo, 'thundr': c_thundr, 'gunner': c_gunner}
 
 def main():
     ids = sys.argv[1:] or list(CHARS.keys())

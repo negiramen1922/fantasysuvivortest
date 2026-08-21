@@ -3024,7 +3024,7 @@ function figInfo(id){
   if(BOSS[id]){ var B=BOSS[id], tt=ETYPE[B.key]||{}; return {nm:B.nm,shape:tt.shape,col:tt.col,dark:tt.dark,desc:BDEX[id]||'',boss:true}; }
   var t=ETYPE[id]||{}; return {nm:t.nm,shape:t.shape,col:t.col,dark:t.dark,desc:DEX[id]||'',boss:false};
 }
-var VERSION='α1.0.276'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
+var VERSION='α1.0.278'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
 function applySave(o){
   for(var i=0;i<UPG.length;i++) META[UPG[i].id]=0;
   try{
@@ -7463,10 +7463,18 @@ var SPRDATA={
   hunter:'assets/hunter.png',
   bomber:'assets/bomber.png',
   mage:'assets/mage.png',
-  saint:'assets/saint.png'
+  saint:'assets/saint.png',
+  ninja:'assets/ninja.png',
+  samurai:'assets/samurai.png',
+  hknight:'assets/hknight.png',
+  cryo:'assets/cryo.png',
+  thundr:'assets/thundr.png',
+  gunner:'assets/gunner.png'
 };
 // キャラID→立ち絵スプライト名（プレイヤー描画＆キャラリストのアイコン）
-var CHAR_SPR={ knight:'knight', hunter:'hunter', bomber:'bomber', mage:'mage', saint:'saint' };
+var CHAR_SPR={ knight:'knight', hunter:'hunter', bomber:'bomber', mage:'mage', saint:'saint',
+                ninja:'ninja', samurai:'samurai', hknight:'hknight',
+                cryo:'cryo', thundr:'thundr', gunner:'gunner' };
 var SPR={}, SPRT={}, SPRRDY={};
 // 端に接する白（不透明な白背景）だけをフラッドフィルで透過に。内部の白ハイライトは残す。
 // Pages（同一オリジン）では実行時に効き、file:// 等で getImageData が使えない時は例外を握って
@@ -10743,6 +10751,12 @@ Array.prototype.forEach.call(document.querySelectorAll('#setview button'),functi
 // 更新履歴：1つのお知らせ内で「バージョン見出し」ごとに変更点を並べる（新しい順）。
 // マージのたびに先頭へ新バージョンを追加し、VERSION も更新する。
 var UPDATES=[
+  {v:'α1.0.278', items:[
+    '氷術師・雷鳴使い・銃士の立ち絵（ドット絵）を追加しました。',
+  ]},
+  {v:'α1.0.277', items:[
+    '忍者・サムライ・重騎士の立ち絵（ドット絵）を追加しました。これまでグリフ（絵文字）で表示していたキャラクターに、他のキャラと同じ描き込みの立ち絵が付きます。',
+  ]},
   {v:'α1.0.276', items:[
     'インフェルノビームの不具合を修正しました。ビームの本数を増やしたとき、これまで最初の1本しか「当て続けて火力が上がる」効果が乗らず、追加ビームは固定威力のままでした。追加ビームにもランプ（火力上昇）が乗るようにし、全ビームが一緒に強くなります。',
   ]},
