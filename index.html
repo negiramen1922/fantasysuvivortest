@@ -1720,17 +1720,17 @@ var BOSS_AT4=[[300,'whale',22000],[600,'kraken',150000],[900,'tornadoshark',3400
 var STAGES={
   1:{ nm:'草原',   sub:'20:00・フェンリル', icon:'🌿', flavor:'風わたる緑の草原。魔物は素朴だが、数と獣の突進に押し負けるな。締めは狼王フェンリル。',
       wave:WAVE,  bossAt:BOSS_AT,  hpMul:1.0, req:0,
-      ground:{ bg:'#150f2c', grid:'rgba(80,62,140,.28)', dot:'rgba(120,96,200,.14)' } },
+      ground:{ tile:'s1', bg:'#150f2c', grid:'rgba(80,62,140,.28)', dot:'rgba(120,96,200,.14)' } },
   2:{ nm:'森',     sub:'20:00・速く重い', icon:'🌲', flavor:'鬱蒼とした深い森。素早い獣と重い甲虫、遠くから種を撃つ樹の精。視界の外から詰められる。',
       wave:WAVE2, bossAt:BOSS_AT2, hpMul:1.0, req:1, swarm:1, swarmStart:360,
-      ground:{ bg:'#0e1f14', grid:'rgba(70,120,74,.26)',  dot:'rgba(120,180,120,.15)' } },
+      ground:{ tile:'s2', bg:'#0e1f14', grid:'rgba(70,120,74,.26)',  dot:'rgba(120,180,120,.15)' } },
   3:{ nm:'古代の王墓', sub:'20:00・アンデッド・高難度', icon:'⚰️', flavor:'死者の眠る古の王墓。地から這い出る屍、強化する術者、盾を構える不死の兵。最奥に竜の亡骸が待つ。',
       wave:WAVE3, bossAt:BOSS_AT3, hpMul:1.0, req:2, swarm:1, swarmStart:300, swarmK:'fly',
-      ground:{ bg:'#1c1710', grid:'rgba(150,120,70,.24)', dot:'rgba(200,170,110,.13)' } },
+      ground:{ tile:'s3', bg:'#1c1710', grid:'rgba(150,120,70,.24)', dot:'rgba(200,170,110,.13)' } },
   // ステージ4「海」：一般公開済み（req＝STGREQ[4]でステージ③Lv60到達で解放）。専用ロスター WAVE4／BOSS_AT4。
   4:{ nm:'大海原', sub:'20:00・海・高難度', icon:'🌊', flavor:'深く青い大海原。群れ飛ぶトビウオ、盾を構える蟹、砂に潜む貝、そして巨大な海坊主が押し寄せる。海妖セイレーンの光線をかいくぐり、最奥の主リヴァイアサンを討て。',
       wave:WAVE4, bossAt:BOSS_AT4, hpMul:1.0, req:3, swarm:1, swarmStart:300, swarmK:'flyingfish', umibozu:1, umibozuStart:960,
-      ground:{ bg:'#08131f', grid:'rgba(60,130,150,.26)', dot:'rgba(90,180,200,.14)' } }
+      ground:{ tile:'s4', bg:'#08131f', grid:'rgba(60,130,150,.26)', dot:'rgba(90,180,200,.14)' } }
 };
 var ALLSTG=0;   // 1で全ステージ解放（開発用）。製品は 0
 // 開発モード：URLに ?dev=1 が付いている時だけ true。未公開ステージ（dev:1）のテスト用。
@@ -3033,7 +3033,7 @@ function figInfo(id){
   if(BOSS[id]){ var B=BOSS[id], tt=ETYPE[B.key]||{}; return {nm:B.nm,shape:tt.shape,col:tt.col,dark:tt.dark,desc:BDEX[id]||'',boss:true}; }
   var t=ETYPE[id]||{}; return {nm:t.nm,shape:t.shape,col:t.col,dark:t.dark,desc:DEX[id]||'',boss:false};
 }
-var VERSION='α1.0.284'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
+var VERSION='α1.0.292'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
 function applySave(o){
   for(var i=0;i<UPG.length;i++) META[UPG[i].id]=0;
   try{
@@ -7412,20 +7412,57 @@ function drawStick(){
   ctx.beginPath(); ctx.arc(stick.ox+dx/d*STR*k, stick.oy+dy/d*STR*k, 21,0,6.3); ctx.fill();
   ctx.globalAlpha=1; ctx.restore();
 }
+// ステージ地面：64pxのタイルを敷き詰め、その上に散らし物（岩・きのこ・骨・珊瑚など）を置く。
+// 画像は白抜き処理(keyWhite)を通さず、透過PNGをそのまま使う。
+var GIMG={}, GRDY={}, GPAT={};
+(function(){
+  ['s1','s2','s3','s4'].forEach(function(k){
+    var b=new Image(); b.onload=function(){ GIMG['bg_'+k]=b; GRDY['bg_'+k]=1; }; b.src='assets/bg_'+k+'.png';
+    var p=new Image(); p.onload=function(){ GIMG['pr_'+k]=p; GRDY['pr_'+k]=1; }; p.src='assets/prop_'+k+'.png';
+  });
+})();
+// ワールド座標のマスから決まる疑似乱数（同じ場所には常に同じ散らし物が出る＝移動しても揺れない）
+function ghash(a,b){ var h=(a*73856093)^(b*19349663); h=(h^(h>>>13))>>>0; return h; }
+var GPROP_CELL=176;          // 散らし物1つあたりのマス（px）
 function drawGround(cx,cy){
-  var g=96;
-  // 視野ズームで広がった可視範囲までグリッドを描く
+  // 視野ズームで広がった可視範囲まで描く
   var ex=(W/VZOOM-W)/2, ey=(H/VZOOM-H)/2, Lx=cx-ex, Rx=cx+W+ex, Ty=cy-ey, By=cy+H+ey;
-  ctx.strokeStyle=curGround.grid; ctx.lineWidth=1;
-  ctx.beginPath();
-  var x0=Math.floor(Lx/g)*g, y0=Math.floor(Ty/g)*g;
-  for(var x=x0;x<Rx+g;x+=g){ ctx.moveTo(x,Ty); ctx.lineTo(x,By); }
-  for(var y=y0;y<By+g;y+=g){ ctx.moveTo(Lx,y); ctx.lineTo(Rx,y); }
-  ctx.stroke();
-  ctx.fillStyle=curGround.dot;
-  for(var i=0;i<40;i++){
-    var px=x0+((i*563)%(W+g*2)), py=y0+((i*911)%(H+g*2));
-    ctx.fillRect(px,py,3,3);
+  var tk=curGround.tile;
+  if(tk&&GRDY['bg_'+tk]){
+    var pat=GPAT[tk];
+    if(!pat){ pat=ctx.createPattern(GIMG['bg_'+tk],'repeat'); GPAT[tk]=pat; }
+    if(pat){                       // パターンはCTM（カメラのtranslate）に乗るのでワールドに固定される
+      ctx.imageSmoothingEnabled=false;
+      ctx.fillStyle=pat; ctx.fillRect(Lx,Ty,Rx-Lx,By-Ty);
+      ctx.imageSmoothingEnabled=true;
+    }
+  }else{
+    // タイル未ロード時のフォールバック（従来のグリッド）
+    var g=96;
+    ctx.strokeStyle=curGround.grid; ctx.lineWidth=1;
+    ctx.beginPath();
+    var gx0=Math.floor(Lx/g)*g, gy0=Math.floor(Ty/g)*g;
+    for(var x=gx0;x<Rx+g;x+=g){ ctx.moveTo(x,Ty); ctx.lineTo(x,By); }
+    for(var y=gy0;y<By+g;y+=g){ ctx.moveTo(Lx,y); ctx.lineTo(Rx,y); }
+    ctx.stroke();
+  }
+  // 散らし物：マスごとにハッシュで種類・位置・大きさを決める（描画は約20〜40個）
+  if(tk&&GRDY['pr_'+tk]){
+    var C=GPROP_CELL, ax=Math.floor(Lx/C), bx=Math.floor(Rx/C), ay=Math.floor(Ty/C), by=Math.floor(By/C);
+    var im=GIMG['pr_'+tk];
+    ctx.imageSmoothingEnabled=false;
+    for(var iy=ay;iy<=by;iy++){
+      for(var ix=ax;ix<=bx;ix++){
+        var h=ghash(ix,iy);
+        if((h%100)>=52) continue;                       // 約半分のマスにだけ置く
+        var idx=(h>>>7)%4, sz=30+((h>>>21)%4)*4;
+        var px2=ix*C+(h>>>9)%(C-48), py2=iy*C+(h>>>15)%(C-48);
+        ctx.globalAlpha=0.86;
+        ctx.drawImage(im, idx*32,0,32,32, px2, py2, sz, sz);
+      }
+    }
+    ctx.globalAlpha=1;
+    ctx.imageSmoothingEnabled=true;
   }
 }
 /* ===== ドット絵スプライト（立ち絵は assets/ フォルダから読み込み） ===== */
@@ -7492,10 +7529,51 @@ var SPRDATA={
   hunter:'assets/hunter.png',
   bomber:'assets/bomber.png',
   mage:'assets/mage.png',
-  saint:'assets/saint.png'
+  saint:'assets/saint.png',
+  ninja:'assets/ninja.png',
+  samurai:'assets/samurai.png',
+  hknight:'assets/hknight.png',
+  cryo:'assets/cryo.png',
+  thundr:'assets/thundr.png',
+  gunner:'assets/gunner.png',
+  farmer:'assets/farmer.png',
+  apoth:'assets/apoth.png',
+  shepd:'assets/shepd.png',
+  necro:'assets/necro.png',
+  android:'assets/android.png',
+  lich:'assets/lich.png',
+  necro:'assets/necro.png',
+  dullahan:'assets/dullahan.png',
+  boomer:'assets/boomer.png',
+  gargoyle:'assets/gargoyle.png',
+  sarcher:'assets/sarcher.png',
+  skeledragon:'assets/skeledragon.png',
+  sahagin:'assets/sahagin.png',
+  crab:'assets/crab.png',
+  jelly:'assets/jelly.png',
+  kelpie:'assets/kelpie.png',
+  serpent:'assets/serpent.png',
+  shark:'assets/shark.png',
+  manta:'assets/manta.png',
+  hermit:'assets/hermit.png',
+  clam:'assets/clam.png',
+  siren:'assets/siren.png',
+  flyingfish:'assets/flyingfish.png',
+  whale:'assets/whale.png',
+  kraken:'assets/kraken.png',
+  tornadoshark:'assets/tornadoshark.png',
+  leviathan:'assets/leviathan.png',
+  umibozu:'assets/umibozu.png',
+  fly:'assets/fly.png',
+  gnat:'assets/gnat.png',
+  archer:'assets/archer.png',
+  sharkmissile:'assets/sharkmissile.png'
 };
 // キャラID→立ち絵スプライト名（プレイヤー描画＆キャラリストのアイコン）
-var CHAR_SPR={ knight:'knight', hunter:'hunter', bomber:'bomber', mage:'mage', saint:'saint' };
+var CHAR_SPR={ knight:'knight', hunter:'hunter', bomber:'bomber', mage:'mage', saint:'saint',
+                ninja:'ninja', samurai:'samurai', hknight:'hknight',
+                cryo:'cryo', thundr:'thundr', gunner:'gunner',
+                farmer:'farmer', apoth:'apoth', shepd:'shepd', necro:'necro', android:'android' };
 var SPR={}, SPRT={}, SPRRDY={};
 // 端に接する白（不透明な白背景）だけをフラッドフィルで透過に。内部の白ハイライトは残す。
 // Pages（同一オリジン）では実行時に効き、file:// 等で getImageData が使えない時は例外を握って
@@ -7649,7 +7727,12 @@ var SHAPE_SPR={blob:'blob',goblin:'goblin',orc:'orc',bat:'bat',spirit:'spirit',o
   wolf:'wolf',turtle:'turtle',harpy:'harpy',rider:'goat',
   bird:'bird',myconid:'myconid',bee:'bee',spider:'spider',beetle:'beetle',dryad:'maneater',
   panther:'panther',mantis:'mantis',treant:'treant',deer:'deer',moth:'moth',
-  skeleton:'skeleton',shieldman:'shieldman',wraith:'wraith',mummy:'mummy',shadow:'shadow',ghoul:'ghoul'};
+  skeleton:'skeleton',shieldman:'shieldman',wraith:'wraith',mummy:'mummy',shadow:'shadow',ghoul:'ghoul',
+  lich:'lich',necro:'necro',dullahan:'dullahan',boomer:'boomer',gargoyle:'gargoyle',sarcher:'sarcher',
+  sahagin:'sahagin',crab:'crab',jelly:'jelly',kelpie:'kelpie',serpent:'serpent',
+  shark:'shark',manta:'manta',hermit:'hermit',clam:'clam',siren:'siren',flyingfish:'flyingfish',
+  whale:'whale',kraken:'kraken',tornadoshark:'tornadoshark',leviathan:'leviathan',umibozu:'umibozu',
+  fly:'fly',gnat:'gnat',archer:'archer',sharkmissile:'sharkmissile'};
 // 棍棒持ち（素体＋棍棒レイヤーで攻撃時に棍棒を振る）。値＝棍棒レイヤーの握り位置（フレーム比 0..1）
 var CLUBBER={goblin:[0.34,0.77], orc:[0.31,0.67], cyclops:[0.34,0.75], skeleton:[0.78,0.72]};
 function enemySpr(e){
@@ -7664,7 +7747,8 @@ function enemySpr(e){
     return sprReady(gkN)?gkN:null;
   }
   if(e.boss&&e.bkey==='skeletonking') return sprReady('skeletonking')?'skeletonking':null; // ボス専用絵（スケルトンキング）
-  if(e.boss&&e.bkey==='hecaton') return sprReady('hecaton')?'hecaton':null;               // ボス専用絵（ヘカトンケイル）
+  if(e.boss&&e.bkey==='hecaton') return sprReady('hecaton')?'hecaton':null;
+  if(e.boss&&e.bkey==='skeledragon') return sprReady('skeledragon')?'skeledragon':null;   // ボス専用絵（骨の竜。ETYPE の key はガーゴイル流用のため必ずここで拾う）               // ボス専用絵（ヘカトンケイル）
   var n=SHAPE_SPR[e.shape]; return (n&&sprReady(n))?n:null;
 }
 
@@ -8112,9 +8196,7 @@ function drawOceanShape(s,R,col,dark,t){
 // ステージ1の手続き描画（刷新）。ctx は敵中心へ translate 済み。
 function drawS1Shape(s,R,col,dark,t){
   // ステージ3の敵は当面プレースホルダ：近い既存図形で代用（スプライトは後日差し替え）
-  var S3A={skeleton:'goblin',ghoul:'goblin',shieldman:'orc',sarcher:'archer',necro:'archer',lich:'archer',
-           mummy:'orc',dullahan:'orc',boomer:'orc',gargoyle:'harpy',wraith:'goblin',shadow:'goblin',fly:'harpy'};
-  if(S3A[s]) s=S3A[s];
+  // ステージ3の敵は全て専用スプライトになったため、仮絵の差し替え表(S3A)は廃止した
   if(s==='blob'){
     var w=1+Math.sin(t*4)*0.07;
     ctx.fillStyle=col;
@@ -8266,7 +8348,17 @@ var SPRSZ={blob:{s:3.0,oy:0.35}, goblin:{s:3.2,oy:0.55}, orc:{s:3.0,oy:0.50},
   deer:{s:3.0,oy:0.42}, moth:{s:3.0,oy:0.22},
   gravekeeper:{s:3.0,oy:0.42}, gravekeeper_bare:{s:3.0,oy:0.42}, skeletonking:{s:2.9,oy:0.34}, hecaton:{s:2.7,oy:0.42},
   ghoul:{s:3.2,oy:0.30},
-  skeleton:{s:3.2,oy:0.42}, shieldman:{s:3.1,oy:0.42}, wraith:{s:3.4,oy:0.16}, mummy:{s:3.0,oy:0.42}, shadow:{s:3.4,oy:0.28}};
+  skeleton:{s:3.2,oy:0.42}, shieldman:{s:3.1,oy:0.42}, wraith:{s:3.4,oy:0.16}, mummy:{s:3.0,oy:0.42}, shadow:{s:3.4,oy:0.28},
+  lich:{s:3.4,oy:0.40}, necro:{s:3.4,oy:0.40}, dullahan:{s:3.2,oy:0.40},
+  boomer:{s:3.0,oy:0.34}, gargoyle:{s:3.3,oy:0.32}, sarcher:{s:3.3,oy:0.42},
+  skeledragon:{s:2.7,oy:0.30},
+  sahagin:{s:3.2,oy:0.40}, crab:{s:3.0,oy:0.30}, jelly:{s:3.4,oy:0.24},
+  kelpie:{s:3.3,oy:0.30}, serpent:{s:3.4,oy:0.26},
+  shark:{s:3.2,oy:0.16}, manta:{s:2.6,oy:0.10}, hermit:{s:3.2,oy:0.30},
+  clam:{s:3.2,oy:0.24}, siren:{s:3.4,oy:0.32}, flyingfish:{s:4.0,oy:0.10},
+  whale:{s:2.6,oy:0.16}, kraken:{s:2.6,oy:0.24}, tornadoshark:{s:2.7,oy:0.10},
+  leviathan:{s:2.6,oy:0.18}, umibozu:{s:2.9,oy:0.26},
+  fly:{s:4.4,oy:0.08}, gnat:{s:4.4,oy:0.08}, archer:{s:3.2,oy:0.44}, sharkmissile:{s:3.6,oy:0}};
 // 毒の沼（ブーマー）：緑の沼＋泡。消える直前にフェード。
 function drawPuddle(q){
   var a=Math.min(1,q.life/1.2)*0.55;
@@ -9267,6 +9359,7 @@ function updateSlotRings(){
     }
   }
 }
+var hudBossUid=0;   // HPバーに名前を出しているボスの uid
 function syncHud(){
   document.getElementById('xpbar').style.width=(P.xp/P.need*100)+'%';
   document.getElementById('lvl').textContent=P.lv;
@@ -9279,12 +9372,14 @@ function syncHud(){
     '<span class="sv">銀 '+silver+'</span> <span class="gd">金 '+gold+'</span>';
   var bw=document.getElementById('bosswrap');
   if(boss&&!boss.dead){
-    if(!bw.classList.contains('on')){
-      bw.classList.add('on');
-      document.getElementById('bossnm').textContent=boss.nm;
-    }
+    if(!bw.classList.contains('on')) bw.classList.add('on');
+    // 表示中のボスが入れ替わったら名前を書き換える。
+    // 旧実装は「非表示→表示」の遷移でしか名前を更新しておらず、前のボスを倒した直後に
+    // 次のボスが同じフレームで湧くと bosswrap が on のままになり、2体目以降ずっと
+    // 1体目の名前が出ていた。uid で判定して確実に更新する。
+    if(hudBossUid!==boss.uid){ hudBossUid=boss.uid; document.getElementById('bossnm').textContent=boss.nm; }
     document.getElementById('bossbar').style.width=Math.max(0,boss.hp/boss.mhp*100)+'%';
-  }else if(bw.classList.contains('on')) bw.classList.remove('on');
+  }else if(bw.classList.contains('on')){ bw.classList.remove('on'); hudBossUid=0; }
   document.getElementById('hpbar').style.width=Math.max(0,P.hp/P.max*100)+'%';
   document.getElementById('hptext').textContent=Math.max(0,Math.ceil(P.hp))+' / '+P.max;
 
@@ -10779,11 +10874,36 @@ Array.prototype.forEach.call(document.querySelectorAll('#setview button'),functi
 // 更新履歴：1つのお知らせ内で「バージョン見出し」ごとに変更点を並べる（新しい順）。
 // マージのたびに先頭へ新バージョンを追加し、VERSION も更新する。
 var UPDATES=[
-  {v:'α1.0.284', items:[
+  {v:'α1.0.292', items:[
     '爆発の演出を半透明にしました。爆発が大きくて下の敵が見えなくなる問題への対応で、爆発エフェクトを透かして表示し、時間とともに薄れるようにしました（当たり判定・威力は変わりません）。',
   ]},
-  {v:'α1.0.283', items:[
+  {v:'α1.0.291', items:[
     'リロード（リログ）で続きから再開したとき、床の装備（光る柱）が毎回4つ再出現して何度も回収できてしまう不具合を修正しました。未回収の床装備だけを保存・復元するようにし、取得済みのぶんは再ドロップしなくなります。',
+  ]},
+  {v:'α1.0.290', items:[
+    'フライ・スウォームナット・ゴブリンアーチャー・サメミサイルにドット絵を追加しました。これで全ての敵・ボスが専用の絵になり、他のモンスターの絵を借りて表示している敵はいなくなりました。',
+  ]},
+  {v:'α1.0.289', items:[
+    'ステージ④のボス4体（ホエール・クラーケン・トルネードシャーク・リヴァイアサン）と海坊主にドット絵を追加しました。',
+  ]},
+  {v:'α1.0.288', items:[
+    'ステージ④（大海原）の残りの敵6種にドット絵を追加しました（サメ・マンタ・ヤドカリ・カイ・セイレーン・トビウオ）。これでステージ④の通常モンスターは全て専用の絵になりました。',
+  ]},
+  {v:'α1.0.287', items:[
+    'ボスのHPバーに出る名前が、2体目以降ずっと1体目の名前（ステージ③なら「墓守」）のままになる不具合を修正しました。前のボスを倒した直後に次のボスが湧くと名前が書き換わらないのが原因でした。',
+  ]},
+  {v:'α1.0.286', items:[
+    'ステージ④（大海原）の敵5種にドット絵を追加しました（サハギン・カニ・クラゲ・ケルピー・ミズチ）。これまでは図形を組み合わせた簡易描画でした。',
+  ]},
+  {v:'α1.0.285', items:[
+    'ステージ③のラストボス「スケルトンドラゴン」に専用の立ち絵を追加しました。これまでは内部でガーゴイルの見た目を借りていたため、巨大なガーゴイルの姿で出ていました。骨の翼と長い頭骨、紫の炎が灯る眼窩の竜になっています。',
+  ]},
+  {v:'α1.0.284', items:[
+    'ステージ③（古代の王墓）の敵6種にドット絵を追加しました。これまでリッチ・ネクロマンサー・デュラハン・ブーマー・ガーゴイル・スケルトンアーチャーは、ゴブリンやオークの絵を借りた仮の見た目でした。それぞれ専用の絵になっています。',
+  ]},
+  {v:'α1.0.283', items:[
+    '立ち絵が無かった11キャラ（忍者・サムライ・重騎士・氷術師・雷鳴使い・銃士・農夫・調剤師・羊飼い・死霊術師・ヴァルカン）にドット絵の立ち絵を追加しました。これで全16キャラに立ち絵が付き、絵文字表示のキャラはいなくなりました。',
+    'ステージの地面を描き直しました。これまでの格子線に代わり、ステージごとのドット絵タイル（草原＝夜の草地／森＝下草と落ち葉／古代の王墓＝石畳／大海原＝波紋）を敷き詰め、さらに岩・きのこ・骨・珊瑚などの飾りを地面に散りばめています。飾りの位置は場所ごとに固定なので、動いてもちらつきません。',
   ]},
   {v:'α1.0.282', items:[
     '「連携コンボ」を正式に追加しました（全員に開放）。2種類以上の武器を当てている状態で敵を倒すとコンボが加算され、画面に「N COMBO!」が出ます。',
