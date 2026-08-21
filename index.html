@@ -3033,7 +3033,7 @@ function figInfo(id){
   if(BOSS[id]){ var B=BOSS[id], tt=ETYPE[B.key]||{}; return {nm:B.nm,shape:tt.shape,col:tt.col,dark:tt.dark,desc:BDEX[id]||'',boss:true}; }
   var t=ETYPE[id]||{}; return {nm:t.nm,shape:t.shape,col:t.col,dark:t.dark,desc:DEX[id]||'',boss:false};
 }
-var VERSION='α1.0.288'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
+var VERSION='α1.0.290'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
 function applySave(o){
   for(var i=0;i<UPG.length;i++) META[UPG[i].id]=0;
   try{
@@ -7555,7 +7555,16 @@ var SPRDATA={
   hermit:'assets/hermit.png',
   clam:'assets/clam.png',
   siren:'assets/siren.png',
-  flyingfish:'assets/flyingfish.png'
+  flyingfish:'assets/flyingfish.png',
+  whale:'assets/whale.png',
+  kraken:'assets/kraken.png',
+  tornadoshark:'assets/tornadoshark.png',
+  leviathan:'assets/leviathan.png',
+  umibozu:'assets/umibozu.png',
+  fly:'assets/fly.png',
+  gnat:'assets/gnat.png',
+  archer:'assets/archer.png',
+  sharkmissile:'assets/sharkmissile.png'
 };
 // キャラID→立ち絵スプライト名（プレイヤー描画＆キャラリストのアイコン）
 var CHAR_SPR={ knight:'knight', hunter:'hunter', bomber:'bomber', mage:'mage', saint:'saint',
@@ -7716,7 +7725,9 @@ var SHAPE_SPR={blob:'blob',goblin:'goblin',orc:'orc',bat:'bat',spirit:'spirit',o
   skeleton:'skeleton',shieldman:'shieldman',wraith:'wraith',mummy:'mummy',shadow:'shadow',ghoul:'ghoul',
   lich:'lich',necro:'necro',dullahan:'dullahan',boomer:'boomer',gargoyle:'gargoyle',sarcher:'sarcher',
   sahagin:'sahagin',crab:'crab',jelly:'jelly',kelpie:'kelpie',serpent:'serpent',
-  shark:'shark',manta:'manta',hermit:'hermit',clam:'clam',siren:'siren',flyingfish:'flyingfish'};
+  shark:'shark',manta:'manta',hermit:'hermit',clam:'clam',siren:'siren',flyingfish:'flyingfish',
+  whale:'whale',kraken:'kraken',tornadoshark:'tornadoshark',leviathan:'leviathan',umibozu:'umibozu',
+  fly:'fly',gnat:'gnat',archer:'archer',sharkmissile:'sharkmissile'};
 // 棍棒持ち（素体＋棍棒レイヤーで攻撃時に棍棒を振る）。値＝棍棒レイヤーの握り位置（フレーム比 0..1）
 var CLUBBER={goblin:[0.34,0.77], orc:[0.31,0.67], cyclops:[0.34,0.75], skeleton:[0.78,0.72]};
 function enemySpr(e){
@@ -8180,9 +8191,7 @@ function drawOceanShape(s,R,col,dark,t){
 // ステージ1の手続き描画（刷新）。ctx は敵中心へ translate 済み。
 function drawS1Shape(s,R,col,dark,t){
   // ステージ3の敵は当面プレースホルダ：近い既存図形で代用（スプライトは後日差し替え）
-  // ステージ3のうち、まだ専用スプライトが無いものだけ近い既存図形で代用する（絵ができたら行を消す）
-  var S3A={fly:'harpy'};
-  if(S3A[s]) s=S3A[s];
+  // ステージ3の敵は全て専用スプライトになったため、仮絵の差し替え表(S3A)は廃止した
   if(s==='blob'){
     var w=1+Math.sin(t*4)*0.07;
     ctx.fillStyle=col;
@@ -8341,7 +8350,10 @@ var SPRSZ={blob:{s:3.0,oy:0.35}, goblin:{s:3.2,oy:0.55}, orc:{s:3.0,oy:0.50},
   sahagin:{s:3.2,oy:0.40}, crab:{s:3.0,oy:0.30}, jelly:{s:3.4,oy:0.24},
   kelpie:{s:3.3,oy:0.30}, serpent:{s:3.4,oy:0.26},
   shark:{s:3.2,oy:0.16}, manta:{s:2.6,oy:0.10}, hermit:{s:3.2,oy:0.30},
-  clam:{s:3.2,oy:0.24}, siren:{s:3.4,oy:0.32}, flyingfish:{s:4.0,oy:0.10}};
+  clam:{s:3.2,oy:0.24}, siren:{s:3.4,oy:0.32}, flyingfish:{s:4.0,oy:0.10},
+  whale:{s:2.6,oy:0.16}, kraken:{s:2.6,oy:0.24}, tornadoshark:{s:2.7,oy:0.10},
+  leviathan:{s:2.6,oy:0.18}, umibozu:{s:2.9,oy:0.26},
+  fly:{s:4.4,oy:0.08}, gnat:{s:4.4,oy:0.08}, archer:{s:3.2,oy:0.44}, sharkmissile:{s:3.6,oy:0}};
 // 毒の沼（ブーマー）：緑の沼＋泡。消える直前にフェード。
 function drawPuddle(q){
   var a=Math.min(1,q.life/1.2)*0.55;
@@ -10857,6 +10869,12 @@ Array.prototype.forEach.call(document.querySelectorAll('#setview button'),functi
 // 更新履歴：1つのお知らせ内で「バージョン見出し」ごとに変更点を並べる（新しい順）。
 // マージのたびに先頭へ新バージョンを追加し、VERSION も更新する。
 var UPDATES=[
+  {v:'α1.0.290', items:[
+    'フライ・スウォームナット・ゴブリンアーチャー・サメミサイルにドット絵を追加しました。これで全ての敵・ボスが専用の絵になり、他のモンスターの絵を借りて表示している敵はいなくなりました。',
+  ]},
+  {v:'α1.0.289', items:[
+    'ステージ④のボス4体（ホエール・クラーケン・トルネードシャーク・リヴァイアサン）と海坊主にドット絵を追加しました。',
+  ]},
   {v:'α1.0.288', items:[
     'ステージ④（大海原）の残りの敵6種にドット絵を追加しました（サメ・マンタ・ヤドカリ・カイ・セイレーン・トビウオ）。これでステージ④の通常モンスターは全て専用の絵になりました。',
   ]},
