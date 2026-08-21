@@ -1,0 +1,231 @@
+# -*- coding: utf-8 -*-
+"""キャラ立ち絵（64x64 ドット絵）の生成スクリプト。
+既存 assets/*.png（knight/hunter/bomber/mage/saint）の規格に合わせつつ、描き込みを増やした版：
+  - 64x64 RGBA / アンチエイリアス無し / シルエット外周に 1px の黒縁(#131313)
+  - まん丸のチビ体型：球体の胴＋下に小さな足2つ＋顔＋頭装備＋手持ち小物
+  - 各素材は「明・基本・影」の3階調＋ハイライト点。目安12〜16色
+使い方: python3 tools/gen_chars.py [キャラid ...]   （省略時は全部）
+"""
+import os, sys
+from PIL import Image, ImageDraw
+
+S = 64
+OUT = (19, 19, 19, 255)
+TR  = (0, 0, 0, 0)
+
+def new(): return Image.new('RGBA', (S, S), TR)
+def D(im): return ImageDraw.Draw(im)
+def ell(im, b, c):  D(im).ellipse(b, fill=c)
+def rect(im, b, c): D(im).rectangle(b, fill=c)
+def poly(im, p, c): D(im).polygon(p, fill=c)
+def line(im, p, c, w=1): D(im).line(p, fill=c, width=w)
+def px(im, x, y, c): im.putpixel((x, y), c)
+
+def mix(c, t, f):
+    """c を t（色）方向へ f だけ寄せる。"""
+    return tuple(int(c[i] + (t[i] - c[i]) * f) for i in range(3)) + (255,)
+
+def lighten(c, f=0.35): return mix(c, (255, 255, 255, 255), f)
+def darken(c, f=0.35):  return mix(c, (10, 8, 20, 255), f)
+
+def sphere(im, box, base, lf=0.30, df=0.34):
+    """球としての立体感を持つ楕円（影→基本→ハイライトの3階調）。"""
+    x0, y0, x1, y1 = box
+    w, h = x1-x0, y1-y0
+    ell(im, box, darken(base, df))
+    ell(im, (x0, y0, x1-max(1, w//12), y1-max(1, h//9)), base)
+    ell(im, (x0+w//6, y0+h//8, x0+int(w*0.62), y0+int(h*0.52)), lighten(base, lf))
+    ell(im, (x0+int(w*0.20), y0+int(h*0.16), x0+int(w*0.44), y0+int(h*0.36)), lighten(base, lf+0.28))
+
+def outline(im, col=OUT):
+    p = im.load(); add = []
+    for y in range(S):
+        for x in range(S):
+            if p[x, y][3]: continue
+            for dx, dy in ((1,0),(-1,0),(0,1),(0,-1)):
+                nx, ny = x+dx, y+dy
+                if 0 <= nx < S and 0 <= ny < S and p[nx, ny][3] and p[nx, ny] != col:
+                    add.append((x, y)); break
+    for x, y in add: p[x, y] = col
+
+def feet(im, base, y=51, dx=11, w=13, h=9):
+    cx = S//2
+    for s in (-1, 1):
+        b = (cx+s*dx-w//2, y, cx+s*dx+w//2, y+h)
+        ell(im, b, darken(base, 0.25)); ell(im, (b[0], b[1], b[2]-1, b[3]-2), base)
+
+def eye(im, cx, cy, white=(246, 247, 253, 255), iris=(38, 42, 62, 255), w=5, h=7, slant=0):
+    """既存立ち絵に合わせた角ばった目。slant=1 でつり目（外側が上がる）。"""
+    x0, y0 = cx - w//2, cy - h//2
+    rect(im, (x0, y0, x0+w-1, y0+h-1), white)
+    rect(im, (x0+1, y0+h-4, x0+w-2, y0+h-2), iris)
+    px(im, x0+1, y0+1, (255, 255, 255, 255))
+    if slant:
+        for i in range(w//2+1):
+            rect(im, (x0+i*slant if slant>0 else x0, y0, x0+i*slant if slant>0 else x0, y0), TR)
+
+# ---- キャラ ---------------------------------------------------------------
+
+def c_ninja():
+    """忍者：濃紺の装束＋覆面＋赤い鉢巻＋額当て。手裏剣。"""
+    im = new()
+    NAVY = (58, 68, 104, 255); MASK = (28, 33, 54, 255)
+    RED  = (188, 56, 60, 255); STEEL= (176, 186, 206, 255)
+    feet(im, darken(NAVY, 0.30))
+    sphere(im, (11, 17, 53, 54), NAVY)
+    # 装束の合わせ目
+    line(im, [(30, 44), (26, 54)], darken(NAVY, 0.45))
+    line(im, [(34, 44), (39, 53)], darken(NAVY, 0.45))
+    # 覆面
+    ell(im, (13, 20, 51, 50), MASK)
+    ell(im, (15, 22, 49, 40), lighten(MASK, 0.16))
+    ell(im, (16, 36, 48, 50), darken(MASK, 0.30))
+    eye(im, 25, 34, w=6, h=7); eye(im, 39, 34, w=6, h=7)
+    # つり目にする（内側上を削る）
+    poly(im, [(22, 31), (28, 31), (28, 32), (22, 33)], MASK)
+    poly(im, [(42, 31), (36, 31), (36, 32), (42, 33)], MASK)
+    # 頭巾
+    ell(im, (11, 12, 53, 34), NAVY)
+    ell(im, (13, 13, 49, 27), lighten(NAVY, 0.22))
+    rect(im, (11, 24, 53, 30), NAVY)
+    # 鉢巻
+    rect(im, (12, 24, 52, 30), RED)
+    rect(im, (12, 24, 52, 25), lighten(RED, 0.30))
+    rect(im, (12, 29, 52, 30), darken(RED, 0.30))
+    # 額当て
+    rect(im, (26, 23, 38, 31), darken(STEEL, 0.40))
+    rect(im, (27, 24, 37, 30), STEEL)
+    rect(im, (28, 25, 36, 26), lighten(STEEL, 0.40))
+    rect(im, (31, 26, 33, 29), darken(STEEL, 0.22))
+    # 鉢巻のたなびき
+    poly(im, [(51, 26), (62, 21), (59, 28), (63, 33), (51, 31)], RED)
+    poly(im, [(51, 26), (62, 21), (60, 25), (51, 28)], lighten(RED, 0.22))
+    # 手裏剣
+    poly(im, [(56, 37), (58, 44), (64, 46), (58, 48), (56, 55), (54, 48), (48, 46), (54, 44)], STEEL)
+    poly(im, [(56, 37), (58, 44), (56, 46), (54, 44)], lighten(STEEL, 0.45))
+    poly(im, [(56, 55), (58, 48), (56, 46), (54, 48)], darken(STEEL, 0.30))
+    px(im, 56, 46, MASK)
+    outline(im)
+    return im
+
+def c_samurai():
+    """サムライ：漆黒の甲冑＋三日月の前立て＋朱の面頬。刀を担ぐ。"""
+    im = new()
+    LAQ  = (66, 48, 74, 255); CRIM = (172, 46, 54, 255)
+    GOLD = (230, 188, 78, 255); SKIN = (238, 208, 178, 255)
+    STEEL= (202, 210, 224, 255)
+    feet(im, darken(LAQ, 0.30))
+    sphere(im, (11, 16, 53, 55), LAQ)
+    # 胴の緋縅（下側）＋威毛の縦線
+    ell(im, (12, 43, 52, 56), CRIM)
+    ell(im, (13, 44, 51, 52), lighten(CRIM, 0.22))
+    for x in range(16, 50, 5):
+        line(im, [(x, 45), (x, 55)], darken(CRIM, 0.35))
+    rect(im, (13, 41, 51, 43), GOLD)
+    rect(im, (13, 41, 51, 41), lighten(GOLD, 0.35))
+    # 顔
+    ell(im, (19, 24, 45, 45), SKIN)
+    ell(im, (21, 25, 43, 36), lighten(SKIN, 0.22))
+    # 喉輪（顎の下だけ朱）
+    ell(im, (24, 41, 40, 47), CRIM)
+    ell(im, (25, 42, 39, 45), lighten(CRIM, 0.22))
+    ell(im, (19, 24, 45, 42), SKIN)
+    ell(im, (21, 25, 43, 35), lighten(SKIN, 0.20))
+    # 目
+    eye(im, 26, 32, iris=(58, 40, 34, 255), w=6, h=8)
+    eye(im, 38, 32, iris=(58, 40, 34, 255), w=6, h=8)
+    # 眉（きつめ）
+    poly(im, [(21, 27), (29, 28), (29, 30), (21, 29)], (48, 36, 40, 255))
+    poly(im, [(43, 27), (35, 28), (35, 30), (43, 29)], (48, 36, 40, 255))
+    # 口（への字）
+    line(im, [(29, 39), (32, 38)], (120, 66, 62, 255)); line(im, [(32, 38), (35, 39)], (120, 66, 62, 255))
+    # 兜の鉢
+    ell(im, (10, 10, 54, 33), LAQ)
+    ell(im, (13, 11, 47, 26), lighten(LAQ, 0.24))
+    rect(im, (10, 21, 54, 28), LAQ)
+    for x in (22, 32, 42):
+        line(im, [(x, 12), (x, 26)], darken(LAQ, 0.30))
+    # しころ
+    poly(im, [(11, 25), (4, 41), (15, 37), (17, 27)], darken(LAQ, 0.28))
+    poly(im, [(53, 25), (60, 41), (49, 37), (47, 27)], darken(LAQ, 0.28))
+    poly(im, [(11, 25), (6, 34), (14, 32), (16, 27)], LAQ)
+    poly(im, [(53, 25), (58, 34), (50, 32), (48, 27)], LAQ)
+    # 眉庇の金帯
+    rect(im, (12, 23, 52, 27), GOLD)
+    rect(im, (12, 23, 52, 24), lighten(GOLD, 0.40))
+    rect(im, (12, 26, 52, 27), darken(GOLD, 0.35))
+    # 前立て（三日月）
+    poly(im, [(21, 17), (32, 4), (43, 17), (39, 17), (32, 10), (25, 17)], GOLD)
+    poly(im, [(24, 16), (32, 6), (36, 11), (32, 9), (26, 16)], lighten(GOLD, 0.40))
+    rect(im, (29, 15, 35, 20), GOLD); rect(im, (30, 16, 31, 19), lighten(GOLD, 0.35))
+    # 刀
+    poly(im, [(47, 38), (62, 14), (64, 17), (50, 41)], STEEL)
+    poly(im, [(48, 38), (62, 15), (63, 16), (49, 39)], lighten(STEEL, 0.45))
+    poly(im, [(44, 43), (49, 35), (52, 37), (47, 46)], (52, 40, 36, 255))
+    poly(im, [(45, 43), (49, 37), (50, 38), (46, 45)], (86, 66, 54, 255))
+    rect(im, (46, 35, 53, 38), GOLD)
+    outline(im)
+    return im
+
+def c_hknight():
+    """重騎士：全身鎧。騎士より一回り大きい暗鋼＋金の縁取り。錨を担ぐ。"""
+    im = new()
+    STEEL = (124, 134, 158, 255); GOLD = (214, 172, 72, 255)
+    DARK  = (28, 32, 46, 255);    GLOW = (120, 190, 230, 255)
+    feet(im, darken(STEEL, 0.35), y=52, dx=12, w=14, h=9)
+    sphere(im, (9, 15, 55, 56), STEEL, lf=0.26, df=0.36)
+    # 胴のプレート分割
+    line(im, [(14, 47), (50, 47)], darken(STEEL, 0.45))
+    line(im, [(32, 47), (32, 56)], darken(STEEL, 0.45))
+    rect(im, (13, 43, 51, 46), GOLD)
+    rect(im, (13, 43, 51, 43), lighten(GOLD, 0.40))
+    rect(im, (13, 46, 51, 46), darken(GOLD, 0.35))
+    # 肩当て
+    for s, x0 in ((-1, 3), (1, 42)):
+        ell(im, (x0, 30, x0+19, 48), darken(STEEL, 0.20))
+        ell(im, (x0+1, 31, x0+17, 45), STEEL)
+        ell(im, (x0+3, 32, x0+12, 39), lighten(STEEL, 0.34))
+        px(im, x0+9, 43, darken(STEEL, 0.5)); px(im, x0+5, 41, darken(STEEL, 0.5))
+    # 兜
+    ell(im, (12, 11, 52, 43), STEEL)
+    ell(im, (14, 12, 46, 31), lighten(STEEL, 0.30))
+    ell(im, (17, 15, 33, 25), lighten(STEEL, 0.52))
+    rect(im, (12, 26, 52, 38), STEEL)
+    ell(im, (14, 30, 50, 44), darken(STEEL, 0.18))
+    # T字スリット
+    rect(im, (19, 26, 45, 32), DARK)
+    rect(im, (29, 26, 35, 42), DARK)
+    rect(im, (22, 28, 27, 30), GLOW); rect(im, (37, 28, 42, 30), GLOW)
+    rect(im, (19, 25, 45, 25), darken(STEEL, 0.5))
+    # 面頬のリベット
+    for x in (22, 26, 38, 42): px(im, x, 36, darken(STEEL, 0.5))
+    # 兜の金帯と鶏冠
+    rect(im, (13, 21, 51, 24), GOLD)
+    rect(im, (13, 21, 51, 21), lighten(GOLD, 0.40))
+    rect(im, (13, 24, 51, 24), darken(GOLD, 0.35))
+    poly(im, [(27, 12), (32, 2), (37, 12)], GOLD)
+    poly(im, [(30, 11), (32, 4), (33, 11)], lighten(GOLD, 0.45))
+    # 錨
+    A = (200, 208, 222, 255)
+    rect(im, (54, 20, 58, 50), A); rect(im, (54, 20, 55, 50), lighten(A, 0.40)); rect(im, (57, 22, 58, 50), darken(A, 0.30))
+    rect(im, (48, 27, 63, 31), A); rect(im, (48, 27, 63, 28), lighten(A, 0.40)); rect(im, (48, 30, 63, 31), darken(A, 0.30))
+    poly(im, [(45, 41), (56, 55), (64, 42), (61, 41), (56, 49), (49, 40)], A)
+    poly(im, [(45, 41), (52, 50), (54, 49), (49, 40)], lighten(A, 0.35))
+    ell(im, (52, 14, 61, 23), A); ell(im, (54, 16, 59, 21), TR)
+    outline(im)
+    return im
+
+CHARS = {'ninja': c_ninja, 'samurai': c_samurai, 'hknight': c_hknight}
+
+def main():
+    ids = sys.argv[1:] or list(CHARS.keys())
+    os.makedirs('assets', exist_ok=True)
+    for i in ids:
+        if i not in CHARS: print('unknown:', i); continue
+        im = CHARS[i]()
+        im.save('assets/%s.png' % i)
+        cols = len({im.getpixel((x, y)) for y in range(S) for x in range(S) if im.getpixel((x, y))[3]})
+        print('assets/%s.png' % i, im.size, '色数:', cols)
+
+if __name__ == '__main__':
+    main()
