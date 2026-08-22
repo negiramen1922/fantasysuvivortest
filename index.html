@@ -1453,6 +1453,27 @@ var ELEM={
 // 属性ごとの担い手（一時停止画面の付与率表示に使う）
 var ELW={ fire:['fire','flame'], ice:['ice','blizzard'], thunder:['thunder','chain'],
           holy:['holy','aura','laser'], dark:['voidh','dhand','crimson','railgun'], grass:['toxin','briar'], wind:['gale','tornado'] };
+// 武器 → 属性の逆引き（ELW から自動生成）。属性耐性の判定に使う
+var WEL={}; (function(){ for(var _e in ELW){ for(var _i=0;_i<ELW[_e].length;_i++) WEL[ELW[_e][_i]]=_e; } })();
+// 属性耐性：0=等倍、0.5=半減。敵個別(e.eres) > ステージ(curGround.eres) の優先で解決する。
+// 「無効」は作らない（詰みは面白くないので、耐性は半減までに留める設計）。
+function eresOf(e,el){
+  if(!el) return 0;
+  if(e&&e.eres&&e.eres[el]!=null) return e.eres[el];
+  if(curGround&&curGround.eres&&curGround.eres[el]!=null) return curGround.eres[el];
+  return 0;
+}
+// 凍結の効果時間の倍率。敵個別(e.frzMul) > ステージ(curGround.frzMul)。氷ステージで凍結ハメを効きにくくする
+function frzMulOf(e){
+  if(e&&e.frzMul!=null) return e.frzMul;
+  if(curGround&&curGround.frzMul!=null) return curGround.frzMul;
+  return 1;
+}
+// 凍結の付与はすべてここを通す（状態異常耐性 res と、ステージ／敵ごとの凍結倍率をまとめて適用）
+function frzApply(e,sec){
+  var t=sec*(1-(e.res||0))*frzMulOf(e);
+  if(t>0) e.frz=Math.max(e.frz||0,t);
+}
 var ETYPE={
   slime:   { nm:'スライム',           res:0.00, hp:34,  spd:46,  r:13, col:'#6ee08a', dark:'#245c35', xp:1, dmg:8,  shape:'blob',   pts:6,   sv:0.035 },
   goblin:  { nm:'ゴブリン',           res:0.08, hp:64,  spd:76,  r:13, col:'#8fd06a', dark:'#3d5c22', xp:2, dmg:11, shape:'goblin', pts:16,  sv:0.06 },
@@ -1730,7 +1751,14 @@ var STAGES={
   // ステージ4「海」：一般公開済み（req＝STGREQ[4]でステージ③Lv60到達で解放）。専用ロスター WAVE4／BOSS_AT4。
   4:{ nm:'大海原', sub:'20:00・海・高難度', icon:'🌊', flavor:'深く青い大海原。群れ飛ぶトビウオ、盾を構える蟹、砂に潜む貝、そして巨大な海坊主が押し寄せる。海妖セイレーンの光線をかいくぐり、最奥の主リヴァイアサンを討て。',
       wave:WAVE4, bossAt:BOSS_AT4, hpMul:1.0, req:3, swarm:1, swarmStart:300, swarmK:'flyingfish', umibozu:1, umibozuStart:960,
-      ground:{ tile:'s4', bg:'#08131f', grid:'rgba(60,130,150,.26)', dot:'rgba(90,180,200,.14)' } }
+      ground:{ tile:'s4', bg:'#08131f', grid:'rgba(60,130,150,.26)', dot:'rgba(90,180,200,.14)' } },
+  // ステージ5「凍てつく氷河」：開発中（dev:1 なので ?dev=1 のときだけ選べる）。
+  // ground.ice＝氷結床あり／eres＝ステージ全体の属性耐性／frzMul＝凍結の効果時間の倍率。
+  // wave/bossAt は専用ロスター WAVE5／BOSS_AT5 を用意するまでの仮置き。
+  5:{ nm:'凍てつく氷河', sub:'20:00・氷・高難度', icon:'❄️', flavor:'思い通りに止まれない氷の大地。氷結床に足を取られ、吹雪に視界を奪われ、雪崩が走る。氷の魔物は氷属性を半減し、凍結もすぐ解ける。最奥に氷河の主グラキエスが眠る。',
+      wave:WAVE4, bossAt:BOSS_AT4, hpMul:1.0, req:4, dev:1,
+      ground:{ tile:'s5', bg:'#0b1220', grid:'rgba(110,150,190,.24)', dot:'rgba(150,200,235,.13)',
+               ice:1, eres:{ice:0.5}, frzMul:0.4 } }
 };
 var ALLSTG=0;   // 1で全ステージ解放（開発用）。製品は 0
 // 開発モード：URLに ?dev=1 が付いている時だけ true。未公開ステージ（dev:1）のテスト用。
@@ -1741,7 +1769,7 @@ var STGBEST={};   // ステージ別の最高スコア
 var STGWAVE={};   // ステージ別の到達ウェーブ最高
 var STGLV={};     // ステージ別の到達最高レベル（次ステージ解放条件に使う）
 // ステージ解放条件：指定ステージで指定レベルに到達すると次が解放（②＝①でLv20 / ③＝②でLv40）
-var STGREQ={ 2:{stg:1,lv:20}, 3:{stg:2,lv:40}, 4:{stg:3,lv:60} };
+var STGREQ={ 2:{stg:1,lv:20}, 3:{stg:2,lv:40}, 4:{stg:3,lv:60}, 5:{stg:4,lv:80} };
 var WLIMIT=6;     // ラン前設定：装備できる武器の最大数（1〜6）。1にすると単一武器の縛りプレイ。
 var W1CLEAR={};   // 武器1つ（単一武器）でクリアしたステージ {stage:1}（実績用）
 var STGNMCLEAR={}; // ステージ別 ナイトメアクリア {stage:1}（実績用）
@@ -3680,7 +3708,7 @@ function doBlizzard(){
     if(d<rad+e.r){
       e.slow=Math.max(e.slow,sl);
       var bsm=0.45*(1-TR('blizzard','slowmag')); e.slowMul=Math.min(e.slowMul||0.45,bsm);   // 鈍足効果量（熟練度）
-      if(AW('blizzard')&&Math.random()<0.06) e.frz=Math.max(e.frz||0,0.9*(1-(e.res||0)));
+      if(AW('blizzard')&&Math.random()<0.06) frzApply(e,0.9);
       hurt(e,dmg,dx/(d||1),dy/(d||1),'ice');
       n++;
     }
@@ -5287,7 +5315,7 @@ function react(e,a,b,dmg){
     label(e,'聖光','#fff2b0');
     fx.push({k:'ring',x:e.x,y:e.y,r:0,to:70,t:0,life:.32,col:'#fff2b0'});
     hurt(e,amp*2.0*ep,0,-1,null);
-    e.frz=Math.max(e.frz||0,0.35*(1-(e.res||0)));
+    frzApply(e,0.35);
     hitStop=Math.max(hitStop,.04);
     sfx(1500,.18,'triangle',.06,.3);
   }else if(key==='fire+thunder'){            // 過負荷：激変・範囲（半径115→85に縮小）
@@ -5307,7 +5335,7 @@ function react(e,a,b,dmg){
     sfx(240,.22,'sawtooth',.06,.5);
   }else if(key==='dark+ice'){                // 凍結：激変・単体＋完全停止
     label(e,'凍結','#bfefff');
-    e.frz=Math.max(e.frz||0,1.2*(1-(e.res||0)));
+    frzApply(e,1.2);
     hurt(e,LB*1.6*ep,0,-1,null);
     fx.push({k:'ring',x:e.x,y:e.y,r:0,to:60,t:0,life:.35,col:'#bfefff'});
     sfx(1800,.18,'sine',.06,.4);
@@ -5448,6 +5476,7 @@ function spawnBoss(key){
     col:t.col, dark:t.dark, xp:B.xp, dmg:B.dmg*dscale, shape:t.shape,
     pts:B.pts, ai:B.ai||'', acd:B.acd||0, at:1.2, st:'', stT:0,
     vx:0, vy:0, res:B.res||0.9, kbr:1, flat:0, split:B.split||null,   // ボスはノックバック無効
+    eres:B.eres||(t&&t.eres)||null, frzMul:(B.frzMul!=null?B.frzMul:null),   // 属性耐性／凍結時間の倍率（未指定はステージ設定を使う）
     sum:B.sum||'', nsum:B.nsum||0, wind:B.wind||0, chdur:B.chdur||0,
     chspd:B.chspd||0, range:B.range||0, nbul:B.nbul||0,
     bspd:B.bspd||0, bdmg:(B.bdmg||0)*dscale,
@@ -5493,6 +5522,7 @@ function makeEnemy(k){
     col:t.col, dark:t.dark, xp:t.xp, dmg:t.dmg*dscale, shape:t.shape, pts:t.pts, smul:(ENDLESS?blkMul:1),
     ai:t.ai||'', acd:t.acd||0, at:0.6+Math.random()*1.2, st:'', stT:0,
     vx:0, vy:0, res:t.res||0, kbr:(t.kbr!=null?t.kbr:(t.res||0)), flat:(t.flat||0)*scale,   // kbr＝ノックバック耐性(0〜1)。未指定は res 相当／ETYPEで個別調整可
+    eres:t.eres||null, frzMul:(t.frzMul!=null?t.frzMul:null),   // 属性耐性／凍結時間の倍率（未指定はステージ設定を使う）
     range:t.range||0, chspd:t.chspd||0, wind:t.wind||0, chdur:t.chdur||0,
     bspd:t.bspd||0, bdmg:(t.bdmg||0)*dscale, sum:t.sum||'', nsum:t.nsum||0,
     boom:t.boom||0, boomR:t.boomR||0, boomDmg:(t.boomDmg||0)*dscale, puddle:t.puddle||0, cpois:t.cpois||0, life:0,
@@ -6421,6 +6451,9 @@ function hurt(e,dmg,nx,ny,el){
   d*=(1+add);
   if(crit&&NIGHTMARE){ var _ch=contractStat('critheal'); if(_ch&&P.hp<P.max) P.hp=Math.min(P.max,P.hp+d*_ch); }   // 吸命：会心で回復
   if(P.nodmg) d=0;                         // テスト：判定は走るが敵は死なない
+  // 属性耐性：与えた属性（el）か、無ければ武器の属性（WEL）で判定する
+  var _rel=el||(SRC?WEL[SRC]:0);
+  if(_rel){ var _rv=eresOf(e,_rel); if(_rv) d*=1-_rv; }
   if(e.flat) d=Math.max(d*0.25,d-e.flat);   // 甲羅：軽い攻撃ほど通らない
   if(e.buffT>0) d*=0.8;                      // リッチのオーラ：被ダメージ -20%
   if(e.shield>0){                            // 盾の戦士：割れるまで本体HPに通さない（この一撃も本体には行かない）
@@ -6630,7 +6663,7 @@ function moveShots(dt){
         if(s.lacer&&Math.random()<ccChance(STAT_CHANCE)) applyLacer(e,s.dmg,s.lacer*(s.src==='shuriken'&&AW('shuriken')?1.8:1));   // 出血(DoT)付与（確率・覚醒で強化）
         if(s.anchor){                                        // 錨：確率スタン（引き寄せなし）
           var stunC=AW('anchor')?1:(0.35+0.08*(P.p.debuff||0)+TR('anchor','stun'));
-          if(Math.random()<stunC){ e.frz=Math.max(e.frz||0,1.1*(1-(e.res||0)));
+          if(Math.random()<stunC){ frzApply(e,1.1);
             fx.push({k:'ring',x:e.x,y:e.y,r:0,to:e.r+16,t:0,life:.3,col:'#ffe14d'}); }
         }
         if(s.slow){ e.slow=Math.max(e.slow,s.slow); if(s.slowMul!=null) e.slowMul=Math.min(e.slowMul||0.45,s.slowMul); }
@@ -7424,7 +7457,7 @@ function drawStick(){
 // 画像は白抜き処理(keyWhite)を通さず、透過PNGをそのまま使う。
 var GIMG={}, GRDY={}, GPAT={};
 (function(){
-  ['s1','s2','s3','s4'].forEach(function(k){
+  ['s1','s2','s3','s4','s5'].forEach(function(k){
     var b=new Image(); b.onload=function(){ GIMG['bg_'+k]=b; GRDY['bg_'+k]=1; }; b.src='assets/bg_'+k+'.png';
     var p=new Image(); p.onload=function(){ GIMG['pr_'+k]=p; GRDY['pr_'+k]=1; }; p.src='assets/prop_'+k+'.png';
   });
@@ -7515,11 +7548,11 @@ function drawGround(cx,cy){
         }
         ctx.closePath();
         var gr=ctx.createLinearGradient(ic.x,ic.y-ic.r,ic.x,ic.y+ic.r);   // 平らに見せるため縦の線形グラデ
-        gr.addColorStop(0,'rgba(216,242,255,.30)');
-        gr.addColorStop(.55,'rgba(150,212,242,.22)');
-        gr.addColorStop(1,'rgba(112,186,228,.16)');
+        gr.addColorStop(0,'rgba(146,226,255,.28)');
+        gr.addColorStop(.55,'rgba(104,196,246,.22)');
+        gr.addColorStop(1,'rgba(70,160,224,.18)');
         ctx.fillStyle=gr; ctx.fill();
-        ctx.strokeStyle='rgba(222,247,255,.5)'; ctx.lineWidth=2; ctx.stroke();
+        ctx.strokeStyle='rgba(196,242,255,.6)'; ctx.lineWidth=2; ctx.stroke();
         // ひび：中心から放射状に3本（角度もハッシュ由来なので毎フレーム同じ）
         ctx.strokeStyle='rgba(240,252,255,.34)'; ctx.lineWidth=1;
         ctx.beginPath();
@@ -12301,7 +12334,9 @@ showView('home');
 fbInit();
 // 開発モード限定：自動テスト（Playwright等）から内部状態を覗くための窓口。?dev=1 のときだけ生える。
 try{ if(DEV) window.DBG=function(){ return { x:P.x, y:P.y, vx:P.vx, vy:P.vy, hp:P.hp, lv:P.lv,
-  ice:onIce(P.x,P.y), t:time, stage:curStage, enemies:enemies.length, boss:boss?boss.nm:null }; }; }catch(e){}
+  ice:onIce(P.x,P.y), t:time, stage:curStage, enemies:enemies.length, boss:boss?boss.nm:null,
+  eresIce:eresOf(null,'ice'), frzMul:frzMulOf(null), kills:kills,
+  dmgs:dmgs.map(function(z){ return z.txt; }) }; }; }catch(e){}
 })();
 </script>
 </body>
