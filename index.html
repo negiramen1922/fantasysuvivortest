@@ -3033,7 +3033,7 @@ function figInfo(id){
   if(BOSS[id]){ var B=BOSS[id], tt=ETYPE[B.key]||{}; return {nm:B.nm,shape:tt.shape,col:tt.col,dark:tt.dark,desc:BDEX[id]||'',boss:true}; }
   var t=ETYPE[id]||{}; return {nm:t.nm,shape:t.shape,col:t.col,dark:t.dark,desc:DEX[id]||'',boss:false};
 }
-var VERSION='α1.0.292'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
+var VERSION='α1.0.293'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
 function applySave(o){
   for(var i=0;i<UPG.length;i++) META[UPG[i].id]=0;
   try{
@@ -3811,17 +3811,27 @@ function infBeam(tx,ty,w,g){
   // ドット絵の火炎流：ビーム沿いに炎のブロック（外=赤／中=橙／芯=白）を揺らして並べる
   var dx=tx-P.x, dy=ty-P.y, len=Math.hypot(dx,dy)||1;
   var ux=dx/len, uy=dy/len, nx=-uy, ny=ux;
-  var n=Math.max(2,Math.round(len/5));
+  // ブロック数を上限化：遠い敵をロックしてビームが極端に長くなっても描画量が爆発しないように（＝敵が少ないと重くなる問題対策）
+  var n=Math.min(64,Math.max(2,Math.round(len/6)));
   ctx.imageSmoothingEnabled=false;
-  for(var i=0;i<=n;i++){
-    var t=i/n;
-    var s=Math.max(2,Math.round(w*(1.25-0.35*t)));        // 根本太く先細り
-    var jz=(Math.random()-0.5)*w*1.1*(0.3+t);             // 先ほど揺れる
+  // jitterは時間で決定的に（Math.random不使用）＝3層で同じ揺れを共有でき、層ごとに描画をまとめられる
+  var tm=time*30;
+  // 3層それぞれを1パスで描画し、canvasの状態変更(globalAlpha/fillStyle)を層ごとに1回だけに抑える（毎フレーム数百回→数回）
+  ctx.globalAlpha=0.5*g; ctx.fillStyle='#ff5a1f';
+  for(var i=0;i<=n;i++){ var t=i/n, s=Math.max(2,Math.round(w*(1.25-0.35*t)));
+    var jz=Math.sin(i*1.7+tm)*w*1.1*(0.3+t);
     var cx=Math.round(P.x+dx*t+nx*jz), cy=Math.round(P.y+dy*t+ny*jz);
-    ctx.globalAlpha=0.5*g;  ctx.fillStyle='#ff5a1f'; ctx.fillRect(cx-s,cy-s,s*2,s*2);
-    ctx.globalAlpha=0.85*g; ctx.fillStyle='#ffb14d'; var s2=Math.max(1,Math.round(s*0.6)); ctx.fillRect(cx-s2,cy-s2,s2*2,s2*2);
-    if(t<0.85){ ctx.globalAlpha=g; ctx.fillStyle='#fff2c0'; var s3=Math.max(1,Math.round(s*0.32)); ctx.fillRect(cx-s3,cy-s3,s3*2,s3*2); }
-  }
+    ctx.fillRect(cx-s,cy-s,s*2,s*2); }
+  ctx.globalAlpha=0.85*g; ctx.fillStyle='#ffb14d';
+  for(i=0;i<=n;i++){ var t2=i/n, s4=Math.max(2,Math.round(w*(1.25-0.35*t2))), s2=Math.max(1,Math.round(s4*0.6));
+    var jz2=Math.sin(i*1.7+tm)*w*1.1*(0.3+t2);
+    var cx2=Math.round(P.x+dx*t2+nx*jz2), cy2=Math.round(P.y+dy*t2+ny*jz2);
+    ctx.fillRect(cx2-s2,cy2-s2,s2*2,s2*2); }
+  ctx.globalAlpha=g; ctx.fillStyle='#fff2c0';
+  for(i=0;i<=n;i++){ var t3=i/n; if(t3>=0.85) continue; var s5=Math.max(2,Math.round(w*(1.25-0.35*t3))), s3=Math.max(1,Math.round(s5*0.32));
+    var jz3=Math.sin(i*1.7+tm)*w*1.1*(0.3+t3);
+    var cx3=Math.round(P.x+dx*t3+nx*jz3), cy3=Math.round(P.y+dy*t3+ny*jz3);
+    ctx.fillRect(cx3-s3,cy3-s3,s3*2,s3*2); }
   // 先端の火炎ブロブ（数個の橙ブロックを散らす）
   for(var j=0;j<5;j++){
     var a=Math.random()*6.283, rr=Math.random()*w*1.1, bs=Math.max(2,Math.round(w*(0.5+Math.random()*0.4)));
@@ -10874,6 +10884,9 @@ Array.prototype.forEach.call(document.querySelectorAll('#setview button'),functi
 // 更新履歴：1つのお知らせ内で「バージョン見出し」ごとに変更点を並べる（新しい順）。
 // マージのたびに先頭へ新バージョンを追加し、VERSION も更新する。
 var UPDATES=[
+  {v:'α1.0.293', items:[
+    'インフェルノビームの動作を軽くしました。敵が少ない（遠い敵を狙う）ときにビームが長く伸びて描画が重くなり、カクつくことがある問題への対策です。ビームの描画量を上限つきにし、内部の描画処理も効率化しました（見た目・威力は変わりません）。',
+  ]},
   {v:'α1.0.292', items:[
     '爆発の演出を半透明にしました。爆発が大きくて下の敵が見えなくなる問題への対応で、爆発エフェクトを透かして表示し、時間とともに薄れるようにしました（当たり判定・威力は変わりません）。',
   ]},
