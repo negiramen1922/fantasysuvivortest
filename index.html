@@ -1533,9 +1533,9 @@ var ETYPE={
   siren:    { nm:'セイレーン',   res:0.12, hp:150, spd:44,  r:14, col:'#e0a0b0', dark:'#5a2a3a', xp:5, dmg:16, shape:'siren',     pts:54, sv:0.14, ai:'beam', range:420, acd:4.2, wind:1.0, bdmg:20 },
   // ---- ステージ5「凍てつく氷河」----（全体に氷属性半減。凍結の効き目はステージ側 frzMul で短縮）
   icewolf:  { nm:'氷狼',             res:0.15, hp:110, spd:118, r:13, col:'#a8d8f0', dark:'#3a5f7a', xp:3, dmg:16, shape:'icewolf',   pts:32, sv:0.10, eres:{ice:0.5} },   // 0:00 の顔。ステージ最速のザコだが、開幕から張り付かない速さに抑える
-  yeti:     { nm:'雪男',             res:0.40, kbr:0.7, hp:340, spd:58, r:18, col:'#e0eaf4', dark:'#5a6878', xp:6, dmg:34, shape:'yeti', pts:70, sv:0.16, cap:4, capAlt:'icewolf', eres:{ice:0.5} },
+  yeti:     { nm:'雪男',             res:0.40, kbr:0.7, hp:340, spd:58, r:18, col:'#e0eaf4', dark:'#5a6878', xp:6, dmg:34, shape:'yeti', pts:70, sv:0.16, cap:8, capAlt:'snowworm', eres:{ice:0.5} },
   icegolem: { nm:'アイスゴーレム',   res:0.35, kbr:0.85, hp:300, spd:62, r:17, col:'#7fc4e8', dark:'#2a4f6a', xp:6, dmg:28, shape:'icegolem', pts:66, sv:0.15,
-              shield:200, nbul:4, bspd:230, bdmg:14, cap:4, capAlt:'icewolf', eres:{ice:0.5} },   // 盾＝氷の鎧。割れた瞬間に氷片を4方向へ撒く
+              shield:200, nbul:4, bspd:230, bdmg:14, cap:6, capAlt:'snowworm', eres:{ice:0.5} },   // 盾＝氷の鎧。割れた瞬間に氷片を4方向へ撒く
   icicle:   { nm:'氷柱',             res:0.50, kbr:1, hp:120, spd:0, r:12, col:'#9fd8f0', dark:'#2f5a76', xp:3, dmg:24, shape:'icicle', pts:30, sv:0.09,
               ai:'shoot', range:300, acd:2.4, bspd:230, bdmg:16, near:[230,360], eres:{ice:0.5} },   // 動かない設置型。プレイヤーの近くに生える
   snowworm: { nm:'スノーワーム',     res:0.25, hp:260, spd:84, r:16, col:'#cfe0ee', dark:'#4a5a6a', xp:5, dmg:26, shape:'snowworm', pts:56, sv:0.14, ai:'burrow', eres:{ice:0.5} },
@@ -1545,7 +1545,7 @@ var ETYPE={
   icearcher:{ nm:'氷の弓兵',         res:0.15, hp:160, spd:66, r:13, col:'#5f89b0', dark:'#24405a', xp:5, dmg:22, shape:'icearcher', pts:52, sv:0.14,
               ai:'shoot', range:340, acd:3.0, bspd:250, bdmg:18, bchill:2.0, eres:{ice:0.5} },   // 矢に鈍足付与
   walrus:   { nm:'セイウチ',         res:0.35, kbr:0.8, hp:320, spd:96, r:18, col:'#b0a8b8', dark:'#4a4250', xp:6, dmg:32, shape:'walrus', pts:68, sv:0.16,
-              ai:'charge', range:330, acd:3.0, chspd:520, wind:0.6, chdur:1.0, cap:4, capAlt:'icewolf', eres:{ice:0.5} },
+              ai:'charge', range:330, acd:3.0, chspd:520, wind:0.6, chdur:1.0, cap:8, capAlt:'snowworm', eres:{ice:0.5} },
   flurry:   { nm:'吹雪の精',         res:0.00, hp:30,  spd:215, r:8,  col:'#dff4ff', dark:'#4a7a92', xp:1, dmg:10, shape:'flurry', pts:6, sv:0.03, ai:'dash', eres:{ice:0.5} },
   // リヴァイアサンの丸が撃つサメ型ミサイル：追尾する倒せる敵。HPは通常サメ(210)の2倍=420（時間スケールも同じ＝常にサメの2倍）。エリート化しない。
   sharkmissile:{ nm:'サメミサイル', res:0.30, hp:420, spd:250, r:12, col:'#9ab0c8', dark:'#2a3a4a', xp:2, dmg:20, shape:'sharkmissile', pts:20, sv:0, ai:'home', home:1.6, noelite:1 },
@@ -12429,7 +12429,8 @@ fbInit();
 try{ if(DEV) window.DBG=function(){ return { x:P.x, y:P.y, vx:P.vx, vy:P.vy, hp:P.hp, lv:P.lv,
   ice:onIce(P.x,P.y), t:time, stage:curStage, enemies:enemies.length, boss:boss?boss.nm:null,
   eresIce:eresOf(null,'ice'), frzMul:frzMulOf(null), kills:kills, state:state, chill:P.chill||0,
-  dmgs:dmgs.map(function(z){ return z.txt; }) }; }; }catch(e){}
+  dmgs:dmgs.map(function(z){ return z.txt; }),
+  comp:(function(){ var c={}; for(var i=0;i<enemies.length;i++){ if(!enemies[i].dead) c[enemies[i].k]=(c[enemies[i].k]||0)+1; } return c; })() }; }; }catch(e){}
 })();
 </script>
 </body>
