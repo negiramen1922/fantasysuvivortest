@@ -2861,6 +2861,7 @@ var WTIX=0;    // 武器チケット🔧（銀貨のくじで入手・武器の�
 var CTIX=0;    // キャラチケット🎭（金貨のくじで入手・キャラの解放に使う）
 var SHK=1;   // 画面揺れの強さ 0 / 0.5 / 1 / 1.5
 var VZOOM=1; // 視野（描画ズーム）。小さいほど広く見える 1.0=標準 / 0.85=広め / 0.72=最大
+var VLx=-1e9,VRx=1e9,VTy=-1e9,VBy=1e9; // 可視ワールド矩形（毎フレームrenderで更新・画面外の敵描画を省く）
 function offR(){ return Math.hypot(W,H)/2/VZOOM; }   // 画面外スポーン半径（視野に応じて外側へ）
 var LIGHT=0; // 軽量モード：解像度(DPR)を1に下げて描画負荷を軽くする（ゲーム内容・難度は変えない）
 var VOLM=0.8; // 全体音量 0〜1
@@ -3033,7 +3034,7 @@ function figInfo(id){
   if(BOSS[id]){ var B=BOSS[id], tt=ETYPE[B.key]||{}; return {nm:B.nm,shape:tt.shape,col:tt.col,dark:tt.dark,desc:BDEX[id]||'',boss:true}; }
   var t=ETYPE[id]||{}; return {nm:t.nm,shape:t.shape,col:t.col,dark:t.dark,desc:DEX[id]||'',boss:false};
 }
-var VERSION='α1.0.294'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
+var VERSION='α1.0.295'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
 function applySave(o){
   for(var i=0;i<UPG.length;i++) META[UPG[i].id]=0;
   try{
@@ -3400,6 +3401,7 @@ function update(dt){
   aim();
   runWeapons(dt);
   moveEnemies(dt);
+  buildEGrid();                 // 敵の位置確定後に空間グリッドを構築（弾の当たり判定で使う）
   moveShots(dt);
   moveChaks(dt);
   moveScys(dt);
@@ -6300,9 +6302,10 @@ function moveEnemies(dt){
       // リッチ：周囲の味方を強化（速度+/被ダメ-）。バフは短時間で切れるので範囲内で更新し続ける。
       e.buffTick=(e.buffTick||0)-dt;
       if(e.buffTick<=0){ e.buffTick=0.2;
+        var bl=e.buffList||(e.buffList=[]); bl.length=0;   // バフ対象をキャッシュ（描画で毎フレーム全敵を走査しないため）
         for(var bi=0;bi<enemies.length;bi++){ var be=enemies[bi];
           if(be===e||be.dead||be.boss) continue;
-          if((be.x-e.x)*(be.x-e.x)+(be.y-e.y)*(be.y-e.y)<220*220) be.buffT=0.35;
+          if((be.x-e.x)*(be.x-e.x)+(be.y-e.y)*(be.y-e.y)<220*220){ be.buffT=0.35; bl.push(be); }
         }
       }
     }
@@ -6592,6 +6595,28 @@ function spawnUmibozuWall(a){
 }
 
 /* ============ 弾・宝石 ============ */
+// ===== 敵の空間グリッド：弾×敵の当たり判定を「全敵総当たり」→「近傍セルのみ」に（後半戦の高速化） =====
+// セル140px＝(敵最大半径105[エリート1.5倍]＋弾半径)より大きいので、衝突しうる敵は必ず3×3セル内に入る。
+var EGRID=null, EGCS=140;
+function buildEGrid(){
+  var g={};
+  for(var i=0;i<enemies.length;i++){ var e=enemies[i];
+    var k=Math.floor(e.x/EGCS)+'_'+Math.floor(e.y/EGCS);
+    var b=g[k]; if(b) b.push(e); else g[k]=[e];
+  }
+  EGRID=g;
+}
+var _egq=[];
+function enemiesNear(x,y){   // (x,y)周辺3×3セルの敵候補を再利用バッファに集めて返す
+  _egq.length=0;
+  if(!EGRID) return _egq;
+  var cx=Math.floor(x/EGCS), cy=Math.floor(y/EGCS);
+  for(var gx=cx-1;gx<=cx+1;gx++){ for(var gy=cy-1;gy<=cy+1;gy++){
+    var b=EGRID[gx+'_'+gy]; if(!b) continue;
+    for(var m=0;m<b.length;m++) _egq.push(b[m]);
+  } }
+  return _egq;
+}
 function moveShots(dt){
   for(var i=shots.length-1;i>=0;i--){
     var s=shots[i];
@@ -6622,8 +6647,9 @@ function moveShots(dt){
       s.ang=Math.atan2(s.vy,s.vx);
     }
     if((s.tt=(s.tt||0)+dt)>=0.03){ s.tt=0; parts.push({x:s.x,y:s.y,vx:0,vy:0,t:0,life:.22,col:s.col,s:3}); }   // 軌跡パーティクルを間引き（毎フレーム→約0.03秒毎・GC負荷を軽減）
-    for(var j=enemies.length-1;j>=0;j--){
-      var e=enemies[j];
+    var cand=enemiesNear(s.x,s.y);                              // 近傍セルの敵だけを検査（全敵総当たりをやめる）
+    for(var j=cand.length-1;j>=0;j--){
+      var e=cand[j];
       if(s.hit.indexOf(e)>=0) continue;
       var sdx=e.x-s.x, sdy=e.y-s.y, srr=e.r+s.r;                 // 平方距離で判定（sqrt省略）
       if(sdx*sdx+sdy*sdy<srr*srr){
@@ -7299,6 +7325,8 @@ function render(){
   if(VZOOM!==1){ ctx.translate(W/2,H/2); ctx.scale(VZOOM,VZOOM); ctx.translate(-W/2,-H/2); }   // 視野：自機中心にズームアウト
   var camx=Math.round(P.x-W/2-sx), camy=Math.round(P.y-H/2-sy);   // 整数に丸めてサブピクセル描画を避ける（軽量化＋くっきり）
   ctx.translate(-camx,-camy);
+  var _vex=(W/VZOOM-W)/2, _vey=(H/VZOOM-H)/2;                      // 可視ワールド矩形（+余白120＝最大の敵半径ぶん）＝画面外の敵は描画スキップ
+  VLx=camx-_vex-120; VRx=camx+W+_vex+120; VTy=camy-_vey-120; VBy=camy+H+_vey+120;
 
   drawGround(camx,camy);
   var i,f;
@@ -7326,7 +7354,7 @@ function render(){
     else if(f.k==='aura') drawAura(f); }
 
   // ---- 敵と自機 ----
-  for(i=0;i<enemies.length;i++) if(!enemies[i].dead) drawEnemy(enemies[i]);
+  for(i=0;i<enemies.length;i++){ var _de=enemies[i]; if(_de.dead) continue; if(_de.x<VLx||_de.x>VRx||_de.y<VTy||_de.y>VBy) continue; drawEnemy(_de); }   // 画面外はスキップ
   for(i=0;i<sheep.length;i++) drawSheep(sheep[i]);
   for(i=0;i<rocks.length;i++) drawRock(rocks[i]);
   drawMeteors();
@@ -8415,8 +8443,9 @@ function drawEnemy(e){
     ctx.globalAlpha=0.10+0.05*Math.sin(time*4); ctx.fillStyle='#c9a0ff';
     ctx.beginPath(); ctx.arc(0,0,220,0,6.3); ctx.fill();
     ctx.globalAlpha=0.55; ctx.strokeStyle='#e0b0ff'; ctx.lineWidth=2;
-    for(var li=0;li<enemies.length;li++){ var le=enemies[li];
-      if(le===e||le.dead||le.boss||!(le.buffT>0)) continue;
+    var bl=e.buffList;   // 0.2秒毎に更新されるキャッシュを使い、全敵走査をやめる
+    if(bl) for(var li=0;li<bl.length;li++){ var le=bl[li];
+      if(le.dead||!(le.buffT>0)) continue;
       if((le.x-e.x)*(le.x-e.x)+(le.y-e.y)*(le.y-e.y)<220*220){
         ctx.beginPath(); ctx.moveTo(0,0); ctx.lineTo(le.x-e.x,le.y-e.y); ctx.stroke(); }
     }
@@ -8772,6 +8801,7 @@ function drawEnemyOutlines(){
   for(var i=0;i<enemies.length;i++){
     var e=enemies[i];
     if(e.dead) continue;
+    if(e.x<VLx||e.x>VRx||e.y<VTy||e.y>VBy) continue;     // 画面外はスキップ
     if(enemySpr(e)) continue;                            // スプライト敵は自前の輪郭を持つので描かない
     var bh=blobHop(e), oy=bh?bh.dy:0, ox=bh?bh.sx:1, oyy=bh?bh.sy:1;   // スライムは潰れ・跳ねに追従
     ctx.globalAlpha=e.boss?0.95:(e.elite?0.9:0.62);
@@ -9299,15 +9329,15 @@ function drawDmg(d){
   if(d.rx){
     var pop=k<0.18?(1.55-k*3):1;
     ctx.font="26px 'DotGothic16',sans-serif";
-    ctx.textAlign='center'; ctx.lineWidth=5; ctx.strokeStyle='#000';
+    ctx.textAlign='center';
     ctx.translate(d.x,d.y); ctx.scale(pop,pop);
-    ctx.strokeText(d.txt,0,0);
+    ctx.fillStyle='rgba(0,0,0,0.92)'; ctx.fillText(d.txt,1.6,1.6);   // 影（strokeTextより軽い）
     ctx.fillStyle=d.col; ctx.fillText(d.txt,0,0);
     ctx.globalAlpha=1; ctx.restore(); return;
   }
   ctx.font=(d.crit?'bold 30px':'20px')+" 'DotGothic16',sans-serif";
-  ctx.textAlign='center'; ctx.lineWidth=4; ctx.strokeStyle='#000';
-  ctx.strokeText(d.txt,d.x,d.y); 
+  ctx.textAlign='center';
+  ctx.fillStyle='rgba(0,0,0,0.92)'; ctx.fillText(d.txt,d.x+1.4,d.y+1.4);   // 影（strokeTextより軽い）
   ctx.fillStyle=d.crit?'#ffd94d':'#ffffff';
   ctx.fillText(d.txt,d.x,d.y);
   ctx.globalAlpha=1; ctx.restore();
@@ -10886,6 +10916,9 @@ Array.prototype.forEach.call(document.querySelectorAll('#setview button'),functi
 // 更新履歴：1つのお知らせ内で「バージョン見出し」ごとに変更点を並べる（新しい順）。
 // マージのたびに先頭へ新バージョンを追加し、VERSION も更新する。
 var UPDATES=[
+  {v:'α1.0.295', items:[
+    '敵が多い後半戦の重さを大きく軽減しました。弾と敵の当たり判定を「近くのマスだけ調べる」方式（空間グリッド）に変更し、画面外の敵の描画を省略。リッチの強化オーラやダメージ数字の描画処理も効率化しています（見た目・挙動はほぼ同じ／ダメージ数字は縁取りが軽い影表現に変わりました）。',
+  ]},
   {v:'α1.0.294', items:[
     '軽量化を継続。弾の当たり判定を軽い計算に置き換え、弾の軌跡パーティクルの生成を間引き、インフェルノの内部処理のムダな生成を削減しました（見た目・挙動は変わりません）。',
   ]},
