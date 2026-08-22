@@ -1,2 +1,4 @@
 # dotpict のアップロード元（assets/ にコピーして使うため直下には残さない）
 dotpict_*.png
+__pycache__/
+*.pyc
