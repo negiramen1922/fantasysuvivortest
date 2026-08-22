@@ -3210,7 +3210,7 @@ function reset(){
   WAVE=stg.wave; BOSS_AT=stg.bossAt; curGround=stg.ground; bossHpMul=stg.hpMul||1;
   var hp=Math.round(100*(1+0.10*M('health'))*c.hp);
   var w0={}, wa0={}; w0[c.w]=1; wa0[c.w]={};
-  P={ x:0,y:0, r:12, hp:hp, max:hp, spd:190*c.spd, face:0,
+  P={ x:0,y:0, vx:0, vy:0, r:12, hp:hp, max:hp, spd:190*c.spd, face:0,
       lv:1, xp:0, need:xpNeed(1), hurt:0, inv:0, pois:0, poisD:0,
       w:w0, wa:wa0, aw:{}, lb:{}, p:{}, rel:{},
       rr:5+M('reroll'), sk:5+M('skipn') };
@@ -3451,9 +3451,17 @@ function movePlayer(dt){
     var sx=stick.x-stick.ox, sy=stick.y-stick.oy, sd=Math.hypot(sx,sy);
     if(sd>9){ dx=sx/sd; dy=sy/sd; }
   }
-  var d=Math.hypot(dx,dy);
-  P.moving=d>0?1:0;
-  if(d>0){ P.x+=dx/d*spd()*dt; P.y+=dy/d*spd()*dt; P.mvdir=Math.atan2(dy,dx); }   // 移動方向を記録（チェンソー等の向きに使う）
+  var d=Math.hypot(dx,dy), sp=spd();
+  // 速度を持たせる：氷結床の上だけ目標速度へ「寄せる」＝止まれない・曲がれない。氷の外は従来どおり即時反映。
+  var tvx=d>0?dx/d*sp:0, tvy=d>0?dy/d*sp:0;
+  if(d>0) P.mvdir=Math.atan2(dy,dx);   // 移動方向を記録（チェンソー等の向きに使う）
+  if(onIce(P.x,P.y)&&!CH().noSlip){
+    var k=Math.min(1,3.2*dt);
+    P.vx+=(tvx-P.vx)*k; P.vy+=(tvy-P.vy)*k;
+    if(!d&&(P.vx*P.vx+P.vy*P.vy)>64) P.mvdir=Math.atan2(P.vy,P.vx);   // 滑走中も向きは進行方向
+  }else{ P.vx=tvx; P.vy=tvy; }
+  if(P.vx||P.vy){ P.x+=P.vx*dt; P.y+=P.vy*dt; }
+  P.moving=(P.vx*P.vx+P.vy*P.vy)>16?1:0;
   if(P.hurt>0) P.hurt-=dt;
   if(P.inv>0) P.inv-=dt;
   if(P.sh>0) P.sh=Math.max(0,P.sh-dt*2);           // クリムゾン覚醒シールドはゆっくり減衰
@@ -7423,7 +7431,34 @@ var GIMG={}, GRDY={}, GPAT={};
 })();
 // ワールド座標のマスから決まる疑似乱数（同じ場所には常に同じ散らし物が出る＝移動しても揺れない）
 function ghash(a,b){ var h=(a*73856093)^(b*19349663); h=(h^(h>>>13))>>>0; return h; }
-var GPROP_CELL=176;          // 散らし物1つあたりのマス（px）
+var GPROP_CELL=176;
+
+/* ===== 氷結床（ステージ⑤）=====
+   ワールドに固定配置された円形の氷。中に入るとプレイヤーだけ慣性が付き、思い通りに止まれない。
+   配置は散らし物と同じ座標ハッシュなので、保存も同期も要らず、どのランでも同じ場所に出る。 */
+var ICE_CELL=280;                                   // 氷を1枚まで置くマスの大きさ（この設定で床の約17%が氷になる）
+var ICETEST=false; try{ ICETEST=/[?&]ice=1\b/.test((typeof location!=='undefined'&&location.search)||''); }catch(e){}
+function iceOn(){ return !!(curGround&&curGround.ice)||ICETEST; }
+// マス(ix,iy)の氷。無ければ null。中心はマス内のどこでもよく、円はマスをはみ出してよい
+// （はみ出しを禁じるとマスの境目に必ず氷の無い帯ができ、格子状に見えてしまうため）。
+function iceCell(ix,iy){
+  var h=ghash(ix*7+3,iy*7+5);                       // 散らし物と同じ値だと位置が重なるのでずらす
+  if((h%100)>=55) return null;                      // マスあたりの出現率55%
+  var cx=ix*ICE_CELL+((h>>>13)%ICE_CELL), cy=iy*ICE_CELL+((h>>>19)%ICE_CELL), r=64+((h>>>7)%57);
+  if(cx*cx+cy*cy<(r+70)*(r+70)) return null;        // 開始地点(0,0)の周りは氷にしない（開幕からいきなり滑らないように）
+  return { x:cx, y:cy, r:r, h:h };
+}
+// はみ出しを許すので、隣接9マスまで見る（半径の上限120 < ICE_CELL なので9マスで足りる）
+function onIce(x,y){
+  if(!iceOn()) return false;
+  var ix=Math.floor(x/ICE_CELL), iy=Math.floor(y/ICE_CELL);
+  for(var j=-1;j<=1;j++) for(var i=-1;i<=1;i++){
+    var c=iceCell(ix+i,iy+j); if(!c) continue;
+    var dx=x-c.x, dy=y-c.y;
+    if(dx*dx+dy*dy<c.r*c.r) return true;
+  }
+  return false;
+}          // 散らし物1つあたりのマス（px）
 function drawGround(cx,cy){
   // 視野ズームで広がった可視範囲まで描く
   var ex=(W/VZOOM-W)/2, ey=(H/VZOOM-H)/2, Lx=cx-ex, Rx=cx+W+ex, Ty=cy-ey, By=cy+H+ey;
@@ -7463,6 +7498,38 @@ function drawGround(cx,cy){
     }
     ctx.globalAlpha=1;
     ctx.imageSmoothingEnabled=true;
+  }
+  // 氷結床：地面の上に重ねる（当たり判定は onIce と同じハッシュなので見た目と完全に一致する）
+  if(iceOn()){
+    // 画面外のマスの円がはみ出して見えることがあるので、上下左右1マスぶん広く回す
+    var IC=ICE_CELL, jx0=Math.floor(Lx/IC)-1, jx1=Math.floor(Rx/IC)+1, jy0=Math.floor(Ty/IC)-1, jy1=Math.floor(By/IC)+1;
+    for(var jy=jy0;jy<=jy1;jy++){
+      for(var jx=jx0;jx<=jx1;jx++){
+        var ic=iceCell(jx,jy); if(!ic) continue;
+        // 輪郭は真円ではなく、ハッシュで揺らした多角形にする（球ではなく「割れた氷の板」に見せる）
+        ctx.beginPath();
+        for(var vi=0;vi<11;vi++){
+          var va=vi/11*6.2832, vr=ic.r*(.92+((ic.h>>>(vi*2+1))%17)/100);
+          var vx=ic.x+Math.cos(va)*vr, vy=ic.y+Math.sin(va)*vr;
+          if(vi) ctx.lineTo(vx,vy); else ctx.moveTo(vx,vy);
+        }
+        ctx.closePath();
+        var gr=ctx.createLinearGradient(ic.x,ic.y-ic.r,ic.x,ic.y+ic.r);   // 平らに見せるため縦の線形グラデ
+        gr.addColorStop(0,'rgba(216,242,255,.30)');
+        gr.addColorStop(.55,'rgba(150,212,242,.22)');
+        gr.addColorStop(1,'rgba(112,186,228,.16)');
+        ctx.fillStyle=gr; ctx.fill();
+        ctx.strokeStyle='rgba(222,247,255,.5)'; ctx.lineWidth=2; ctx.stroke();
+        // ひび：中心から放射状に3本（角度もハッシュ由来なので毎フレーム同じ）
+        ctx.strokeStyle='rgba(240,252,255,.34)'; ctx.lineWidth=1;
+        ctx.beginPath();
+        for(var ck=0;ck<3;ck++){
+          var an=((ic.h>>>(3+ck*5))%360)*Math.PI/180, ln=ic.r*(.42+((ic.h>>>(7+ck*4))%34)/100);
+          ctx.moveTo(ic.x,ic.y); ctx.lineTo(ic.x+Math.cos(an)*ln,ic.y+Math.sin(an)*ln);
+        }
+        ctx.stroke();
+      }
+    }
   }
 }
 /* ===== ドット絵スプライト（立ち絵は assets/ フォルダから読み込み） ===== */
@@ -12232,6 +12299,9 @@ weaponUnlockCheck();    // 実績を既に満たしている武器を解放
 syncTitle();
 showView('home');
 fbInit();
+// 開発モード限定：自動テスト（Playwright等）から内部状態を覗くための窓口。?dev=1 のときだけ生える。
+try{ if(DEV) window.DBG=function(){ return { x:P.x, y:P.y, vx:P.vx, vy:P.vy, hp:P.hp, lv:P.lv,
+  ice:onIce(P.x,P.y), t:time, stage:curStage, enemies:enemies.length, boss:boss?boss.nm:null }; }; }catch(e){}
 })();
 </script>
 </body>
