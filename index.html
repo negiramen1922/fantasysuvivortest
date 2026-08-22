@@ -3033,7 +3033,7 @@ function figInfo(id){
   if(BOSS[id]){ var B=BOSS[id], tt=ETYPE[B.key]||{}; return {nm:B.nm,shape:tt.shape,col:tt.col,dark:tt.dark,desc:BDEX[id]||'',boss:true}; }
   var t=ETYPE[id]||{}; return {nm:t.nm,shape:t.shape,col:t.col,dark:t.dark,desc:DEX[id]||'',boss:false};
 }
-var VERSION='α1.0.293'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
+var VERSION='α1.0.294'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
 function applySave(o){
   for(var i=0;i<UPG.length;i++) META[UPG[i].id]=0;
   try{
@@ -3752,6 +3752,7 @@ function drawLaser(L){
 // インフェルノビーム：最寄りの敵へ照射し続け、同じ敵に当て続けるほど火力が上がる（ramp）。数軸で追加ビーム。
 // オーバーヒート式：撃つほど熱がたまり、満タンで強制冷却（ビーム停止）。持続軸で熱容量アップ＋冷却速度アップ。
 var INF={tgt:0, ramp:0, tick:0, on:false, ex:0, ey:0, extra:[], heat:0, over:false};
+function _infByDist(a,b){ return a.d-b.d; }   // インフェルノの候補ソート用（毎フレームの関数生成を避けるため外出し）
 var RAIL={ph:'charge', t:0, ax:1, ay:0, tick:0, fireLen:0, grow:0, pph:''};
 function infernoTick(dt){
   var rng=RNG('inferno'), extra=Math.round(CNT('inferno'));       // 数軸：追加ビーム本数
@@ -3776,7 +3777,7 @@ function infernoTick(dt){
   var cand=[];                                                    // 候補（追加ビーム用・新規ロック用）
   for(var j=0;j<enemies.length;j++){ var e2=enemies[j]; if(e2.dead) continue;
     var dx2=e2.x-P.x, dy2=e2.y-P.y, dd2=dx2*dx2+dy2*dy2; if(dd2<rng*rng) cand.push({e:e2,d:dd2}); }
-  cand.sort(function(a,b){ return a.d-b.d; });
+  cand.sort(_infByDist);
   if(!e){                                                         // ロック対象が倒れた/射程外→最寄りを新規ロック
     if(!cand.length){ INF.on=false; INF.extra=[]; INF.heat=Math.max(0,INF.heat-dt*coolRate); INF.ramp=Math.max(0,INF.ramp-(keep?dt*0.6:dt*2.5)); if(INF.ramp<=0) INF.tgt=0; return; }
     e=cand[0].e; INF.tgt=e.uid; INF.ramp=keep?INF.ramp:0;         // 新ロックで火力リセット（維持特性は引き継ぎ）
@@ -6620,11 +6621,12 @@ function moveShots(dt){
       s.wig=(s.wig||0)+dt*18;
       s.ang=Math.atan2(s.vy,s.vx);
     }
-    parts.push({x:s.x,y:s.y,vx:0,vy:0,t:0,life:.22,col:s.col,s:3});
+    if((s.tt=(s.tt||0)+dt)>=0.03){ s.tt=0; parts.push({x:s.x,y:s.y,vx:0,vy:0,t:0,life:.22,col:s.col,s:3}); }   // 軌跡パーティクルを間引き（毎フレーム→約0.03秒毎・GC負荷を軽減）
     for(var j=enemies.length-1;j>=0;j--){
       var e=enemies[j];
       if(s.hit.indexOf(e)>=0) continue;
-      if(Math.hypot(e.x-s.x,e.y-s.y)<e.r+s.r){
+      var sdx=e.x-s.x, sdy=e.y-s.y, srr=e.r+s.r;                 // 平方距離で判定（sqrt省略）
+      if(sdx*sdx+sdy*sdy<srr*srr){
         var d=Math.hypot(s.vx,s.vy)||1;
         SRC=s.src;
         hurt(e,s.dmg,s.vx/d,s.vy/d,s.el);
@@ -10884,6 +10886,9 @@ Array.prototype.forEach.call(document.querySelectorAll('#setview button'),functi
 // 更新履歴：1つのお知らせ内で「バージョン見出し」ごとに変更点を並べる（新しい順）。
 // マージのたびに先頭へ新バージョンを追加し、VERSION も更新する。
 var UPDATES=[
+  {v:'α1.0.294', items:[
+    '軽量化を継続。弾の当たり判定を軽い計算に置き換え、弾の軌跡パーティクルの生成を間引き、インフェルノの内部処理のムダな生成を削減しました（見た目・挙動は変わりません）。',
+  ]},
   {v:'α1.0.293', items:[
     'インフェルノビームの動作を軽くしました。敵が少ない（遠い敵を狙う）ときにビームが長く伸びて描画が重くなり、カクつくことがある問題への対策です。ビームの描画量を上限つきにし、内部の描画処理も効率化しました（見た目・威力は変わりません）。',
   ]},
