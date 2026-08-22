@@ -12,7 +12,9 @@ NM={'lich':'リッチ','necro':'ネクロマンサー','dullahan':'デュラハ�
     'shark':'サメ','manta':'マンタ','hermit':'ヤドカリ','clam':'カイ','flyingfish':'トビウオ','umibozu':'海坊主',
     'icewolf':'氷狼','yeti':'雪男','icegolem':'アイスゴーレム','icicle':'氷柱','snowworm':'スノーワーム',
     'wisp':'フロストウィスプ','snowman':'雪だるま','snowmanS':'小雪だるま','icearcher':'氷の弓兵',
-    'walrus':'セイウチ','flurry':'吹雪の精','wolf':'ウルフ(既存)','ogre':'オーガ(既存)'}
+    'walrus':'セイウチ','flurry':'吹雪の精','wolf':'ウルフ(既存)','ogre':'オーガ(既存)',
+    'shirogane':'シロガネ','frostdrake':'フロストドレイク','snowqueen':'雪の女王','glacier':'グラキエス',
+    'whale':'ホエール(既存ボス)','leviathan':'リヴァイアサン(既存ボス)','skeledragon':'スケルトンドラゴン(既存ボス)'}
 def sheet(out, ids, refs, tile='assets/bg_s3.png', title='敵の立ち絵'):
     Z=5; cell=64*Z+22
     cols=max(len(ids),len(refs)); W=cell*cols+24

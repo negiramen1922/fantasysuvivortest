@@ -1554,6 +1554,10 @@ var ETYPE={
   // エルダートレントが生やす回復の木（ウェーブには出ない・図鑑なし）
   healtree: { nm:'いのちの木',           res:0.30, hp:100, spd:0,   r:20, col:'#6e8a4a', dark:'#33421f', xp:0, dmg:0,  shape:'treant',   pts:120, sv:0, ai:'healtree' },
   // ボス専用の見た目（ウェーブには出ない）
+  shirogane:{ nm:'シロガネ', res:0.9, hp:100, spd:60, r:20, col:'#e8f0f8', dark:'#6a7686', xp:1, dmg:10, shape:'shirogane', pts:10, sv:0 },
+  frostdrake:{ nm:'氷竜',   res:0.9, hp:100, spd:60, r:20, col:'#8fd8f4', dark:'#2f5a76', xp:1, dmg:10, shape:'frostdrake', pts:10, sv:0 },
+  snowqueen:{ nm:'雪の女王', res:0.9, hp:100, spd:60, r:20, col:'#cfe8ff', dark:'#4a5f86', xp:1, dmg:10, shape:'snowqueen', pts:10, sv:0 },
+  glacier:{ nm:'氷河の巨人', res:0.9, hp:100, spd:60, r:20, col:'#7fc4e8', dark:'#255070', xp:1, dmg:10, shape:'glacier', pts:10, sv:0 },
   deer:    { nm:'神鹿',   res:0.9, hp:100, spd:60, r:20, col:'#c8b48a', dark:'#5a4a2c', xp:1, dmg:10, shape:'deer',   pts:10, sv:0 },
   moth:    { nm:'蛾',     res:0.9, hp:100, spd:44, r:20, col:'#8a6ab0', dark:'#3a2a50', xp:1, dmg:10, shape:'moth',   pts:10, sv:0 },
   arachne: { nm:'蜘蛛女王', res:0.9, hp:100, spd:58, r:20, col:'#7a3a7a', dark:'#2a1030', xp:1, dmg:10, shape:'spider', pts:10, sv:0 },
@@ -1654,7 +1658,8 @@ var MTAG={
   whale:['ビースト'], kraken:['ビースト'], tornadoshark:['ビースト'], leviathan:['竜','ビースト'],
   icewolf:['ビースト'], yeti:['巨人'], walrus:['ビースト'], snowworm:['ビースト'],
   icegolem:['ゴーレム'], icicle:['ゴーレム'], snowman:['ゴーレム'], snowmanS:['ゴーレム'],
-  wisp:['精霊','飛行'], flurry:['精霊','飛行'], icearcher:['亜人']
+  wisp:['精霊','飛行'], flurry:['精霊','飛行'], icearcher:['亜人'],
+  shirogane:['ビースト'], frostdrake:['竜'], snowqueen:['精霊'], glacier:['巨人','ゴーレム']
 };
 
 // ステージ1のボス。5分ごとに1体、30分のフェンリルがラストボス。
@@ -1693,7 +1698,16 @@ var BOSS={
   tornadoshark:{ nm:'トルネードシャーク', res:0.95, key:'tornadoshark', hp:300000, r:52, spd:120, dmg:50, xp:2100, pts:52000,
                ai:'tornshark', acd:3.0, chspd:640, chdur:1.0, wind:0.7, nbul:20, bspd:220, bdmg:17 },
   leviathan:  { nm:'リヴァイアサン',   res:0.96, key:'leviathan', hp:820000, r:58, spd:64, dmg:56, xp:3400, pts:90000,
-               ai:'leviathan', acd:2.6, nbul:24, bspd:210, bdmg:18, last:1 }
+               ai:'leviathan', acd:2.6, nbul:24, bspd:210, bdmg:18, last:1 },
+  // ===== ステージ5（氷河）ボス =====
+  shirogane:  { nm:'シロガネ',         res:0.94, key:'shirogane', hp:85000,  r:48, spd:72, dmg:44, xp:1600, pts:24000,
+               ai:'shirogane', acd:2.4, range:560, chspd:620, chdur:1.0, wind:0.6, eres:{ice:0.5} },
+  frostdrake: { nm:'フロストドレイク', res:0.95, key:'frostdrake', hp:220000, r:52, spd:56, dmg:46, xp:1900, pts:38000,
+               ai:'frostbreath', acd:2.6, nbul:9, bspd:230, bdmg:20, eres:{ice:0.5} },
+  snowqueen:  { nm:'雪の女王',         res:0.95, key:'snowqueen', hp:360000, r:50, spd:50, dmg:44, xp:2200, pts:46000,
+               ai:'snowqueen', acd:2.6, sum:'wisp', nsum:4, nbul:18, bspd:215, bdmg:18, eres:{ice:0.5} },
+  glacier:    { nm:'グラキエス',       res:0.96, key:'glacier',   hp:950000, r:58, spd:46, dmg:58, xp:3600, pts:95000,
+               ai:'glacier', acd:2.6, nbul:22, bspd:220, bdmg:20, last:1, eres:{ice:0.5} }
 };
 // 各要素 [出現時間s, ボスkey, 討伐スコア閾値]。時間 or スコアの早い方で出現（ぐだり防止）。スコア閾値はステージごとに調整。
 var BOSS_AT=[[300,'greatboar',16000],[600,'slimeking',90000],[900,'goblinking',220000],[1200,'fenrir',420000]];
@@ -1782,8 +1796,8 @@ var WAVE5=[
   { t:960,  mix:[['snowworm',0.16],['walrus',0.34],['yeti',0.54],['icegolem',0.74],['icewolf',1.00]] },
   { t:1110, mix:[['walrus',0.20],['yeti',0.42],['icegolem',0.64],['icearcher',0.82],['snowworm',1.00]] }
 ];
-// ステージ5ボス：シロガネ→フロストドレイク→雪の女王→グラキエス。※実装までは既存ボスを仮流用。
-var BOSS_AT5=[[300,'whale',24000],[600,'kraken',160000],[900,'tornadoshark',360000],[1200,'leviathan',600000]];
+// ステージ5ボス：シロガネ→フロストドレイク→雪の女王→グラキエス。
+var BOSS_AT5=[[300,'shirogane',24000],[600,'frostdrake',160000],[900,'snowqueen',360000],[1200,'glacier',600000]];
 
 // ステージ定義。req をクリア済みで次ステージが解放される。
 var STAGES={
@@ -3097,13 +3111,18 @@ var BDEX={
   skeletonking:'骨の王。全方位の骨弾を撒き、配下を召喚し、剣を担いで突進する。',
   hecaton:'百手の巨人。無数の拳を落とし、着弾点から弾幕を撒く。',
   skeledragon:'王墓の主たる竜の亡骸。滞空突進と弾幕、そして極太のブレスを放つ。',
+  shirogane:'氷河を統べる白銀の熊。氷を撒き散らしながら突進し、通った跡を凍らせる。',
+  frostdrake:'氷の竜。溜めから扇状のブレスを吐き、当たった者の足を凍らせる。',
+  snowqueen:'氷河に君臨する女王。冷気の結界で歩みを鈍らせ、精を呼び、傷つくほど床を凍らせる。',
+  glacier:'氷河そのものが起き上がった巨人。叩きつけで床を凍らせ、氷柱を呼び、追い詰められると雪崩を放つ。',
   whale:'大海原の巨鯨。跳ねて波紋のような円形弾幕を撒き、青い潮吹きビームを薙ぎ放つ。',
   kraken:'深海の大烏賊。予告線から触手を突き出し、扇状の弾幕を連射、墨で視界を奪う。',
   tornadoshark:'嵐を纏う鮫。突進と円弾幕、空から降る鮫、四方の竜巻が渦巻く弾幕を放つ。',
   leviathan:'大海原の主たる古の大蛇。鱗の渦と十字・斜十字の極太ビーム、瀕死では左右の渦と眷属の丸を従え、サメのミサイルと大円弾幕で総攻撃を仕掛ける。'
 };
 var BOSSDEX=['greatboar','slimeking','goblinking','fenrir','kervi','gmoth','arachnid','eldertreant',
-  'gravekeeper','skeletonking','hecaton','skeledragon','whale','kraken','tornadoshark','leviathan'];
+  'gravekeeper','skeletonking','hecaton','skeledragon','whale','kraken','tornadoshark','leviathan',
+  'shirogane','frostdrake','snowqueen','glacier'];
 // 図鑑エントリの見た目・名前・説明を種別問わず返す
 function figInfo(id){
   if(BOSS[id]){ var B=BOSS[id], tt=ETYPE[B.key]||{}; return {nm:B.nm,shape:tt.shape,col:tt.col,dark:tt.dark,desc:BDEX[id]||'',boss:true}; }
@@ -3298,6 +3317,7 @@ function reset(){
   enemies=[]; gems=[]; shots=[]; fx=[]; dmgs=[]; parts=[]; bolts=[]; chests=[]; coins=[]; chaks=[]; scys=[]; bombs=[]; rocks=[]; holes=[]; ebul=[]; quakes=[]; dhits=[]; vacs=[]; vacT=40; bells=[]; swords=[]; zones=[]; volley=[]; puddles=[]; sheep=[]; trails=[]; meteors=[]; twisters=[]; harps=[]; briars=[]; explosions=[]; relics=placeRelics();
   boss=null; bossN=0; lasers=[];
   avalanches=[]; avaT=10; avaWarn=0;   // 解禁時刻(7:00)を過ぎてから10秒で1本目
+  icePatches=[];
   blizOn=0; blizWarn=0; blizT=(STAGES[curStage]&&STAGES[curStage].blizAt)||0;
   time=0; kills=0; spawnT=0; eliteT=55; swarmT=3; swarmWarnT=0; umiT=8; umiWarnT=0; inkT=0; shake=0; hitStop=0; flash=0; chain=0; chainT=0;
   gat.t=0; gat.mag=-1; gat.rl=0;
@@ -3395,7 +3415,7 @@ function cdr(){ return Math.pow(0.92,(P.p.haste||0))*(1-0.04*M('haste'))*(1-GROW
 function mag(){ return 96*(1+0.40*(P.p.magnet||0)+0.10*M('magnet')); }
 // 移動速度。冷気（chill）を受けている間は 28% 遅くなる（フロストウィスプの接触・氷の弓兵の矢）
 function CHILL_MUL(){ return (P.chill>0)?0.72:1; }
-function spd(){ return P.spd*(1+0.10*(P.p.swift||0)+0.05*M('speed'))*CHILL_MUL(); }
+function spd(){ return P.spd*(1+0.10*(P.p.swift||0)+0.05*M('speed'))*CHILL_MUL()*(P.qslow?0.82:1); }
 // 元素の付与率：武器レベル・元素親和（ラン内＋永続）で伸びる
 function elemChance(el){
   var lv=(SRC&&P.w[SRC])||1;
@@ -3512,6 +3532,7 @@ function update(dt){
   spawn(dt);
   swarmTick(dt);
   umibozuTick(dt);
+  moveIcePatches(dt);
   blizzardTick(dt);
   blizzardWind(dt);
   avalancheTick(dt);
@@ -5650,6 +5671,7 @@ function eplace(x,y,dmg,hold,vx,vy,r,bk){
   ebul.push({x:x,y:y,vx:0,vy:0,r:r||6,dmg:dmg,life:hold+2.8,t:0,hold:hold,mvx:vx,mvy:vy,bk:bk});
 }
 function moveEnemies(dt){
+  P.qslow=0;                     // 雪の女王のオーラ（生きている間だけ毎フレーム立て直す）
   var DESP=Math.max(1300,Math.hypot(W,H)*1.2/VZOOM);   // これ以上離れた雑魚は消滅（視野が広いほど遠くまで保持）
   for(var i=enemies.length-1;i>=0;i--){
     var e=enemies[i];
@@ -6386,6 +6408,133 @@ function moveEnemies(dt){
         sfx(220,.12,'sawtooth',.05,.5);
       }
     }
+    else if(e.ai==='shirogane'){
+      // シロガネ：溜め→突進。通った跡を凍らせる（このステージの主題を最初のボスで教える）
+      if(e.st==='wind'){
+        e.stT-=dt; moved=1;
+        if(e.stT<=0){ e.st='dash'; e.stT=e.chdur;
+          e.vx=dx/d*e.chspd; e.vy=dy/d*e.chspd;
+          e.iceT=0; sfx(140,.18,'sawtooth',.06,.5); noise(.25,.06); }
+      }else if(e.st==='dash'){
+        e.stT-=dt; moved=1;
+        e.x+=e.vx*dt; e.y+=e.vy*dt;
+        e.iceT=(e.iceT||0)-dt;
+        if(e.iceT<=0){ e.iceT=0.22; addIce(e.x,e.y,60+Math.random()*20,14); }   // 跡に氷を敷く
+        for(var sg=0;sg<2;sg++) parts.push({x:e.x,y:e.y+e.r*0.4,vx:(Math.random()-.5)*140,
+          vy:-Math.random()*80,t:0,life:.35,col:'#e8f4ff',s:3});
+        if(e.stT<=0){ e.st=''; e.at=e.acd;
+          fx.push({k:'ring',x:e.x,y:e.y,r:0,to:150,t:0,life:.35,col:'#cfe8ff'});
+          shake=Math.min(16,shake+5); sfx(100,.2,'square',.07,.45); }
+      }else if(e.at<=0&&d<e.range){ e.st='wind'; e.stT=e.wind; moved=1; sfx(210,.12,'sine',.05,.6); }
+    }
+    else if(e.ai==='frostbreath'){
+      // フロストドレイク：溜め1.2秒 → 扇状のブレス0.8秒（命中で冷気）→ 2秒の硬直（反撃の窓）
+      if(e.st==='bwind'){
+        e.stT-=dt; moved=1;
+        e.beamA=Math.atan2(P.y-e.y,P.x-e.x);                 // 溜め中は狙いを追い続ける
+        if(e.stT<=0){ e.st='breath'; e.stT=0.8; e.bfT=0;
+          shake=Math.min(20,shake+8); sfx(70,.6,'sawtooth',.09,.4); noise(.5,.1); }
+      }else if(e.st==='breath'){
+        e.stT-=dt; moved=1;
+        // 判定：中心角±25度・射程420
+        var brel=Math.atan2(P.y-e.y,P.x-e.x)-e.beamA; brel=Math.atan2(Math.sin(brel),Math.cos(brel));
+        if(!P.god&&P.hurt<=0&&P.inv<=0&&d<420+e.r&&Math.abs(brel)<0.436){
+          phurt(e.dmg*armorMul()*dexTakeMul(figKey(e)));
+          P.hurt=0.55; P.chill=Math.max(P.chill||0,2.5); shake=Math.min(18,shake+5);
+          if(P.hp<=0){ P.hp=0; setKiller(e); die(); return; }
+        }
+        e.bfT=(e.bfT||0)-dt;
+        if(e.bfT<=0){ e.bfT=0.12;                            // ブレスの粒
+          for(var fb2=0;fb2<3;fb2++){
+            var fa2=e.beamA+(Math.random()-.5)*0.8, fr2=e.r+Math.random()*400;
+            parts.push({x:e.x+Math.cos(fa2)*fr2,y:e.y+Math.sin(fa2)*fr2,
+              vx:Math.cos(fa2)*180,vy:Math.sin(fa2)*180,t:0,life:.35,col:'#dff4ff',s:3});
+          }
+        }
+        if(e.stT<=0){ e.st='brec'; e.stT=2.0; }
+      }else if(e.st==='brec'){
+        e.stT-=dt; moved=1;                                  // 硬直：動かないので殴りに行ける
+        if(e.stT<=0){ e.st=''; e.at=e.acd;
+          for(var fq=0;fq<e.nbul;fq++) eshoot(e,fq/e.nbul*6.283+Math.random()*0.2,e.bspd,e.bdmg,7);
+          sfx(240,.1,'square',.045,1.2); }
+      }else if(e.at<=0&&d<820){ e.st='bwind'; e.stT=1.2; e.beamA=Math.atan2(dy,dx); moved=1; sfx(300,.14,'sine',.05,.7); }
+    }
+    else if(e.ai==='snowqueen'){
+      // 雪の女王：常時オーラで移動速度ダウン／12秒ごとに精を召喚／HP半分以下で周囲を凍らせる
+      P.qslow=1;
+      e.sumT=(e.sumT||0)-dt;
+      if(e.sumT<=0&&e.st===''){ e.sumT=12; e.st='qsum'; e.stT=0.9; moved=1; sfx(300,.16,'sine',.05,.8); }
+      if(e.st==='qsum'){
+        e.stT-=dt; moved=1;
+        if(e.stT<=0){ e.st=''; e.at=Math.min(e.at,0.6);
+          for(var qs=0;qs<e.nsum;qs++){
+            var qa=qs/e.nsum*6.283+Math.random(), o=makeEnemy(e.sum);
+            o.x=e.x+Math.cos(qa)*(e.r+52); o.y=e.y+Math.sin(qa)*(e.r+52);
+          }
+          fx.push({k:'ring',x:e.x,y:e.y,r:0,to:e.r+90,t:0,life:.4,col:'#bfe8ff'});
+          sfx(420,.16,'triangle',.05,1.2);
+        }
+      }
+      else if(e.st==='qfrost'){
+        e.stT-=dt; moved=1;
+        if(e.stT<=0){ e.st=''; e.at=e.acd;
+          for(var qf=0;qf<3;qf++){
+            var qfa=qf/3*6.283+Math.random();
+            addIce(e.x+Math.cos(qfa)*190,e.y+Math.sin(qfa)*190,96+Math.random()*24,26);
+          }
+          fx.push({k:'ring',x:e.x,y:e.y,r:0,to:300,t:0,life:.5,col:'#9fe0ff'});
+          shake=Math.min(14,shake+4); sfx(160,.3,'sine',.06,.5);
+        }
+      }
+      else if(e.at<=0&&d<900){
+        // 半分を切ったら床を凍らせる行動を混ぜる
+        if(e.hp<e.mhp*0.5&&Math.random()<0.5){ e.st='qfrost'; e.stT=0.9; }
+        else { e.st='qshot'; e.stT=0.6; }
+        moved=1;
+      }
+      else if(e.st==='qshot'){
+        e.stT-=dt; moved=1;
+        if(e.stT<=0){ e.st=''; e.at=e.acd;
+          for(var qb=0;qb<e.nbul;qb++) eshoot(e,qb/e.nbul*6.283+Math.random()*0.2,e.bspd,e.bdmg,7);
+          sfx(300,.1,'triangle',.045,1.1); }
+      }
+    }
+    else if(e.ai==='glacier'){
+      // グラキエス：叩きつけ（着弾点が氷になる）→ 氷柱を4本呼ぶ → 繰り返し。HP30%以下で雪崩を連発
+      if(e.hp<e.mhp*0.3){
+        e.avaT=(e.avaT||0)-dt;
+        if(e.avaT<=0){ e.avaT=9; spawnAvalanche(Math.random()*6.283); banner('雪崩が来る'); }
+      }
+      if(e.st==='gslamw'){
+        e.stT-=dt; moved=1;
+        if(e.stT<=0){ e.st=''; e.at=e.acd; e.gc=(e.gc||0)+1;
+          var gsx=e.slamX, gsy=e.slamY;
+          fx.push({k:'ring',x:gsx,y:gsy,r:0,to:220,t:0,life:.4,col:'#cfe8ff'});
+          addIce(gsx,gsy,110,24);                        // 着弾点が氷結床になる
+          if(!P.god&&P.hurt<=0&&P.inv<=0&&Math.hypot(P.x-gsx,P.y-gsy)<220+P.r){
+            phurt(e.dmg*armorMul()*dexTakeMul(figKey(e))); P.hurt=0.55;
+            P.kx=(P.x-gsx)/(Math.hypot(P.x-gsx,P.y-gsy)||1)*420;
+            P.ky=(P.y-gsy)/(Math.hypot(P.x-gsx,P.y-gsy)||1)*420;
+            if(P.hp<=0){ P.hp=0; setKiller(e); die(); return; }
+          }
+          for(var gb=0;gb<e.nbul;gb++) eshoot(e,gb/e.nbul*6.283+Math.random()*0.2,e.bspd,e.bdmg,8);
+          shake=Math.min(24,shake+12); sfx(70,.35,'square',.11,.35); noise(.35,.12);
+          if(e.gc%2===0){ e.st='gicew'; e.stT=0.8; }
+        }
+      }
+      else if(e.st==='gicew'){
+        e.stT-=dt; moved=1;
+        if(e.stT<=0){ e.st=''; e.at=e.acd;
+          for(var gi=0;gi<4;gi++){
+            var ga=gi/4*6.283+Math.random()*0.5, o2=makeEnemy('icicle');
+            o2.x=P.x+Math.cos(ga)*240; o2.y=P.y+Math.sin(ga)*240;
+          }
+          fx.push({k:'ring',x:P.x,y:P.y,r:0,to:250,t:0,life:.4,col:'#bfe8ff'});
+          sfx(360,.16,'triangle',.05,1.1);
+        }
+      }
+      else if(e.at<=0&&d<900){ e.st='gslamw'; e.stT=1.0; e.slamX=P.x; e.slamY=P.y; moved=1; sfx(150,.2,'sine',.05,.5); }
+    }
     else if(e.ai==='burrow'){
       // グール：地面から出現。予告(ぼこぼこ)中は動かず・無害、時間経過で出現して以後は追尾。
       if(e.st==='burrow'){ e.stT-=dt; moved=1;
@@ -6799,6 +6948,16 @@ function drawAvalanche(q){
 }
 // ブリザードの画面フィルタ（カメラの外＝スクリーン座標で描く）
 var blizFlakes=null;
+// 雪の女王のオーラ：画面全体がうっすら青い＝移動速度が落ちている合図
+function drawQueenAura(){
+  if(!P.qslow) return;
+  ctx.save();
+  var g=ctx.createRadialGradient(W/2,H/2,Math.min(W,H)*0.30,W/2,H/2,Math.max(W,H)*0.60);
+  g.addColorStop(0,'rgba(120,200,255,0)');
+  g.addColorStop(1,'rgba(120,200,255,.26)');
+  ctx.fillStyle=g; ctx.fillRect(0,0,W,H);
+  ctx.restore();
+}
 function drawBlizzard(){
   if(blizOn<=0) return;
   var stg=STAGES[curStage], dur=(stg&&stg.blizDur)||30;
@@ -7624,6 +7783,7 @@ function render(){
 
   if(flash>0){ ctx.fillStyle='rgba(255,255,255,'+Math.min(.75,flash*.7)+')'; ctx.fillRect(0,0,W,H); }
   if(P&&P.hurt>0.3){ ctx.fillStyle='rgba(255,40,80,'+(P.hurt-0.3)*0.5+')'; ctx.fillRect(0,0,W,H); }
+  drawQueenAura();
   drawBlizzard();
   drawInk();
   drawRelicMarkers();
@@ -7688,7 +7848,21 @@ function iceCell(ix,iy){
   return { x:cx, y:cy, r:r, h:h };
 }
 // はみ出しを許すので、隣接9マスまで見る（半径の上限120 < ICE_CELL なので9マスで足りる）
+// ボスが作る氷結床（座標ハッシュとは別に、その場に生える。寿命で消える）
+var icePatches=[];
+function addIce(x,y,r,life){
+  icePatches.push({ x:x, y:y, r:r, life:(life||20), t:0, h:ghash(Math.round(x),Math.round(y)) });
+  if(icePatches.length>24) icePatches.shift();   // 盤面が氷だらけにならないよう枚数を絞る
+}
+function moveIcePatches(dt){
+  for(var i=icePatches.length-1;i>=0;i--){ icePatches[i].t+=dt; icePatches[i].life-=dt;
+    if(icePatches[i].life<=0) icePatches.splice(i,1); }
+}
 function onIce(x,y){
+  for(var q=0;q<icePatches.length;q++){
+    var ip=icePatches[q], qx=x-ip.x, qy=y-ip.y;
+    if(qx*qx+qy*qy<ip.r*ip.r) return true;
+  }
   if(!iceOn()) return false;
   var ix=Math.floor(x/ICE_CELL), iy=Math.floor(y/ICE_CELL);
   for(var j=-1;j<=1;j++) for(var i=-1;i<=1;i++){
@@ -7698,6 +7872,33 @@ function onIce(x,y){
   }
   return false;
 }          // 散らし物1つあたりのマス（px）
+// 氷の板1枚を描く（座標ハッシュの氷とボスが作った氷で共通）
+function drawIceSheet(q,alpha){
+  ctx.globalAlpha=alpha==null?1:alpha;
+  // 輪郭は真円ではなく、ハッシュで揺らした多角形にする（球ではなく「割れた氷の板」に見せる）
+  ctx.beginPath();
+  for(var vi=0;vi<11;vi++){
+    var va=vi/11*6.2832, vr=q.r*(.92+((q.h>>>(vi*2+1))%17)/100);
+    var vx=q.x+Math.cos(va)*vr, vy=q.y+Math.sin(va)*vr;
+    if(vi) ctx.lineTo(vx,vy); else ctx.moveTo(vx,vy);
+  }
+  ctx.closePath();
+  var gr=ctx.createLinearGradient(q.x,q.y-q.r,q.x,q.y+q.r);   // 平らに見せるため縦の線形グラデ
+  gr.addColorStop(0,'rgba(146,226,255,.28)');
+  gr.addColorStop(.55,'rgba(104,196,246,.22)');
+  gr.addColorStop(1,'rgba(70,160,224,.18)');
+  ctx.fillStyle=gr; ctx.fill();
+  ctx.strokeStyle='rgba(196,242,255,.6)'; ctx.lineWidth=2; ctx.stroke();
+  // ひび：中心から放射状に3本（角度もハッシュ由来なので毎フレーム同じ）
+  ctx.strokeStyle='rgba(240,252,255,.34)'; ctx.lineWidth=1;
+  ctx.beginPath();
+  for(var ck=0;ck<3;ck++){
+    var an=((q.h>>>(3+ck*5))%360)*Math.PI/180, ln=q.r*(.42+((q.h>>>(7+ck*4))%34)/100);
+    ctx.moveTo(q.x,q.y); ctx.lineTo(q.x+Math.cos(an)*ln,q.y+Math.sin(an)*ln);
+  }
+  ctx.stroke();
+  ctx.globalAlpha=1;
+}
 function drawGround(cx,cy){
   // 視野ズームで広がった可視範囲まで描く
   var ex=(W/VZOOM-W)/2, ey=(H/VZOOM-H)/2, Lx=cx-ex, Rx=cx+W+ex, Ty=cy-ey, By=cy+H+ey;
@@ -7745,30 +7946,14 @@ function drawGround(cx,cy){
     for(var jy=jy0;jy<=jy1;jy++){
       for(var jx=jx0;jx<=jx1;jx++){
         var ic=iceCell(jx,jy); if(!ic) continue;
-        // 輪郭は真円ではなく、ハッシュで揺らした多角形にする（球ではなく「割れた氷の板」に見せる）
-        ctx.beginPath();
-        for(var vi=0;vi<11;vi++){
-          var va=vi/11*6.2832, vr=ic.r*(.92+((ic.h>>>(vi*2+1))%17)/100);
-          var vx=ic.x+Math.cos(va)*vr, vy=ic.y+Math.sin(va)*vr;
-          if(vi) ctx.lineTo(vx,vy); else ctx.moveTo(vx,vy);
-        }
-        ctx.closePath();
-        var gr=ctx.createLinearGradient(ic.x,ic.y-ic.r,ic.x,ic.y+ic.r);   // 平らに見せるため縦の線形グラデ
-        gr.addColorStop(0,'rgba(146,226,255,.28)');
-        gr.addColorStop(.55,'rgba(104,196,246,.22)');
-        gr.addColorStop(1,'rgba(70,160,224,.18)');
-        ctx.fillStyle=gr; ctx.fill();
-        ctx.strokeStyle='rgba(196,242,255,.6)'; ctx.lineWidth=2; ctx.stroke();
-        // ひび：中心から放射状に3本（角度もハッシュ由来なので毎フレーム同じ）
-        ctx.strokeStyle='rgba(240,252,255,.34)'; ctx.lineWidth=1;
-        ctx.beginPath();
-        for(var ck=0;ck<3;ck++){
-          var an=((ic.h>>>(3+ck*5))%360)*Math.PI/180, ln=ic.r*(.42+((ic.h>>>(7+ck*4))%34)/100);
-          ctx.moveTo(ic.x,ic.y); ctx.lineTo(ic.x+Math.cos(an)*ln,ic.y+Math.sin(an)*ln);
-        }
-        ctx.stroke();
+        drawIceSheet(ic);
       }
     }
+  }
+  // ボスが作った氷（消える直前は薄くなる）
+  for(var q2=0;q2<icePatches.length;q2++){
+    var ip2=icePatches[q2];
+    drawIceSheet(ip2, Math.min(1,ip2.life/1.5)*Math.min(1,ip2.t/0.25));
   }
 }
 /* ===== ドット絵スプライト（立ち絵は assets/ フォルダから読み込み） ===== */
@@ -7884,7 +8069,11 @@ var SPRDATA={
   snowmanS:'assets/snowmanS.png',
   icearcher:'assets/icearcher.png',
   walrus:'assets/walrus.png',
-  flurry:'assets/flurry.png'
+  flurry:'assets/flurry.png',
+  shirogane:'assets/shirogane.png',
+  frostdrake:'assets/frostdrake.png',
+  snowqueen:'assets/snowqueen.png',
+  glacier:'assets/glacier.png'
 };
 // キャラID→立ち絵スプライト名（プレイヤー描画＆キャラリストのアイコン）
 var CHAR_SPR={ knight:'knight', hunter:'hunter', bomber:'bomber', mage:'mage', saint:'saint',
@@ -8051,7 +8240,8 @@ var SHAPE_SPR={blob:'blob',goblin:'goblin',orc:'orc',bat:'bat',spirit:'spirit',o
   whale:'whale',kraken:'kraken',tornadoshark:'tornadoshark',leviathan:'leviathan',umibozu:'umibozu',
   fly:'fly',gnat:'gnat',archer:'archer',sharkmissile:'sharkmissile',
   icewolf:'icewolf',yeti:'yeti',icegolem:'icegolem',icicle:'icicle',snowworm:'snowworm',
-  wisp:'wisp',snowman:'snowman',snowmanS:'snowmanS',icearcher:'icearcher',walrus:'walrus',flurry:'flurry'};
+  wisp:'wisp',snowman:'snowman',snowmanS:'snowmanS',icearcher:'icearcher',walrus:'walrus',flurry:'flurry',
+  shirogane:'shirogane',frostdrake:'frostdrake',snowqueen:'snowqueen',glacier:'glacier'};
 // 棍棒持ち（素体＋棍棒レイヤーで攻撃時に棍棒を振る）。値＝棍棒レイヤーの握り位置（フレーム比 0..1）
 var CLUBBER={goblin:[0.34,0.77], orc:[0.31,0.67], cyclops:[0.34,0.75], skeleton:[0.78,0.72]};
 function enemySpr(e){
@@ -8686,7 +8876,8 @@ var SPRSZ={blob:{s:3.0,oy:0.35}, goblin:{s:3.2,oy:0.55}, orc:{s:3.0,oy:0.50},
   fly:{s:4.4,oy:0.08}, gnat:{s:4.4,oy:0.08}, archer:{s:3.2,oy:0.44}, sharkmissile:{s:3.6,oy:0},
   icewolf:{s:3.3,oy:0.34}, yeti:{s:3.0,oy:0.44}, icegolem:{s:3.1,oy:0.44}, icicle:{s:3.2,oy:0.40},
   snowworm:{s:3.2,oy:0.38}, wisp:{s:3.4,oy:0.20}, snowman:{s:3.2,oy:0.38}, snowmanS:{s:3.6,oy:0.34},
-  icearcher:{s:3.2,oy:0.42}, walrus:{s:3.1,oy:0.30}, flurry:{s:4.2,oy:0.12}};
+  icearcher:{s:3.2,oy:0.42}, walrus:{s:3.1,oy:0.30}, flurry:{s:4.2,oy:0.12},
+  shirogane:{s:2.7,oy:0.30}, frostdrake:{s:2.7,oy:0.28}, snowqueen:{s:2.8,oy:0.40}, glacier:{s:2.6,oy:0.42}};
 // 毒の沼（ブーマー）：緑の沼＋泡。消える直前にフェード。
 function drawPuddle(q){
   var a=Math.min(1,q.life/1.2)*0.55;
@@ -8906,6 +9097,45 @@ function drawTele(e){
     ctx.save(); ctx.rotate(sa);
     ctx.globalAlpha=0.22+0.28*Math.sin(time*26); ctx.fillStyle='#ff6a4d';
     ctx.beginPath(); ctx.moveTo(0,0); ctx.arc(0,0,R+72,-0.95,0.95); ctx.closePath(); ctx.fill();
+    ctx.globalAlpha=1; ctx.restore();
+  }
+  // フロストドレイクのブレス：溜め(bwind)は赤い扇、噴射(breath)は白青の扇
+  if((e.st==='bwind'||e.st==='breath')&&e.beamA!=null){
+    ctx.save(); ctx.rotate(e.beamA);
+    if(e.st==='bwind'){
+      ctx.globalAlpha=0.20+0.24*Math.sin(time*24); ctx.fillStyle='#ff5a7a';
+      ctx.beginPath(); ctx.moveTo(0,0); ctx.arc(0,0,420+R,-0.436,0.436); ctx.closePath(); ctx.fill();
+    }else{
+      ctx.globalAlpha=0.85; ctx.fillStyle='#eafaff';
+      ctx.beginPath(); ctx.moveTo(0,0); ctx.arc(0,0,420+R,-0.436,0.436); ctx.closePath(); ctx.fill();
+      ctx.globalAlpha=0.55; ctx.fillStyle='#7fd8f8';
+      ctx.beginPath(); ctx.moveTo(0,0); ctx.arc(0,0,420+R,-0.30,0.30); ctx.closePath(); ctx.fill();
+    }
+    ctx.globalAlpha=1; ctx.restore();
+  }
+  // 雪の女王：召喚と床凍結の予告リング
+  if(e.st==='qsum'||e.st==='qfrost'||e.st==='qshot'){
+    ctx.strokeStyle=(e.st==='qfrost')?'#9fe0ff':'#bfe8ff';
+    ctx.globalAlpha=0.5+0.3*Math.sin(time*24); ctx.lineWidth=3;
+    ctx.beginPath(); ctx.arc(0,0,R+14+Math.sin(time*20)*5,0,6.3); ctx.stroke(); ctx.globalAlpha=1;
+  }
+  // グラキエス：叩きつけの着弾予告（プレイヤーの居た地点）と、氷柱を呼ぶ予告
+  if(e.st==='gslamw'&&e.slamX!=null){
+    ctx.save(); ctx.translate(e.slamX-e.x,e.slamY-e.y);
+    ctx.globalAlpha=0.14+0.14*Math.sin(time*22); ctx.fillStyle='#ff5a7a';
+    ctx.beginPath(); ctx.arc(0,0,220,0,6.3); ctx.fill();
+    ctx.globalAlpha=0.6+0.3*Math.sin(time*22); ctx.strokeStyle='#ff8aa0'; ctx.lineWidth=3;
+    ctx.beginPath(); ctx.arc(0,0,220,0,6.3); ctx.stroke();
+    ctx.globalAlpha=1; ctx.restore();
+  }
+  if(e.st==='gicew'){
+    ctx.save(); ctx.translate(P.x-e.x,P.y-e.y);
+    ctx.globalAlpha=0.4+0.3*Math.sin(time*24); ctx.strokeStyle='#bfe8ff'; ctx.lineWidth=3;
+    ctx.beginPath(); ctx.arc(0,0,240,0,6.3); ctx.stroke();
+    for(var gk=0;gk<4;gk++){
+      var gka=gk/4*6.283;
+      ctx.beginPath(); ctx.arc(Math.cos(gka)*240,Math.sin(gka)*240,16,0,6.3); ctx.stroke();
+    }
     ctx.globalAlpha=1; ctx.restore();
   }
   // アラクネイドの卵設置予告：設置地点に赤い警告リング
@@ -10506,7 +10736,7 @@ function renderTest(){
   [['Lv +10','lv10'],['Lv 100','lv100'],['+1分','t60'],['+5分','t300'],
    ['敵全滅','wipe'],['HP全回復','heal'],['銀金+100','coin'],
    ['無敵'+(P.god?' ON':' OFF'),'god'],['敵を倒さない'+(P.nodmg?' ON':' OFF'),'nodmg'],
-   ['冷気'+(P.chill>0?' ON':' OFF'),'chill'],['吹雪'+(blizOn>0?' ON':' OFF'),'bliz'],['雪崩を出す','ava'],
+   ['冷気'+(P.chill>0?' ON':' OFF'),'chill'],['吹雪'+(blizOn>0?' ON':' OFF'),'bliz'],['雪崩を出す','ava'],['ボス撃破','bosskill'],['ボスHP20%','bosshp'],
    ['全武器 Lv10','allmax'],['限界突破+10','lb10'],['全解除','clear']]
    .forEach(function(o){
      var b=document.createElement('button');
@@ -10605,6 +10835,8 @@ function testAction(a){
   else if(a==='chill') P.chill=(P.chill>0)?0:5;   // 冷気（移動速度ダウン）を手動でON/OFF：氷ステージの調整用
   else if(a==='bliz'){ if(blizOn>0){ blizOn=0; } else { blizOn=(STAGES[curStage]&&STAGES[curStage].blizDur)||30; blizA=Math.random()*6.283; } }   // 吹雪を手動でON/OFF
   else if(a==='ava') spawnAvalanche(Math.random()*6.283);   // 雪崩を今すぐ1本流す
+  else if(a==='bosskill'){ if(boss&&!boss.dead){ boss.hp=0; kill(boss); } }   // 今のボスを即撃破（次のボスの確認用）
+  else if(a==='bosshp'){ if(boss&&!boss.dead) boss.hp=Math.max(1,Math.round(boss.mhp*0.2)); }   // 今のボスを瀕死に（第2段階の確認用）
   else if(a==='coin'){ silver+=100; gold+=100; }
   else if(a==='god') P.god=P.god?0:1;
   else if(a==='nodmg') P.nodmg=P.nodmg?0:1;
@@ -12569,6 +12801,8 @@ try{ if(DEV) window.DBG=function(){ return { x:P.x, y:P.y, vx:P.vx, vy:P.vy, hp:
   ice:onIce(P.x,P.y), t:time, stage:curStage, enemies:enemies.length, boss:boss?boss.nm:null,
   eresIce:eresOf(null,'ice'), frzMul:frzMulOf(null), kills:kills, state:state, chill:P.chill||0,
   bliz:blizOn, blizWarn:blizWarn, ava:avalanches.length, avaT:avaT, kx:P.kx||0, ky:P.ky||0,
+  bossSt:boss?(boss.st||''):'', bossHp:boss?Math.round(boss.hp):0, qslow:P.qslow||0,
+  icep:icePatches.length,
   dmgs:dmgs.map(function(z){ return z.txt; }),
   comp:(function(){ var c={}; for(var i=0;i<enemies.length;i++){ if(!enemies[i].dead) c[enemies[i].k]=(c[enemies[i].k]||0)+1; } return c; })() }; }; }catch(e){}
 })();
