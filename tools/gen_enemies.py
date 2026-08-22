@@ -926,6 +926,271 @@ def e_sharkmissile():
     ell(im, (41, 27, 45, 31), RED); px(im, 42, 28, (255, 230, 220, 255))
     return im
 
+
+
+# ---- ステージ5「凍てつく氷河」 --------------------------------------------
+
+def e_icewolf():
+    """氷狼：凍った大地を駆ける狼。左向き。背に霜のトゲ。"""
+    im = new()
+    BODY = hexc('#a8d8f0'); BODY_L = lighten(BODY, 0.26); BODY_D = darken(BODY, 0.36)
+    FROST = hexc('#eaf8ff'); EYE = hexc('#7ff0ff'); DARK = (16, 34, 48, 255)
+    poly(im, [(48, 32), (63, 22), (60, 34), (63, 40), (50, 42)], BODY_D)      # 尾
+    poly(im, [(50, 32), (60, 26), (57, 34)], BODY_L)
+    ell(im, (16, 30, 52, 50), BODY)                                          # 胴
+    ell(im, (20, 31, 44, 41), BODY_L)
+    ell(im, (22, 42, 46, 50), BODY_D)
+    for bx, fw in ((19, 1), (27, 0), (38, 0), (45, 1)):                       # 脚
+        poly(im, [(bx, 44), (bx+6, 44), (bx+5-fw*2, 57), (bx-fw*2, 57)], BODY_D if fw else BODY)
+        rect(im, (bx-fw*2, 55, bx+6-fw*2, 58), FROST)
+    for k, (x, y, h) in enumerate([(26, 30, 7), (33, 28, 9), (40, 29, 7)]):   # 背の霜のトゲ
+        poly(im, [(x-3, y), (x, y-h), (x+3, y)], FROST)
+        poly(im, [(x-1, y), (x, y-h+2), (x+2, y)], lighten(BODY, 0.55))
+    poly(im, [(6, 22), (20, 18), (24, 28), (18, 36), (8, 34)], BODY)         # 頭
+    poly(im, [(7, 23), (18, 20), (20, 27), (9, 30)], BODY_L)
+    poly(im, [(1, 27), (10, 24), (11, 33), (2, 33)], BODY_D)                 # 鼻面
+    px(im, 3, 28, DARK); px(im, 4, 29, DARK)
+    poly(im, [(2, 33), (12, 31), (11, 35), (3, 36)], FROST)                  # 牙のならび
+    for fx2 in range(4, 11, 3): poly(im, [(fx2, 33), (fx2+2, 33), (fx2+1, 36)], (255, 255, 255, 255))
+    poly(im, [(11, 18), (13, 8), (19, 18)], BODY_D)                          # 耳
+    poly(im, [(19, 17), (24, 8), (26, 19)], BODY_D)
+    poly(im, [(13, 16), (14, 11), (17, 17)], BODY_L)
+    ell(im, (11, 24, 18, 30), (250, 252, 255, 255))                          # 目
+    ell(im, (12, 25, 17, 29), EYE); px(im, 15, 26, DARK)
+    return im
+
+def e_yeti():
+    """雪男：分厚い毛皮の巨躯。肩から続く太い腕と、毛先のギザギザ。"""
+    im = new()
+    FUR = hexc('#e0eaf4'); FUR_L = lighten(FUR, 0.40); FUR_D = darken(FUR, 0.26)
+    SKIN = hexc('#8fa8c0'); DARK = (22, 30, 42, 255); EYE = hexc('#7ff0ff')
+    # 腕（肩から外へ張り出し、下で手になる。体より先に描いて肩を体で隠す）
+    for s2 in (-1, 1):
+        sx = 32 + s2 * 13; hx = 32 + s2 * 24
+        poly(im, [(sx, 16), (sx + s2 * 14, 22), (hx + s2 * 5, 46), (hx - s2 * 6, 46), (sx - s2 * 2, 26)], FUR_D)
+        poly(im, [(sx + s2 * 2, 20), (sx + s2 * 10, 24), (hx, 42), (hx - s2 * 5, 40)], FUR)
+        ell(im, (hx - 8, 42, hx + 8, 56), SKIN)
+        ell(im, (hx - 6, 44, hx + 4, 50), lighten(SKIN, 0.26))
+    # 体（下に広がる台形）
+    poly(im, [(20, 12), (44, 12), (54, 52), (10, 52)], FUR_D)
+    poly(im, [(23, 14), (41, 14), (47, 46), (17, 46)], FUR)
+    poly(im, [(26, 16), (38, 16), (41, 30), (23, 30)], FUR_L)
+    # 毛先（下の輪郭をギザギザに）
+    for k, x in enumerate(range(8, 58, 6)):
+        y = 50 - abs(x - 32) // 4
+        poly(im, [(x, y - 2), (x + 3, y + 6), (x + 6, y - 2)], FUR_D if k % 2 else FUR)
+    # 顔
+    ell(im, (19, 20, 45, 46), SKIN)
+    ell(im, (22, 22, 42, 33), lighten(SKIN, 0.26))
+    poly(im, [(18, 22), (32, 15), (46, 22), (46, 27), (18, 27)], FUR_L)
+    for s2 in (-1, 1):
+        ell(im, (32 + s2 * 7 - 4, 27, 32 + s2 * 7 + 3, 34), (250, 252, 255, 255))
+        ell(im, (32 + s2 * 7 - 3, 28, 32 + s2 * 7 + 2, 33), EYE)
+        px(im, 32 + s2 * 7, 30, DARK)
+    ell(im, (28, 33, 36, 38), darken(SKIN, 0.30))
+    poly(im, [(24, 39), (40, 39), (36, 46), (28, 46)], DARK)
+    for fxp in (26, 30, 34, 38):
+        poly(im, [(fxp - 2, 39), (fxp + 2, 39), (fxp, 43)], (255, 255, 255, 255))
+    return im
+def e_icegolem():
+    """アイスゴーレム：氷の結晶が組み上がった人形。細い胴と、離れた太い腕。"""
+    im = new()
+    ICE = hexc('#7fc4e8'); ICE_L = lighten(ICE, 0.44); ICE_D = darken(ICE, 0.42)
+    CORE = hexc('#bff4ff'); WHITE = (255, 255, 255, 255)
+    # 腕（胴から離して置く＝人型のシルエットを保つ）
+    for s2 in (-1, 1):
+        ax = 32 + s2 * 22
+        poly(im, [(ax - 6, 24), (ax + 6, 22), (ax + 5, 44), (ax - 5, 46)], ICE)
+        poly(im, [(ax - 3, 26), (ax + 2, 25), (ax + 1, 40), (ax - 2, 41)], ICE_L if s2 < 0 else ICE_D)
+        poly(im, [(ax - 8, 43), (ax + 8, 41), (ax + 7, 57), (ax - 7, 55)], ICE_D)   # 拳
+        poly(im, [(ax - 5, 45), (ax + 3, 44), (ax + 2, 52), (ax - 4, 53)], ICE)
+    # 脚
+    poly(im, [(22, 44), (30, 44), (29, 60), (20, 59)], ICE_D)
+    poly(im, [(34, 44), (42, 44), (44, 59), (35, 60)], ICE_D)
+    poly(im, [(24, 46), (29, 46), (28, 56), (23, 55)], ICE)
+    poly(im, [(36, 46), (41, 46), (42, 56), (37, 55)], ICE)
+    # 胴（細めの氷塊。面ごとに明度を変えて割れ目を出す）
+    poly(im, [(20, 20), (44, 20), (41, 46), (23, 46)], ICE)
+    poly(im, [(23, 22), (32, 22), (31, 44), (25, 44)], ICE_L)
+    poly(im, [(36, 22), (42, 22), (40, 44), (34, 44)], ICE_D)
+    # 肩の結晶（左右に1本ずつ）
+    for cx2, h in ((19, 13), (45, 15)):
+        poly(im, [(cx2 - 5, 22), (cx2, 22 - h), (cx2 + 5, 22)], CORE)
+        poly(im, [(cx2 - 1, 22), (cx2, 25 - h), (cx2 + 2, 22)], WHITE)
+    # 頭（先の尖った結晶。胴との間を少し空ける）
+    poly(im, [(24, 18), (27, 6), (32, 1), (38, 6), (40, 18)], ICE)
+    poly(im, [(26, 17), (29, 8), (32, 4), (33, 17)], ICE_L)
+    poly(im, [(36, 17), (38, 9), (40, 18)], ICE_D)
+    for s2 in (-1, 1):
+        poly(im, [(32 + s2 * 5 - 3, 12), (32 + s2 * 5, 9), (32 + s2 * 5 + 3, 12), (32 + s2 * 5, 16)], CORE)
+        px(im, 32 + s2 * 5, 12, WHITE)
+    # 胸の核
+    poly(im, [(32, 27), (36, 33), (32, 40), (28, 33)], CORE)
+    poly(im, [(32, 30), (34, 33), (32, 37), (30, 33)], WHITE)
+    return im
+def e_icicle():
+    """氷柱：地から生えた氷の柱。動かないが礫を撃つ。中に光る核。"""
+    im = new()
+    ICE = hexc('#9fd8f0'); ICE_L = lighten(ICE, 0.42); ICE_D = darken(ICE, 0.34)
+    CORE = hexc('#bff4ff'); SNOW = hexc('#e8f4fc')
+    ell(im, (6, 48, 58, 60), SNOW)                                            # 根元の雪
+    ell(im, (12, 50, 46, 57), darken(SNOW, 0.10))
+    poly(im, [(20, 52), (26, 6), (32, 2), (40, 10), (44, 52)], ICE)           # 本体
+    poly(im, [(24, 50), (28, 10), (32, 6), (34, 48)], ICE_L)
+    poly(im, [(38, 48), (40, 14), (44, 50)], ICE_D)
+    poly(im, [(10, 52), (16, 26), (20, 24), (22, 52)], ICE)                   # 脇の小柱
+    poly(im, [(12, 50), (17, 28), (19, 48)], ICE_L)
+    poly(im, [(44, 52), (48, 30), (52, 28), (54, 52)], ICE)
+    poly(im, [(46, 50), (49, 32), (51, 50)], ICE_D)
+    ell(im, (26, 28, 40, 44), CORE)                                           # 核
+    ell(im, (28, 30, 37, 39), (255, 255, 255, 255))
+    for s in (-1, 1):
+        px(im, 32+s*3, 34, (60, 120, 160, 255))
+    return im
+
+def e_snowworm():
+    """スノーワーム：雪を突き破って伸び上がる長虫。細くなりながら弧を描く体。"""
+    im = new()
+    BODY = hexc('#cfe0ee'); BODY_L = lighten(BODY, 0.34); BODY_D = darken(BODY, 0.36)
+    MOUTH = hexc('#8a5a72'); TOOTH = (255, 255, 255, 255); SNOW = hexc('#eef6fc')
+    import math
+    ell(im, (0, 48, 64, 63), SNOW)                                   # 掘り返した雪
+    ell(im, (8, 50, 44, 58), darken(SNOW, 0.13))
+    for k in range(8):                                               # 体（右下から左上へ弧を描く）
+        t = k / 7.0
+        x = int(44 - 26 * t - 6 * math.sin(t * 3.1))
+        y = int(52 - 34 * t)
+        r = int(13 - 4 * t)
+        ell(im, (x - r, y - r + 2, x + r, y + r - 2), BODY if k % 2 else BODY_D)
+        ell(im, (x - r + 3, y - r + 3, x + r - 5, y), BODY_L)
+    ell(im, (10, 2, 40, 30), BODY)                                   # 頭
+    ell(im, (14, 4, 33, 16), BODY_L)
+    ell(im, (14, 7, 36, 27), MOUTH)                                  # 口
+    ell(im, (17, 10, 33, 24), darken(MOUTH, 0.42))
+    for a in range(0, 360, 45):                                      # 牙の輪
+        x = 25 + int(8 * math.cos(math.radians(a))); y = 17 + int(7 * math.sin(math.radians(a)))
+        poly(im, [(x - 2, y - 2), (x + 2, y - 2), (x, y + 3)], TOOTH)
+    return im
+def e_wisp():
+    """フロストウィスプ：漂う冷気の精。触れると足が鈍る。"""
+    im = new()
+    GLOW = hexc('#a8f0ff'); GLOW_D = darken(GLOW, 0.42); CORE = (255, 255, 255, 255)
+    DARK = (10, 40, 56, 255)
+    for k, (x, y, r) in enumerate([(46, 46, 5), (52, 52, 4), (57, 57, 3)]):   # 尾を引く冷気
+        ell(im, (x-r, y-r, x+r, y+r), GLOW_D)
+    ell(im, (10, 12, 50, 52), GLOW_D)                                         # 外周のもや
+    ell(im, (14, 16, 46, 48), GLOW)
+    ell(im, (19, 20, 39, 40), lighten(GLOW, 0.45))
+    ell(im, (24, 24, 36, 36), CORE)
+    for s in (-1, 1):                                                         # 目
+        ell(im, (30+s*7-3, 28, 30+s*7+2, 34), DARK)
+    for k, (x, y, r) in enumerate([(12, 8, 3), (50, 12, 3), (8, 40, 2), (54, 38, 2)]):  # 舞う雪片
+        poly(im, [(x, y-r), (x+r, y), (x, y+r), (x-r, y)], CORE)
+    return im
+
+def _snowman(scale):
+    """雪だるま本体（scale=1.0で通常、0.7で小型）。"""
+    im = new()
+    SNOW = hexc('#eef4fa'); SNOW_D = darken(SNOW, 0.16); SNOW_S = darken(SNOW, 0.30)
+    COAL = (26, 26, 34, 255); CARROT = hexc('#e0803a'); TWIG = hexc('#6a4f3a')
+    def sc(v, c=34): return int(c + (v - c) * scale)
+    ell(im, (sc(8), sc(30), sc(56), sc(60)), SNOW)                            # 下の玉
+    ell(im, (sc(14), sc(33), sc(42), sc(48)), lighten(SNOW, 0.5))
+    ell(im, (sc(12), sc(50), sc(52), sc(60)), SNOW_D)
+    ell(im, (sc(16), sc(4), sc(48), sc(34)), SNOW)                            # 頭
+    ell(im, (sc(20), sc(7), sc(40), sc(20)), lighten(SNOW, 0.5))
+    ell(im, (sc(18), sc(28), sc(46), sc(34)), SNOW_D)
+    line(im, [(sc(16), sc(36)), (sc(2), sc(24))], TWIG, 2)                    # 枝の腕
+    line(im, [(sc(6), sc(28)), (sc(1), sc(26))], TWIG)
+    line(im, [(sc(48), sc(36)), (sc(62), sc(24))], TWIG, 2)
+    line(im, [(sc(58), sc(28)), (sc(63), sc(26))], TWIG)
+    for s in (-1, 1):                                                         # 石炭の目
+        ell(im, (sc(32+s*7-3), sc(15), sc(32+s*7+2), sc(21)), COAL)
+    poly(im, [(sc(30), sc(22)), (sc(34), sc(22)), (sc(32), sc(30))], CARROT)  # 人参の鼻
+    for x in range(-8, 9, 4):                                                 # 石炭の口
+        px(im, sc(32+x), sc(28), COAL)
+    for y in range(38, 55, 8):                                                # ボタン
+        ell(im, (sc(30), sc(y), sc(35), sc(y+5)), COAL)
+    return im
+
+def e_snowman():  return _snowman(1.0)
+def e_snowmanS(): return _snowman(0.66)
+
+def e_icearcher():
+    """氷の弓兵：青い毛皮の外套に氷の弓。フードの縁だけ白い毛。"""
+    im = new()
+    COAT = hexc('#5f89b0'); COAT_L = lighten(COAT, 0.26); COAT_D = darken(COAT, 0.36)
+    FUR = hexc('#e6f0f8'); ICE = hexc('#bff4ff'); SKIN = hexc('#c8d8e6'); DARK = (24, 38, 54, 255)
+    import math
+    poly(im, [(15, 38), (45, 38), (50, 58), (11, 58)], COAT)                  # 外套
+    poly(im, [(19, 40), (37, 40), (39, 54), (17, 54)], COAT_L)
+    poly(im, [(38, 38), (45, 38), (50, 58), (41, 58)], COAT_D)
+    for k, x in enumerate(range(12, 50, 6)):                                  # 裾の毛皮
+        ell(im, (x, 53, x + 8, 61), FUR if k % 2 else darken(FUR, 0.12))
+    ell(im, (12, 6, 50, 44), COAT)                                            # フード
+    poly(im, [(16, 20), (31, 1), (46, 20)], COAT)
+    ell(im, (15, 9, 36, 32), COAT_L)
+    poly(im, [(38, 12), (46, 22), (44, 40), (36, 36)], COAT_D)
+    for a in range(140, 401, 13):                                             # フードの縁の毛（細いリング）
+        x = 31 + int(14 * math.cos(math.radians(a))); y = 23 + int(15 * math.sin(math.radians(a)))
+        ell(im, (x - 3, y - 3, x + 3, y + 3), FUR)
+    ell(im, (21, 14, 41, 36), SKIN)                                           # 顔
+    ell(im, (23, 16, 37, 26), lighten(SKIN, 0.30))
+    poly(im, [(21, 14), (31, 10), (41, 14), (41, 18), (21, 18)], COAT_D)      # フードの影
+    for s2 in (-1, 1):                                                        # 目
+        ell(im, (31 + s2 * 6 - 3, 22, 31 + s2 * 6 + 2, 28), DARK)
+        px(im, 31 + s2 * 6, 23, ICE)
+    line(im, [(28, 32), (35, 32)], darken(SKIN, 0.38))                        # 口
+    D(im).arc((44, 4, 64, 56), 250, 110, fill=ICE, width=3)                   # 氷の弓
+    line(im, [(53, 8), (53, 52)], lighten(ICE, 0.55))
+    line(im, [(44, 30), (60, 30)], (255, 255, 255, 255))                      # 矢
+    poly(im, [(40, 27), (47, 30), (40, 33)], ICE)
+    return im
+def e_walrus():
+    """セイウチ：牙を構えて滑走する巨獣。左向き。"""
+    im = new()
+    BODY = hexc('#b0a8b8'); BODY_L = lighten(BODY, 0.26); BODY_D = darken(BODY, 0.34)
+    TUSK = (250, 250, 244, 255); SKIN = darken(hexc('#b0a8b8'), 0.10); DARK = (24, 20, 30, 255)
+    poly(im, [(48, 30), (62, 26), (60, 40), (63, 48), (48, 48)], BODY_D)      # 後ろのひれ
+    ell(im, (16, 24, 58, 54), BODY)                                           # 胴
+    ell(im, (22, 26, 48, 40), BODY_L)
+    ell(im, (18, 44, 52, 55), BODY_D)
+    ell(im, (10, 42, 30, 56), BODY)                                           # 前ひれ
+    ell(im, (13, 44, 26, 51), BODY_L)
+    ell(im, (2, 16, 36, 48), BODY)                                            # 頭
+    ell(im, (6, 18, 28, 32), BODY_L)
+    ell(im, (4, 30, 30, 48), SKIN)                                            # 口まわり
+    ell(im, (7, 32, 26, 42), lighten(SKIN, 0.22))
+    for s in (-1, 1):                                                         # ひげ
+        for k in range(3):
+            line(im, [(10, 36+k*3), (1, 34+k*4+s)], darken(SKIN, 0.35))
+    poly(im, [(10, 42), (15, 42), (14, 60), (9, 58)], TUSK)                   # 牙
+    poly(im, [(20, 42), (25, 42), (26, 58), (21, 60)], TUSK)
+    poly(im, [(11, 43), (13, 43), (12, 56)], (255, 255, 255, 255))
+    ell(im, (12, 22, 19, 29), (250, 252, 255, 255))                           # 目
+    ell(im, (13, 23, 18, 28), DARK); px(im, 15, 24, (255, 255, 255, 255))
+    ell(im, (24, 22, 31, 29), (250, 252, 255, 255))
+    ell(im, (25, 23, 30, 28), DARK); px(im, 27, 24, (255, 255, 255, 255))
+    return im
+
+def e_flurry():
+    """吹雪の精：吹雪に紛れて一直線に走り抜ける小さな精。"""
+    im = new()
+    SNOW = (255, 255, 255, 255); GLOW = hexc('#dff4ff'); GLOW_D = darken(GLOW, 0.44)
+    DARK = (20, 52, 74, 255)
+    for x, y, w in ((46, 34, 5), (53, 38, 4), (59, 42, 3)):                   # 後ろに流れる雪煙（細く）
+        ell(im, (x - w, y - w // 2, x + w, y + w // 2), GLOW_D)
+    ell(im, (10, 10, 46, 46), GLOW_D)                                         # 体（渦）
+    ell(im, (13, 13, 43, 43), GLOW)
+    D(im).arc((9, 9, 47, 47), 30, 310, fill=SNOW, width=3)                    # 渦の筋
+    D(im).arc((17, 17, 39, 39), 210, 130, fill=SNOW, width=2)
+    ell(im, (20, 20, 36, 36), SNOW)
+    for s2 in (-1, 1):                                                        # 目
+        ell(im, (28 + s2 * 5 - 2, 25, 28 + s2 * 5 + 2, 31), DARK)
+    line(im, [(25, 33), (31, 33)], DARK)
+    for x, y, r in ((8, 6, 3), (44, 8, 3), (5, 34, 2), (24, 52, 2)):          # 舞う雪片
+        poly(im, [(x, y - r), (x + r, y), (x, y + r), (x - r, y)], SNOW)
+    return im
 ENEMIES = {'lich': e_lich, 'necro': e_necro, 'dullahan': e_dullahan,
            'boomer': e_boomer, 'gargoyle': e_gargoyle, 'sarcher': e_sarcher,
            'skeledragon': e_skeledragon,
@@ -935,7 +1200,10 @@ ENEMIES = {'lich': e_lich, 'necro': e_necro, 'dullahan': e_dullahan,
            'clam': e_clam, 'siren': e_siren, 'flyingfish': e_flyingfish,
            'whale': e_whale, 'kraken': e_kraken, 'tornadoshark': e_tornadoshark,
            'leviathan': e_leviathan, 'umibozu': e_umibozu,
-           'fly': e_fly, 'gnat': e_gnat, 'archer': e_archer, 'sharkmissile': e_sharkmissile}
+           'fly': e_fly, 'gnat': e_gnat, 'archer': e_archer, 'sharkmissile': e_sharkmissile,
+           'icewolf': e_icewolf, 'yeti': e_yeti, 'icegolem': e_icegolem, 'icicle': e_icicle,
+           'snowworm': e_snowworm, 'wisp': e_wisp, 'snowman': e_snowman, 'snowmanS': e_snowmanS,
+           'icearcher': e_icearcher, 'walrus': e_walrus, 'flurry': e_flurry}
 
 def main():
     ids = sys.argv[1:] or list(ENEMIES.keys())
