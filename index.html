@@ -3004,6 +3004,7 @@ var WTIX=0;    // 武器チケット🔧（銀貨のくじで入手・武器の�
 var CTIX=0;    // キャラチケット🎭（金貨のくじで入手・キャラの解放に使う）
 var SHK=1;   // 画面揺れの強さ 0 / 0.5 / 1 / 1.5
 var VZOOM=1; // 視野（描画ズーム）。小さいほど広く見える 1.0=標準 / 0.85=広め / 0.72=最大
+var VLx=-1e9,VRx=1e9,VTy=-1e9,VBy=1e9; // 可視ワールド矩形（毎フレームrenderで更新・画面外の敵描画を省く）
 function offR(){ return Math.hypot(W,H)/2/VZOOM; }   // 画面外スポーン半径（視野に応じて外側へ）
 var LIGHT=0; // 軽量モード：解像度(DPR)を1に下げて描画負荷を軽くする（ゲーム内容・難度は変えない）
 var VOLM=0.8; // 全体音量 0〜1
@@ -3181,7 +3182,7 @@ function figInfo(id){
   if(BOSS[id]){ var B=BOSS[id], tt=ETYPE[B.key]||{}; return {nm:B.nm,shape:tt.shape,col:tt.col,dark:tt.dark,desc:BDEX[id]||'',boss:true}; }
   var t=ETYPE[id]||{}; return {nm:t.nm,shape:t.shape,col:t.col,dark:t.dark,desc:DEX[id]||'',boss:false};
 }
-var VERSION='α1.0.293'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
+var VERSION='α1.0.296'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
 function applySave(o){
   for(var i=0;i<UPG.length;i++) META[UPG[i].id]=0;
   try{
@@ -3554,6 +3555,7 @@ function update(dt){
   aim();
   runWeapons(dt);
   moveEnemies(dt);
+  buildEGrid();                 // 敵の位置確定後に空間グリッドを構築（弾の当たり判定で使う）
   moveShots(dt);
   moveChaks(dt);
   moveScys(dt);
@@ -3930,6 +3932,7 @@ function drawLaser(L){
 // インフェルノビーム：最寄りの敵へ照射し続け、同じ敵に当て続けるほど火力が上がる（ramp）。数軸で追加ビーム。
 // オーバーヒート式：撃つほど熱がたまり、満タンで強制冷却（ビーム停止）。持続軸で熱容量アップ＋冷却速度アップ。
 var INF={tgt:0, ramp:0, tick:0, on:false, ex:0, ey:0, extra:[], heat:0, over:false};
+function _infByDist(a,b){ return a.d-b.d; }   // インフェルノの候補ソート用（毎フレームの関数生成を避けるため外出し）
 var RAIL={ph:'charge', t:0, ax:1, ay:0, tick:0, fireLen:0, grow:0, pph:''};
 function infernoTick(dt){
   var rng=RNG('inferno'), extra=Math.round(CNT('inferno'));       // 数軸：追加ビーム本数
@@ -3954,7 +3957,7 @@ function infernoTick(dt){
   var cand=[];                                                    // 候補（追加ビーム用・新規ロック用）
   for(var j=0;j<enemies.length;j++){ var e2=enemies[j]; if(e2.dead) continue;
     var dx2=e2.x-P.x, dy2=e2.y-P.y, dd2=dx2*dx2+dy2*dy2; if(dd2<rng*rng) cand.push({e:e2,d:dd2}); }
-  cand.sort(function(a,b){ return a.d-b.d; });
+  cand.sort(_infByDist);
   if(!e){                                                         // ロック対象が倒れた/射程外→最寄りを新規ロック
     if(!cand.length){ INF.on=false; INF.extra=[]; INF.heat=Math.max(0,INF.heat-dt*coolRate); INF.ramp=Math.max(0,INF.ramp-(keep?dt*0.6:dt*2.5)); if(INF.ramp<=0) INF.tgt=0; return; }
     e=cand[0].e; INF.tgt=e.uid; INF.ramp=keep?INF.ramp:0;         // 新ロックで火力リセット（維持特性は引き継ぎ）
@@ -3989,17 +3992,27 @@ function infBeam(tx,ty,w,g){
   // ドット絵の火炎流：ビーム沿いに炎のブロック（外=赤／中=橙／芯=白）を揺らして並べる
   var dx=tx-P.x, dy=ty-P.y, len=Math.hypot(dx,dy)||1;
   var ux=dx/len, uy=dy/len, nx=-uy, ny=ux;
-  var n=Math.max(2,Math.round(len/5));
+  // ブロック数を上限化：遠い敵をロックしてビームが極端に長くなっても描画量が爆発しないように（＝敵が少ないと重くなる問題対策）
+  var n=Math.min(64,Math.max(2,Math.round(len/6)));
   ctx.imageSmoothingEnabled=false;
-  for(var i=0;i<=n;i++){
-    var t=i/n;
-    var s=Math.max(2,Math.round(w*(1.25-0.35*t)));        // 根本太く先細り
-    var jz=(Math.random()-0.5)*w*1.1*(0.3+t);             // 先ほど揺れる
+  // jitterは時間で決定的に（Math.random不使用）＝3層で同じ揺れを共有でき、層ごとに描画をまとめられる
+  var tm=time*30;
+  // 3層それぞれを1パスで描画し、canvasの状態変更(globalAlpha/fillStyle)を層ごとに1回だけに抑える（毎フレーム数百回→数回）
+  ctx.globalAlpha=0.5*g; ctx.fillStyle='#ff5a1f';
+  for(var i=0;i<=n;i++){ var t=i/n, s=Math.max(2,Math.round(w*(1.25-0.35*t)));
+    var jz=Math.sin(i*1.7+tm)*w*1.1*(0.3+t);
     var cx=Math.round(P.x+dx*t+nx*jz), cy=Math.round(P.y+dy*t+ny*jz);
-    ctx.globalAlpha=0.5*g;  ctx.fillStyle='#ff5a1f'; ctx.fillRect(cx-s,cy-s,s*2,s*2);
-    ctx.globalAlpha=0.85*g; ctx.fillStyle='#ffb14d'; var s2=Math.max(1,Math.round(s*0.6)); ctx.fillRect(cx-s2,cy-s2,s2*2,s2*2);
-    if(t<0.85){ ctx.globalAlpha=g; ctx.fillStyle='#fff2c0'; var s3=Math.max(1,Math.round(s*0.32)); ctx.fillRect(cx-s3,cy-s3,s3*2,s3*2); }
-  }
+    ctx.fillRect(cx-s,cy-s,s*2,s*2); }
+  ctx.globalAlpha=0.85*g; ctx.fillStyle='#ffb14d';
+  for(i=0;i<=n;i++){ var t2=i/n, s4=Math.max(2,Math.round(w*(1.25-0.35*t2))), s2=Math.max(1,Math.round(s4*0.6));
+    var jz2=Math.sin(i*1.7+tm)*w*1.1*(0.3+t2);
+    var cx2=Math.round(P.x+dx*t2+nx*jz2), cy2=Math.round(P.y+dy*t2+ny*jz2);
+    ctx.fillRect(cx2-s2,cy2-s2,s2*2,s2*2); }
+  ctx.globalAlpha=g; ctx.fillStyle='#fff2c0';
+  for(i=0;i<=n;i++){ var t3=i/n; if(t3>=0.85) continue; var s5=Math.max(2,Math.round(w*(1.25-0.35*t3))), s3=Math.max(1,Math.round(s5*0.32));
+    var jz3=Math.sin(i*1.7+tm)*w*1.1*(0.3+t3);
+    var cx3=Math.round(P.x+dx*t3+nx*jz3), cy3=Math.round(P.y+dy*t3+ny*jz3);
+    ctx.fillRect(cx3-s3,cy3-s3,s3*2,s3*2); }
   // 先端の火炎ブロブ（数個の橙ブロックを散らす）
   for(var j=0;j<5;j++){
     var a=Math.random()*6.283, rr=Math.random()*w*1.1, bs=Math.max(2,Math.round(w*(0.5+Math.random()*0.4)));
@@ -6751,9 +6764,10 @@ function moveEnemies(dt){
       // リッチ：周囲の味方を強化（速度+/被ダメ-）。バフは短時間で切れるので範囲内で更新し続ける。
       e.buffTick=(e.buffTick||0)-dt;
       if(e.buffTick<=0){ e.buffTick=0.2;
+        var bl=e.buffList||(e.buffList=[]); bl.length=0;   // バフ対象をキャッシュ（描画で毎フレーム全敵を走査しないため）
         for(var bi=0;bi<enemies.length;bi++){ var be=enemies[bi];
           if(be===e||be.dead||be.boss) continue;
-          if((be.x-e.x)*(be.x-e.x)+(be.y-e.y)*(be.y-e.y)<220*220) be.buffT=0.35;
+          if((be.x-e.x)*(be.x-e.x)+(be.y-e.y)*(be.y-e.y)<220*220){ be.buffT=0.35; bl.push(be); }
         }
       }
     }
@@ -7232,6 +7246,28 @@ function drawBlizzard(){
 }
 
 /* ============ 弾・宝石 ============ */
+// ===== 敵の空間グリッド：弾×敵の当たり判定を「全敵総当たり」→「近傍セルのみ」に（後半戦の高速化） =====
+// セル140px＝(敵最大半径105[エリート1.5倍]＋弾半径)より大きいので、衝突しうる敵は必ず3×3セル内に入る。
+var EGRID=null, EGCS=140;
+function buildEGrid(){
+  var g={};
+  for(var i=0;i<enemies.length;i++){ var e=enemies[i];
+    var k=Math.floor(e.x/EGCS)+'_'+Math.floor(e.y/EGCS);
+    var b=g[k]; if(b) b.push(e); else g[k]=[e];
+  }
+  EGRID=g;
+}
+var _egq=[];
+function enemiesNear(x,y){   // (x,y)周辺3×3セルの敵候補を再利用バッファに集めて返す
+  _egq.length=0;
+  if(!EGRID) return _egq;
+  var cx=Math.floor(x/EGCS), cy=Math.floor(y/EGCS);
+  for(var gx=cx-1;gx<=cx+1;gx++){ for(var gy=cy-1;gy<=cy+1;gy++){
+    var b=EGRID[gx+'_'+gy]; if(!b) continue;
+    for(var m=0;m<b.length;m++) _egq.push(b[m]);
+  } }
+  return _egq;
+}
 function moveShots(dt){
   for(var i=shots.length-1;i>=0;i--){
     var s=shots[i];
@@ -7261,11 +7297,13 @@ function moveShots(dt){
       s.wig=(s.wig||0)+dt*18;
       s.ang=Math.atan2(s.vy,s.vx);
     }
-    parts.push({x:s.x,y:s.y,vx:0,vy:0,t:0,life:.22,col:s.col,s:3});
-    for(var j=enemies.length-1;j>=0;j--){
-      var e=enemies[j];
+    if((s.tt=(s.tt||0)+dt)>=0.03){ s.tt=0; parts.push({x:s.x,y:s.y,vx:0,vy:0,t:0,life:.22,col:s.col,s:3}); }   // 軌跡パーティクルを間引き（毎フレーム→約0.03秒毎・GC負荷を軽減）
+    var cand=enemiesNear(s.x,s.y);                              // 近傍セルの敵だけを検査（全敵総当たりをやめる）
+    for(var j=cand.length-1;j>=0;j--){
+      var e=cand[j];
       if(s.hit.indexOf(e)>=0) continue;
-      if(Math.hypot(e.x-s.x,e.y-s.y)<e.r+s.r){
+      var sdx=e.x-s.x, sdy=e.y-s.y, srr=e.r+s.r;                 // 平方距離で判定（sqrt省略）
+      if(sdx*sdx+sdy*sdy<srr*srr){
         var d=Math.hypot(s.vx,s.vy)||1;
         SRC=s.src;
         hurt(e,s.dmg,s.vx/d,s.vy/d,s.el);
@@ -7938,6 +7976,8 @@ function render(){
   if(VZOOM!==1){ ctx.translate(W/2,H/2); ctx.scale(VZOOM,VZOOM); ctx.translate(-W/2,-H/2); }   // 視野：自機中心にズームアウト
   var camx=Math.round(P.x-W/2-sx), camy=Math.round(P.y-H/2-sy);   // 整数に丸めてサブピクセル描画を避ける（軽量化＋くっきり）
   ctx.translate(-camx,-camy);
+  var _vex=(W/VZOOM-W)/2, _vey=(H/VZOOM-H)/2;                      // 可視ワールド矩形（+余白120＝最大の敵半径ぶん）＝画面外の敵は描画スキップ
+  VLx=camx-_vex-120; VRx=camx+W+_vex+120; VTy=camy-_vey-120; VBy=camy+H+_vey+120;
 
   drawGround(camx,camy);
   var i,f;
@@ -7968,7 +8008,7 @@ function render(){
     else if(f.k==='aura') drawAura(f); }
 
   // ---- 敵と自機 ----
-  for(i=0;i<enemies.length;i++) if(!enemies[i].dead) drawEnemy(enemies[i]);
+  for(i=0;i<enemies.length;i++){ var _de=enemies[i]; if(_de.dead) continue; if(_de.x<VLx||_de.x>VRx||_de.y<VTy||_de.y>VBy) continue; drawEnemy(_de); }   // 画面外はスキップ
   for(i=0;i<sheep.length;i++) drawSheep(sheep[i]);
   for(i=0;i<rocks.length;i++) drawRock(rocks[i]);
   drawMeteors();
@@ -8078,7 +8118,7 @@ var GIMG={}, GRDY={}, GPAT={};
 })();
 // ワールド座標のマスから決まる疑似乱数（同じ場所には常に同じ散らし物が出る＝移動しても揺れない）
 function ghash(a,b){ var h=(a*73856093)^(b*19349663); h=(h^(h>>>13))>>>0; return h; }
-var GPROP_CELL=176;
+var GPROP_CELL=176;          // 散らし物1つあたりのマス（px）
 
 /* ===== 氷結床（ステージ⑤）=====
    ワールドに固定配置された円形の氷。中に入るとプレイヤーだけ慣性が付き、思い通りに止まれない。
@@ -8119,7 +8159,7 @@ function onIce(x,y){
     if(dx*dx+dy*dy<c.r*c.r) return true;
   }
   return false;
-}          // 散らし物1つあたりのマス（px）
+}
 // 氷の板1枚を描く（座標ハッシュの氷とボスが作った氷で共通）
 function drawIceSheet(q,alpha){
   ctx.globalAlpha=alpha==null?1:alpha;
@@ -9173,8 +9213,9 @@ function drawEnemy(e){
     ctx.globalAlpha=0.10+0.05*Math.sin(time*4); ctx.fillStyle='#c9a0ff';
     ctx.beginPath(); ctx.arc(0,0,220,0,6.3); ctx.fill();
     ctx.globalAlpha=0.55; ctx.strokeStyle='#e0b0ff'; ctx.lineWidth=2;
-    for(var li=0;li<enemies.length;li++){ var le=enemies[li];
-      if(le===e||le.dead||le.boss||!(le.buffT>0)) continue;
+    var bl=e.buffList;   // 0.2秒毎に更新されるキャッシュを使い、全敵走査をやめる
+    if(bl) for(var li=0;li<bl.length;li++){ var le=bl[li];
+      if(le.dead||!(le.buffT>0)) continue;
       if((le.x-e.x)*(le.x-e.x)+(le.y-e.y)*(le.y-e.y)<220*220){
         ctx.beginPath(); ctx.moveTo(0,0); ctx.lineTo(le.x-e.x,le.y-e.y); ctx.stroke(); }
     }
@@ -9589,6 +9630,7 @@ function drawEnemyOutlines(){
   for(var i=0;i<enemies.length;i++){
     var e=enemies[i];
     if(e.dead) continue;
+    if(e.x<VLx||e.x>VRx||e.y<VTy||e.y>VBy) continue;     // 画面外はスキップ
     if(enemySpr(e)) continue;                            // スプライト敵は自前の輪郭を持つので描かない
     var bh=blobHop(e), oy=bh?bh.dy:0, ox=bh?bh.sx:1, oyy=bh?bh.sy:1;   // スライムは潰れ・跳ねに追従
     ctx.globalAlpha=e.boss?0.95:(e.elite?0.9:0.62);
@@ -10116,15 +10158,15 @@ function drawDmg(d){
   if(d.rx){
     var pop=k<0.18?(1.55-k*3):1;
     ctx.font="26px 'DotGothic16',sans-serif";
-    ctx.textAlign='center'; ctx.lineWidth=5; ctx.strokeStyle='#000';
+    ctx.textAlign='center';
     ctx.translate(d.x,d.y); ctx.scale(pop,pop);
-    ctx.strokeText(d.txt,0,0);
+    ctx.fillStyle='rgba(0,0,0,0.92)'; ctx.fillText(d.txt,1.6,1.6);   // 影（strokeTextより軽い）
     ctx.fillStyle=d.col; ctx.fillText(d.txt,0,0);
     ctx.globalAlpha=1; ctx.restore(); return;
   }
   ctx.font=(d.crit?'bold 30px':'20px')+" 'DotGothic16',sans-serif";
-  ctx.textAlign='center'; ctx.lineWidth=4; ctx.strokeStyle='#000';
-  ctx.strokeText(d.txt,d.x,d.y); 
+  ctx.textAlign='center';
+  ctx.fillStyle='rgba(0,0,0,0.92)'; ctx.fillText(d.txt,d.x+1.4,d.y+1.4);   // 影（strokeTextより軽い）
   ctx.fillStyle=d.crit?'#ffd94d':'#ffffff';
   ctx.fillText(d.txt,d.x,d.y);
   ctx.globalAlpha=1; ctx.restore();
@@ -11709,12 +11751,21 @@ Array.prototype.forEach.call(document.querySelectorAll('#setview button'),functi
 // 更新履歴：1つのお知らせ内で「バージョン見出し」ごとに変更点を並べる（新しい順）。
 // マージのたびに先頭へ新バージョンを追加し、VERSION も更新する。
 var UPDATES=[
-  {v:'α1.0.293', items:[
+  {v:'α1.0.296', items:[
     'ステージ⑤「凍てつく氷河」を追加しました。ステージ④でLv80に到達すると解放されます。',
     '氷河の地面には氷結床があり、乗っているあいだは慣性がついて思い通りに止まれません。90秒ごとに吹雪が吹き、7:00以降は雪崩が横断します。',
     '氷河の魔物（アイススライム・フロストウルフ・ペンギン・クリオネ・雪だるま・アイスウィスプ・スノーワーム・ダイオウグソクムシ・イエティ・アイスゴーレム）と、ボス4体（キングペンギン・フロストドレイク・雪の女王・ビッグフット）を追加しました。氷の魔物は氷属性のダメージを半減し、凍結もすぐ解けます。',
     'ステージ⑤クリアで、新武器「アヴァランチ」と新キャラ「雪女」が解放されます。雪女は氷結床で滑りません。',
     'ステージ③④⑤にBGMを追加しました（③④はこれまで無音でした）。',
+  ]},
+  {v:'α1.0.295', items:[
+    '敵が多い後半戦の重さを大きく軽減しました。弾と敵の当たり判定を「近くのマスだけ調べる」方式（空間グリッド）に変更し、画面外の敵の描画を省略。リッチの強化オーラやダメージ数字の描画処理も効率化しています（見た目・挙動はほぼ同じ／ダメージ数字は縁取りが軽い影表現に変わりました）。',
+  ]},
+  {v:'α1.0.294', items:[
+    '軽量化を継続。弾の当たり判定を軽い計算に置き換え、弾の軌跡パーティクルの生成を間引き、インフェルノの内部処理のムダな生成を削減しました（見た目・挙動は変わりません）。',
+  ]},
+  {v:'α1.0.293', items:[
+    'インフェルノビームの動作を軽くしました。敵が少ない（遠い敵を狙う）ときにビームが長く伸びて描画が重くなり、カクつくことがある問題への対策です。ビームの描画量を上限つきにし、内部の描画処理も効率化しました（見た目・威力は変わりません）。',
   ]},
   {v:'α1.0.292', items:[
     '爆発の演出を半透明にしました。爆発が大きくて下の敵が見えなくなる問題への対応で、爆発エフェクトを透かして表示し、時間とともに薄れるようにしました（当たり判定・威力は変わりません）。',
