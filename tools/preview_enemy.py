@@ -9,7 +9,14 @@ NM={'lich':'リッチ','necro':'ネクロマンサー','dullahan':'デュラハ�
     'skeleton':'スケルトン(既存)','wraith':'レイス(既存)','ghoul':'グール(既存)','mummy':'ミイラ(既存)',
     'shieldman':'盾の戦士(既存)','shadow':'シャドウ(既存)','panther':'パンサー(既存)','spider':'スパイダー(既存)',
     'sahagin':'サハギン','crab':'カニ','jelly':'クラゲ','kelpie':'ケルピー','serpent':'ミズチ','siren':'セイレーン',
-    'shark':'サメ','manta':'マンタ','hermit':'ヤドカリ','clam':'カイ','flyingfish':'トビウオ','umibozu':'海坊主'}
+    'shark':'サメ','manta':'マンタ','hermit':'ヤドカリ','clam':'カイ','flyingfish':'トビウオ','umibozu':'海坊主',
+    'icewolf':'氷狼','yeti':'雪男','icegolem':'アイスゴーレム','icicle':'氷柱','snowworm':'スノーワーム',
+    'wisp':'フロストウィスプ','snowman':'雪だるま','snowmanS':'小雪だるま','icearcher':'氷の弓兵',
+    'walrus':'セイウチ','flurry':'吹雪の精','wolf':'ウルフ(既存)','ogre':'オーガ(既存)',
+    'shirogane':'シロガネ','frostdrake':'フロストドレイク','snowqueen':'雪の女王','glacier':'グラキエス',
+    'whale':'ホエール(既存ボス)','leviathan':'リヴァイアサン(既存ボス)','skeledragon':'スケルトンドラゴン(既存ボス)',
+    'iceslime':'アイススライム','penguin':'ペンギン','clione':'クリオネ','isopod':'ダイオウグソクムシ',
+    'kingpenguin':'キングペンギン','bigfoot':'ビッグフット','icewolf':'フロストウルフ','wisp':'アイスウィスプ'}
 def sheet(out, ids, refs, tile='assets/bg_s3.png', title='敵の立ち絵'):
     Z=5; cell=64*Z+22
     cols=max(len(ids),len(refs)); W=cell*cols+24

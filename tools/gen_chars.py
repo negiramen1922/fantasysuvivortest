@@ -595,7 +595,60 @@ def c_android():
     ell(im, (61, 36, 66, 44), HOT); ell(im, (62, 38, 65, 42), CORE)
     outline(im)
     return im
-CHARS = {'ninja': c_ninja, 'samurai': c_samurai, 'hknight': c_hknight,
+def c_yukionna():
+    """雪女：白い着物に長い黒髪と青い肌。手のひらに冷気の玉。"""
+    im = new()
+    KIMONO = (236, 244, 252, 255); OBI = (58, 100, 162, 255)
+    HAIR = (36, 42, 66, 255); SKIN = (222, 238, 248, 255)
+    ICE = (150, 224, 246, 255); DEEP = (58, 96, 152, 255)
+    feet(im, darken(KIMONO, 0.30))
+    sphere(im, (11, 17, 53, 55), KIMONO)
+    # 着物の合わせ（Vの重なり）と裾
+    poly(im, [(32, 36), (22, 50), (26, 54), (32, 44)], darken(KIMONO, 0.16))
+    poly(im, [(32, 36), (42, 50), (38, 54), (32, 44)], lighten(KIMONO, 0.30))
+    for x in range(16, 50, 6):
+        line(im, [(x, 48), (x-1, 55)], darken(KIMONO, 0.28))
+    # 帯
+    rect(im, (13, 41, 51, 48), darken(OBI, 0.40))
+    rect(im, (13, 42, 51, 47), OBI)
+    rect(im, (13, 42, 51, 43), lighten(OBI, 0.32))
+    for x in range(17, 48, 7):                     # 帯の雪の結晶
+        px(im, x, 44, (255, 255, 255, 255)); px(im, x+1, 45, ICE)
+    # 顔
+    ell(im, (20, 24, 44, 44), SKIN)
+    ell(im, (22, 25, 42, 35), lighten(SKIN, 0.28))
+    eye(im, 26, 32, iris=DEEP, w=6, h=8)
+    eye(im, 38, 32, iris=DEEP, w=6, h=8)
+    px(im, 31, 39, darken(SKIN, 0.22)); px(im, 32, 39, darken(SKIN, 0.22))
+    # 髪（頭からストレートに長く垂らす）
+    ell(im, (16, 6, 48, 34), HAIR)
+    ell(im, (19, 8, 42, 22), lighten(HAIR, 0.22))
+    ell(im, (22, 20, 42, 34), TR)                  # 顔の穴を抜く
+    ell(im, (20, 24, 44, 44), SKIN)
+    ell(im, (22, 25, 42, 35), lighten(SKIN, 0.28))
+    eye(im, 26, 32, iris=DEEP, w=6, h=8)
+    eye(im, 38, 32, iris=DEEP, w=6, h=8)
+    px(im, 31, 39, darken(SKIN, 0.22)); px(im, 32, 39, darken(SKIN, 0.22))
+    poly(im, [(16, 16), (22, 14), (21, 50), (14, 48)], HAIR)     # 左の垂らし髪
+    poly(im, [(48, 16), (42, 14), (43, 50), (50, 48)], HAIR)
+    poly(im, [(17, 18), (20, 17), (19, 40), (16, 40)], lighten(HAIR, 0.16))
+    poly(im, [(20, 20), (44, 18), (44, 24), (20, 26)], HAIR)     # 前髪
+    poly(im, [(22, 21), (34, 20), (34, 24), (22, 25)], lighten(HAIR, 0.18))
+    # 髪飾り（氷の結晶）
+    cx, cy = 44, 15
+    for dx, dy in ((0, 5), (4, 2), (4, -2)):
+        line(im, [(cx-dx, cy-dy), (cx+dx, cy+dy)], ICE)
+    px(im, cx, cy, (255, 255, 255, 255))
+    # 手のひらの冷気
+    for hx in (10, 54):
+        ell(im, (hx-5, 34, hx+5, 44), ICE)
+        ell(im, (hx-3, 36, hx+2, 41), (255, 255, 255, 255))
+        for dx, dy in ((0, 7), (6, 3), (6, -3)):
+            line(im, [(hx-dx, 39-dy), (hx+dx, 39+dy)], lighten(ICE, 0.4))
+    outline(im)
+    return im
+
+CHARS = {'yukionna': c_yukionna, 'ninja': c_ninja, 'samurai': c_samurai, 'hknight': c_hknight,
          'cryo': c_cryo, 'thundr': c_thundr, 'gunner': c_gunner,
          'farmer': c_farmer, 'apoth': c_apoth, 'shepd': c_shepd,
          'necro': c_necro, 'android': c_android}

@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """ステージ地面のタイル（64x64・シームレス）と散らし物シート（128x32＝32px×4種）を作る。
-   python3 tools/gen_ground.py [s1 s2 s3 s4]
+   python3 tools/gen_ground.py [s1 s2 s3 s4 s5]
 方針：
   - 弾やエフェクトの視認性を落とさないよう、地面は暗く低コントラストに保つ（明度差は±10%程度）
   - タイルは上下左右がつながるよう、各図形を 9 方向にずらして描いてから中央を切り出す
@@ -120,6 +120,41 @@ def tile_s4(seed=4):
         d.point((x, y), lighten(base, 0.24))
     return im
 
+def tile_s5(seed=5):
+    """凍てつく氷河：踏み固められた雪と、うっすら透ける氷の割れ目。
+       氷結床（青白い板）を上に重ねるので、地面側は青みを抑えて暗くしておく。"""
+    rnd = random.Random(seed)
+    base = (32, 38, 54, 255)
+    im = Image.new('RGBA', (T, T), base)
+    d = ImageDraw.Draw(im)
+    for i in range(900):                                        # 雪面のざらつき
+        x, y = rnd.randrange(T), rnd.randrange(T)
+        d.point((x, y), rnd.choice([lighten(base, 0.06), lighten(base, 0.10), darken(base, 0.12)]))
+    # 吹きだまりの筋（風向きに沿った横長のうねり）
+    drifts = [(rnd.randrange(T), rnd.randrange(T), rnd.randrange(14, 26)) for _ in range(20)]
+    def f(d2, ox, oy):
+        for x, y, w in drifts:
+            d2.arc((ox+x, oy+y, ox+x+w, oy+y+6), 190, 350, fill=lighten(base, 0.13))
+            d2.arc((ox+x+2, oy+y+2, ox+x+w-2, oy+y+7), 195, 345, fill=darken(base, 0.10))
+    wrap(im, f)
+    # 氷の割れ目（折れ線）
+    cracks = []
+    for _ in range(10):
+        x, y = rnd.randrange(T), rnd.randrange(T)
+        seg = [(x, y)]
+        for k in range(3):
+            x += rnd.randint(-9, 9); y += rnd.randint(-9, 9)
+            seg.append((x, y))
+        cracks.append(seg)
+    def f2(d2, ox, oy):
+        for seg in cracks:
+            d2.line([(ox+a, oy+b) for a, b in seg], fill=lighten(base, 0.16))
+    wrap(im, f2)
+    for i in range(120):                                        # 雪のきらめき
+        x, y = rnd.randrange(T), rnd.randrange(T)
+        d.point((x, y), lighten(base, 0.30))
+    return im
+
 # ---------- 散らし物 ----------
 
 def props_s1():
@@ -201,8 +236,36 @@ def props_s4():
         d.point((cx-r//2, cy-r//2), (200,240,250,255))
     return sh
 
-TILES = {'s1': tile_s1, 's2': tile_s2, 's3': tile_s3, 's4': tile_s4}
-PROPS = {'s1': props_s1, 's2': props_s2, 's3': props_s3, 's4': props_s4}
+def props_s5():
+    """氷河：氷柱の束・凍った枯木・雪だまり・凍った岩。"""
+    sh = Image.new('RGBA', (P*4, P), (0,0,0,0)); d = ImageDraw.Draw(sh)
+    # 割れた氷の板（地面に伏せた平たい氷。※立った氷柱は敵の「氷柱」と紛らわしいので使わない）
+    d.polygon([(5, 22), (13, 16), (24, 15), (29, 21), (22, 27), (10, 27)], fill=(108, 150, 182, 255))
+    d.polygon([(8, 21), (14, 17), (23, 17), (26, 21), (20, 25), (11, 25)], fill=(150, 190, 216, 255))
+    for a1, b1 in [((14, 17), (18, 25)), ((10, 21), (22, 20)), ((20, 17), (17, 22))]:
+        d.line([a1, b1], fill=(206, 232, 246, 255))
+    # 凍った枯木
+    d.line([(46, 28), (46, 12)], fill=(58, 54, 62, 255), width=3)
+    for x2, y2 in [(38, 14), (54, 12), (40, 20), (53, 19)]:
+        d.line([(46, y2 + 4), (x2, y2)], fill=(58, 54, 62, 255), width=2)
+        d.point((x2, y2), (150, 186, 208, 255))
+    for p in [(46, 13), (43, 16), (49, 15)]:
+        d.point(p, (192, 220, 236, 255))
+    d.ellipse((38, 26, 54, 30), fill=(150, 178, 200, 255))
+    # 雪だまり
+    d.polygon([(68, 28), (72, 20), (80, 16), (89, 20), (92, 28)], fill=(158, 182, 204, 255))
+    d.polygon([(73, 24), (80, 19), (86, 23), (80, 26)], fill=(198, 216, 232, 255))
+    for p in [(76, 22), (84, 24), (80, 21)]:
+        d.point(p, (232, 244, 252, 255))
+    # 凍った岩（岩の上に雪が乗っている）
+    d.polygon([(104, 27), (106, 17), (114, 13), (122, 18), (124, 27)], fill=(60, 62, 80, 255))
+    d.polygon([(107, 17), (114, 14), (120, 18), (112, 20)], fill=(84, 88, 108, 255))
+    d.polygon([(106, 16), (114, 12), (121, 17), (114, 17)], fill=(190, 210, 228, 255))
+    d.point((114, 14), (232, 244, 252, 255))
+    return sh
+
+TILES = {'s1': tile_s1, 's2': tile_s2, 's3': tile_s3, 's4': tile_s4, 's5': tile_s5}
+PROPS = {'s1': props_s1, 's2': props_s2, 's3': props_s3, 's4': props_s4, 's5': props_s5}
 
 def main():
     ks = sys.argv[1:] or list(TILES.keys())
