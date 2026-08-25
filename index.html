@@ -6579,8 +6579,10 @@ function moveEnemies(dt){
       // 合間に氷の鎧を張り直す（張り直すたびに値が減るので、火力が低くても必ず終わる）
       if(e.shieldMax==null){ e.shieldMax=0; }
       if(e.dphase==null){ e.dphase=0; e.shTier=0; e.shield=20000; e.shieldMax=20000; e.shWait=-1; }
-      if(e.shield<=0&&e.shWait<0&&e.shTier<3){ e.shWait=12; }        // 割られた：12秒後に張り直す
-      if(e.shWait>0) e.shWait-=dt;
+      // 割られた：12秒後に張り直す。-1＝待っていない／0＝張り直せる、と状態を分ける
+      // （「shWait<0 なら待ち始める」にすると、カウントが0を割った瞬間に毎回12へ戻ってしまう）
+      if(e.shield<=0&&e.shWait===-1&&e.shTier<3){ e.shWait=12; }
+      if(e.shWait>0){ e.shWait-=dt; if(e.shWait<0) e.shWait=0; }
 
       if(e.st==='dspray'){                                           // 大小弾幕バラマキ（2波）
         e.stT-=dt; moved=1;
@@ -6636,7 +6638,7 @@ function moveEnemies(dt){
       }
       else if(e.at<=0&&d<900){
         moved=1;
-        if(e.shWait!==-1&&e.shWait<=0&&e.shTier<3){ e.st='dshield'; e.stT=1.0; }   // 切れ目で張り直す
+        if(e.shWait===0&&e.shTier<3){ e.st='dshield'; e.stT=1.0; }   // ローテの切れ目で張り直す
         else{
           e.dphase=(e.dphase+1)%4;
           if(e.dphase===1){ e.st='dspray'; e.stT=0.6; e.sw=0; }
