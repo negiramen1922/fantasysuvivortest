@@ -3182,7 +3182,7 @@ function figInfo(id){
   if(BOSS[id]){ var B=BOSS[id], tt=ETYPE[B.key]||{}; return {nm:B.nm,shape:tt.shape,col:tt.col,dark:tt.dark,desc:BDEX[id]||'',boss:true}; }
   var t=ETYPE[id]||{}; return {nm:t.nm,shape:t.shape,col:t.col,dark:t.dark,desc:DEX[id]||'',boss:false};
 }
-var VERSION='α1.0.296'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
+var VERSION='α1.0.297'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
 function applySave(o){
   for(var i=0;i<UPG.length;i++) META[UPG[i].id]=0;
   try{
@@ -4889,7 +4889,7 @@ function doSharkm(){
 // トルネード：緑の渦。吸引（ブラックホールより弱め）＋消滅時に爆発して風を付与＝拡散
 // アヴァランチ：画面の外から雪の壁がなだれ込む。敵を貫いて押し流し、通り過ぎるまで削り続ける。
 // 盤面ギミックの雪崩（avalanches／プレイヤーのみに当たる）とは別物で、こちらは敵にのみ当たる。
-var pwalls=[];
+var pwalls=[], PWALL_MAX=6;   // 同時に走らせる壁の上限（描画も判定も本数に比例するので必ず抑える）
 function doAvalanche(){
   SRC='avalanche';
   var cnt=1+CNT('avalanche');
@@ -4899,14 +4899,18 @@ function doAvalanche(){
   var push=150*(1+TR('avalanche','push'));
   var slow=TR('avalanche','slow');
   var life=4.4*(1+0.12*(AX('avalanche','dur')+LB('avalanche','dur')));   // 画面を渡りきる時間。持続軸で伸びる
+  // 1回に出す本数と、同時に走る本数に上限を置く。
+  // 上限が無いと数軸＋限界突破で1回に30本出て、盤面に50本以上残って一気に重くなる。
+  cnt=Math.min(4,cnt);
   var base=Math.random()*6.283, dirs=[];
   for(var i=0;i<cnt;i++) dirs.push(base+i/cnt*6.283);
   if(AW('avalanche')){ var n0=dirs.length; for(var j=0;j<n0;j++) dirs.push(dirs[j]+Math.PI/2); }   // 覚醒：十字
   for(var k=0;k<dirs.length;k++){
+    if(pwalls.length>=PWALL_MAX) pwalls.shift();        // 古いものから捨てる
     var a2=dirs[k], R=Math.max(760,offR()+180);
     var cx=P.x+Math.cos(a2)*R, cy=P.y+Math.sin(a2)*R;
     pwalls.push({ x:cx, y:cy, vx:-Math.cos(a2)*360, vy:-Math.sin(a2)*360,
-      w:wid, h:thick, life:life, t:0, dmg:dmg, push:push, slow:slow, hit:{} });
+      w:wid, h:thick, life:life, t:0, dmg:dmg, push:push, slow:slow, hit:{}, grad:null });
   }
   sfx(90,.3,'sine',.05,.5); noise(.3,.05);
   wgain('avalanche',dirs.length); SRC=null;
@@ -7193,28 +7197,46 @@ function moveAvalanches(dt){
 }
 // 雪崩の描画（ワールド座標。地面より上・敵より下に置く）
 function drawAvalanche(q,mine){
+  // 画面から完全に外れている壁は描かない（壁は同時に何本も走るので効く）
+  var half=Math.max(q.w,q.h)/2+40;
+  if(q.x+half<VLx||q.x-half>VRx||q.y+half<VTy||q.y-half>VBy) return;
   var sp=Math.hypot(q.vx,q.vy)||1, nx=q.vx/sp, ny=q.vy/sp;
   var a=Math.min(1,q.life/1.0)*(mine?0.9:1);
+  // 壁の長さは範囲軸で3000px以上まで伸びる。画面に映る範囲だけを塗る。
+  // （全長を塗ると画面より大きい半透明の面を何枚も重ねることになり、そこで一気に重くなる）
+  var camx0=(VLx+VRx)/2, camy0=(VTy+VBy)/2;
+  var mid=(camx0-q.x)*(-ny)+(camy0-q.y)*nx;                 // 壁に沿った向きでのカメラ中心の位置
+  var span=((VRx-VLx)+(VBy-VTy))/2;                          // 余裕をもたせた可視幅
+  var y0=Math.max(-q.w/2, mid-span), y1=Math.min(q.w/2, mid+span);
+  if(y1<=y0) return;
   ctx.save();
   ctx.translate(q.x,q.y); ctx.rotate(Math.atan2(ny,nx));
   ctx.globalAlpha=a*0.82;
-  var g=ctx.createLinearGradient(-q.h/2,0,q.h/2,0);
-  g.addColorStop(0,mine?'rgba(140,200,235,0)':'rgba(150,178,206,0)');
-  g.addColorStop(0.45,mine?'rgba(186,228,250,.80)':'rgba(214,232,246,.85)');
-  g.addColorStop(1,mine?'rgba(232,248,255,.92)':'rgba(246,252,255,.95)');
-  ctx.fillStyle=g; ctx.fillRect(-q.h/2,-q.w/2,q.h,q.w);
-  // 先端の雪煙（進行方向の縁を塊で崩す）
+  if(!q.grad){                                   // グラデは形が変わらないので1本につき1回だけ作る
+    var g=ctx.createLinearGradient(-q.h/2,0,q.h/2,0);
+    g.addColorStop(0,mine?'rgba(140,200,235,0)':'rgba(150,178,206,0)');
+    g.addColorStop(0.45,mine?'rgba(186,228,250,.80)':'rgba(214,232,246,.85)');
+    g.addColorStop(1,mine?'rgba(232,248,255,.92)':'rgba(246,252,255,.95)');
+    q.grad=g;
+  }
+  ctx.fillStyle=q.grad; ctx.fillRect(-q.h/2,y0,q.h,y1-y0);
+  // 先端の雪煙（進行方向の縁を塊で崩す）。見えている範囲にだけ置く
+  var step=110, n0=Math.ceil(y0/step), n1=Math.floor(y1/step);
+  if(n1-n0>14) n1=n0+14;
   ctx.fillStyle='rgba(255,255,255,.9)';
-  for(var k=0;k<14;k++){
-    var t=(k/14)*q.w-q.w/2+((k*97)%40);
-    var r=14+((k*53)%16);
-    ctx.beginPath(); ctx.arc(q.h/2-4,t,r,0,6.283); ctx.fill();
+  ctx.beginPath();
+  for(var k=n0;k<=n1;k++){
+    var t=k*step+((k*97)%40), r=14+(((k%16)+16)%16);
+    ctx.moveTo(q.h/2-4+r,t); ctx.arc(q.h/2-4,t,r,0,6.283);
   }
+  ctx.fill();
   ctx.globalAlpha=a*0.5; ctx.fillStyle='rgba(180,206,230,.9)';
-  for(var k2=0;k2<10;k2++){
-    var t2=(k2/10)*q.w-q.w/2+((k2*61)%50);
-    ctx.beginPath(); ctx.arc(-q.h/2+8,t2,10+((k2*37)%10),0,6.283); ctx.fill();
+  ctx.beginPath();
+  for(var k2=n0;k2<=n1;k2++){
+    var t2=k2*step+((k2*61)%50), r2=10+(((k2%10)+10)%10);
+    ctx.moveTo(-q.h/2+8+r2,t2); ctx.arc(-q.h/2+8,t2,r2,0,6.283);
   }
+  ctx.fill();
   ctx.globalAlpha=1; ctx.restore();
 }
 // ブリザードの画面フィルタ（カメラの外＝スクリーン座標で描く）
@@ -8123,19 +8145,19 @@ var GPROP_CELL=176;          // 散らし物1つあたりのマス（px）
 /* ===== 氷結床（ステージ⑤）=====
    ワールドに固定配置された円形の氷。中に入るとプレイヤーだけ慣性が付き、思い通りに止まれない。
    配置は散らし物と同じ座標ハッシュなので、保存も同期も要らず、どのランでも同じ場所に出る。 */
-var ICE_CELL=280;                                   // 氷を1枚まで置くマスの大きさ（この設定で床の約17%が氷になる）
+var ICE_CELL=600;                                   // 氷を1枚まで置くマスの大きさ（この設定で床の約14%が氷になる）
 var ICETEST=false; try{ ICETEST=/[?&]ice=1\b/.test((typeof location!=='undefined'&&location.search)||''); }catch(e){}
 function iceOn(){ return !!(curGround&&curGround.ice)||ICETEST; }
 // マス(ix,iy)の氷。無ければ null。中心はマス内のどこでもよく、円はマスをはみ出してよい
 // （はみ出しを禁じるとマスの境目に必ず氷の無い帯ができ、格子状に見えてしまうため）。
 function iceCell(ix,iy){
   var h=ghash(ix*7+3,iy*7+5);                       // 散らし物と同じ値だと位置が重なるのでずらす
-  if((h%100)>=55) return null;                      // マスあたりの出現率55%
-  var cx=ix*ICE_CELL+((h>>>13)%ICE_CELL), cy=iy*ICE_CELL+((h>>>19)%ICE_CELL), r=64+((h>>>7)%57);
+  if((h%100)>=42) return null;                      // マスあたりの出現率42%（枚数を減らして1枚を大きく）
+  var cx=ix*ICE_CELL+((h>>>13)%ICE_CELL), cy=iy*ICE_CELL+((h>>>19)%ICE_CELL), r=128+((h>>>7)%113);   // 半径128〜240（従来の2倍）
   if(cx*cx+cy*cy<(r+70)*(r+70)) return null;        // 開始地点(0,0)の周りは氷にしない（開幕からいきなり滑らないように）
   return { x:cx, y:cy, r:r, h:h };
 }
-// はみ出しを許すので、隣接9マスまで見る（半径の上限120 < ICE_CELL なので9マスで足りる）
+// はみ出しを許すので、隣接9マスまで見る（半径の上限240 < ICE_CELL なので9マスで足りる）
 // ボスが作る氷結床（座標ハッシュとは別に、その場に生える。寿命で消える）
 var icePatches=[];
 function addIce(x,y,r,life){
@@ -8180,7 +8202,7 @@ function drawIceSheet(q,alpha){
   // ひび：中心から放射状に3本（角度もハッシュ由来なので毎フレーム同じ）
   ctx.strokeStyle='rgba(240,252,255,.34)'; ctx.lineWidth=1;
   ctx.beginPath();
-  for(var ck=0;ck<3;ck++){
+  for(var ck=0;ck<5;ck++){
     var an=((q.h>>>(3+ck*5))%360)*Math.PI/180, ln=q.r*(.42+((q.h>>>(7+ck*4))%34)/100);
     ctx.moveTo(q.x,q.y); ctx.lineTo(q.x+Math.cos(an)*ln,q.y+Math.sin(an)*ln);
   }
@@ -11751,6 +11773,10 @@ Array.prototype.forEach.call(document.querySelectorAll('#setview button'),functi
 // 更新履歴：1つのお知らせ内で「バージョン見出し」ごとに変更点を並べる（新しい順）。
 // マージのたびに先頭へ新バージョンを追加し、VERSION も更新する。
 var UPDATES=[
+  {v:'α1.0.297', items:[
+    '新武器「アヴァランチ」で画面が極端に重くなる問題を修正しました。強化を重ねると雪の壁が1回に30本以上出て、盤面に50本以上残った状態で、画面より大きい半透明の面を何枚も重ねて描いていたためです。同時に走る本数に上限を設け、壁は画面に映る範囲だけを描くようにしました。',
+    'ステージ⑤の氷結床を、枚数を減らして1枚を大きくしました（半径がおよそ2倍）。氷の合計面積はほぼ変えていませんが、細かい氷を何度も踏むのではなく、大きな氷の池を避けたり使ったりする形になります。',
+  ]},
   {v:'α1.0.296', items:[
     'ステージ⑤「凍てつく氷河」を追加しました。ステージ④でLv80に到達すると解放されます。',
     '氷河の地面には氷結床があり、乗っているあいだは慣性がついて思い通りに止まれません。90秒ごとに吹雪が吹き、7:00以降は雪崩が横断します。',
@@ -13132,6 +13158,7 @@ try{ if(DEV) window.DBG=function(){ return { x:P.x, y:P.y, vx:P.vx, vy:P.vy, hp:
   bliz:blizOn, blizWarn:blizWarn, ava:avalanches.length, avaT:avaT, kx:P.kx||0, ky:P.ky||0,
   bossSt:boss?(boss.st||''):'', bossHp:boss?Math.round(boss.hp):0, bossSh:boss?Math.round(boss.shield||0):0,
   icep:icePatches.length, pw:pwalls.length, mus:musName, cage:cages.length,
+  ebul:ebul.length, parts:parts.length, shots:shots.length, fx:fx.length, ndmgs:dmgs.length,   // dmgs は下でテキスト配列として出しているので別名にする
   pwNear:(function(){ var m=9999; for(var i=0;i<pwalls.length;i++){ var q=pwalls[i]; m=Math.min(m,Math.hypot(q.x-P.x,q.y-P.y)); } return m; })(),
   dmgs:dmgs.map(function(z){ return z.txt; }),
   comp:(function(){ var c={}; for(var i=0;i<enemies.length;i++){ if(!enemies[i].dead) c[enemies[i].k]=(c[enemies[i].k]||0)+1; } return c; })() }; }; }catch(e){}
