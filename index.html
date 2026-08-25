@@ -3182,7 +3182,7 @@ function figInfo(id){
   if(BOSS[id]){ var B=BOSS[id], tt=ETYPE[B.key]||{}; return {nm:B.nm,shape:tt.shape,col:tt.col,dark:tt.dark,desc:BDEX[id]||'',boss:true}; }
   var t=ETYPE[id]||{}; return {nm:t.nm,shape:t.shape,col:t.col,dark:t.dark,desc:DEX[id]||'',boss:false};
 }
-var VERSION='α1.0.297'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
+var VERSION='α1.0.298'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
 function applySave(o){
   for(var i=0;i<UPG.length;i++) META[UPG[i].id]=0;
   try{
@@ -3788,7 +3788,7 @@ function runWeapons(dt){
   if(P.w.crimson &&ready('crimson', 3.00*RATE('crimson'),dt))   doCrimson();
   if(P.w.sharkm) sharkTick(dt);
   if(P.w.tornado &&ready('tornado', 3.20*RATE('tornado'),dt))   doTornado();
-  if(P.w.avalanche&&ready('avalanche',4.60*RATE('avalanche'),dt)) doAvalanche();
+  if(P.w.avalanche&&ready('avalanche',12.0*RATE('avalanche'),dt)) doAvalanche();   // 面で当たり続ける武器なので発生間隔は長め
   if(P.w.bell    &&ready('bell',    3.00*RATE('bell'),dt))     doBell();
   if(P.w.harp    &&ready('harp',    3.00*RATE('harp'),dt))     doHarp();
   if(P.w.briar   &&ready('briar',   2.30*RATE('briar'),dt))    doBriar();
@@ -11773,6 +11773,9 @@ Array.prototype.forEach.call(document.querySelectorAll('#setview button'),functi
 // 更新履歴：1つのお知らせ内で「バージョン見出し」ごとに変更点を並べる（新しい順）。
 // マージのたびに先頭へ新バージョンを追加し、VERSION も更新する。
 var UPDATES=[
+  {v:'α1.0.298', items:[
+    '新武器「アヴァランチ」の発生間隔を 4.6秒 → 12秒 に延ばしました。壁が画面を横切るあいだ何度も当たる武器なので、出る頻度が高すぎたための調整です。',
+  ]},
   {v:'α1.0.297', items:[
     '新武器「アヴァランチ」で画面が極端に重くなる問題を修正しました。強化を重ねると雪の壁が1回に30本以上出て、盤面に50本以上残った状態で、画面より大きい半透明の面を何枚も重ねて描いていたためです。同時に走る本数に上限を設け、壁は画面に映る範囲だけを描くようにしました。',
     'ステージ⑤の氷結床を、枚数を減らして1枚を大きくしました（半径がおよそ2倍）。氷の合計面積はほぼ変えていませんが、細かい氷を何度も踏むのではなく、大きな氷の池を避けたり使ったりする形になります。',
