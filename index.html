@@ -1557,7 +1557,7 @@ var ETYPE={
   jelly:    { nm:'クラゲ',       res:0.05, hp:90,  spd:52,  r:14, col:'#c0a0e0', dark:'#4a3060', xp:3, dmg:10, shape:'jelly',     pts:30, sv:0.10, cpois:1 },
   siren:    { nm:'セイレーン',   res:0.12, hp:150, spd:44,  r:14, col:'#e0a0b0', dark:'#5a2a3a', xp:5, dmg:16, shape:'siren',     pts:54, sv:0.14, ai:'beam', range:420, acd:4.2, wind:1.0, bdmg:20 },
   // ---- ステージ5「凍てつく氷河」----（全種 氷属性ダメージ半減。凍結の効きはステージ側 frzMul で短縮）
-  iceslime: { nm:'アイススライム',   res:0.05, hp:90,  spd:52, r:14, col:'#8fd8ee', dark:'#2a5f76', xp:2, dmg:14, shape:'iceslime', pts:20, sv:0.07, eres:{ice:0.5} },
+  iceslime: { nm:'アイススライム',   res:0.05, hp:150, spd:52, r:14, col:'#8fd8ee', dark:'#2a5f76', xp:3, dmg:14, shape:'iceslime', pts:26, sv:0.08, eres:{ice:0.5} },
   frostwolf:{ nm:'フロストウルフ',   res:0.15, hp:120, spd:132, r:13, col:'#a8d8f0', dark:'#3a5f7a', xp:3, dmg:18, shape:'frostwolf', pts:32, sv:0.10, eres:{ice:0.5} },
   penguin:  { nm:'ペンギン',         res:0.00, hp:70,  spd:300, r:12, col:'#3a4560', dark:'#161c2c', xp:2, dmg:20, shape:'penguin', pts:18, sv:0.05, ai:'dash', eres:{ice:0.5} },
   // クリオネ：漂う→溜め→滑走 の繰り返し。滑走の向きはプレイヤー方向±50度のランダムで、まっすぐ来ない
@@ -3182,7 +3182,7 @@ function figInfo(id){
   if(BOSS[id]){ var B=BOSS[id], tt=ETYPE[B.key]||{}; return {nm:B.nm,shape:tt.shape,col:tt.col,dark:tt.dark,desc:BDEX[id]||'',boss:true}; }
   var t=ETYPE[id]||{}; return {nm:t.nm,shape:t.shape,col:t.col,dark:t.dark,desc:DEX[id]||'',boss:false};
 }
-var VERSION='α1.0.298'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
+var VERSION='α1.0.299'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
 function applySave(o){
   for(var i=0;i<UPG.length;i++) META[UPG[i].id]=0;
   try{
@@ -6325,6 +6325,9 @@ function moveEnemies(dt){
     }
     else if(e.ai==='dash'){
       // スウォーム：出現時に決めた方向へ直進。追尾せず画面外で消滅。
+      // 通常湧きで出たときは向きが決まっていないので、ここでプレイヤーの方へ撃ち出す。
+      // （これが無いと、スウォーム以外で湧いた dash の敵はその場から一歩も動かない＝ペンギンが止まっていた）
+      if(!e.vx&&!e.vy){ e.vx=dx/d*e.spd; e.vy=dy/d*e.spd; }
       e.x+=e.vx*dt; e.y+=e.vy*dt; moved=1;
       if(e.life>0){ e.life-=dt; if(e.life<=0){ e.dead=1; continue; } }
       if(d>1500){ e.dead=1; continue; }
@@ -11773,6 +11776,10 @@ Array.prototype.forEach.call(document.querySelectorAll('#setview button'),functi
 // 更新履歴：1つのお知らせ内で「バージョン見出し」ごとに変更点を並べる（新しい順）。
 // マージのたびに先頭へ新バージョンを追加し、VERSION も更新する。
 var UPDATES=[
+  {v:'α1.0.299', items:[
+    'ステージ⑤のペンギンがその場から動かない不具合を修正しました。群れ（スウォーム）で出す前提の挙動を通常湧きにも使っていたため、進む向きが決まらないまま止まっていました。',
+    'アイススライムを HP90 → 150 に上げました（経験値2→3・スコア20→26）。',
+  ]},
   {v:'α1.0.298', items:[
     '新武器「アヴァランチ」の発生間隔を 4.6秒 → 12秒 に延ばしました。壁が画面を横切るあいだ何度も当たる武器なので、出る頻度が高すぎたための調整です。',
   ]},
