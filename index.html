@@ -2758,6 +2758,9 @@ var LBT={ dmg:'ダメージ +8%（上限なし）', area:'範囲 +4%', rate:'間
           count:'発射数 +1', pierce:'貫通 +1', dur:'効果の持続 +1（延焼・氷・熱量など）',
           range:'射程 +8%', burst:'連射 +1', ammo:'弾倉 +1', chain:'連鎖 +1', split:'拡散 +1',
           crit:'この武器の会心率 +2%', critd:'この武器の会心ダメージ +15%' };
+// 共通の説明文が他武器の用語になっている軸だけ、武器ごとに差し替える。
+var WLBT={ avalanche:{ dur:'壁が走る時間 +12%' } };
+function lbTx(w,k){ var o=WLBT[w]; return (o&&o[k])||LBT[k]; }
 var LBCAP={ dmg:0, area:25, rate:0, count:8, pierce:10, dur:8, range:15, burst:5, ammo:8, chain:8, split:8, crit:10, critd:10 };   // 0 = 上限なし
 var LBSUP={ dmg:1, area:1, rate:1, count:1, pierce:1, dur:1, range:1, burst:1, ammo:1, chain:1, split:1, crit:1, critd:1 };   // 効果を実装済みの軸
 // 武器ごとの限界突破の軸。未指定なら WAX（その武器の育成軸）を流用＝その武器に効く軸だけ出る。
@@ -2781,6 +2784,9 @@ function LB(w,k){ var a=P.lb&&P.lb[w]; return (a&&a[k])||0; }
 function lbOK(w,k){
   if(lbAxes(w).indexOf(k)<0) return 0;         // その武器の軸でなければ出さない（例：ガトリングに範囲は出ない）
   if(k==='rate') return RATE(w)>0.21;          // 頻度は下限に達したら打ち止め
+  // アヴァランチの発射数＝1回に出す壁の本数。上限(PWALL_PER_CAST)に届いたら打ち止め。
+  // 育成軸(2)＋熟練度「本数」(1)＋基本(1)で上限に届くので、そのままだと1本も増えないカードが8回出ていた。
+  if(k==='count'&&w==='avalanche') return (1+CNT(w))<PWALL_PER_CAST;
   if(LBCAP[k]&&LB(w,k)>=LBCAP[k]) return 0;
   return 1;
 }
@@ -3188,7 +3194,7 @@ function figInfo(id){
   if(BOSS[id]){ var B=BOSS[id], tt=ETYPE[B.key]||{}; return {nm:B.nm,shape:tt.shape,col:tt.col,dark:tt.dark,desc:BDEX[id]||'',boss:true}; }
   var t=ETYPE[id]||{}; return {nm:t.nm,shape:t.shape,col:t.col,dark:t.dark,desc:DEX[id]||'',boss:false};
 }
-var VERSION='α1.0.302'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
+var VERSION='α1.0.303'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
 function applySave(o){
   for(var i=0;i<UPG.length;i++) META[UPG[i].id]=0;
   try{
@@ -4896,7 +4902,8 @@ function doSharkm(){
 // トルネード：緑の渦。吸引（ブラックホールより弱め）＋消滅時に爆発して風を付与＝拡散
 // アヴァランチ：画面の外から雪の壁がなだれ込む。敵を貫いて押し流し、通り過ぎるまで削り続ける。
 // 盤面ギミックの雪崩（avalanches／プレイヤーのみに当たる）とは別物で、こちらは敵にのみ当たる。
-var pwalls=[], PWALL_MAX=6;   // 同時に走らせる壁の上限（描画も判定も本数に比例するので必ず抑える）
+var pwalls=[], PWALL_MAX=6;        // 盤面に同時に残せる壁の上限（描画も判定も本数に比例するので必ず抑える）
+var PWALL_PER_CAST=4;              // 1回の発生で出す壁の上限。WLB.avalanche から count を外す根拠でもある
 function doAvalanche(){
   SRC='avalanche';
   var cnt=1+CNT('avalanche');
@@ -4908,7 +4915,7 @@ function doAvalanche(){
   var life=4.4*(1+0.12*(AX('avalanche','dur')+LB('avalanche','dur')));   // 画面を渡りきる時間。持続軸で伸びる
   // 1回に出す本数と、同時に走る本数に上限を置く。
   // 上限が無いと数軸＋限界突破で1回に30本出て、盤面に50本以上残って一気に重くなる。
-  cnt=Math.min(4,cnt);
+  cnt=Math.min(PWALL_PER_CAST,cnt);
   var base=Math.random()*6.283, dirs=[];
   for(var i=0;i<cnt;i++) dirs.push(base+i/cnt*6.283);
   if(AW('avalanche')){ var n0=dirs.length; for(var j=0;j<n0;j++) dirs.push(dirs[j]+Math.PI/2); }   // 覚醒：十字
@@ -7877,7 +7884,7 @@ function lbPool(){
       if(!lbOK(id,k)) continue;
       out.push({id:id,kind:'lb',ax:k,gold:1,
         nm:WEAPONS[id].nm+' ・ 限界突破',glyph:wIcon(id),tag:'限界突破',
-        tx:LBT[k],lvtx:LBN[k]+'  +'+LB(id,k)+(LBCAP[k]?' / '+LBCAP[k]:'')});
+        tx:lbTx(id,k),lvtx:LBN[k]+'  +'+LB(id,k)+(LBCAP[k]?' / '+LBCAP[k]:'')});
     }
   }
   return out;
@@ -11790,6 +11797,10 @@ Array.prototype.forEach.call(document.querySelectorAll('#setview button'),functi
 // 更新履歴：1つのお知らせ内で「バージョン見出し」ごとに変更点を並べる（新しい順）。
 // マージのたびに先頭へ新バージョンを追加し、VERSION も更新する。
 var UPDATES=[
+  {v:'α1.0.303', items:[
+    'アヴァランチの限界突破で、取っても何も変わらない「発射数 +1」が出ていた問題を修正しました。壁の本数には同時描画の都合で上限があり、育成軸と熟練度だけでその上限に届くため、限界突破ぶんが1本も反映されていませんでした。「間隔」と同じように、上限に届いたら以降は出さないようにしています。',
+    'アヴァランチの限界突破「持続」の説明が他の武器の用語（延焼・熱量など）のままだったので、「壁が走る時間 +12%」に直しました。',
+  ]},
   {v:'α1.0.302', items:[
     'ステージ⑤「凍てつく氷河」を追加しました。④ 大海原で Lv80 に到達すると解放されます。',
     '氷結床（滑って止まれない）・吹雪（視界が狭まる）・雪崩（横切る雪の壁）の3つのギミックがあります。氷の魔物は氷属性のダメージを半減し、凍結もすぐ解けます。',
@@ -13199,6 +13210,9 @@ try{ if(DEV) window.DBG=function(){ return { x:P.x, y:P.y, vx:P.vx, vy:P.vy, hp:
   bliz:blizOn, blizWarn:blizWarn, ava:avalanches.length, avaT:avaT, kx:P.kx||0, ky:P.ky||0,
   bossSt:boss?(boss.st||''):'', bossHp:boss?Math.round(boss.hp):0, bossSh:boss?Math.round(boss.shield||0):0,
   icep:icePatches.length, pw:pwalls.length, mus:musName, cage:cages.length,
+  lbOffer:(function(){ var o={}; for(var w in P.w){ var a=[]; var ax=lbAxes(w);
+    for(var i=0;i<ax.length;i++) if(lbOK(w,ax[i])) a.push(ax[i]); o[w]=a; } return o; })(),   // 今この武器で出る限界突破の軸
+  lbHave:(function(){ var o={}; for(var w in P.w) if(P.lb&&P.lb[w]) o[w]=P.lb[w]; return o; })(),
   ebul:ebul.length, parts:parts.length, shots:shots.length, fx:fx.length, ndmgs:dmgs.length,   // dmgs は下でテキスト配列として出しているので別名にする
   pwNear:(function(){ var m=9999; for(var i=0;i<pwalls.length;i++){ var q=pwalls[i]; m=Math.min(m,Math.hypot(q.x-P.x,q.y-P.y)); } return m; })(),
   dmgs:dmgs.map(function(z){ return z.txt; }),
