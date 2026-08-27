@@ -1847,10 +1847,10 @@ var STAGES={
   4:{ nm:'大海原', sub:'20:00・海・高難度', icon:'🌊', flavor:'深く青い大海原。群れ飛ぶトビウオ、盾を構える蟹、砂に潜む貝、そして巨大な海坊主が押し寄せる。海妖セイレーンの光線をかいくぐり、最奥の主リヴァイアサンを討て。',
       wave:WAVE4, bossAt:BOSS_AT4, hpMul:1.0, req:3, swarm:1, swarmStart:300, swarmK:'flyingfish', umibozu:1, umibozuStart:960,
       ground:{ tile:'s4', bg:'#08131f', grid:'rgba(60,130,150,.26)', dot:'rgba(90,180,200,.14)' } },
-  // ステージ5「凍てつく氷河」：開発中（dev:1 なので ?dev=1 のときだけ選べる）。
+  // ステージ5「凍てつく氷河」：一般公開済み（req＝STGREQ[5]でステージ④Lv80到達で解放）。専用ロスター WAVE5／BOSS_AT5。
   // ground.ice＝氷結床あり／eres＝ステージ全体の属性耐性／frzMul＝凍結の効果時間の倍率。
   5:{ nm:'凍てつく氷河', sub:'20:00・氷・高難度', icon:'❄️', flavor:'思い通りに止まれない氷の大地。氷結床に足を取られ、吹雪に視界を奪われ、雪崩が走る。氷の魔物は氷属性を半減し、凍結もすぐ解ける。最奥に氷河の主グラキエスが眠る。',
-      wave:WAVE5, bossAt:BOSS_AT5, hpMul:1.0, req:4, dev:1, swarm:1, swarmStart:180, swarmK:'frostwolf', swarmN:[12,16],
+      wave:WAVE5, bossAt:BOSS_AT5, hpMul:1.0, req:4, swarm:1, swarmStart:180, swarmK:'frostwolf', swarmN:[12,16],
       blizAt:90, blizDur:30, avalanche:1, avalancheStart:420,
       ground:{ tile:'s5', bg:'#0b1220', grid:'rgba(110,150,190,.24)', dot:'rgba(150,200,235,.13)',
                ice:1, eres:{ice:0.5}, frzMul:0.4 } }
@@ -3188,7 +3188,7 @@ function figInfo(id){
   if(BOSS[id]){ var B=BOSS[id], tt=ETYPE[B.key]||{}; return {nm:B.nm,shape:tt.shape,col:tt.col,dark:tt.dark,desc:BDEX[id]||'',boss:true}; }
   var t=ETYPE[id]||{}; return {nm:t.nm,shape:t.shape,col:t.col,dark:t.dark,desc:DEX[id]||'',boss:false};
 }
-var VERSION='α1.0.301'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
+var VERSION='α1.0.302'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
 function applySave(o){
   for(var i=0;i<UPG.length;i++) META[UPG[i].id]=0;
   try{
@@ -11790,6 +11790,12 @@ Array.prototype.forEach.call(document.querySelectorAll('#setview button'),functi
 // 更新履歴：1つのお知らせ内で「バージョン見出し」ごとに変更点を並べる（新しい順）。
 // マージのたびに先頭へ新バージョンを追加し、VERSION も更新する。
 var UPDATES=[
+  {v:'α1.0.302', items:[
+    'ステージ⑤「凍てつく氷河」を追加しました。④ 大海原で Lv80 に到達すると解放されます。',
+    '氷結床（滑って止まれない）・吹雪（視界が狭まる）・雪崩（横切る雪の壁）の3つのギミックがあります。氷の魔物は氷属性のダメージを半減し、凍結もすぐ解けます。',
+    'ボスは キングペンギン（5:00）／フロストドレイク（10:00）／雪の女王（15:00）／ビッグフット（20:00）の4体です。',
+    'クリアすると新武器「アヴァランチ」と新キャラ「雪女」が解放されます。',
+  ]},
   {v:'α1.0.301', items:[
     'アイススライムのHPを 200 → 150 に戻しました（α1.0.300 で上げたぶんの取り消しです。他の敵のHPはそのままです）。',
   ]},
