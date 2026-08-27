@@ -2765,7 +2765,9 @@ var LBCAP={ dmg:0, area:25, rate:0, count:8, pierce:10, dur:8, range:15, burst:5
 var LBSUP={ dmg:1, area:1, rate:1, count:1, pierce:1, dur:1, range:1, burst:1, ammo:1, chain:1, split:1, crit:1, critd:1 };   // 効果を実装済みの軸
 // 武器ごとの限界突破の軸。未指定なら WAX（その武器の育成軸）を流用＝その武器に効く軸だけ出る。
 // ここで武器を上書きすれば軸を個別に増減できる（例：ガトリングに範囲は出したくない→WAXに範囲が無いので自動で出ない）。
-var WLB={ };
+// アヴァランチは発射数(count)を限界突破から外す。壁の本数が4本になると、★覚醒の十字は
+// 元の4方向と90度ずらした4方向が完全に重なってしまい、クロスに見えなくなるため。
+var WLB={ avalanche:['dmg','area','rate','dur'] };
 // カテゴリ共通の限界突破軸：武器種・属性ごとの“らしい”強化を追加する。
 function lbCat(w){
   var out=[];
@@ -2784,9 +2786,6 @@ function LB(w,k){ var a=P.lb&&P.lb[w]; return (a&&a[k])||0; }
 function lbOK(w,k){
   if(lbAxes(w).indexOf(k)<0) return 0;         // その武器の軸でなければ出さない（例：ガトリングに範囲は出ない）
   if(k==='rate') return RATE(w)>0.21;          // 頻度は下限に達したら打ち止め
-  // アヴァランチの発射数＝1回に出す壁の本数。上限(PWALL_PER_CAST)に届いたら打ち止め。
-  // 育成軸(2)＋熟練度「本数」(1)＋基本(1)で上限に届くので、そのままだと1本も増えないカードが8回出ていた。
-  if(k==='count'&&w==='avalanche') return (1+CNT(w))<PWALL_PER_CAST;
   if(LBCAP[k]&&LB(w,k)>=LBCAP[k]) return 0;
   return 1;
 }
@@ -3194,7 +3193,7 @@ function figInfo(id){
   if(BOSS[id]){ var B=BOSS[id], tt=ETYPE[B.key]||{}; return {nm:B.nm,shape:tt.shape,col:tt.col,dark:tt.dark,desc:BDEX[id]||'',boss:true}; }
   var t=ETYPE[id]||{}; return {nm:t.nm,shape:t.shape,col:t.col,dark:t.dark,desc:DEX[id]||'',boss:false};
 }
-var VERSION='α1.0.303'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
+var VERSION='α1.0.304'; // マージのたびに末尾を増やす（お知らせ UPDATES 先頭と一致させる）
 function applySave(o){
   for(var i=0;i<UPG.length;i++) META[UPG[i].id]=0;
   try{
@@ -11797,6 +11796,9 @@ Array.prototype.forEach.call(document.querySelectorAll('#setview button'),functi
 // 更新履歴：1つのお知らせ内で「バージョン見出し」ごとに変更点を並べる（新しい順）。
 // マージのたびに先頭へ新バージョンを追加し、VERSION も更新する。
 var UPDATES=[
+  {v:'α1.0.304', items:[
+    'アヴァランチの限界突破を 攻撃力・範囲・間隔・持続 の4つだけにしました。発射数は外しています。壁が4本になると★覚醒の十字が、元の4方向と90度ずらした4方向がぴったり重なってしまい、クロスに見えなくなるためです。',
+  ]},
   {v:'α1.0.303', items:[
     'アヴァランチの限界突破で、取っても何も変わらない「発射数 +1」が出ていた問題を修正しました。壁の本数には同時描画の都合で上限があり、育成軸と熟練度だけでその上限に届くため、限界突破ぶんが1本も反映されていませんでした。「間隔」と同じように、上限に届いたら以降は出さないようにしています。',
     'アヴァランチの限界突破「持続」の説明が他の武器の用語（延焼・熱量など）のままだったので、「壁が走る時間 +12%」に直しました。',
